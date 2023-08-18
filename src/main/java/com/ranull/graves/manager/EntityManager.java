@@ -185,7 +185,6 @@ public final class EntityManager extends EntityDataManager {
 
             try {
                 cost = Double.parseDouble(costString);
-                Bukkit.getServer().getConsoleSender().sendMessage(String.valueOf(cost));
             } catch (NumberFormatException ignored) {
                 plugin.debugMessage(costString + " cost is not a double", 1);
             }
