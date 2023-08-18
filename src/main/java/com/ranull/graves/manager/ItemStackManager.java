@@ -3,9 +3,12 @@ package com.ranull.graves.manager;
 import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.StringUtil;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
@@ -16,6 +19,8 @@ import java.util.List;
 
 public final class ItemStackManager extends EntityDataManager {
     private final Graves plugin;
+
+    private Entity e = null;
 
     public ItemStackManager(Graves plugin) {
         super(plugin);
@@ -133,7 +138,8 @@ public final class ItemStackManager extends EntityDataManager {
                     .getInt("gui.menu.list.model-data", -1);
 
             for (String string : plugin.getConfig("gui.menu.list.lore", grave).getStringList("gui.menu.list.lore")) {
-                loreList.add(ChatColor.GRAY + StringUtil.parseString(string, grave.getLocationDeath(), grave, plugin));
+                e = Bukkit.getEntity(grave.getOwnerUUID());
+                loreList.add(ChatColor.GRAY + StringUtil.parseString(string, e, grave.getLocationDeath(), grave, plugin));
             }
 
             if (plugin.getConfig().getBoolean("gui.menu.list.glow")) {
@@ -176,7 +182,8 @@ public final class ItemStackManager extends EntityDataManager {
 
             for (String string : plugin.getConfig("gui.menu.grave.slot." + slot + ".lore", grave)
                     .getStringList("gui.menu.grave.slot." + slot + ".lore")) {
-                loreList.add(ChatColor.GRAY + StringUtil.parseString(string, grave.getLocationDeath(), grave, plugin));
+                e = Bukkit.getEntity(grave.getOwnerUUID());
+                loreList.add(ChatColor.GRAY + StringUtil.parseString(string, e, grave.getLocationDeath(), grave, plugin));
             }
 
             if (plugin.getConfig().getBoolean("gui.menu.grave.slot." + slot + ".glow")) {
@@ -219,7 +226,8 @@ public final class ItemStackManager extends EntityDataManager {
 
             for (String string : plugin.getConfig("gui.menu.grave.slot." + slot + ".lore", grave)
                     .getStringList("gui.menu.grave.slot." + slot + ".lore")) {
-                loreList.add(ChatColor.GRAY + StringUtil.parseString(string, grave.getLocationDeath(), grave, plugin));
+                e = Bukkit.getEntity(grave.getOwnerUUID());
+                loreList.add(ChatColor.GRAY + StringUtil.parseString(string, e, grave.getLocationDeath(), grave, plugin));
             }
 
             if (plugin.getConfig().getBoolean("gui.menu.grave.slot." + slot + ".glow")) {

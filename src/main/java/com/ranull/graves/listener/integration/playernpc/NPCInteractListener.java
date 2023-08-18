@@ -28,8 +28,8 @@ public class NPCInteractListener implements Listener {
             if (npcPersonal.hasGlobal()) {
                 NPC.Global npcGlobal = npcPersonal.getGlobal();
 
-                if (npcGlobal.hasCustomData("grave_uuid")) {
-                    UUID uuid = UUIDUtil.getUUID(npcGlobal.getCustomData("grave_uuid"));
+                if (npcGlobal.hasCustomData(plugin,"grave_uuid")) {
+                    UUID uuid = UUIDUtil.getUUID(npcGlobal.getCustomData(plugin,"grave_uuid"));
 
                     if (uuid != null) {
                         Grave grave = plugin.getCacheManager().getGraveMap().get(uuid);
@@ -44,3 +44,4 @@ public class NPCInteractListener implements Listener {
         }
     }
 }
+

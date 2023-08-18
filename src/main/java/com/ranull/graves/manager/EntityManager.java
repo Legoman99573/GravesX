@@ -185,6 +185,7 @@ public final class EntityManager extends EntityDataManager {
 
             try {
                 cost = Double.parseDouble(costString);
+                Bukkit.getServer().getConsoleSender().sendMessage(String.valueOf(cost));
             } catch (NumberFormatException ignored) {
                 plugin.debugMessage(costString + " cost is not a double", 1);
             }
@@ -204,7 +205,6 @@ public final class EntityManager extends EntityDataManager {
                 && !location1.getWorld().getName().equals(location2.getWorld().getName())) {
             cost += costDifferentWorld;
         }
-
         return cost;
     }
 

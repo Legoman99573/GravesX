@@ -6,6 +6,7 @@ import me.clip.placeholderapi.PlaceholderAPI;
 import net.md_5.bungee.api.ChatColor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.text.WordUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -61,7 +62,9 @@ public final class StringUtil {
 
             if (string.contains("%teleport_cost%")) {
                 string = string.replace("%teleport_cost%", String.valueOf(plugin.getEntityManager()
-                        .getTeleportCost(location, grave.getLocationDeath(), grave)));
+                        .getTeleportCost(
+                                Bukkit.getServer().getEntity(grave.getOwnerUUID()).getLocation(),
+                                grave.getLocationDeath(), grave)));
             }
         }
 
