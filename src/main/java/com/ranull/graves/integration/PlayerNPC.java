@@ -85,12 +85,16 @@ public final class PlayerNPC extends EntityDataManager {
                                 .getString("playernpc.corpse.pose"));
                     } catch (IllegalArgumentException ignored) {
                     }
-
-                    if (pose == NPC.Pose.SWIMMING) {
+                    try {
+                        double x = plugin.getConfig("playernpc.corpse.offset.x", grave)
+                                .getDouble("playernpc.corpse.offset.x");
+                        double y = plugin.getConfig("playernpc.corpse.offset.y", grave)
+                                .getDouble("playernpc.corpse.offset.y");
+                        double z = plugin.getConfig("playernpc.corpse.offset.z", grave)
+                                .getDouble("playernpc.corpse.offset.z");
+                        npcLocation.add(x, y, z);
+                    } catch (IllegalArgumentException handled) {
                         npcLocation.add(0.5, -0.2, 0.5);
-                    }
-                    if (pose == NPC.Pose.SLEEPING) {
-                        npcLocation.add(0.5, 0.0, 0.5);
                     }
 
                     NPC.Global npc = npcLib.generateGlobalNPC(plugin, grave.getOwnerUUID().toString(), npcLocation);

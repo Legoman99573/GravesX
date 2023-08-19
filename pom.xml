@@ -8,7 +8,7 @@
     <artifactId>graves</artifactId>
     <name>Graves</name>
     <description>Full featured lightweight death chest plugin.</description>
-    <version>4.9</version>
+    <version>4.9.1.1</version>
 
     <developers>
         <developer>
@@ -16,6 +16,12 @@
             <url>https://gitlab.com/ranull/minecraft/graves/</url>
         </developer>
     </developers>
+    <contributors>
+        <contributor>
+            <name>JaySmethers</name>
+            <url>https://gitlab.com/users/JaySmethers/projects</url>
+        </contributor>
+    </contributors>
 
     <properties>
         <java.version>1.8</java.version>
@@ -38,7 +44,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.3.1-SNAPSHOT</version>
+                <version>3.4.1</version>
                 <configuration>
                     <relocations>
                         <relocation>
@@ -163,19 +169,19 @@
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
-            <version>1.19-R0.1-SNAPSHOT</version>
+            <version>1.20.1-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.bstats</groupId>
             <artifactId>bstats-bukkit</artifactId>
-            <version>3.0.0</version>
+            <version>3.0.1</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.github.puregero</groupId>
             <artifactId>multilib</artifactId>
-            <version>1.1.5</version>
+            <version>1.1.12</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -193,7 +199,7 @@
         <dependency>
             <groupId>dev.sergiferry</groupId>
             <artifactId>playernpc</artifactId>
-            <version>2022.9</version>
+            <version>2023.4</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -223,13 +229,13 @@
         <dependency>
             <groupId>com.sk89q.worldedit</groupId>
             <artifactId>worldedit-bukkit</artifactId>
-            <version>7.2.0-SNAPSHOT</version>
+            <version>7.3.0-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.sk89q.worldguard</groupId>
             <artifactId>worldguard-bukkit</artifactId>
-            <version>7.0.7-SNAPSHOT</version>
+            <version>7.1.0-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -271,7 +277,7 @@
         <dependency>
             <groupId>com.github.Ste3et</groupId>
             <artifactId>FurnitureLib</artifactId>
-            <version>22fb4086de</version>
+            <version>3.1.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -295,13 +301,13 @@
         <dependency>
             <groupId>net.kyori</groupId>
             <artifactId>adventure-text-minimessage</artifactId>
-            <version>4.11.0</version>
+            <version>4.13.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>net.kyori</groupId>
             <artifactId>adventure-platform-bukkit</artifactId>
-            <version>4.1.1</version>
+            <version>4.3.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -313,7 +319,7 @@
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
-            <version>23.0.0</version>
+            <version>24.0.1</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

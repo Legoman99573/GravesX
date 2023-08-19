@@ -330,7 +330,11 @@ settings:
       playernpc:
         corpse:
           enabled: false # Should we create a corpse?
-          pose: "SWIMMING" # What pose should the entity use? https://sergiferry.github.io/PlayerNPC/dev/sergiferry/playernpc/api/NPC.Pose.html
+          pose: "SLEEPING" # What pose should the entity use? https://sergiferry.github.io/PlayerNPC/dev/sergiferry/playernpc/api/NPC.Pose.html
+          offset:
+            x: 0 # Corpse offset X.
+            y: 0 # Corpse offset Y.
+            z: 0 # Corpse offset Z.
           armor: true # Should the corpse wear the players armor?
           hand: true # Should the corpse hold the players items?
           collide: false # Should corpses be collidable?
