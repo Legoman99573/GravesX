@@ -2,6 +2,7 @@ package com.ranull.graves.manager;
 
 import com.ranull.graves.Graves;
 import com.ranull.graves.util.StringUtil;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -47,7 +48,7 @@ public final class RecipeManager {
     }
 
     public void unload() {
-        Iterator<Recipe> iterator = plugin.getServer().recipeIterator();
+        Iterator<Recipe> iterator = Bukkit.recipeIterator();
 
         while (iterator.hasNext()) {
             Recipe recipe = iterator.next();

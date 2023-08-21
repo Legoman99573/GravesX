@@ -12,6 +12,7 @@ import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.*;
 import org.bstats.bukkit.Metrics;
 import org.bstats.charts.SingleLineChart;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
@@ -138,8 +139,9 @@ public class Graves extends JavaPlugin {
         registerListeners();
         dataManager.reload();
         integrationManager.reload();
-
-        if (recipeManager != null) {
+        try {
+            registerRecipes();
+        } catch (Exception e) {
             recipeManager.reload();
         }
 
