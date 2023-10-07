@@ -1,6 +1,6 @@
 package com.ranull.graves.listener.integration.furnitureengine;
 
-import com.mira.furnitureengine.api.events.FurnitureBreakEvent;
+import com.mira.furnitureengine.events.FurnitureBreakEvent;
 import com.ranull.graves.integration.FurnitureEngine;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.event.EventHandler;

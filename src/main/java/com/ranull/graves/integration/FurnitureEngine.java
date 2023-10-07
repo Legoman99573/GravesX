@@ -1,6 +1,7 @@
 package com.ranull.graves.integration;
 
-import com.mira.furnitureengine.api.FurnitureAPI;
+import com.mira.furnitureengine.furniture.FurnitureManager;
+import com.mira.furnitureengine.furniture.core.Furniture;
 import com.ranull.graves.Graves;
 import com.ranull.graves.data.EntityData;
 import com.ranull.graves.listener.integration.furnitureengine.FurnitureBreakListener;
@@ -22,7 +23,6 @@ import java.util.Map;
 
 public final class FurnitureEngine extends EntityDataManager {
     private final Graves plugin;
-    private final FurnitureAPI furnitureAPI;
     private final FurnitureInteractListener furnitureInteractListener;
     private final FurnitureBreakListener furnitureBreakListener;
 
@@ -30,7 +30,6 @@ public final class FurnitureEngine extends EntityDataManager {
         super(plugin);
 
         this.plugin = plugin;
-        this.furnitureAPI = new FurnitureAPI();
         this.furnitureInteractListener = new FurnitureInteractListener(plugin, this);
         this.furnitureBreakListener = new FurnitureBreakListener(this);
 
@@ -111,21 +110,24 @@ public final class FurnitureEngine extends EntityDataManager {
 
     private boolean placeFurniture(String name, Location location, Rotation rotation) {
         try {
-            furnitureAPI.PlaceFurniture(name, location, rotation);
-
+            Furniture furniture = FurnitureManager.getInstance().getFurniture(name);
+            furniture.spawn(location, rotation, null);
             return true;
         } catch (NoSuchMethodError ignored) {
-            plugin.warningMessage("FurnitureAPI.PlaceFurniture() not found.");
-
+            plugin.warningMessage("Furniture placing failed at:" + location.getWorld().getName()
+                    + ", x" + location.getBlockX() + ", y" + location.getBlockY() + ", z" + location.getBlockZ());
             return false;
         }
     }
 
     private void breakFurniture(Location location) {
         try {
-            furnitureAPI.BreakFurniture(location);
+            Furniture furniture = FurnitureManager.getInstance().isFurniture(location);
+            if (furniture != null)
+                furniture.breakFurniture(null, location);
         } catch (NoSuchMethodError ignored) {
-            plugin.warningMessage("FurnitureAPI.BreakFurniture() not found.");
+            plugin.warningMessage("Furniture breaking failed at:" + location.getWorld().getName()
+                    + ", x" + location.getBlockX() + ", y" + location.getBlockY() + ", z" + location.getBlockZ());
         }
     }
 }

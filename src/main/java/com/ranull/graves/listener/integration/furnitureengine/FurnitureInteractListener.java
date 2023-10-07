@@ -1,6 +1,6 @@
 package com.ranull.graves.listener.integration.furnitureengine;
 
-import com.mira.furnitureengine.api.events.FurnitureInteractEvent;
+import com.mira.furnitureengine.events.FurnitureInteractEvent;
 import com.ranull.graves.Graves;
 import com.ranull.graves.integration.FurnitureEngine;
 import com.ranull.graves.type.Grave;
