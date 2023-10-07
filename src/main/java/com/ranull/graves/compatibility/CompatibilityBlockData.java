@@ -154,7 +154,7 @@ public final class CompatibilityBlockData implements Compatibility {
                     Collection<Property> propertyCollection = gameProfile.getProperties().get("textures");
 
                     if (!propertyCollection.isEmpty()) {
-                        return propertyCollection.stream().findFirst().get().getValue();
+                        return propertyCollection.stream().findFirst().get().value();
                     }
                 }
             } catch (NoSuchFieldException | IllegalAccessException exception) {

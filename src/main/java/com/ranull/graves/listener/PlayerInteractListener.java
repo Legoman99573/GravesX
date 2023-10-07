@@ -101,7 +101,6 @@ public class PlayerInteractListener implements Listener {
 
                         if (!locationList.isEmpty()) {
                             Location location = locationList.get(0);
-
                             player.getInventory().setItem(player.getInventory().getHeldItemSlot(),
                                     plugin.getEntityManager().createGraveCompass(player, location, grave));
 
@@ -118,6 +117,7 @@ public class PlayerInteractListener implements Listener {
                     } else {
                         player.getInventory().remove(itemStack);
                     }
+                    event.setCancelled(true);
                 }
             }
         }

@@ -1,7 +1,7 @@
 ##########
 # Graves #
 ##########
-The ULTIMATE full featured lightweight death chest plugin / player grave plugin!
+The ULTIMATE full-featured lightweight death chest plugin / player grave plugin!
 Every feature you could ever need and more! While still being lightweight and efficient.
 
 ##########
