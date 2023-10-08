@@ -31,7 +31,7 @@ public class EntityDeathListener implements Listener {
         this.plugin = plugin;
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEntityDeath(EntityDeathEvent event) {
         LivingEntity livingEntity = event.getEntity();
         String entityName = plugin.getEntityManager().getEntityName(livingEntity);
