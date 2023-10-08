@@ -18,7 +18,7 @@ public class PlayerDeathListener implements Listener {
         this.plugin = plugin;
     }
 
-    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true) //remove ", ignoreCancelled = true" if 3rd party plugins support breaks
     public void onPlayerDeathEvent(PlayerDeathEvent event) {
         List<ItemStack> itemStackList = event.getDrops();
         Iterator<ItemStack> iterator = itemStackList.iterator();
