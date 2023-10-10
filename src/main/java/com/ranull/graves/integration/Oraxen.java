@@ -90,11 +90,9 @@ public final class Oraxen extends EntityDataManager {
                 if (furnitureMechanic != null && location.getWorld() != null) {
                     location.getBlock().setType(Material.AIR);
 
-                    ItemFrame itemFrame = furnitureMechanic.place(BlockFaceUtil.getBlockFaceRotation(BlockFaceUtil
-                            .getYawBlockFace(location.getYaw())), location.getYaw(), BlockFace.UP, location);
-
-                    if (itemFrame != null) {
-                        createEntityData(location, itemFrame.getUniqueId(), grave.getUUID(), EntityData.Type.ORAXEN);
+                    Entity furniture = furnitureMechanic.place(location, location.getYaw(), BlockFace.UP);
+                    if (furniture != null) {
+                        createEntityData(location, furniture.getUniqueId(), grave.getUUID(), EntityData.Type.ORAXEN);
                         plugin.debugMessage("Placing Oraxen furniture for " + grave.getUUID() + " at "
                                 + location.getWorld().getName() + ", " + (location.getBlockX() + 0.5) + "x, "
                                 + (location.getBlockY() + 0.5) + "y, " + (location.getBlockZ() + 0.5) + "z", 1);
