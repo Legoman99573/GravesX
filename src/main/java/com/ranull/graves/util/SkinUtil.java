@@ -43,9 +43,13 @@ public final class SkinUtil {
 
                 if (propertyMap.containsKey("textures")) {
                     Collection<Property> propertyCollection = propertyMap.get("textures");
-
-                    return !propertyCollection.isEmpty()
-                            ? propertyCollection.stream().findFirst().get().value() : null;
+                    try {
+                        return !propertyCollection.isEmpty()
+                                ? propertyCollection.stream().findFirst().get().value() : null;
+                    } catch(NoSuchMethodError blah) {
+                        return !propertyCollection.isEmpty()
+                                ? propertyCollection.stream().findFirst().get().getValue() : null;
+                    }
                 }
             }
         } else {
@@ -77,8 +81,14 @@ public final class SkinUtil {
                 if (propertyMap.containsKey("textures")) {
                     Collection<Property> propertyCollection = propertyMap.get("textures");
 
-                    return !propertyCollection.isEmpty()
-                            ? propertyCollection.stream().findFirst().get().signature() : null;
+                    try {
+                        return !propertyCollection.isEmpty()
+                                ? propertyCollection.stream().findFirst().get().signature() : null;
+
+                    } catch(NoSuchMethodError blah) {
+                        return !propertyCollection.isEmpty()
+                                ? propertyCollection.stream().findFirst().get().getSignature() : null;
+                    }
                 }
             }
         }

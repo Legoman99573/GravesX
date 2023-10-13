@@ -143,7 +143,11 @@ public final class CompatibilityMaterialData implements Compatibility {
                     Collection<Property> propertyCollection = gameProfile.getProperties().get("textures");
 
                     if (!propertyCollection.isEmpty()) {
-                        return propertyCollection.stream().findFirst().get().value();
+                        try {
+                            return propertyCollection.stream().findFirst().get().value();
+                        } catch(NoSuchMethodError blah) {
+                            return propertyCollection.stream().findFirst().get().getValue();
+                        }
                     }
                 }
             } catch (NoSuchFieldException | IllegalAccessException exception) {
