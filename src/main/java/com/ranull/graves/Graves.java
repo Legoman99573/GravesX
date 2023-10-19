@@ -327,13 +327,13 @@ public class Graves extends JavaPlugin {
                         double pluginVersionLatest = Double.parseDouble(latestVersion);
 
                         if (pluginVersion < pluginVersionLatest) {
-                            getLogger().info("Update: Outdated version detected " + pluginVersion
+                            getLogger().info("Update: Possibly outdated version detected " + pluginVersion
                                     + ", latest version is " + pluginVersionLatest
                                     + ", https://www.spigotmc.org/resources/" + getSpigotID() + "/");
                         }
                     } catch (NumberFormatException exception) {
                         if (!getDescription().getVersion().equalsIgnoreCase(latestVersion)) {
-                            getLogger().info("Update: Outdated version detected " + getDescription().getVersion()
+                            getLogger().info("Update: Possibly outdated version detected " + getDescription().getVersion()
                                     + ", latest version is " + latestVersion + ", https://www.spigotmc.org/resources/"
                                     + getSpigotID() + "/");
                         }
