@@ -416,18 +416,18 @@ public final class EntityManager extends EntityDataManager {
             case "open":
             case "loot":
             case "virtual": {
-                double distance = plugin.getConfig("virtual.distance", grave).getDouble("virtual.distance");
-
-                if (distance < 0) {
-                    plugin.getGraveManager().openGrave(entity, entity.getLocation(), grave);
-                } else {
-                    Location location = plugin.getGraveManager().getGraveLocation(entity.getLocation(), grave);
-
-                    if (location != null) {
-                        if (entity.getLocation().distance(location) <= distance) {
-                            plugin.getGraveManager().openGrave(entity, entity.getLocation(), grave);
-                        } else {
-                            plugin.getEntityManager().sendMessage("message.distance-virtual", entity, location, grave);
+                if (entity.getLocation().getWorld() == grave.getLocationDeath().getWorld()) {
+                    double distance = plugin.getConfig("virtual.distance", grave).getDouble("virtual.distance");
+                    if (distance < 0) {
+                        plugin.getGraveManager().openGrave(entity, entity.getLocation(), grave);
+                    } else {
+                        Location location = plugin.getGraveManager().getGraveLocation(entity.getLocation(), grave);
+                        if (location != null && entity.getLocation().getWorld() == grave.getLocationDeath().getWorld()) {
+                            if (entity.getLocation().distance(location) <= distance) {
+                                plugin.getGraveManager().openGrave(entity, entity.getLocation(), grave);
+                            } else {
+                                plugin.getEntityManager().sendMessage("message.distance-virtual", entity, location, grave);
+                            }
                         }
                     }
                 }
