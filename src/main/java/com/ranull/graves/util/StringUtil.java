@@ -55,9 +55,15 @@ public final class StringUtil {
                     .replace("%y%", String.valueOf(location.getBlockY() + 0.5))
                     .replace("%z%", String.valueOf(location.getBlockZ() + 0.5));
 
-            if (string.contains("%distance%") && entity.getWorld().equals(location.getWorld())) {
-                string = string.replace("%distance%",
-                        String.valueOf(Math.round(entity.getLocation().distance(location))));
+            if (string.contains("%distance%")) {
+                if (entity.getWorld().equals(location.getWorld())) {
+                    string = string.replace("%distance%",
+                            String.valueOf(Math.round(entity.getLocation().distance(location))));
+                }
+                if (!entity.getWorld().equals(location.getWorld())) {
+                    string = string.replace("%distance%",
+                            "Wrong dimension");
+                }
             }
 
             if (string.contains("%teleport_cost%")) {

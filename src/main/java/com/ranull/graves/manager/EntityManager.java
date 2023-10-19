@@ -430,8 +430,9 @@ public final class EntityManager extends EntityDataManager {
                             }
                         }
                     }
+                } else {
+                    plugin.getEntityManager().sendMessage("message.distance-virtual", entity, entity.getLocation(), grave);
                 }
-
                 return true;
             }
             case "autoloot": {
