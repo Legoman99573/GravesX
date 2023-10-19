@@ -28,14 +28,14 @@ public class PlayerJoinListener implements Listener {
                         double pluginVersion = Double.parseDouble(plugin.getVersion());
                         double pluginVersionLatest = Double.parseDouble(latestVersion);
 
-                        if (pluginVersion < pluginVersionLatest) {
+                        if (pluginVersionLatest != 4.9 && pluginVersion < pluginVersionLatest) {
                             player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
                                     + "Outdated version detected " + pluginVersion
                                     + ", latest version is " + pluginVersionLatest
                                     + ", https://www.spigotmc.org/resources/" + plugin.getSpigotID() + "/");
                         }
                     } catch (NumberFormatException exception) {
-                        if (!plugin.getVersion().equalsIgnoreCase(latestVersion)) {
+                        if (!plugin.getVersion().equalsIgnoreCase(latestVersion) && !latestVersion.equalsIgnoreCase("4.9")) {
                             player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
                                     + "Outdated version detected " + plugin.getVersion()
                                     + ", latest version is " + latestVersion + ", https://www.spigotmc.org/resources/"

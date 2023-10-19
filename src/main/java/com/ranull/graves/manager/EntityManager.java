@@ -323,7 +323,7 @@ public final class EntityManager extends EntityDataManager {
                 string = prefix + string;
             }
 
-            if (string != null && !string.equals("")) {
+            if (string != null && !string.isEmpty() && !string.equals(prefix)) {
                 player.sendMessage(StringUtil.parseString(string, entity, name, location, grave, plugin));
             }
         }
