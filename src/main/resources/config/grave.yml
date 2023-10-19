@@ -638,6 +638,15 @@ settings:
               #  lore:
               #    - "Toggle grave protection"
 
+              #3: # open your grave remotely, you can uncomment this if you want.
+              #  material: "CHEST"
+              #  function: "virtual"
+              #  name: "open grave"
+              #  glow: false
+              #  model-data: -1
+              #  lore:
+              #    - "Open your grave remotely"
+
           graveyard:
             title: "Graveyards"
             slot:
