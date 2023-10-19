@@ -370,7 +370,7 @@ public final class IntegrationManager {
 
             if (furnitureEnginePlugin != null && furnitureEnginePlugin.isEnabled()) {
                 try {
-                    Class.forName("com.mira.furnitureengine.api.FurnitureAPI", false, getClass().getClassLoader());
+                    Class.forName("com.mira.furnitureengine.furniture.FurnitureManager", false, getClass().getClassLoader());
 
                     furnitureEngine = new FurnitureEngine(plugin);
 
@@ -378,7 +378,7 @@ public final class IntegrationManager {
                             + furnitureEnginePlugin.getDescription().getVersion() + ".");
                 } catch (ClassNotFoundException ignored) {
                     plugin.integrationMessage(furnitureEnginePlugin.getName() + " "
-                            + furnitureEnginePlugin.getDescription().getVersion() + " detected, but FurnitureAPI " +
+                            + furnitureEnginePlugin.getDescription().getVersion() + " detected, but FurnitureManager " +
                             "class not found, disabling integration.");
                 }
             }
