@@ -75,6 +75,11 @@ public final class FurnitureEngine extends EntityDataManager {
     }
 
     public void removeFurniture(Grave grave) {
+        cleanupItemFrame(grave);
+        try {
+            breakFurniture(grave.getLocationDeath());
+        } catch (NullPointerException ignored) {
+        }
         removeFurniture(getEntityDataMap(getLoadedEntityDataList(grave)));
     }
 
@@ -107,7 +112,17 @@ public final class FurnitureEngine extends EntityDataManager {
 
         return null;
     }
+    public void cleanupItemFrame(Grave grave) {
+        Location location = grave.getLocationDeath();
 
+        if (location.getWorld() != null) {
+            for (Entity entity : location.getWorld().getNearbyEntities(location, 0.70, 1.0D, 0.7D)) {
+                if (entity instanceof ItemFrame) {
+                    entity.remove();
+                }
+            }
+        }
+    }
     private boolean placeFurniture(String name, Location location, Rotation rotation) {
         try {
             Furniture furniture = FurnitureManager.getInstance().getFurniture(name);
