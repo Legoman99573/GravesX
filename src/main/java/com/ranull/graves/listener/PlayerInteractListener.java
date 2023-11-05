@@ -103,14 +103,14 @@ public class PlayerInteractListener implements Listener {
                             Location location = locationList.get(0);
                             player.getInventory().setItem(player.getInventory().getHeldItemSlot(),
                                     plugin.getEntityManager().createGraveCompass(player, location, grave));
-
-                            if (player.getWorld().equals(location.getWorld())) {
-                                plugin.getEntityManager().sendMessage("message.distance", player,
-                                        location, grave);
-                            } else {
-                                plugin.getEntityManager().sendMessage("message.distance-world", player,
-                                        location, grave);
-                            }
+                            plugin.getEntityManager().runFunction(player, plugin.getConfig("compass.function", grave).getString("compass.function"), grave);
+                            //if (player.getWorld().equals(location.getWorld())) {
+                            //    plugin.getEntityManager().sendMessage("message.distance", player,
+                            //            location, grave);
+                            //} else {
+                            //    plugin.getEntityManager().sendMessage("message.distance-world", player,
+                            //            location, grave);
+                            //}
                         } else {
                             player.getInventory().remove(itemStack);
                         }

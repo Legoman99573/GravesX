@@ -55,9 +55,9 @@ public final class ItemsAdder extends EntityDataManager {
             location.getBlock().setType(Material.AIR);
             CustomFurniture customFurniture = createCustomFurniture(name, location);
 
-            if (customFurniture != null && customFurniture.getArmorstand() != null) {
+            if (customFurniture != null && customFurniture.getEntity() != null) {
                 customFurniture.teleport(location);
-                createEntityData(customFurniture.getArmorstand(), grave, EntityData.Type.ITEMSADDER);
+                createEntityData(customFurniture.getEntity(), grave, EntityData.Type.ITEMSADDER);
                 plugin.debugMessage("Placing ItemsAdder furniture for " + grave.getUUID() + " at "
                         + location.getWorld().getName() + ", " + (location.getBlockX() + 0.5) + "x, "
                         + (location.getBlockY() + 0.5) + "y, " + (location.getBlockZ() + 0.5) + "z", 1);
