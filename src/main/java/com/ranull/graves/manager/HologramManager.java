@@ -17,7 +17,6 @@ import java.util.Map;
 
 public final class HologramManager extends EntityDataManager {
     private final Graves plugin;
-
     public HologramManager(Graves plugin) {
         super(plugin);
 
@@ -46,7 +45,6 @@ public final class HologramManager extends EntityDataManager {
 
                 if (location.getWorld() != null) {
                     ArmorStand armorStand = location.getWorld().spawn(location, ArmorStand.class);
-
                     armorStand.setVisible(false);
                     armorStand.setGravity(false);
                     armorStand.setCustomNameVisible(true);

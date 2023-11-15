@@ -275,6 +275,11 @@ public final class GraveManager {
 
                 break;
             }
+            case PLAYERNPC: {
+                plugin.getIntegrationManager().getPlayerNPC().removeEntityData(entityData);
+
+                break;
+            }
         }
     }
 

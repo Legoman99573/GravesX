@@ -76,7 +76,7 @@ public final class PlayerNPC extends EntityDataManager {
                 Location npcLocation = location.clone();
 
                 if (player != null && npcLocation.getWorld() != null
-                        && npcLib.getGlobalNPC(plugin, uuid.toString()) == null) {
+                        && npcLib.getGlobalNPC(plugin, grave.getUUID().toString()) == null) {
                     location.getBlock().setType(Material.AIR);
                     NPC.Pose pose = NPC.Pose.SWIMMING;
 
@@ -97,25 +97,38 @@ public final class PlayerNPC extends EntityDataManager {
                         npcLocation.add(0.5, -0.2, 0.5);
                     }
 
-                    NPC.Global npc = npcLib.generateGlobalNPC(plugin, grave.getOwnerUUID().toString(), npcLocation);
+                    NPC.Global npc = npcLib.generateGlobalNPC(plugin, grave.getUUID().toString(), npcLocation);
                     try {
-                        NPC.Skin skin = NPC.Skin.Custom.getLoadedSkin(plugin, grave.getUUID().toString()).get();
+                        NPC.Skin skin = NPC.Skin.Custom.getLoadedSkin(plugin, grave.getOwnerUUID().toString()).get();
                         npc.setSkin(skin);
-                    }catch (NoSuchElementException NSEE) {
+                    }catch (Exception e) {
                     try{
                         if (grave.getOwnerTexture() != null
                                 && grave.getOwnerTextureSignature() != null
                                 && grave.getOwnerName() != null) {
                             NPC.Skin skin = NPC.Skin.Custom.createCustomSkin(
                                     plugin,
-                                    grave.getUUID().toString(),
+                                    grave.getOwnerUUID().toString(),
                                     grave.getOwnerTexture(),
                                     grave.getOwnerTextureSignature()
                             );
                             npc.setSkin(skin);
                         }
-                        } catch (Exception e) {
-                        throw new RuntimeException(e);
+                    } catch (Exception ex) {
+                        try {
+                            if (grave.getOwnerTexture() != null
+                                    && grave.getOwnerTextureSignature() != null
+                                    && grave.getOwnerName() != null) {
+                                NPC.Skin skin = NPC.Skin.Custom.createCustomSkin(
+                                        plugin,
+                                        "194ffca812294de7ab5386bb5c2686d3",
+                                        "ewogICJ0aW1lc3RhbXAiIDogMTcwMDA3NTcyMjAzOSwKICAicHJvZmlsZUlkIiA6ICIxOTRmZmNhODEyMjk0ZGU3YWI1Mzg2YmI1YzI2ODZkMyIsCiAgInByb2ZpbGVOYW1lIiA6ICJDb3Jwc2UiLAogICJzaWduYXR1cmVSZXF1aXJlZCIgOiB0cnVlLAogICJ0ZXh0dXJlcyIgOiB7CiAgICAiU0tJTiIgOiB7CiAgICAgICJ1cmwiIDogImh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNWJmZjJlYzQ0ZWM1MWIzMmVmMzc4YTY1NzIwYzA2MGYzYWRmNzQ5NDVkNDgwNmQ1YjQyZTI1Y2UxNzM2NGViZiIKICAgIH0KICB9Cn0=",
+                                        "v2WrGsMU53dyK1xvx6xS5r41XM4mvR6tB/86Tf5CjtQtv5ozjhEaHARHqFChnTl4/oG238alBMoFw6punEdLLJ8vVYSAa0K8CSpm8RT/gGvxpd6JHGsvcOEWEOV2wv0cntBs9BgrvoKvdFz7WyzT7w1PyP/74waU/Z83lBMU9he71DOFgAVnWXIp2PIWttK89hpbSmkrrdMLQ18/bUURQnp082ZinlDa7G2OjRbdpxGluOCKU725rufdnMhMBj5FCuuW8FaApa+6vuDDg6puIJgOXwtRX5/ZTp22UwEaMSegM+aP7oENx3wmm6XHHs3fgsulquRmxDuhAZ+sMi8wnW6lZU+2FWpsIOh4Xehn426iDu5wl4/kFe4RzTXr7G6N4uncgDRVaQQwsM3L/A7TmRbs8rQVrphqhOMvZ5R9fVu668EbMtAJbobofNxsVTRsRA9o7jnusIhmrWwroqVVxpq4k517ZEzDbPHkH/2X/amc7IGoeSLLfngIRYD+n7EUzO5ErQWFS778DiCxtQHKNOrBc/D+Fg9HsoH/Z2rD5dUBcxQ5DhprgMGGbaLDoQXjFul0mkE4Rg5yubonK+Ccvwmtv2s37sj1FwEJwllSFxvhmjxifTjSCaVoXJnsGJEZf3Zok9g2qk9gBzbgM1V2Ub8iOMupRs4JET9WR8+XIEk="
+                                );
+                                npc.setSkin(skin);
+                            }
+                        } catch (Exception ignored) {
+                        }
                     }
                     }
                     npc.setPose(pose);
@@ -181,8 +194,8 @@ public final class PlayerNPC extends EntityDataManager {
 
     public void removeCorpse(Grave grave) {
         //Player player = plugin.getServer().getPlayer(grave.getOwnerUUID());//Could be useful later
-        if (npcLib.grabGlobalNPC(plugin, grave.getOwnerUUID().toString()).isPresent()) {
-            NPC.Global npc = npcLib.grabGlobalNPC(plugin, grave.getOwnerUUID().toString()).get();
+        if (npcLib.grabGlobalNPC(plugin, grave.getUUID().toString()).isPresent()) {
+            NPC.Global npc = npcLib.grabGlobalNPC(plugin, grave.getUUID().toString()).get();
             npcLib.removeGlobalNPC(npc);
         }
         removeCorpse(getEntityDataNPCMap(getLoadedEntityDataList(grave)));
