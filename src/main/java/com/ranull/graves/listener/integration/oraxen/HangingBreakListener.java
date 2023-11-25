@@ -14,7 +14,7 @@ public class HangingBreakListener implements Listener {
         this.oraxen = oraxen;
     }
 
-    @EventHandler(priority = EventPriority.LOW)
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onHangingBreak(HangingBreakEvent event) {
         event.setCancelled(event.getEntity() instanceof ItemFrame && oraxen.getGrave(event.getEntity()) != null);
     }
