@@ -103,7 +103,7 @@ permissions:
 
   graves.bypass:
     default: op
-    description: Bypass grave protection
+    description: Bypass grave protection and cost to teleport to others graves
 
   graves.dump:
     default: op
