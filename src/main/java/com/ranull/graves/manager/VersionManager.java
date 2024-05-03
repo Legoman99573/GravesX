@@ -1,6 +1,9 @@
 package com.ranull.graves.manager;
 
+import com.ranull.graves.Graves;
 import org.bukkit.Bukkit;
+
+import java.util.Objects;
 
 public final class VersionManager {
     private final String version;
@@ -20,7 +23,8 @@ public final class VersionManager {
     private boolean isMohist;
 
     public VersionManager() {
-        this.version = Bukkit.getServer().getClass().getPackage().getName().split("\\.")[3];
+        //this.version = Bukkit.getServer().getClass().getPackage().getName().split("\\.")[3];
+        this.version = getVersion();
         this.hasConfigContains = !is_v1_7() && !is_v1_8() && !is_v1_9();
         this.hasAPIVersion = !is_v1_7() && !is_v1_8() && !is_v1_9() && !is_v1_10() && !is_v1_11() && !is_v1_12();
         this.hasBlockData = !is_v1_7() && !is_v1_8() && !is_v1_9() && !is_v1_10() && !is_v1_11() && !is_v1_12();
@@ -54,6 +58,13 @@ public final class VersionManager {
             this.isMohist = true;
         } catch (ClassNotFoundException ignored) {
             this.isBukkit = false;
+        }
+    }
+    public String getVersion() {
+        try {
+            return Bukkit.getServer().getClass().getPackage().getName().split("\\.")[3];
+        } catch (Exception e) {
+            return "1_20_R4+";
         }
     }
 
@@ -172,5 +183,31 @@ public final class VersionManager {
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean is_v1_18() {
         return version.matches("(?i)v1_18_R1|v1_18_R2");
+    }
+
+    public String getParticleForVersion(String particle){
+        String toReturn = null;
+        switch (particle) {
+            case "REDSTONE":
+                if (Objects.equals(version, "1_20_R4+")) {
+                    toReturn = "DUST";
+                } else {
+                    toReturn = "REDSTONE";
+                }
+        }
+        return toReturn;
+    }
+
+    public String getEnchantmentForVersion(String enchantment) {
+        String toReturn = null;
+        switch (enchantment) {
+            case "DURABILITY":
+                if (Objects.equals(version, "1_20_R4+")) {
+                    toReturn = "UNBREAKING";
+                } else {
+                    toReturn = "DURABILITY";
+                }
+        }
+        return toReturn;
     }
 }

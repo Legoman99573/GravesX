@@ -166,7 +166,7 @@ public final class GraveManager {
         if (plugin.getVersionManager().hasParticle()
                 && location.getWorld() != null
                 && plugin.getConfig("particle.enabled", grave).getBoolean("particle.enabled")) {
-            Particle particle = Particle.REDSTONE;
+            Particle particle = Particle.valueOf(plugin.getVersionManager().getParticleForVersion("REDSTONE"));
             String particleType = plugin.getConfig("particle.type", grave).getString("particle.type");
 
             if (particleType != null && !particleType.equals("")) {

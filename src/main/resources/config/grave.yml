@@ -304,7 +304,7 @@ settings:
       # Graves automatically adds models into ItemsAdder, if you want to use it you will need to re-generate your pack and use "graves:grave" as the furniture name.
       itemsadder:
         furniture:
-          enabled: false # Should we use ItemsAdder furniture?
+          enabled: true # Should we use ItemsAdder furniture?
           name: "graves:grave" # Furniture name.
         block:
           enabled: false # Should we use ItemsAdder blocks?
