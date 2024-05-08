@@ -189,7 +189,7 @@ public final class VersionManager {
         String toReturn = null;
         switch (particle) {
             case "REDSTONE":
-                if (!Objects.equals(version, "1.20.4")) {
+                if (Objects.equals(version, "1.20.5") || Objects.equals(version, "1.20.6")) {
                     toReturn = "DUST";
                 } else {
                     toReturn = "REDSTONE";
@@ -202,7 +202,7 @@ public final class VersionManager {
         String toReturn = null;
         switch (enchantment) {
             case "DURABILITY":
-                if (!Objects.equals(version, "1.20.4")) {
+                if (Objects.equals(version, "1.20.5") || Objects.equals(version, "1.20.6")) {
                     toReturn = "UNBREAKING";
                 } else {
                     toReturn = "DURABILITY";
