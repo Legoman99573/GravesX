@@ -57,14 +57,14 @@ public final class VersionManager {
 
             this.isMohist = true;
         } catch (ClassNotFoundException ignored) {
-            this.isBukkit = false;
+            this.isMohist = false;
         }
     }
     public String getVersion() {
         try {
             return Bukkit.getServer().getClass().getPackage().getName().split("\\.")[3];
         } catch (Exception e) {
-            return "1_20_R4+";
+            return Bukkit.getServer().getVersion();
         }
     }
 
@@ -189,7 +189,7 @@ public final class VersionManager {
         String toReturn = null;
         switch (particle) {
             case "REDSTONE":
-                if (Objects.equals(version, "1_20_R4+")) {
+                if (!Objects.equals(version, "1.20.4")) {
                     toReturn = "DUST";
                 } else {
                     toReturn = "REDSTONE";
@@ -202,7 +202,7 @@ public final class VersionManager {
         String toReturn = null;
         switch (enchantment) {
             case "DURABILITY":
-                if (Objects.equals(version, "1_20_R4+")) {
+                if (!Objects.equals(version, "1.20.4")) {
                     toReturn = "UNBREAKING";
                 } else {
                     toReturn = "DURABILITY";
