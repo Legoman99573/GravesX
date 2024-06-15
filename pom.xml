@@ -8,7 +8,7 @@
     <artifactId>graves</artifactId>
     <name>Graves</name>
     <description>Full featured lightweight death chest plugin.</description>
-    <version>4.9.1.7</version>
+    <version>4.9.1.8</version>
 
     <developers>
         <developer>
@@ -20,6 +20,10 @@
         <contributor>
             <name>JaySmethers</name>
             <url>https://gitlab.com/users/JaySmethers/projects</url>
+        </contributor>
+        <contributor>
+            <name>Legoman99573</name>
+            <url>https://gitlab.com/Legoman99573</url>
         </contributor>
     </contributors>
 
@@ -113,7 +117,7 @@
         </repository>
         <repository>
             <id>ranull-repo</id>
-            <url>https://repo.ranull.com/maven/ranull/</url>
+            <url>https://repo.ranull.com/maven/#/ranull/</url>
         </repository>
         <repository>
             <id>ranull-repo-external</id>

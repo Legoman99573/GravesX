@@ -4,7 +4,12 @@ version: ${project.version}
 main: com.ranull.graves.Graves
 api-version: 1.13
 author: Ranull
+authors:
+  - Ranull
+  - JaySmethers
+  - Legoman99573
 load: POSTWORLD
+website: https://gitlab.com/JaySmethers/graves/-/wikis/home/dev-build
 
 loadbefore:
   - GriefPrevention
@@ -136,6 +141,10 @@ permissions:
   graves.graveyard:
     default: true
     description: Graveyard menu
+
+  graves.graveyardadmin:
+    default: op
+    description: Graveyard creation/removal command
 
   graves.reload:
     default: op
