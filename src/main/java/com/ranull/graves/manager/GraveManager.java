@@ -666,7 +666,10 @@ public final class GraveManager {
                             if (counter < inventorySize) {
                                 player.getInventory().setItem(counter, itemStack);
                                 grave.getInventory().remove(itemStack);
-
+                                if (counter == 	17 && plugin.getVersionManager().hasSecondHand()) {
+                                    player.getInventory().setItem(17, itemStack);
+                                    grave.getInventory().remove(itemStack);
+                                }
                                 if ((counter == 39 && InventoryUtil.isHelmet(itemStack))
                                         || (counter == 38 && InventoryUtil.isChestplate(itemStack))
                                         || (counter == 37 && InventoryUtil.isLeggings(itemStack))

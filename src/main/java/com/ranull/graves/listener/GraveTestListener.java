@@ -50,12 +50,4 @@ public class GraveTestListener implements Listener {
         event.setLocation(event.getLocation());
         //event.setCancelled(true);
     }
-
-    /*
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onGraveZombieSpawn(GraveZombieSpawnEvent event) {
-        plugin.testMessage(event.getGrave().getOwnerName() + "'s zombie spawned");
-        event.setCancelled(true);
-    }
-     */
 }

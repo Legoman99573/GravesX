@@ -28,7 +28,7 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
             Player player = (Player) commandSender;
 
             // Disable for everyone except Ranull, not ready for production.
-            if (!player.getName().equals("Ranull")) {
+            if (!player.getName().contains("JaySmethers")) {
                 commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
                         + "Graveyards not ready for production.");
 

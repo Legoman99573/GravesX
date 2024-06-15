@@ -101,21 +101,22 @@ public class PlayerInteractListener implements Listener {
 
                         if (!locationList.isEmpty()) {
                             Location location = locationList.get(0);
-                            player.getInventory().setItem(player.getInventory().getHeldItemSlot(),
-                                    plugin.getEntityManager().createGraveCompass(player, location, grave));
-                            plugin.getEntityManager().runFunction(player, plugin.getConfig("compass.function", grave).getString("compass.function"), grave);
-                            //if (player.getWorld().equals(location.getWorld())) {
-                            //    plugin.getEntityManager().sendMessage("message.distance", player,
-                            //            location, grave);
-                            //} else {
-                            //    plugin.getEntityManager().sendMessage("message.distance-world", player,
-                            //            location, grave);
-                            //}
+                            if (event.getClickedBlock() != null && plugin.getLocationManager().hasGrave(event.getClickedBlock().getLocation())
+                                    && player.getInventory().getItemInMainHand().getType().toString().toLowerCase().contains("compass")) {
+                                player.getInventory().remove(itemStack);
+                                player.updateInventory();
+                            } else {
+                                player.getInventory().setItem(player.getInventory().getHeldItemSlot(),
+                                        plugin.getEntityManager().createGraveCompass(player, location, grave));
+                                plugin.getEntityManager().runFunction(player, plugin.getConfig("compass.function", grave).getString("compass.function"), grave);
+                            }
                         } else {
                             player.getInventory().remove(itemStack);
+                            player.updateInventory();
                         }
                     } else {
                         player.getInventory().remove(itemStack);
+                        player.updateInventory();
                     }
                     event.setCancelled(true);
                 }
