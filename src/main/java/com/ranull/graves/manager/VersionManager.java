@@ -2,6 +2,9 @@ package com.ranull.graves.manager;
 
 import com.ranull.graves.Graves;
 import org.bukkit.Bukkit;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Particle;
+import org.bukkit.enchantments.Enchantment;
 
 import java.util.Objects;
 
@@ -186,28 +189,30 @@ public final class VersionManager {
     }
 
     public String getParticleForVersion(String particle){
-        String toReturn = null;
+        Particle toReturn = null;
         switch (particle) {
             case "REDSTONE":
-                if (Objects.equals(version, "1.20.5") || Objects.equals(version, "1.20.6") || version.contains("1.21")) {
-                    toReturn = "DUST";
-                } else {
-                    toReturn = "REDSTONE";
+                try {
+                    toReturn = Particle.valueOf("REDSTONE");
+                } catch (IllegalArgumentException e) {
+                    toReturn = Particle.valueOf("DUST"); // Assume server is running on 1.20.5 or newer
                 }
+                break; // to add in for future updates when particles are renamed
         }
-        return toReturn;
+        return toReturn.toString();
     }
 
     public String getEnchantmentForVersion(String enchantment) {
-        String toReturn = null;
+        Enchantment toReturn = null;
         switch (enchantment) {
             case "DURABILITY":
-                if (Objects.equals(version, "1.20.5") || Objects.equals(version, "1.20.6") || version.contains("1.21")) {
-                    toReturn = "UNBREAKING";
-                } else {
-                    toReturn = "DURABILITY";
+                try {
+                    toReturn = Enchantment.getByKey(NamespacedKey.minecraft("unbreaking"));
+                } catch (IllegalArgumentException e) {
+                    toReturn = Enchantment.getByKey(NamespacedKey.minecraft("durability")); // Assume server is running on 1.20.5 or newer
                 }
+                break; // to add in for future updates when enchantments are renamed
         }
-        return toReturn;
+        return toReturn.getKey().getKey().toString();
     }
 }

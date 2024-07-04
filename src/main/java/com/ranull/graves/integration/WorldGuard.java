@@ -155,13 +155,27 @@ public final class WorldGuard {
             ProtectedRegion protectedRegion = regionManager.getRegion(graveyard.getName());
 
             if (protectedRegion != null) {
-                int xMax = protectedRegion.getMaximumPoint().getBlockX();
-                int yMax = protectedRegion.getMaximumPoint().getBlockY();
-                int zMax = protectedRegion.getMaximumPoint().getBlockZ();
-                int xMin = protectedRegion.getMinimumPoint().getBlockX();
-                int yMin = protectedRegion.getMinimumPoint().getBlockY();
-                int zMin = protectedRegion.getMinimumPoint().getBlockZ();
-
+                int xMax;
+                int yMax;
+                int zMax;
+                int xMin;
+                int yMin;
+                int zMin;
+                try {
+                    xMax = protectedRegion.getMaximumPoint().getBlockX();
+                    yMax = protectedRegion.getMaximumPoint().getBlockY();
+                    zMax = protectedRegion.getMaximumPoint().getBlockZ();
+                    xMin = protectedRegion.getMinimumPoint().getBlockX();
+                    yMin = protectedRegion.getMinimumPoint().getBlockY();
+                    zMin = protectedRegion.getMinimumPoint().getBlockZ();
+                } catch (NoSuchMethodError e) {
+                    xMax = protectedRegion.getMaximumPoint().x();
+                    yMax = protectedRegion.getMaximumPoint().y();
+                    zMax = protectedRegion.getMaximumPoint().z();
+                    xMin = protectedRegion.getMinimumPoint().x();
+                    yMin = protectedRegion.getMinimumPoint().y();
+                    zMin = protectedRegion.getMinimumPoint().z();
+                }
                 return new Location(graveyard.getWorld(), xMax - xMin, yMax - yMin, zMax - zMin);
             }
         }
