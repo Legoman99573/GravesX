@@ -24,29 +24,27 @@ public class PlayerDeathListener implements Listener {
     //remove ", ignoreCancelled = true" if 3rd party plugins support breaks
     public void onPlayerDeathEvent(PlayerDeathEvent event) {
         List<ItemStack> itemStackList = event.getDrops();
-        Iterator<ItemStack> iterator = itemStackList.iterator();
+        List<ItemStack> itemsToRemove = new ArrayList<>(); // To prevent ConcurrentModificationException from occuring
 
-        while (iterator.hasNext()) {
-            ItemStack itemStack = iterator.next();
+        for (ItemStack itemStack : itemStackList) {
             ItemStack first = itemStackList.get(0);
             if (first != null && first.getType().toString().toLowerCase().contains("compass")) {
                 if (plugin.getEntityManager().getGraveUUIDFromItemStack(first) != null
-                        && plugin.getConfig("compass.destroy",
-                        event.getEntity()).getBoolean("compass.destroy")) {
-                    itemStackList.remove(0);
+                        && plugin.getConfig("compass.destroy", event.getEntity()).getBoolean("compass.destroy")) {
+                    itemsToRemove.add(first);
                 }
             } else {
                 if (itemStack != null && itemStack.getType().toString().toLowerCase().contains("compass")) {
                     if (plugin.getEntityManager().getGraveUUIDFromItemStack(itemStack) != null
-                            && plugin.getConfig("compass.destroy",
-                            event.getEntity()).getBoolean("compass.destroy")) {
-                        iterator.remove();
+                            && plugin.getConfig("compass.destroy", event.getEntity()).getBoolean("compass.destroy")) {
+                        itemsToRemove.add(itemStack);
                     }
                 }
             }
-
-            plugin.getCacheManager().getRemovedItemStackMap()
-                    .put(event.getEntity().getUniqueId(), new ArrayList<>(itemStackList));
         }
+
+        itemStackList.removeAll(itemsToRemove);
+        plugin.getCacheManager().getRemovedItemStackMap()
+                .put(event.getEntity().getUniqueId(), new ArrayList<>(itemStackList));
     }
 }

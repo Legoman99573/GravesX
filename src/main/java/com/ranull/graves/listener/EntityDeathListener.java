@@ -82,12 +82,12 @@ public class EntityDeathListener implements Listener {
                 plugin.getGraveyardManager().stopModifyingGraveyard(player);
             }
 
-            if (!player.hasPermission("graves.place")) {
+            if (!player.hasPermission("graves.place") && !player.isOp()) { // added OP check because this fails when someone has OP permissions
                 plugin.debugMessage("Grave not created for " + entityName
                         + " because they don't have permission to place graves", 2);
 
                 return;
-            } else if (player.hasPermission("essentials.keepinv")) {
+            } else if (player.hasPermission("essentials.keepinv") && !player.isOp()) {
                 plugin.debugMessage(entityName + " has essentials.keepinv", 2);
             }
         }
