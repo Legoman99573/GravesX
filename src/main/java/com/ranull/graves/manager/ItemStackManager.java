@@ -31,7 +31,7 @@ public final class ItemStackManager extends EntityDataManager {
     public ItemStack getGraveObituary(Grave grave) {
         ItemStack itemStack = new ItemStack(Material.WRITTEN_BOOK, 1);
         BookMeta bookMeta = (BookMeta) itemStack.getItemMeta();
-        String durability = plugin.getVersionManager().getEnchantmentForVersion("DURABILITY");
+        Enchantment durability = plugin.getVersionManager().getEnchantmentForVersion("DURABILITY");
 
         if (bookMeta != null) {
             List<String> lineList = new ArrayList<>();
@@ -52,7 +52,7 @@ public final class ItemStackManager extends EntityDataManager {
             }
 
             if (plugin.getConfig("obituary.glow", grave).getBoolean("obituary.glow")) {
-                bookMeta.addEnchant(Enchantment.getByName(durability), 1, true);
+                bookMeta.addEnchant(Enchantment.getByName(String.valueOf(durability)), 1, true);
 
                 if (!plugin.getVersionManager().is_v1_7()) {
                     bookMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
@@ -104,7 +104,7 @@ public final class ItemStackManager extends EntityDataManager {
 
     public ItemStack createGraveListItemStack(int number, Grave grave) {
         Material material;
-        String durability = plugin.getVersionManager().getEnchantmentForVersion("DURABILITY");
+        Enchantment durability = plugin.getVersionManager().getEnchantmentForVersion("DURABILITY");
 
         if (plugin.getConfig("gui.menu.list.item.block", grave).getBoolean("gui.menu.list.item.block")) {
             String materialString = plugin.getConfig("block.material", grave)
@@ -145,7 +145,7 @@ public final class ItemStackManager extends EntityDataManager {
             }
 
             if (plugin.getConfig().getBoolean("gui.menu.list.glow")) {
-                itemMeta.addEnchant(Enchantment.getByName(durability), 1, true);
+                itemMeta.addEnchant(Enchantment.getByName(String.valueOf(durability)), 1, true);
                 itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
             }
 
@@ -165,7 +165,7 @@ public final class ItemStackManager extends EntityDataManager {
         String materialString = plugin.getConfig("gui.menu.grave.slot." + slot + ".material", grave)
                 .getString("gui.menu.grave.slot." + slot + ".material", "PAPER");
         Material material = Material.matchMaterial(materialString);
-        String durability = plugin.getVersionManager().getEnchantmentForVersion("DURABILITY");
+        Enchantment durability = plugin.getVersionManager().getEnchantmentForVersion("DURABILITY");
 
         if (material == null) {
             material = Material.PAPER;
@@ -190,7 +190,7 @@ public final class ItemStackManager extends EntityDataManager {
             }
 
             if (plugin.getConfig().getBoolean("gui.menu.grave.slot." + slot + ".glow")) {
-                itemMeta.addEnchant(Enchantment.getByName(durability), 1, true);
+                itemMeta.addEnchant(Enchantment.getByName(String.valueOf(durability)), 1, true);
                 itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
             }
 
@@ -234,7 +234,7 @@ public final class ItemStackManager extends EntityDataManager {
             }
 
             if (plugin.getConfig().getBoolean("gui.menu.grave.slot." + slot + ".glow")) {
-                itemMeta.addEnchant(Enchantment.getByName(plugin.getVersionManager().getEnchantmentForVersion("DURABILITY")), 1, true);
+                itemMeta.addEnchant(Enchantment.getByName(plugin.getVersionManager().getEnchantmentForVersion("DURABILITY").toString()), 1, true);
                 itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
             }
 

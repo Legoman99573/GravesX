@@ -194,7 +194,7 @@ public final class VersionManager {
             case "REDSTONE":
                 try {
                     toReturn = Particle.valueOf("REDSTONE");
-                } catch (IllegalArgumentException e) {
+                } catch (NullPointerException | IllegalArgumentException e) {
                     toReturn = Particle.valueOf("DUST"); // Assume server is running on 1.20.5 or newer
                 }
                 break; // to add in for future updates when particles are renamed
@@ -202,17 +202,17 @@ public final class VersionManager {
         return toReturn.toString();
     }
 
-    public String getEnchantmentForVersion(String enchantment) {
+    public Enchantment getEnchantmentForVersion(String enchantment) {
         Enchantment toReturn = null;
         switch (enchantment) {
             case "DURABILITY":
                 try {
                     toReturn = Enchantment.getByKey(NamespacedKey.minecraft("unbreaking"));
-                } catch (IllegalArgumentException e) {
-                    toReturn = Enchantment.getByKey(NamespacedKey.minecraft("durability")); // Assume server is running on 1.20.5 or newer
+                } catch (NullPointerException | IllegalArgumentException e) {
+                    toReturn = Enchantment.getByKey(NamespacedKey.minecraft("durability")); // Return the old enchantment for older versions
                 }
                 break; // to add in for future updates when enchantments are renamed
         }
-        return toReturn.getKey().getKey().toString();
+        return toReturn;
     }
 }

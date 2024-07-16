@@ -75,7 +75,8 @@ public final class EntityManager extends EntityDataManager {
                 }
 
                 if (plugin.getConfig("compass.glow", grave).getBoolean("compass.glow")) {
-                    itemMeta.addEnchant(Enchantment.getByName(plugin.getVersionManager().getEnchantmentForVersion("DURABILITY")), 1, true);
+                    Enchantment enchantment = plugin.getVersionManager().getEnchantmentForVersion("DURABILITY");
+                    itemMeta.addEnchant(enchantment, 1, true);
                     itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
                 }
 
