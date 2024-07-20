@@ -189,7 +189,11 @@ public final class DataManager {
             config.setMaximumPoolSize(maxConnections);
             config.setMaxLifetime(maxLifetime);
             config.setMinimumIdle(2);
-            config.setPoolName("Graves");
+            if (type == Type.MARIADB) {
+                config.setPoolName("Graves MariaDB");
+            } else {
+                config.setPoolName("Graves MySQL");
+            }
             config.setConnectionTimeout(connectionTimeout);
             config.setIdleTimeout(600000); // 10 minutes
             config.setConnectionTestQuery("SELECT 1");
@@ -215,6 +219,7 @@ public final class DataManager {
         config.setIdleTimeout(600000); // 10 minutes
         config.setMaxLifetime(1800000); // 30 minutes
         config.setMaximumPoolSize(50); // Might as well increase this.
+        config.setPoolName("Graves SQLite");
         config.addDataSourceProperty("autoReconnect", "true");
         config.setDriverClassName("org.sqlite.JDBC");
     }
