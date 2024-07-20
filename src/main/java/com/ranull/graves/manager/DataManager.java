@@ -148,6 +148,7 @@ public final class DataManager {
             HikariConfig config = new HikariConfig();
             configureSQLite(config);
             dataSource = new HikariDataSource(config);
+
         } else {
             // MySQL or MariaDB configuration
             String host = plugin.getConfig().getString("settings.storage.mysql.host", "localhost");
@@ -163,22 +164,42 @@ public final class DataManager {
             boolean verifyServerCertificate = plugin.getConfig().getBoolean("settings.storage.mysql.verifyServerCertificate", false);
 
             HikariConfig config = new HikariConfig();
-            config.setJdbcUrl("jdbc:mysql://" + host + ":" + port + "/" + database);
+            if (type == Type.MARIADB) {
+                config.setJdbcUrl("jdbc:mariadb://" + host + ":" + port + "/" + database);
+            } else {
+                config.setJdbcUrl("jdbc:mysql://" + host + ":" + port + "/" + database);
+            }
             config.setUsername(user);
             config.setPassword(password);
             config.addDataSourceProperty("autoReconnect", "true");
             config.addDataSourceProperty("cachePrepStmts", "true");
             config.addDataSourceProperty("prepStmtCacheSize", "250");
             config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+            config.addDataSourceProperty("useServerPrepStmts", "true");
+            config.addDataSourceProperty("useLocalSessionState", "true");
+            config.addDataSourceProperty("cacheResultSetMetadata", "true");
+            config.addDataSourceProperty("cacheServerConfiguration", "true");
+            config.addDataSourceProperty("elideSetAutoCommits", "true");
+            config.addDataSourceProperty("maintainTimeStats", "false");
+            config.addDataSourceProperty("alwaysSendSetIsolation", "false");
+            config.addDataSourceProperty("cacheCallableStmts", "true");
             config.addDataSourceProperty("useSSL", String.valueOf(useSSL));
             config.addDataSourceProperty("allowPublicKeyRetrieval", String.valueOf(allowPublicKeyRetrieval));
             config.addDataSourceProperty("verifyServerCertificate", String.valueOf(verifyServerCertificate));
             config.setMaximumPoolSize(maxConnections);
             config.setMaxLifetime(maxLifetime);
+            config.setMinimumIdle(2);
+            config.setPoolName("Graves");
             config.setConnectionTimeout(connectionTimeout);
             config.setIdleTimeout(600000); // 10 minutes
             config.setConnectionTestQuery("SELECT 1");
-            config.setLeakDetectionThreshold(2000); // Detect connection leaks
+            config.setLeakDetectionThreshold(15000); // Detect connection leaks
+
+            if (type == Type.MARIADB) {
+                config.setDriverClassName("com.ranull.graves.mariadb.jdbc.Driver");
+            } else {
+                config.setDriverClassName("com.ranull.graves.mysql.cj.jdbc.Driver");
+            }
 
             dataSource = new HikariDataSource(config);
 
@@ -193,7 +214,9 @@ public final class DataManager {
         config.setConnectionTimeout(30000); // 30 seconds
         config.setIdleTimeout(600000); // 10 minutes
         config.setMaxLifetime(1800000); // 30 minutes
-        config.setMaximumPoolSize(50);
+        config.setMaximumPoolSize(50); // Might as well increase this.
+        config.addDataSourceProperty("autoReconnect", "true");
+        config.setDriverClassName("org.sqlite.JDBC");
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -234,13 +257,16 @@ public final class DataManager {
         List<String> columnList = new ArrayList<>();
         ResultSet resultSet = null;
         try {
-            if (type == Type.MYSQL) {
+            if (type == Type.MYSQL || type == Type.MARIADB) {
                 resultSet = executeQuery("DESCRIBE " + tableName + ";");
-            } else {
+                while (resultSet != null && resultSet.next()) {
+                    columnList.add(resultSet.getString("Field"));
+                }
+            } else if (type == Type.SQLITE) {
                 resultSet = executeQuery("PRAGMA table_info(" + tableName + ");");
-            }
-            while (resultSet != null && resultSet.next()) {
-                columnList.add(resultSet.getString("name"));
+                while (resultSet != null && resultSet.next()) {
+                    columnList.add(resultSet.getString("name"));
+                }
             }
         } catch (SQLException exception) {
             exception.printStackTrace();
@@ -253,7 +279,7 @@ public final class DataManager {
     public boolean tableExists(String tableName) {
         ResultSet resultSet = null;
         try {
-            if (type == Type.MYSQL) {
+            if (type == Type.MYSQL || type == Type.MARIADB) {
                 resultSet = executeQuery("SHOW TABLES LIKE '" + tableName + "';");
             } else {
                 resultSet = executeQuery("SELECT name FROM sqlite_master WHERE type='table' AND name='" + tableName + "';");
@@ -348,12 +374,14 @@ public final class DataManager {
             executeUpdate("CREATE TABLE IF NOT EXISTS " + name + " (" +
                     "uuid_entity VARCHAR(255),\n" +
                     "uuid_grave VARCHAR(255),\n" +
-                    "line INT(16));");
+                    "line INT(16),\n" +
+                    "location VARCHAR(255));");
         }
 
         addColumnIfNotExists(name, "uuid_entity", "VARCHAR(255)");
         addColumnIfNotExists(name, "uuid_grave", "VARCHAR(255)");
         addColumnIfNotExists(name, "line", "INT(16)");
+        addColumnIfNotExists(name, "location", "VARCHAR(255)");
     }
 
     private void setupEntityTable(String name) throws SQLException {
@@ -372,131 +400,99 @@ public final class DataManager {
     private void loadGraveMap() {
         plugin.getCacheManager().getGraveMap().clear();
 
-        ResultSet resultSet = executeQuery("SELECT * FROM grave;");
-
-        if (resultSet != null) {
-            try {
-                while (resultSet.next()) {
-                    Grave grave = resultSetToGrave(resultSet);
-
-                    if (grave != null) {
-                        plugin.getCacheManager().getGraveMap().put(grave.getUUID(), grave);
-                    }
+        try (ResultSet resultSet = executeQuery("SELECT * FROM grave;")) {
+            while (resultSet != null && resultSet.next()) {
+                Grave grave = resultSetToGrave(resultSet);
+                if (grave != null) {
+                    plugin.getCacheManager().getGraveMap().put(grave.getUUID(), grave);
                 }
-            } catch (SQLException exception) {
-                exception.printStackTrace();
-            } finally {
-                closeResultSet(resultSet);
             }
+        } catch (SQLException exception) {
+            exception.printStackTrace();
         }
     }
 
     private void loadBlockMap() {
-        ResultSet resultSet = executeQuery("SELECT * FROM block;");
+        try (ResultSet resultSet = executeQuery("SELECT * FROM block;")) {
+            while (resultSet != null && resultSet.next()) {
+                Location location = LocationUtil.stringToLocation(resultSet.getString("location"));
+                UUID uuidGrave = UUID.fromString(resultSet.getString("uuid_grave"));
+                String replaceMaterial = resultSet.getString("replace_material");
+                String replaceData = resultSet.getString("replace_data");
 
-        if (resultSet != null) {
-            try {
-                while (resultSet.next()) {
-                    Location location = LocationUtil.stringToLocation(resultSet.getString("location"));
-                    UUID uuidGrave = UUID.fromString(resultSet.getString("uuid_grave"));
-                    String replaceMaterial = resultSet.getString("replace_material");
-                    String replaceData = resultSet.getString("replace_data");
-
-                    getChunkData(location).addBlockData(new BlockData(location, uuidGrave,
-                            replaceMaterial, replaceData));
-                }
-            } catch (SQLException exception) {
-                exception.printStackTrace();
-            } finally {
-                closeResultSet(resultSet);
+                getChunkData(location).addBlockData(new BlockData(location, uuidGrave, replaceMaterial, replaceData));
             }
+        } catch (SQLException exception) {
+            exception.printStackTrace();
         }
     }
 
     private void loadEntityMap(String table, EntityData.Type type) {
-        ResultSet resultSet = executeQuery("SELECT * FROM " + table + ";");
+        try (ResultSet resultSet = executeQuery("SELECT * FROM " + table + ";")) {
+            while (resultSet != null && resultSet.next()) {
+                Location location = null;
 
-        if (resultSet != null) {
-            try {
-                while (resultSet.next()) {
-                    Location location = null;
-
-                    if (resultSet.getString("location") != null) {
-                        location = LocationUtil.stringToLocation(resultSet.getString("location"));
-                    } else if (resultSet.getString("chunk") != null) {
-                        location = LocationUtil.chunkStringToLocation(resultSet.getString("chunk"));
-                    }
-
-                    if (location != null) {
-                        UUID uuidEntity = UUID.fromString(resultSet.getString("uuid_entity"));
-                        UUID uuidGrave = UUID.fromString(resultSet.getString("uuid_grave"));
-
-                        getChunkData(location).addEntityData(new EntityData(location, uuidEntity, uuidGrave, type));
-                    }
+                if (resultSet.getString("location") != null) {
+                    location = LocationUtil.stringToLocation(resultSet.getString("location"));
+                } else if (resultSet.getString("chunk") != null) {
+                    location = LocationUtil.chunkStringToLocation(resultSet.getString("chunk"));
                 }
-            } catch (SQLException exception) {
-                exception.printStackTrace();
-            } finally {
-                closeResultSet(resultSet);
+
+                if (location != null) {
+                    UUID uuidEntity = UUID.fromString(resultSet.getString("uuid_entity"));
+                    UUID uuidGrave = UUID.fromString(resultSet.getString("uuid_grave"));
+
+                    getChunkData(location).addEntityData(new EntityData(location, uuidEntity, uuidGrave, type));
+                }
             }
+        } catch (SQLException exception) {
+            exception.printStackTrace();
         }
     }
 
     private void loadHologramMap() {
-        ResultSet resultSet = executeQuery("SELECT * FROM hologram;");
+        try (ResultSet resultSet = executeQuery("SELECT * FROM hologram;")) {
+            while (resultSet != null && resultSet.next()) {
+                Location location = null;
 
-        if (resultSet != null) {
-            try {
-                while (resultSet.next()) {
-                    Location location = null;
-
-                    if (resultSet.getString("location") != null) {
-                        location = LocationUtil.stringToLocation(resultSet.getString("location"));
-                    } else if (resultSet.getString("chunk") != null) {
-                        location = LocationUtil.chunkStringToLocation(resultSet.getString("chunk"));
-                    }
-
-                    if (location != null) {
-                        UUID uuidEntity = UUID.fromString(resultSet.getString("uuid_entity"));
-                        UUID uuidGrave = UUID.fromString(resultSet.getString("uuid_grave"));
-                        int line = resultSet.getInt("line");
-
-                        getChunkData(location).addEntityData(new HologramData(location, uuidEntity, uuidGrave, line));
-                    }
+                if (resultSet.getString("location") != null) {
+                    location = LocationUtil.stringToLocation(resultSet.getString("location"));
+                } else if (resultSet.getString("chunk") != null) {
+                    location = LocationUtil.chunkStringToLocation(resultSet.getString("chunk"));
                 }
-            } catch (SQLException exception) {
-                exception.printStackTrace();
-            } finally {
-                closeResultSet(resultSet);
+
+                if (location != null) {
+                    UUID uuidEntity = UUID.fromString(resultSet.getString("uuid_entity"));
+                    UUID uuidGrave = UUID.fromString(resultSet.getString("uuid_grave"));
+                    int line = resultSet.getInt("line");
+
+                    getChunkData(location).addEntityData(new HologramData(location, uuidEntity, uuidGrave, line));
+                }
             }
+        } catch (SQLException exception) {
+            exception.printStackTrace();
         }
     }
 
     private void loadEntityDataMap(String table, EntityData.Type type) {
-        ResultSet resultSet = executeQuery("SELECT * FROM " + table + ";");
+        try (ResultSet resultSet = executeQuery("SELECT * FROM " + table + ";")) {
+            while (resultSet != null && resultSet.next()) {
+                Location location = null;
 
-        if (resultSet != null) {
-            try {
-                while (resultSet.next()) {
-                    Location location = null;
-
-                    if (resultSet.getString("location") != null) {
-                        location = LocationUtil.stringToLocation(resultSet.getString("location"));
-                    } else if (resultSet.getString("chunk") != null) {
-                        location = LocationUtil.chunkStringToLocation(resultSet.getString("chunk"));
-                    }
-                    if (location != null) {
-                        UUID uuidEntity = UUID.fromString(resultSet.getString("uuid_entity"));
-                        UUID uuidGrave = UUID.fromString(resultSet.getString("uuid_grave"));
-
-                        getChunkData(location).addEntityData(new EntityData(location, uuidEntity, uuidGrave, type));
-                    }
+                if (resultSet.getString("location") != null) {
+                    location = LocationUtil.stringToLocation(resultSet.getString("location"));
+                } else if (resultSet.getString("chunk") != null) {
+                    location = LocationUtil.chunkStringToLocation(resultSet.getString("chunk"));
                 }
-            } catch (SQLException exception) {
-                exception.printStackTrace();
-            } finally {
-                closeResultSet(resultSet);
+                if (location != null) {
+                    UUID uuidEntity = UUID.fromString(resultSet.getString("uuid_entity"));
+                    UUID uuidGrave = UUID.fromString(resultSet.getString("uuid_grave"));
+
+                    getChunkData(location).addEntityData(new EntityData(location, uuidEntity, uuidGrave, type));
+                }
             }
+        } catch (SQLException exception) {
+            exception.printStackTrace();
         }
     }
 
@@ -505,8 +501,7 @@ public final class DataManager {
 
         String uuidGrave = blockData.getGraveUUID() != null ? "'" + blockData.getGraveUUID() + "'" : "NULL";
         String location = "'" + LocationUtil.locationToString(blockData.getLocation()) + "'";
-        String replaceMaterial = blockData.getReplaceMaterial() != null ? "'"
-                + blockData.getReplaceMaterial() + "'" : "NULL";
+        String replaceMaterial = blockData.getReplaceMaterial() != null ? "'" + blockData.getReplaceMaterial() + "'" : "NULL";
         String replaceData = blockData.getReplaceData() != null ? "'" + blockData.getReplaceData() + "'" : "NULL";
 
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () ->
@@ -768,21 +763,48 @@ public final class DataManager {
                 statement.executeUpdate(sql);
             }
         } catch (SQLException exception) {
+            if (type == Type.SQLITE) return; // Will always fail. It doesn't cause any issues, so just don't log it.
             exception.printStackTrace();
         }
     }
 
     private ResultSet executeQuery(String sql) {
+        Connection connection = null;
+        Statement statement = null;
         try {
-            Connection connection = getConnection();
+            connection = getConnection();
             if (connection != null) {
-                Statement statement = connection.createStatement();
+                statement = connection.createStatement();
                 return statement.executeQuery(sql);
             }
         } catch (SQLException exception) {
             exception.printStackTrace();
+        } finally {
+            // Note: We do not close ResultSet here because it is used outside this method.
+            closeStatement(statement);
+            closeConnection(connection);
         }
         return null;
+    }
+
+    private void closeConnection(Connection connection) {
+        if (connection != null) {
+            try {
+                connection.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void closeStatement(Statement statement) {
+        if (statement != null) {
+            try {
+                statement.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private void closeResultSet(ResultSet resultSet) {
@@ -812,6 +834,8 @@ public final class DataManager {
             plugin.getLogger().warning("SQLite database file or folder does not exist in \"" + dataFolder.getPath() + "\". Skipping database migration.");
             return;
         }
+
+        boolean migrationSuccess = true;
 
         try (Connection sqliteConnection = DriverManager.getConnection("jdbc:sqlite:" + sqliteFile.getPath())) {
             DatabaseMetaData metaData = sqliteConnection.getMetaData();
@@ -869,10 +893,6 @@ public final class DataManager {
                                 String data = tableData.getString(i);
                                 String columnName = tableMetaData.getColumnName(i);
                                 if (data != null) {
-                                    //if (("owner_texture".equals(columnName) || "owner_texture_signature".equals(columnName)) && data.length() > 8192) {
-                                    //    plugin.getLogger().warning("Data too long for column '" + columnName + "': " + data.length() + " characters. Truncating to 8192 characters.");
-                                    //    data = data.substring(0, 8192); // Truncate to fit column size
-                                    //}
                                     data = data.replace("'", "''");
                                 }
                                 insertQuery.append(data != null ? "'" + data + "'" : "NULL").append(", ");
@@ -888,10 +908,21 @@ public final class DataManager {
                 } catch (SQLException e) {
                     plugin.getLogger().severe("Error migrating table " + tableName + ": " + e.getMessage());
                     plugin.getLogger().severe("Failed query: " + createTableQuery);
+                    migrationSuccess = false;
                 }
             }
         } catch (SQLException e) {
             plugin.getLogger().severe("Error migrating SQLite to MySQL: " + e.getMessage());
+            migrationSuccess = false;
+        }
+
+        if (migrationSuccess) {
+            File renamedFile = new File(dataFolder, "data.old.db");
+            if (sqliteFile.renameTo(renamedFile)) {
+                plugin.getLogger().info("SQLite database successfully renamed to data.old.db");
+            } else {
+                plugin.getLogger().severe("Failed to rename SQLite database to data.old.db");
+            }
         }
     }
 
