@@ -207,12 +207,21 @@ public final class VersionManager {
         switch (enchantment) {
             case "DURABILITY":
                 try {
-                    toReturn = Enchantment.getByKey(NamespacedKey.minecraft("unbreaking"));
+                    toReturn = Enchantment.getByName("DURABILITY");
+                    if (toReturn == null) {
+                        toReturn = Enchantment.getByName("UNBREAKING"); // Assume server is running on 1.20.5 or newer. Added check because this loves to fail in some forks >:(
+                    }
                 } catch (NullPointerException | IllegalArgumentException e) {
-                    toReturn = Enchantment.getByKey(NamespacedKey.minecraft("durability")); // Return the old enchantment for older versions
+                    toReturn = Enchantment.getByName("UNBREAKING"); // Assume server is running on 1.20.5 or newer
                 }
-                break; // to add in for future updates when enchantments are renamed
+                break;
+            // Add other cases for different enchantments here
         }
+
+        if (toReturn == null) {
+            throw new IllegalArgumentException("Enchantment can't be null. This is a bug.");
+        }
+
         return toReturn;
     }
 }

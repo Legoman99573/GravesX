@@ -8,7 +8,6 @@ import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
@@ -52,7 +51,7 @@ public final class ItemStackManager extends EntityDataManager {
             }
 
             if (plugin.getConfig("obituary.glow", grave).getBoolean("obituary.glow")) {
-                bookMeta.addEnchant(Enchantment.getByName(String.valueOf(durability)), 1, true);
+                bookMeta.addEnchant(durability, 1, true);
 
                 if (!plugin.getVersionManager().is_v1_7()) {
                     bookMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
@@ -145,7 +144,7 @@ public final class ItemStackManager extends EntityDataManager {
             }
 
             if (plugin.getConfig().getBoolean("gui.menu.list.glow")) {
-                itemMeta.addEnchant(Enchantment.getByName(String.valueOf(durability)), 1, true);
+                itemMeta.addEnchant(durability, 1, true);
                 itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
             }
 
@@ -190,7 +189,7 @@ public final class ItemStackManager extends EntityDataManager {
             }
 
             if (plugin.getConfig().getBoolean("gui.menu.grave.slot." + slot + ".glow")) {
-                itemMeta.addEnchant(Enchantment.getByName(String.valueOf(durability)), 1, true);
+                itemMeta.addEnchant(durability, 1, true);
                 itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
             }
 
@@ -234,7 +233,7 @@ public final class ItemStackManager extends EntityDataManager {
             }
 
             if (plugin.getConfig().getBoolean("gui.menu.grave.slot." + slot + ".glow")) {
-                itemMeta.addEnchant(Enchantment.getByName(plugin.getVersionManager().getEnchantmentForVersion("DURABILITY").toString()), 1, true);
+                itemMeta.addEnchant(plugin.getVersionManager().getEnchantmentForVersion("DURABILITY"), 1, true);
                 itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
             }
 

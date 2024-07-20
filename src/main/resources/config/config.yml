@@ -11,10 +11,22 @@ settings:
   ###########
   # Data storage system.
   storage:
-    type: SQLITE # SQLITE, More storage types will be added in the future.
+    type: SQLITE # MYSQL, MARIADB, and SQLITE, More storage types will be added in the future.
     sqlite: # Unless you know what you're doing leave options under sqlite default.
       journal-mode: "WAL" # https://www.sqlite.org/pragma.html#pragma_journal_mode
       synchronous: "OFF" # https://www.sqlite.org/pragma.html#pragma_synchronous
+    mysql: # Unless you know what you're doing leave options under sqlite default.
+      host: "localhost" # Host of the Database
+      port: 3306 # Port for the Database (do not change unless you use a different port)
+      username: "username" # Database Username. Make sure the user has access to the database.
+      password: "password" # Database Password. case-sensitive
+      database: "graves" # Database we should use.
+      maxConnections: 10 # Max number of connections allowed to make to a database. Do not change unless you know what you are doing.
+      maxLifetime: 1800000 # Max lifetime of a connection. DO NOT CHANGE UNLESS YOU KNOW WHAT YOU ARE DOING
+      connectionTimeout: 30000 # How long before the connection times out. DO NOT CHANGE UNLESS YOU KNOW WHAT YOU ARE DOING. Only increase if your connection keeps timing out.
+      useSSL: false # Should we use SSL? Unless you know what you are doing, leave this at false.
+      allowPublicKeyRetrieval: false # Should we grab the public key? DO NOT CHANGE UNLESS YOU KNOW WHAT YOU ARE DOING
+      verifyServerCertificate: false # Should we verify the server certificate? DO NOT CHANGE UNLESS YOU KNOW WHAT YOU ARE DOING
 
   #########
   # Cache #

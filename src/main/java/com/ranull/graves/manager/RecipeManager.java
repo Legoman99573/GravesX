@@ -86,8 +86,7 @@ public final class RecipeManager {
                     }
 
                     if (plugin.getConfig().getBoolean("settings.token." + token + ".glow")) {
-                        Enchantment enchantment = plugin.getVersionManager().getEnchantmentForVersion("DURABILITY");
-                        itemMeta.addEnchant(enchantment, 1, true);
+                        itemMeta.addEnchant(plugin.getVersionManager().getEnchantmentForVersion("DURABILITY"), 1, true);
                         itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
                     }
 

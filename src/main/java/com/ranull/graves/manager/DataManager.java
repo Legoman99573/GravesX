@@ -1,10 +1,9 @@
 package com.ranull.graves.manager;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import com.ranull.graves.Graves;
-import com.ranull.graves.data.BlockData;
-import com.ranull.graves.data.ChunkData;
-import com.ranull.graves.data.EntityData;
-import com.ranull.graves.data.HologramData;
+import com.ranull.graves.data.*;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.*;
 import org.apache.commons.lang3.StringUtils;
@@ -20,20 +19,57 @@ import java.util.*;
 public final class DataManager {
     private final Graves plugin;
     private Type type;
-    private String url;
-    private Connection connection;
+    private HikariDataSource dataSource;
 
     public DataManager(Graves plugin) {
         this.plugin = plugin;
-        this.type = DataManager.Type.SQLITE;
 
-        loadType(type);
-        load();
+        String typeStr = plugin.getConfig().getString("settings.storage.type", "SQLITE");
+        try {
+            this.type = Type.valueOf(typeStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            this.type = Type.INVALID;
+        }
+
+        switch (this.type) {
+            case SQLITE:
+                loadType(Type.SQLITE);
+                load();
+                keepConnectionAlive(); // If we don't enable this, connection will close or time out :/
+                break;
+            case MYSQL:
+            case MARIADB:
+                loadType(this.type);
+                if (testMySQLConnection()) {
+                    migrateToMySQL();
+                    load();
+                    keepConnectionAlive(); // If we don't enable this, connection will close or time out :/
+                } else {
+                    plugin.getLogger().severe("Failed to connect to MySQL database. Disabling plugin...");
+                    plugin.getServer().getPluginManager().disablePlugin(this.plugin);
+                }
+                break;
+            default:
+                plugin.getLogger().severe("Database Type is invalid. Only valid options: SQLITE and MYSQL. Disabling plugin...");
+                plugin.getServer().getPluginManager().disablePlugin(this.plugin);
+                return;
+        }
+    }
+
+    public enum Type {
+        SQLITE,
+        MYSQL,
+        MARIADB,
+        INVALID
     }
 
     private void load() {
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-            loadTables();
+            try {
+                loadTables();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
             loadGraveMap();
             loadBlockMap();
             loadEntityMap("armorstand", EntityData.Type.ARMOR_STAND);
@@ -63,7 +99,7 @@ public final class DataManager {
         });
     }
 
-    private void loadTables() {
+    private void loadTables() throws SQLException {
         setupGraveTable();
         setupBlockTable();
         setupHologramTable();
@@ -96,37 +132,74 @@ public final class DataManager {
     }
 
     public void reload(Type type) {
-        closeConnection();
         loadType(type);
+        if ((type == Type.MYSQL || type == Type.MARIADB) && !testMySQLConnection()) {
+            plugin.getLogger().severe("Failed to connect to MySQL database. Disabling plugin...");
+            plugin.getServer().getPluginManager().disablePlugin(this.plugin);
+            return;
+        }
         load();
     }
 
     public void loadType(Type type) {
         this.type = type;
-
-        if (type == Type.MYSQL) {  // TODO MYSQL
-            this.url = null;
-
-            ClassUtil.loadClass("com.mysql.jdbc.Driver");
-        } else {
+        if (type == Type.SQLITE) {
             migrateRootDataSubData();
+            HikariConfig config = new HikariConfig();
+            configureSQLite(config);
+            dataSource = new HikariDataSource(config);
+        } else {
+            // MySQL or MariaDB configuration
+            String host = plugin.getConfig().getString("settings.storage.mysql.host", "localhost");
+            int port = plugin.getConfig().getInt("settings.storage.mysql.port", 3306);
+            String user = plugin.getConfig().getString("settings.storage.mysql.username", "username");
+            String password = plugin.getConfig().getString("settings.storage.mysql.password", "password");
+            String database = plugin.getConfig().getString("settings.storage.mysql.database", "graves");
+            long maxLifetime = plugin.getConfig().getLong("settings.storage.mysql.maxLifetime", 1800000);
+            int maxConnections = plugin.getConfig().getInt("settings.storage.mysql.maxConnections", 20); // Increased pool size
+            long connectionTimeout = plugin.getConfig().getLong("settings.storage.mysql.connectionTimeout", 30000);
+            boolean useSSL = plugin.getConfig().getBoolean("settings.storage.mysql.useSSL", true);
+            boolean allowPublicKeyRetrieval = plugin.getConfig().getBoolean("settings.storage.mysql.allowPublicKeyRetrieval", false);
+            boolean verifyServerCertificate = plugin.getConfig().getBoolean("settings.storage.mysql.verifyServerCertificate", false);
 
-            this.url = "jdbc:sqlite:" + plugin.getDataFolder() + File.separator + "data" + File.separator + "data.db";
+            HikariConfig config = new HikariConfig();
+            config.setJdbcUrl("jdbc:mysql://" + host + ":" + port + "/" + database);
+            config.setUsername(user);
+            config.setPassword(password);
+            config.addDataSourceProperty("autoReconnect", "true");
+            config.addDataSourceProperty("cachePrepStmts", "true");
+            config.addDataSourceProperty("prepStmtCacheSize", "250");
+            config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+            config.addDataSourceProperty("useSSL", String.valueOf(useSSL));
+            config.addDataSourceProperty("allowPublicKeyRetrieval", String.valueOf(allowPublicKeyRetrieval));
+            config.addDataSourceProperty("verifyServerCertificate", String.valueOf(verifyServerCertificate));
+            config.setMaximumPoolSize(maxConnections);
+            config.setMaxLifetime(maxLifetime);
+            config.setConnectionTimeout(connectionTimeout);
+            config.setIdleTimeout(600000); // 10 minutes
+            config.setConnectionTestQuery("SELECT 1");
+            config.setLeakDetectionThreshold(2000); // Detect connection leaks
 
-            ClassUtil.loadClass("org.sqlite.JDBC");
-            executeUpdate("PRAGMA journal_mode=" + plugin.getConfig()
-                    .getString("settings.storage.sqlite.journal-mode", "WAL").toUpperCase() + ";");
-            executeUpdate("PRAGMA synchronous=" + plugin.getConfig()
-                    .getString("settings.storage.sqlite.synchronous", "OFF").toUpperCase() + ";");
+            dataSource = new HikariDataSource(config);
+
+            if (testMySQLConnection()) {
+                migrateToMySQL();
+            }
         }
+    }
+
+    private void configureSQLite(HikariConfig config) {
+        config.setJdbcUrl("jdbc:sqlite:" + plugin.getDataFolder() + File.separator + "data" + File.separator + "data.db");
+        config.setConnectionTimeout(30000); // 30 seconds
+        config.setIdleTimeout(600000); // 10 minutes
+        config.setMaxLifetime(1800000); // 30 minutes
+        config.setMaximumPoolSize(50);
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     private void migrateRootDataSubData() {
         new File(plugin.getDataFolder(), "data").mkdirs();
-
         File[] files = plugin.getDataFolder().listFiles();
-
         if (files != null) {
             for (File file : files) {
                 if (file.getName().startsWith("data.db")) {
@@ -148,10 +221,8 @@ public final class DataManager {
             chunkData = plugin.getCacheManager().getChunkMap().get(chunkString);
         } else {
             chunkData = new ChunkData(location);
-
             plugin.getCacheManager().getChunkMap().put(chunkString, chunkData);
         }
-
         return chunkData;
     }
 
@@ -161,219 +232,141 @@ public final class DataManager {
 
     public List<String> getColumnList(String tableName) {
         List<String> columnList = new ArrayList<>();
-        ResultSet resultSet;
-
-        if (type == Type.MYSQL) {
-            resultSet = null; // TODO MYSQL
-        } else {
-            resultSet = executeQuery("PRAGMA table_info(" + tableName + ");");
-        }
-
-        if (resultSet != null) {
-            try {
-                while (resultSet.next()) {
-                    columnList.add(resultSet.getString("name"));
-                }
-            } catch (SQLException exception) {
-                exception.printStackTrace();
+        ResultSet resultSet = null;
+        try {
+            if (type == Type.MYSQL) {
+                resultSet = executeQuery("DESCRIBE " + tableName + ";");
+            } else {
+                resultSet = executeQuery("PRAGMA table_info(" + tableName + ");");
             }
+            while (resultSet != null && resultSet.next()) {
+                columnList.add(resultSet.getString("name"));
+            }
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+        } finally {
+            closeResultSet(resultSet);
         }
-
         return columnList;
     }
 
-    public void setupGraveTable() {
+    public boolean tableExists(String tableName) {
+        ResultSet resultSet = null;
+        try {
+            if (type == Type.MYSQL) {
+                resultSet = executeQuery("SHOW TABLES LIKE '" + tableName + "';");
+            } else {
+                resultSet = executeQuery("SELECT name FROM sqlite_master WHERE type='table' AND name='" + tableName + "';");
+            }
+            return resultSet != null && resultSet.next();
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+            return false;
+        } finally {
+            closeResultSet(resultSet);
+        }
+    }
+
+    private void addColumnIfNotExists(String tableName, String columnName, String columnDefinition) throws SQLException {
+        List<String> columnList = getColumnList(tableName);
+        if (!columnList.contains(columnName)) {
+            executeUpdate("ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + columnDefinition + ";");
+        }
+    }
+
+    public void setupGraveTable() throws SQLException {
         String name = "grave";
-
-        executeUpdate("CREATE TABLE IF NOT EXISTS " + name + " (" +
-                "uuid VARCHAR(255) UNIQUE,\n" +
-                "owner_type VARCHAR(255),\n" +
-                "owner_name VARCHAR(255),\n" +
-                "owner_name_display VARCHAR(255),\n" +
-                "owner_uuid VARCHAR(255),\n" +
-                "owner_texture VARCHAR(255),\n" +
-                "owner_texture_signature VARCHAR(255),\n" +
-                "killer_type VARCHAR(255),\n" +
-                "killer_name VARCHAR(255),\n" +
-                "killer_name_display VARCHAR(255),\n" +
-                "killer_uuid VARCHAR(255),\n" +
-                "location_death VARCHAR(255),\n" +
-                "yaw FLOAT(16),\n" +
-                "pitch FLOAT(16),\n" +
-                "inventory TEXT,\n" +
-                "equipment TEXT,\n" +
-                "experience INT(16),\n" +
-                "protection INT(1),\n" +
-                "time_alive INT(16),\n" +
-                "time_protection INT(11),\n" +
-                "time_creation INT(11),\n" +
-                "permissions TEXT);");
-
-        List<String> columnList = getColumnList(name);
-
-        if (!columnList.contains("uuid")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN uuid VARCHAR(255) UNIQUE;");
+        if (!tableExists(name)) {
+            executeUpdate("CREATE TABLE IF NOT EXISTS " + name + " (" +
+                    "uuid VARCHAR(255) UNIQUE,\n" +
+                    "owner_type VARCHAR(255),\n" +
+                    "owner_name VARCHAR(255),\n" +
+                    "owner_name_display VARCHAR(255),\n" +
+                    "owner_uuid VARCHAR(255),\n" +
+                    "owner_texture TEXT,\n" +
+                    "owner_texture_signature TEXT,\n" +
+                    "killer_type VARCHAR(255),\n" +
+                    "killer_name VARCHAR(255),\n" +
+                    "killer_name_display VARCHAR(255),\n" +
+                    "killer_uuid VARCHAR(255),\n" +
+                    "location_death VARCHAR(255),\n" +
+                    "yaw FLOAT(16),\n" +
+                    "pitch FLOAT(16),\n" +
+                    "inventory TEXT,\n" +
+                    "equipment TEXT,\n" +
+                    "experience INT(16),\n" +
+                    "protection INT(1),\n" +
+                    "time_alive BIGINT,\n" +
+                    "time_protection BIGINT,\n" +
+                    "time_creation BIGINT,\n" +
+                    "permissions TEXT);");
         }
 
-        if (!columnList.contains("owner_type")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN owner_type VARCHAR(255);");
-        }
-
-        if (!columnList.contains("owner_name")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN owner_name VARCHAR(255);");
-        }
-
-        if (!columnList.contains("owner_name_display")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN owner_name_display VARCHAR(255);");
-        }
-
-        if (!columnList.contains("owner_uuid")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN owner_uuid VARCHAR(255);");
-        }
-
-        if (!columnList.contains("owner_texture")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN owner_texture VARCHAR(255);");
-        }
-
-        if (!columnList.contains("owner_texture_signature")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN owner_texture_signature VARCHAR(255);");
-        }
-
-        if (!columnList.contains("killer_type")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN killer_type VARCHAR(255);");
-        }
-
-        if (!columnList.contains("killer_name")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN killer_name VARCHAR(255);");
-        }
-
-        if (!columnList.contains("killer_name_display")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN killer_name_display VARCHAR(255);");
-        }
-
-        if (!columnList.contains("killer_uuid")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN killer_uuid VARCHAR(255);");
-        }
-
-        if (!columnList.contains("location_death")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN location_death VARCHAR(255);");
-        }
-
-        if (!columnList.contains("yaw")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN yaw FLOAT(16);");
-        }
-
-        if (!columnList.contains("pitch")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN pitch FLOAT(16);");
-        }
-
-        if (!columnList.contains("inventory")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN inventory TEXT;");
-        }
-
-        if (!columnList.contains("equipment")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN equipment TEXT;");
-        }
-
-        if (!columnList.contains("experience")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN experience INT(16);");
-        }
-
-        if (!columnList.contains("protection")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN protection INT(1);");
-        }
-
-        if (!columnList.contains("time_alive")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN time_alive INT(16);");
-        }
-
-        if (!columnList.contains("time_protection")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN time_protection INT(16);");
-        }
-
-        if (!columnList.contains("time_creation")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN time_creation INT(16);");
-        }
-
-        if (!columnList.contains("permissions")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN permissions TEXT;");
-        }
+        addColumnIfNotExists(name, "uuid", "VARCHAR(255) UNIQUE");
+        addColumnIfNotExists(name, "owner_type", "VARCHAR(255)");
+        addColumnIfNotExists(name, "owner_name", "VARCHAR(255)");
+        addColumnIfNotExists(name, "owner_name_display", "VARCHAR(255)");
+        addColumnIfNotExists(name, "owner_uuid", "VARCHAR(255)");
+        addColumnIfNotExists(name, "owner_texture", "TEXT");
+        addColumnIfNotExists(name, "owner_texture_signature", "TEXT");
+        addColumnIfNotExists(name, "killer_type", "VARCHAR(255)");
+        addColumnIfNotExists(name, "killer_name", "VARCHAR(255)");
+        addColumnIfNotExists(name, "killer_name_display", "VARCHAR(255)");
+        addColumnIfNotExists(name, "killer_uuid", "VARCHAR(255)");
+        addColumnIfNotExists(name, "location_death", "VARCHAR(255)");
+        addColumnIfNotExists(name, "yaw", "FLOAT(16)");
+        addColumnIfNotExists(name, "pitch", "FLOAT(16)");
+        addColumnIfNotExists(name, "inventory", "TEXT");
+        addColumnIfNotExists(name, "equipment", "TEXT");
+        addColumnIfNotExists(name, "experience", "INT(16)");
+        addColumnIfNotExists(name, "protection", "INT(1)");
+        addColumnIfNotExists(name, "time_alive", "BIGINT");
+        addColumnIfNotExists(name, "time_protection", "BIGINT");
+        addColumnIfNotExists(name, "time_creation", "BIGINT");
+        addColumnIfNotExists(name, "permissions", "TEXT");
     }
 
-    public void setupBlockTable() {
+    public void setupBlockTable() throws SQLException {
         String name = "block";
-
-        executeUpdate("CREATE TABLE IF NOT EXISTS " + name + " (" +
-                "location VARCHAR(255),\n" +
-                "uuid_grave VARCHAR(255),\n" +
-                "replace_material VARCHAR(255),\n" +
-                "replace_data TEXT);");
-
-        List<String> columnList = getColumnList(name);
-
-        if (!columnList.contains("location")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN location VARCHAR(255);");
+        if (!tableExists(name)) {
+            executeUpdate("CREATE TABLE IF NOT EXISTS " + name + " (" +
+                    "location VARCHAR(255),\n" +
+                    "uuid_grave VARCHAR(255),\n" +
+                    "replace_material VARCHAR(255),\n" +
+                    "replace_data TEXT);");
         }
 
-        if (!columnList.contains("uuid_grave")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN uuid_grave VARCHAR(255);");
-        }
-
-        if (!columnList.contains("replace_material")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN replace_material VARCHAR(255);");
-        }
-
-        if (!columnList.contains("replace_data")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN replace_data TEXT;");
-        }
+        addColumnIfNotExists(name, "location", "VARCHAR(255)");
+        addColumnIfNotExists(name, "uuid_grave", "VARCHAR(255)");
+        addColumnIfNotExists(name, "replace_material", "VARCHAR(255)");
+        addColumnIfNotExists(name, "replace_data", "TEXT");
     }
 
-    public void setupHologramTable() {
+    public void setupHologramTable() throws SQLException {
         String name = "hologram";
-
-        executeUpdate("CREATE TABLE IF NOT EXISTS " + name + " (" +
-                "uuid_entity VARCHAR(255),\n" +
-                "uuid_grave VARCHAR(255),\n" +
-                "line INT(16));");
-
-        List<String> columnList = getColumnList(name);
-
-        if (!columnList.contains("location")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN location VARCHAR(255);");
+        if (!tableExists(name)) {
+            executeUpdate("CREATE TABLE IF NOT EXISTS " + name + " (" +
+                    "uuid_entity VARCHAR(255),\n" +
+                    "uuid_grave VARCHAR(255),\n" +
+                    "line INT(16));");
         }
 
-        if (!columnList.contains("uuid_entity")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN uuid_entity VARCHAR(255);");
-        }
-
-        if (!columnList.contains("uuid_grave")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN uuid_grave VARCHAR(255);");
-        }
-
-        if (!columnList.contains("line")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN line INT(16);");
-        }
+        addColumnIfNotExists(name, "uuid_entity", "VARCHAR(255)");
+        addColumnIfNotExists(name, "uuid_grave", "VARCHAR(255)");
+        addColumnIfNotExists(name, "line", "INT(16)");
     }
 
-    private void setupEntityTable(String name) {
-        executeUpdate("CREATE TABLE IF NOT EXISTS " + name + " (" +
-                "location VARCHAR(255),\n" +
-                "uuid_entity VARCHAR(255),\n" +
-                "uuid_grave VARCHAR(255));");
-
-        List<String> columnList = getColumnList(name);
-
-        if (!columnList.contains("location")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN location VARCHAR(255);");
+    private void setupEntityTable(String name) throws SQLException {
+        if (!tableExists(name)) {
+            executeUpdate("CREATE TABLE IF NOT EXISTS " + name + " (" +
+                    "location VARCHAR(255),\n" +
+                    "uuid_entity VARCHAR(255),\n" +
+                    "uuid_grave VARCHAR(255));");
         }
 
-        if (!columnList.contains("uuid_entity")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN uuid_entity VARCHAR(255);");
-        }
-
-        if (!columnList.contains("uuid_grave")) {
-            executeUpdate("ALTER TABLE " + name + " ADD COLUMN uuid_grave VARCHAR(255);");
-        }
+        addColumnIfNotExists(name, "location", "VARCHAR(255)");
+        addColumnIfNotExists(name, "uuid_entity", "VARCHAR(255)");
+        addColumnIfNotExists(name, "uuid_grave", "VARCHAR(255)");
     }
 
     private void loadGraveMap() {
@@ -392,6 +385,8 @@ public final class DataManager {
                 }
             } catch (SQLException exception) {
                 exception.printStackTrace();
+            } finally {
+                closeResultSet(resultSet);
             }
         }
     }
@@ -412,6 +407,8 @@ public final class DataManager {
                 }
             } catch (SQLException exception) {
                 exception.printStackTrace();
+            } finally {
+                closeResultSet(resultSet);
             }
         }
     }
@@ -439,6 +436,8 @@ public final class DataManager {
                 }
             } catch (SQLException exception) {
                 exception.printStackTrace();
+            } finally {
+                closeResultSet(resultSet);
             }
         }
     }
@@ -467,6 +466,8 @@ public final class DataManager {
                 }
             } catch (SQLException exception) {
                 exception.printStackTrace();
+            } finally {
+                closeResultSet(resultSet);
             }
         }
     }
@@ -493,6 +494,8 @@ public final class DataManager {
                 }
             } catch (SQLException exception) {
                 exception.printStackTrace();
+            } finally {
+                closeResultSet(resultSet);
             }
         }
     }
@@ -528,24 +531,24 @@ public final class DataManager {
         int line = hologramData.getLine();
 
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () ->
-                executeUpdate("INSERT INTO hologram (location, uuid_entity, uuid_grave, line) VALUES ("
-                        + location + ", " + uuidEntity + ", " + uuidGrave + ", " + line + ");"));
+                executeUpdate("INSERT INTO hologram (uuid_entity, uuid_grave, line, location) VALUES ("
+                        + uuidEntity + ", " + uuidGrave + ", " + line + ", " + location + ");"));
     }
 
     public void removeHologramData(List<EntityData> entityDataList) {
-        try {
-            Statement statement = connection.createStatement();
-
-            for (EntityData hologramData : entityDataList) {
-                getChunkData(hologramData.getLocation()).removeEntityData(hologramData);
-                statement.addBatch("DELETE FROM hologram WHERE uuid_entity = '"
-                        + hologramData.getUUIDEntity() + "';");
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try (Connection connection = getConnection();
+                 Statement statement = connection.createStatement()) {
+                for (EntityData hologramData : entityDataList) {
+                    getChunkData(hologramData.getLocation()).removeEntityData(hologramData);
+                    statement.addBatch("DELETE FROM hologram WHERE uuid_entity = '"
+                            + hologramData.getUUIDEntity() + "';");
+                }
+                executeBatch(statement);
+            } catch (SQLException exception) {
+                exception.printStackTrace();
             }
-
-            plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> executeBatch(statement));
-        } catch (SQLException exception) {
-            exception.printStackTrace();
-        }
+        });
     }
 
     public void addEntityData(EntityData entityData) {
@@ -569,26 +572,24 @@ public final class DataManager {
     }
 
     public void removeEntityData(List<EntityData> entityDataList) {
-        try {
-            Statement statement = connection.createStatement();
-
-            for (EntityData entityData : entityDataList) {
-                getChunkData(entityData.getLocation()).removeEntityData(entityData);
-
-                String table = entityDataTypeTable(entityData.getType());
-
-                if (table != null) {
-                    statement.addBatch("DELETE FROM " + table + " WHERE uuid_entity = '"
-                            + entityData.getUUIDEntity() + "';");
-                    plugin.debugMessage("Removing " + table + " for grave "
-                            + entityData.getUUIDGrave(), 1);
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try (Connection connection = getConnection();
+                 Statement statement = connection.createStatement()) {
+                for (EntityData entityData : entityDataList) {
+                    getChunkData(entityData.getLocation()).removeEntityData(entityData);
+                    String table = entityDataTypeTable(entityData.getType());
+                    if (table != null) {
+                        statement.addBatch("DELETE FROM " + table + " WHERE uuid_entity = '"
+                                + entityData.getUUIDEntity() + "';");
+                        plugin.debugMessage("Removing " + table + " for grave "
+                                + entityData.getUUIDGrave(), 1);
+                    }
                 }
+                executeBatch(statement);
+            } catch (SQLException exception) {
+                exception.printStackTrace();
             }
-
-            plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> executeBatch(statement));
-        } catch (SQLException exception) {
-            exception.printStackTrace();
-        }
+        });
     }
 
     public String entityDataTypeTable(EntityData.Type type) {
@@ -722,7 +723,6 @@ public final class DataManager {
             if (resultSet.getString("equipment") != null) {
                 Map<EquipmentSlot, ItemStack> equipmentMap = (Map<EquipmentSlot, ItemStack>) Base64Util
                         .base64ToObject(resultSet.getString("equipment"));
-
                 grave.setEquipmentMap(equipmentMap != null ? equipmentMap : new HashMap<>());
             }
 
@@ -730,43 +730,30 @@ public final class DataManager {
         } catch (SQLException exception) {
             exception.printStackTrace();
         }
-
         return null;
     }
 
     private boolean isConnected() {
-        try {
-            return connection != null && !connection.isClosed();
-        } catch (SQLException exception) {
-            exception.printStackTrace();
-
-            return false;
-        }
+        return dataSource != null && !dataSource.isClosed();
     }
 
-    private void connect() {
+    private Connection getConnection() {
         try {
-            connection = DriverManager.getConnection(url);
+            return dataSource.getConnection();
         } catch (SQLException exception) {
             exception.printStackTrace();
+            plugin.getLogger().severe("Error obtaining database connection: " + exception.getMessage());
+            return null;
         }
     }
 
     public void closeConnection() {
-        if (isConnected()) {
-            try {
-                connection.close();
-            } catch (SQLException exception) {
-                exception.printStackTrace();
-            }
+        if (dataSource != null && !dataSource.isClosed()) {
+            dataSource.close();
         }
     }
 
     private void executeBatch(Statement statement) {
-        if (!isConnected()) {
-            connect();
-        }
-
         try {
             statement.executeBatch();
         } catch (SQLException exception) {
@@ -775,33 +762,179 @@ public final class DataManager {
     }
 
     private void executeUpdate(String sql) {
-        if (!isConnected()) {
-            connect();
-        }
-
-        try {
-            connection.createStatement().executeUpdate(sql);
+        try (Connection connection = getConnection();
+             Statement statement = connection.createStatement()) {
+            if (connection != null) {
+                statement.executeUpdate(sql);
+            }
         } catch (SQLException exception) {
             exception.printStackTrace();
         }
     }
 
     private ResultSet executeQuery(String sql) {
-        if (!isConnected()) {
-            connect();
-        }
-
         try {
-            return connection.createStatement().executeQuery(sql);
+            Connection connection = getConnection();
+            if (connection != null) {
+                Statement statement = connection.createStatement();
+                return statement.executeQuery(sql);
+            }
         } catch (SQLException exception) {
             exception.printStackTrace();
+        }
+        return null;
+    }
 
-            return null;
+    private void closeResultSet(ResultSet resultSet) {
+        if (resultSet != null) {
+            try {
+                resultSet.close();
+            } catch (SQLException exception) {
+                exception.printStackTrace();
+            }
         }
     }
 
-    public enum Type {
-        SQLITE,
-        MYSQL
+    private boolean testMySQLConnection() {
+        try (Connection testConnection = getConnection()) {
+            return testConnection != null && !testConnection.isClosed();
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Failed to connect to MySQL database: " + e.getMessage());
+            return false;
+        }
+    }
+
+    private void migrateToMySQL() {
+        File dataFolder = new File(plugin.getDataFolder(), "data");
+        File sqliteFile = new File(dataFolder, "data.db");
+
+        if (!sqliteFile.exists() || !dataFolder.exists()) {
+            plugin.getLogger().warning("SQLite database file or folder does not exist in \"" + dataFolder.getPath() + "\". Skipping database migration.");
+            return;
+        }
+
+        try (Connection sqliteConnection = DriverManager.getConnection("jdbc:sqlite:" + sqliteFile.getPath())) {
+            DatabaseMetaData metaData = sqliteConnection.getMetaData();
+            ResultSet tables = metaData.getTables(null, null, "%", new String[]{"TABLE"});
+
+            while (tables.next()) {
+                String tableName = tables.getString("TABLE_NAME");
+                StringBuilder createTableQuery = new StringBuilder();
+                List<String> columns = new ArrayList<>();
+
+                try (Statement sqliteStatement = sqliteConnection.createStatement();
+                     ResultSet tableData = sqliteStatement.executeQuery("SELECT * FROM " + tableName)) {
+
+                    ResultSetMetaData tableMetaData = tableData.getMetaData();
+                    createTableQuery.append("CREATE TABLE IF NOT EXISTS ").append(tableName).append(" (");
+                    for (int i = 1; i <= tableMetaData.getColumnCount(); i++) {
+                        String columnName = tableMetaData.getColumnName(i);
+                        String sqliteType = tableMetaData.getColumnTypeName(i);
+                        String mysqlType = mapSQLiteTypeToMySQL(sqliteType, columnName);
+                        plugin.getLogger().info("Mapping column: " + columnName + " of type: " + sqliteType + " to MySQL type: " + mysqlType);
+
+                        if (mysqlType != null) {
+                            createTableQuery.append(columnName)
+                                    .append(" ")
+                                    .append(mysqlType)
+                                    .append(i == tableMetaData.getColumnCount() ? ")" : ", ");
+                            columns.add(columnName);
+                        }
+                    }
+
+                    if (columns.isEmpty()) {
+                        plugin.getLogger().warning("No valid columns found for table " + tableName + ". Skipping table creation.");
+                        continue;
+                    }
+
+                    plugin.getLogger().info("Creating table with query: " + createTableQuery.toString());
+                    executeUpdate(createTableQuery.toString());
+
+                    // Modify columns if necessary
+                    if ("grave".equals(tableName)) {
+                        plugin.getLogger().info("Altering table " + tableName + " to ensure column sizes are correct.");
+                        executeUpdate("ALTER TABLE grave MODIFY owner_texture TEXT");
+                        executeUpdate("ALTER TABLE grave MODIFY owner_texture_signature TEXT");
+                        executeUpdate("ALTER TABLE grave MODIFY time_creation BIGINT");
+                        executeUpdate("ALTER TABLE grave MODIFY time_protection BIGINT");
+                        executeUpdate("ALTER TABLE grave MODIFY time_alive BIGINT");
+                    }
+
+                    while (tableData.next()) {
+                        StringBuilder insertQuery = new StringBuilder("INSERT INTO " + tableName + " (");
+                        insertQuery.append(String.join(", ", columns)).append(") VALUES (");
+
+                        for (int i = 1; i <= tableMetaData.getColumnCount(); i++) {
+                            if (columns.contains(tableMetaData.getColumnName(i))) {
+                                String data = tableData.getString(i);
+                                String columnName = tableMetaData.getColumnName(i);
+                                if (data != null) {
+                                    //if (("owner_texture".equals(columnName) || "owner_texture_signature".equals(columnName)) && data.length() > 8192) {
+                                    //    plugin.getLogger().warning("Data too long for column '" + columnName + "': " + data.length() + " characters. Truncating to 8192 characters.");
+                                    //    data = data.substring(0, 8192); // Truncate to fit column size
+                                    //}
+                                    data = data.replace("'", "''");
+                                }
+                                insertQuery.append(data != null ? "'" + data + "'" : "NULL").append(", ");
+                            }
+                        }
+                        // Remove trailing comma and space, and close the parenthesis
+                        insertQuery.setLength(insertQuery.length() - 2);
+                        insertQuery.append(")");
+
+                        plugin.getLogger().info("Inserting data with query: " + insertQuery.toString());
+                        executeUpdate(insertQuery.toString());
+                    }
+                } catch (SQLException e) {
+                    plugin.getLogger().severe("Error migrating table " + tableName + ": " + e.getMessage());
+                    plugin.getLogger().severe("Failed query: " + createTableQuery);
+                }
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Error migrating SQLite to MySQL: " + e.getMessage());
+        }
+    }
+
+    private String mapSQLiteTypeToMySQL(String sqliteType, String columnName) {
+        switch (sqliteType.toUpperCase()) {
+            case "INT":
+            case "INTEGER":
+                if ("protection".equals(columnName))
+                    return "INT(1)";
+                if ("time_protection".equals(columnName) || "time_creation".equals(columnName) || "time_alive".equals(columnName))
+                    return "BIGINT";
+                return "INT(16)";
+            case "VARCHAR":
+                return "VARCHAR(255)";
+            case "FLOAT":
+                return "FLOAT(16)";
+            case "TEXT":
+                if ("owner_texture".equals(columnName) || "owner_texture_signature".equals(columnName) || "inventory".equals(columnName) || "equipment".equals(columnName) || "permissions".equals(columnName)) {
+                    return "TEXT";
+                }
+                return "VARCHAR(255)";
+            case "BLOB":
+                return "BLOB";
+            case "REAL":
+                return "DOUBLE";
+            case "NUMERIC":
+                return "DECIMAL(10, 5)";
+            default:
+                plugin.getLogger().warning("Unhandled SQLite type: " + sqliteType + " for column: " + columnName);
+                return null; // Ignore unhandled types
+        }
+    }
+
+    private void keepConnectionAlive() {
+        plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin, () -> {
+            if (isConnected()) {
+                try (Connection connection = getConnection();
+                     PreparedStatement statement = connection.prepareStatement("SELECT 1")) {
+                    statement.executeQuery();
+                } catch (SQLException exception) {
+                    exception.printStackTrace();
+                }
+            }
+        }, 0L, 25 * 20L); // 25 seconds interval
     }
 }
