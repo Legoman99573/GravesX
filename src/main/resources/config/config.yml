@@ -1,4 +1,4 @@
-config-version: 3 # Config version, you should never manually change this.
+config-version: 4 # Config version, you should never manually change this.
 
 ###############
 # Core Config #
