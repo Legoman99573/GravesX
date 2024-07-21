@@ -53,6 +53,17 @@ public class Graves extends JavaPlugin {
 
     @Override
     public void onLoad() {
+        File gravesDirectory = new File(getDataFolder().getParentFile(), "Graves");
+        File newGravesDirectory = new File(getDataFolder().getParentFile(), "GravesX");
+
+        if (gravesDirectory.exists() && gravesDirectory.isDirectory()) {
+            getLogger().warning("Your server has legacy version of Graves. Migrating the folder to GravesX for you.");
+            if (gravesDirectory.renameTo(newGravesDirectory)) {
+                getLogger().info("Successfully renamed Graves to GravesX.");
+            } else {
+                getLogger().severe("Failed to rename Graves to GravesX. Ensure the folder doesn't already exist.");
+            }
+        }
         saveDefaultConfig();
 
         integrationManager = new IntegrationManager(this);
