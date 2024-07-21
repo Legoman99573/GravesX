@@ -27,10 +27,10 @@ build-job:       # This job runs in the build stage, which runs first.
     - mvn install:install-file -Dfile=libs/authlib-5.0.47-graves.jar -DgroupId=com.mojang -DartifactId=authlib -Dversion=5.0.47-graves -Dpackaging=jar
   script:
     - echo "Compiling the code..."
-    - mvn package
   artifacts:
     paths:
       - target/*.jar
+      - *.jar
 
 deploy-job:      # This job runs in the deploy stage.
   stage: deploy  # It only runs when *both* jobs in the test stage complete successfully.
@@ -38,4 +38,3 @@ deploy-job:      # This job runs in the deploy stage.
   script:
     - echo "Deploying application..."
     - echo "Application successfully deployed."
-    - ls target
