@@ -294,7 +294,7 @@ public class Graves extends JavaPlugin {
     }
 
     private void updateConfig() {
-        double currentConfigVersion = 3;
+        double currentConfigVersion = 4;
         double configVersion = getConfig().getInt("config-version");
 
         if (configVersion < currentConfigVersion) {

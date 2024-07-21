@@ -6,9 +6,9 @@
 
     <groupId>com.ranull</groupId>
     <artifactId>graves</artifactId>
-    <name>Graves</name>
+    <name>GravesX</name>
     <description>Full featured lightweight death chest plugin.</description>
-    <version>4.9.2.1.1</version>
+    <version>4.9.2.2</version>
 
     <developers>
         <developer>
