@@ -166,7 +166,7 @@ public final class GraveManager {
         if (plugin.getVersionManager().hasParticle()
                 && location.getWorld() != null
                 && plugin.getConfig("particle.enabled", grave).getBoolean("particle.enabled")) {
-            Particle particle = Particle.valueOf(plugin.getVersionManager().getParticleForVersion("REDSTONE"));
+            Particle particle = Particle.valueOf(plugin.getVersionManager().getParticleForVersion("REDSTONE").toString());
             String particleType = plugin.getConfig("particle.type", grave).getString("particle.type");
 
             if (particleType != null && !particleType.equals("")) {
@@ -187,7 +187,8 @@ public final class GraveManager {
             if (location.getWorld() != null) {
                 switch (particle.name()) {
                     case "REDSTONE":
-                        int size = plugin.getConfig("particle.dust-size", grave).getInt("particle.dust-size");
+                        int sizeInt = plugin.getConfig("particle.dust-size", grave).getInt("particle.dust-size");
+                        float size = (float) sizeInt; // Convert to float
                         Color color = ColorUtil.getColor(plugin.getConfig("particle.dust-color", grave)
                                 .getString("particle.dust-color", "RED"));
 
@@ -202,7 +203,12 @@ public final class GraveManager {
                         location.getWorld().spawnParticle(particle, location, count, 1);
                         break;
                     default:
-                        location.getWorld().spawnParticle(particle, location, count);
+                        try {
+                            location.getWorld().spawnParticle(particle, location, count);
+                        } catch (IllegalArgumentException e) {
+                            // May not work for all forks and versions, but will try again
+                            location.getWorld().spawnParticle(particle, location, count, 0, 0, 0, 0);
+                        }
                         break;
                 }
             }
