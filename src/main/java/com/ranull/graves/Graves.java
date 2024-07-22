@@ -337,13 +337,13 @@ public class Graves extends JavaPlugin {
                         double pluginVersion = Double.parseDouble(getDescription().getVersion());
                         double pluginVersionLatest = Double.parseDouble(latestVersion);
 
-                        if (pluginVersionLatest != 4.9 && pluginVersion < pluginVersionLatest) {
+                        if (pluginVersion < pluginVersionLatest) {
                             getLogger().info("Update: Outdated version detected " + pluginVersion
                                     + ", latest version is " + pluginVersionLatest
                                     + ", https://www.spigotmc.org/resources/" + getSpigotID() + "/");
                         }
                     } catch (NumberFormatException exception) {
-                        if (!getDescription().getVersion().equalsIgnoreCase(latestVersion) && !latestVersion.equalsIgnoreCase("4.9")) {
+                        if (!getDescription().getVersion().equalsIgnoreCase(latestVersion)) {
                             getLogger().info("Update: Outdated version detected " + getDescription().getVersion()
                                     + ", latest version is " + latestVersion + ", https://www.spigotmc.org/resources/"
                                     + getSpigotID() + "/");
@@ -634,7 +634,7 @@ public class Graves extends JavaPlugin {
     }
 
     public final int getSpigotID() {
-        return 74208;
+        return 118271;
     }
 
     public final int getMetricsID() {

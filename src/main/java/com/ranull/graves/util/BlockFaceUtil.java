@@ -4,7 +4,17 @@ import org.bukkit.Rotation;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.LivingEntity;
 
+/**
+ * Utility class for handling BlockFace related operations.
+ */
 public final class BlockFaceUtil {
+
+    /**
+     * Simplifies the given BlockFace to one of the four cardinal directions (NORTH, EAST, SOUTH, WEST).
+     *
+     * @param blockFace The BlockFace to simplify.
+     * @return The simplified BlockFace.
+     */
     public static BlockFace getSimpleBlockFace(BlockFace blockFace) {
         switch (blockFace) {
             case EAST:
@@ -21,10 +31,22 @@ public final class BlockFaceUtil {
         }
     }
 
+    /**
+     * Gets the BlockFace corresponding to the yaw of the given LivingEntity.
+     *
+     * @param livingEntity The LivingEntity whose yaw is used.
+     * @return The BlockFace corresponding to the yaw.
+     */
     public static BlockFace getEntityYawBlockFace(LivingEntity livingEntity) {
         return getYawBlockFace(livingEntity.getLocation().getYaw());
     }
 
+    /**
+     * Gets the rotation corresponding to the given BlockFace.
+     *
+     * @param blockFace The BlockFace to convert.
+     * @return The corresponding Rotation.
+     */
     public static Rotation getBlockFaceRotation(BlockFace blockFace) {
         switch (blockFace) {
             case SOUTH:
@@ -46,6 +68,12 @@ public final class BlockFaceUtil {
         }
     }
 
+    /**
+     * Converts a yaw angle to the corresponding BlockFace.
+     *
+     * @param yaw The yaw angle to convert.
+     * @return The corresponding BlockFace.
+     */
     public static BlockFace getYawBlockFace(float yaw) {
         float direction = yaw % 360;
 
@@ -73,6 +101,12 @@ public final class BlockFaceUtil {
         }
     }
 
+    /**
+     * Converts a BlockFace to the corresponding yaw angle.
+     *
+     * @param blockFace The BlockFace to convert.
+     * @return The corresponding yaw angle.
+     */
     public static int getBlockFaceYaw(BlockFace blockFace) {
         switch (blockFace) {
             case SOUTH:

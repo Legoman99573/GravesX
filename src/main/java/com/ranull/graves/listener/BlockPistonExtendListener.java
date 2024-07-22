@@ -8,20 +8,36 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPistonExtendEvent;
 
+/**
+ * Listens for BlockPistonExtendEvent to prevent pistons from moving blocks that are graves or are near holograms of graves.
+ */
 public class BlockPistonExtendListener implements Listener {
     private final Graves plugin;
 
+    /**
+     * Constructs a new BlockPistonExtendListener with the specified Graves plugin.
+     *
+     * @param plugin The Graves plugin instance.
+     */
     public BlockPistonExtendListener(Graves plugin) {
         this.plugin = plugin;
     }
 
+    /**
+     * Handles BlockPistonExtendEvent to prevent pistons from extending if they are moving a grave block or a block near a grave hologram.
+     *
+     * @param event The BlockPistonExtendEvent to handle.
+     */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockPistonExtend(BlockPistonExtendEvent event) {
+        // Get the block that will be moved by the piston
         Block block = event.getBlock().getRelative(event.getDirection());
 
+        // Check if the block being moved is a grave
         if (plugin.getBlockManager().getGraveFromBlock(block) != null) {
             event.setCancelled(true);
         } else {
+            // Check if any nearby entity is a hologram of a grave
             for (Entity entity : block.getWorld().getNearbyEntities(block.getLocation(), 0.5, 0.5, 0.5)) {
                 if (plugin.getHologramManager().getGrave(entity) != null) {
                     event.setCancelled(true);

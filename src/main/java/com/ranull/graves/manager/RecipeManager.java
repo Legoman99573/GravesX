@@ -19,21 +19,35 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+/**
+ * Manages custom recipes for the Graves plugin.
+ */
 public final class RecipeManager {
     private final Graves plugin;
     private final List<NamespacedKey> namespacedKeyList;
 
+    /**
+     * Initializes a new instance of the RecipeManager class.
+     *
+     * @param plugin The plugin instance.
+     */
     public RecipeManager(Graves plugin) {
         this.plugin = plugin;
         this.namespacedKeyList = new ArrayList<>();
         reload();
     }
 
+    /**
+     * Reloads the recipes.
+     */
     public void reload() {
         unload();
         load();
     }
 
+    /**
+     * Loads the recipes from the configuration.
+     */
     public void load() {
         ConfigurationSection configurationSection = plugin.getConfig().getConfigurationSection("settings.token");
 
@@ -47,6 +61,9 @@ public final class RecipeManager {
         }
     }
 
+    /**
+     * Unloads the custom recipes.
+     */
     public void unload() {
         Iterator<Recipe> iterator = Bukkit.recipeIterator();
 
@@ -63,6 +80,12 @@ public final class RecipeManager {
         }
     }
 
+    /**
+     * Retrieves the token item based on the configuration.
+     *
+     * @param token The token identifier.
+     * @return The token item.
+     */
     public ItemStack getToken(String token) {
         if (plugin.getConfig().isConfigurationSection("settings.token." + token)) {
             Material material = Material.matchMaterial(plugin.getConfig()
@@ -106,6 +129,11 @@ public final class RecipeManager {
         return null;
     }
 
+    /**
+     * Retrieves the list of tokens from the configuration.
+     *
+     * @return The list of token identifiers.
+     */
     public List<String> getTokenList() {
         List<String> stringList = new ArrayList<>();
         ConfigurationSection configurationSection = plugin.getConfig().getConfigurationSection("settings.token");
@@ -117,6 +145,12 @@ public final class RecipeManager {
         return stringList;
     }
 
+    /**
+     * Adds a custom token recipe.
+     *
+     * @param token     The token identifier.
+     * @param itemStack The item stack representing the token.
+     */
     public void addTokenRecipe(String token, ItemStack itemStack) {
         NamespacedKey namespacedKey = new NamespacedKey(plugin, token + "GraveToken");
 
@@ -158,7 +192,6 @@ public final class RecipeManager {
                 recipeKey++;
             }
 
-
             if (plugin.getServer().getRecipe(namespacedKey) == null) {
                 plugin.getServer().addRecipe(shapedRecipe);
                 namespacedKeyList.add(namespacedKey);
@@ -168,6 +201,13 @@ public final class RecipeManager {
         }
     }
 
+    /**
+     * Retrieves a token item from a player's inventory.
+     *
+     * @param token         The token identifier.
+     * @param itemStackList The list of item stacks in the player's inventory.
+     * @return The token item stack, or null if not found.
+     */
     public ItemStack getGraveTokenFromPlayer(String token, List<ItemStack> itemStackList) {
         for (ItemStack itemStack : itemStackList) {
             if (itemStack != null && isToken(token, itemStack)) {
@@ -178,6 +218,12 @@ public final class RecipeManager {
         return null;
     }
 
+    /**
+     * Sets the recipe data on an item stack.
+     *
+     * @param token     The token identifier.
+     * @param itemStack The item stack.
+     */
     public void setRecipeData(String token, ItemStack itemStack) {
         if (plugin.getVersionManager().hasPersistentData()) {
             ItemMeta itemMeta = itemStack.getItemMeta();
@@ -190,6 +236,13 @@ public final class RecipeManager {
         }
     }
 
+    /**
+     * Checks if an item stack is a token of a specified type.
+     *
+     * @param token     The token identifier.
+     * @param itemStack The item stack.
+     * @return True if the item stack is a token of the specified type, otherwise false.
+     */
     public boolean isToken(String token, ItemStack itemStack) {
         if (plugin.getVersionManager().hasPersistentData()) {
             if (itemStack.getItemMeta() != null && itemStack.getItemMeta().getPersistentDataContainer()
@@ -207,6 +260,12 @@ public final class RecipeManager {
         return false;
     }
 
+    /**
+     * Retrieves the token name from an item stack.
+     *
+     * @param itemStack The item stack.
+     * @return The token name, or null if not found.
+     */
     public String getTokenName(ItemStack itemStack) {
         if (plugin.getVersionManager().hasPersistentData()) {
             if (itemStack.getItemMeta() != null && itemStack.getItemMeta().getPersistentDataContainer()
@@ -219,12 +278,24 @@ public final class RecipeManager {
         return null;
     }
 
+    /**
+     * Checks if an item stack is a token.
+     *
+     * @param itemStack The item stack.
+     * @return True if the item stack is a token, otherwise false.
+     */
     public boolean isToken(ItemStack itemStack) {
         return plugin.getVersionManager().hasPersistentData() && itemStack.getItemMeta() != null
                 && itemStack.getItemMeta().getPersistentDataContainer()
                 .has(new NamespacedKey(plugin, "token"), PersistentDataType.STRING);
     }
 
+    /**
+     * Gets the character for a recipe slot based on the count.
+     *
+     * @param count The count.
+     * @return The character for the recipe slot.
+     */
     private char getChar(int count) {
         switch (count) {
             case 1:

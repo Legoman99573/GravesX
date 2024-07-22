@@ -2,9 +2,19 @@ package com.ranull.graves.util;
 
 import org.bukkit.Color;
 
+/**
+ * Utility class for handling color operations.
+ */
 public final class ColorUtil {
-    public static Color getColor(String string) {
-        switch (string.toUpperCase()) {
+
+    /**
+     * Gets the {@link Color} corresponding to the given color name.
+     *
+     * @param colorName The name of the color as a string.
+     * @return The {@link Color} corresponding to the given name, or {@code null} if no match is found.
+     */
+    public static Color getColor(String colorName) {
+        switch (colorName.toUpperCase()) {
             case "AQUA":
                 return Color.AQUA;
             case "BLACK":

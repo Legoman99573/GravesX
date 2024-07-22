@@ -23,7 +23,20 @@ import org.bukkit.material.Openable;
 import java.lang.reflect.Field;
 import java.util.Collection;
 
+/**
+ * An implementation of the Compatibility interface for handling material data.
+ */
 public final class CompatibilityMaterialData implements Compatibility {
+
+    /**
+     * Sets the block data for a given location and material, associating it with a grave.
+     *
+     * @param location The location where the block data should be set.
+     * @param material The material of the block to set.
+     * @param grave    The grave associated with the block.
+     * @param plugin   The Graves plugin instance.
+     * @return The BlockData representing the set block data.
+     */
     @Override
     public BlockData setBlockData(Location location, Material material, Grave grave, Graves plugin) {
         if (material != null) {
@@ -49,6 +62,14 @@ public final class CompatibilityMaterialData implements Compatibility {
         return new BlockData(location, grave.getUUID(), null, null);
     }
 
+    /**
+     * Checks if a player can build at a given location.
+     *
+     * @param player   The player to check.
+     * @param location The location to check.
+     * @param plugin   The Graves plugin instance.
+     * @return True if the player can build at the location, false otherwise.
+     */
     @SuppressWarnings("deprecation")
     @Override
     public boolean canBuild(Player player, Location location, Graves plugin) {
@@ -61,12 +82,25 @@ public final class CompatibilityMaterialData implements Compatibility {
         return blockPlaceEvent.canBuild() && !blockPlaceEvent.isCancelled();
     }
 
+    /**
+     * Checks if a block has title data.
+     *
+     * @param block The block to check.
+     * @return True if the block has title data, false otherwise.
+     */
     @SuppressWarnings("ConstantConditions")
     @Override
     public boolean hasTitleData(Block block) {
         return block.getState() instanceof BlockState;
     }
 
+    /**
+     * Updates the skull block with the owner or texture data.
+     *
+     * @param block  The skull block to update.
+     * @param grave  The grave associated with the skull.
+     * @param plugin The Graves plugin instance.
+     */
     @SuppressWarnings("deprecation")
     private void updateSkullBlock(Block block, Grave grave, Graves plugin) {
         int headType = plugin.getConfig("block.head.type", grave).getInt("block.head.type");
@@ -100,6 +134,13 @@ public final class CompatibilityMaterialData implements Compatibility {
         skull.update();
     }
 
+    /**
+     * Gets the skull item stack for a given grave.
+     *
+     * @param grave  The grave associated with the skull.
+     * @param plugin The Graves plugin instance.
+     * @return The ItemStack representing the skull.
+     */
     @SuppressWarnings("deprecation")
     @Override
     public ItemStack getSkullItemStack(Grave grave, Graves plugin) {
@@ -125,6 +166,12 @@ public final class CompatibilityMaterialData implements Compatibility {
         return null;
     }
 
+    /**
+     * Gets the texture of a skull item stack.
+     *
+     * @param itemStack The item stack representing the skull.
+     * @return The texture of the skull as a string.
+     */
     @Override
     public String getSkullTexture(ItemStack itemStack) {
         Material material = Material.matchMaterial("SKULL_ITEM");
@@ -145,7 +192,7 @@ public final class CompatibilityMaterialData implements Compatibility {
                     if (!propertyCollection.isEmpty()) {
                         try {
                             return propertyCollection.stream().findFirst().get().value();
-                        } catch(NoSuchMethodError blah) {
+                        } catch (NoSuchMethodError meh) {
                             return propertyCollection.stream().findFirst().get().getValue();
                         }
                     }

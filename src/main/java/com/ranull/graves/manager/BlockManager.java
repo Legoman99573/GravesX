@@ -13,13 +13,27 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * The BlockManager class is responsible for managing block data and operations related to graves.
+ */
 public final class BlockManager {
     private final Graves plugin;
 
+    /**
+     * Initializes a new instance of the BlockManager class.
+     *
+     * @param plugin The plugin instance.
+     */
     public BlockManager(Graves plugin) {
         this.plugin = plugin;
     }
 
+    /**
+     * Gets the BlockData associated with the specified block.
+     *
+     * @param block The block to get the data for.
+     * @return The BlockData associated with the block, or null if not found.
+     */
     public BlockData getBlockData(Block block) {
         if (plugin.getDataManager().hasChunkData(block.getLocation())) {
             ChunkData chunkData = plugin.getDataManager().getChunkData(block.getLocation());
@@ -32,6 +46,12 @@ public final class BlockManager {
         return null;
     }
 
+    /**
+     * Gets the grave associated with the specified block.
+     *
+     * @param block The block to get the grave for.
+     * @return The grave associated with the block, or null if not found.
+     */
     public Grave getGraveFromBlock(Block block) {
         BlockData blockData = getBlockData(block);
 
@@ -39,6 +59,12 @@ public final class BlockManager {
                 ? plugin.getCacheManager().getGraveMap().get(blockData.getGraveUUID()) : null;
     }
 
+    /**
+     * Creates a block at the specified location for the given grave.
+     *
+     * @param location The location to create the block.
+     * @param grave    The grave associated with the block.
+     */
     public void createBlock(Location location, Grave grave) {
         location = LocationUtil.roundLocation(location);
 
@@ -93,6 +119,12 @@ public final class BlockManager {
         }
     }
 
+    /**
+     * Gets a list of BlockData associated with the given grave.
+     *
+     * @param grave The grave to get the BlockData list for.
+     * @return A list of BlockData associated with the grave.
+     */
     public List<BlockData> getBlockDataList(Grave grave) {
         List<BlockData> blockDataList = new ArrayList<>();
 
@@ -107,6 +139,12 @@ public final class BlockManager {
         return blockDataList;
     }
 
+    /**
+     * Gets a list of locations of blocks associated with the given grave.
+     *
+     * @param grave The grave to get the block locations for.
+     * @return A list of locations of blocks associated with the grave.
+     */
     public List<Location> getBlockList(Grave grave) {
         List<Location> locationList = new ArrayList<>();
 
@@ -121,6 +159,11 @@ public final class BlockManager {
         return locationList;
     }
 
+    /**
+     * Removes all blocks associated with the given grave.
+     *
+     * @param grave The grave to remove the blocks for.
+     */
     public void removeBlock(Grave grave) {
         for (ChunkData chunkData : plugin.getCacheManager().getChunkMap().values()) {
 
@@ -134,6 +177,11 @@ public final class BlockManager {
         }
     }
 
+    /**
+     * Removes a specific block represented by the given BlockData.
+     *
+     * @param blockData The BlockData representing the block to remove.
+     */
     public void removeBlock(BlockData blockData) {
         Location location = blockData.getLocation();
 

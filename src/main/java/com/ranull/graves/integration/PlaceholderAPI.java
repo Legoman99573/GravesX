@@ -13,9 +13,18 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
 
+/**
+ * Integration class for PlaceholderAPI to provide custom placeholders for the Graves plugin.
+ * Extends PlaceholderExpansion and implements Relational for placeholder handling.
+ */
 public final class PlaceholderAPI extends PlaceholderExpansion implements Relational {
     private final Graves plugin;
 
+    /**
+     * Constructs a new PlaceholderAPI instance with the specified Graves plugin.
+     *
+     * @param plugin The main Graves plugin instance.
+     */
     public PlaceholderAPI(Graves plugin) {
         this.plugin = plugin;
     }
@@ -48,10 +57,18 @@ public final class PlaceholderAPI extends PlaceholderExpansion implements Relati
         return plugin.getDescription().getVersion();
     }
 
+    /**
+     * Handles placeholder requests for the Graves plugin.
+     *
+     * @param player     The player requesting the placeholder (may be null).
+     * @param identifier The identifier of the placeholder.
+     * @return The value of the placeholder, or an empty string if not applicable.
+     */
     @Override
     public String onPlaceholderRequest(Player player, @NotNull String identifier) {
         identifier = identifier.toLowerCase();
 
+        // Handle different placeholders based on the identifier
         if (identifier.equals("author")) {
             return getAuthor();
         } else if (identifier.equals("version")) {
@@ -232,6 +249,7 @@ public final class PlaceholderAPI extends PlaceholderExpansion implements Relati
             return "";
         }
 
+        // Handle player-specific placeholder
         if (player != null) {
             if (identifier.equals("count")) {
                 return String.valueOf(plugin.getGraveManager().getGraveCount(player));
@@ -241,6 +259,14 @@ public final class PlaceholderAPI extends PlaceholderExpansion implements Relati
         return null;
     }
 
+    /**
+     * Handles relational placeholder requests (not yet implemented).
+     *
+     * @param playerOne The first player.
+     * @param playerTwo The second player.
+     * @param identifier The identifier of the placeholder.
+     * @return The value of the placeholder, or null if not implemented.
+     */
     @Override
     public String onPlaceholderRequest(Player playerOne, Player playerTwo, String identifier) {
         return onPlaceholderRequest(playerOne, identifier); // TODO

@@ -24,13 +24,26 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.*;
 
+/**
+ * Listener for handling entity death events and creating graves.
+ */
 public class EntityDeathListener implements Listener {
     private final Graves plugin;
 
+    /**
+     * Constructs an EntityDeathListener with the specified Graves plugin.
+     *
+     * @param plugin The Graves plugin instance.
+     */
     public EntityDeathListener(Graves plugin) {
         this.plugin = plugin;
     }
 
+    /**
+     * Handles the EntityDeathEvent to create a grave based on various conditions.
+     *
+     * @param event The EntityDeathEvent to handle.
+     */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)//remove ", ignoreCancelled = true" if 3rd party plugins support breaks
     public void onEntityDeath(EntityDeathEvent event) {
         LivingEntity livingEntity = event.getEntity();

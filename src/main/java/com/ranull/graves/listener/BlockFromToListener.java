@@ -6,15 +6,29 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockFromToEvent;
 
+/**
+ * Listens for BlockFromToEvent to prevent water or lava from flowing over grave blocks.
+ */
 public class BlockFromToListener implements Listener {
     private final Graves plugin;
 
+    /**
+     * Constructs a new BlockFromToListener with the specified Graves plugin.
+     *
+     * @param plugin The Graves plugin instance.
+     */
     public BlockFromToListener(Graves plugin) {
         this.plugin = plugin;
     }
 
+    /**
+     * Handles BlockFromToEvent to prevent fluid from flowing into grave blocks.
+     *
+     * @param event The BlockFromToEvent to handle.
+     */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockFromTo(BlockFromToEvent event) {
+        // Check if the destination block of the fluid is a grave
         if (plugin.getBlockManager().getGraveFromBlock(event.getToBlock()) != null) {
             event.setCancelled(true);
         }

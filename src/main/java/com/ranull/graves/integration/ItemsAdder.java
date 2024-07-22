@@ -19,10 +19,19 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Integration with the ItemsAdder plugin for handling custom furniture and blocks.
+ */
 public final class ItemsAdder extends EntityDataManager {
     private final Graves plugin;
     private final Plugin itemsAdderPlugin;
 
+    /**
+     * Constructs an ItemsAdder instance and saves data related to ItemsAdder.
+     *
+     * @param plugin           The Graves plugin instance.
+     * @param itemsAdderPlugin The ItemsAdder plugin instance.
+     */
     public ItemsAdder(Graves plugin, Plugin itemsAdderPlugin) {
         super(plugin);
 
@@ -32,6 +41,9 @@ public final class ItemsAdder extends EntityDataManager {
         saveData();
     }
 
+    /**
+     * Copies resource files needed for ItemsAdder integration.
+     */
     public void saveData() {
         if (plugin.getConfig().getBoolean("settings.integration.itemsadder.write")) {
             ResourceUtil.copyResources("data/plugin/" + itemsAdderPlugin.getName().toLowerCase() + "/data",
@@ -42,6 +54,12 @@ public final class ItemsAdder extends EntityDataManager {
         }
     }
 
+    /**
+     * Creates and places custom furniture at a specified location.
+     *
+     * @param location The location to place the furniture.
+     * @param grave    The grave object associated with the furniture.
+     */
     public void createFurniture(Location location, Grave grave) {
         location = LocationUtil.roundLocation(location).add(0.5, 0, 0.5);
 
@@ -67,14 +85,29 @@ public final class ItemsAdder extends EntityDataManager {
         }
     }
 
+    /**
+     * Removes all custom furniture associated with a specific grave.
+     *
+     * @param grave The grave object whose furniture is to be removed.
+     */
     public void removeFurniture(Grave grave) {
         removeFurniture(getEntityDataMap(getLoadedEntityDataList(grave)));
     }
 
+    /**
+     * Removes custom furniture associated with a specific entity data.
+     *
+     * @param entityData The entity data for the furniture to be removed.
+     */
     public void removeFurniture(EntityData entityData) {
         removeFurniture(getEntityDataMap(Collections.singletonList(entityData)));
     }
 
+    /**
+     * Removes custom furniture based on a map of entity data and entities.
+     *
+     * @param entityDataMap A map of entity data and corresponding entities to be removed.
+     */
     public void removeFurniture(Map<EntityData, Entity> entityDataMap) {
         List<EntityData> entityDataList = new ArrayList<>();
 
@@ -87,6 +120,12 @@ public final class ItemsAdder extends EntityDataManager {
         plugin.getDataManager().removeEntityData(entityDataList);
     }
 
+    /**
+     * Creates and places a custom block at a specified location.
+     *
+     * @param location The location to place the block.
+     * @param grave    The grave object associated with the block.
+     */
     public void createBlock(Location location, Grave grave) {
         if (plugin.getConfig("itemsadder.block.enabled", grave)
                 .getBoolean("itemsadder.block.enabled")) {
@@ -104,18 +143,43 @@ public final class ItemsAdder extends EntityDataManager {
         }
     }
 
+    /**
+     * Checks if a custom block exists at a specified location.
+     *
+     * @param location The location to check.
+     * @return True if a custom block exists at the location, false otherwise.
+     */
     public boolean isCustomBlock(Location location) {
         return CustomBlock.byAlreadyPlaced(location.getBlock()) != null;
     }
 
+    /**
+     * Removes a custom block at a specified location.
+     *
+     * @param location The location of the block to be removed.
+     */
     public void removeBlock(Location location) {
         CustomBlock.remove(location);
     }
 
+    /**
+     * Creates a custom furniture instance with a specified name and location.
+     *
+     * @param name      The name of the custom furniture.
+     * @param location  The location where the furniture should be placed.
+     * @return The created CustomFurniture instance, or null if creation failed.
+     */
     private CustomFurniture createCustomFurniture(String name, Location location) {
         return CustomFurniture.spawn(name, location.getBlock());
     }
 
+    /**
+     * Creates a custom block instance with a specified name and location.
+     *
+     * @param name      The name of the custom block.
+     * @param location  The location where the block should be placed.
+     * @return The created CustomBlock instance, or null if creation failed.
+     */
     private CustomBlock createCustomBlock(String name, Location location) {
         return CustomBlock.place(name, location);
     }

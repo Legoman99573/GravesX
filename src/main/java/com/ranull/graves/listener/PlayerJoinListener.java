@@ -8,13 +8,35 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 
+/**
+ * Listener for handling PlayerJoinEvent to notify players about plugin updates.
+ */
 public class PlayerJoinListener implements Listener {
     private final Graves plugin;
 
+    /**
+     * Constructs a PlayerJoinListener with the specified Graves plugin.
+     *
+     * @param plugin The Graves plugin instance.
+     */
     public PlayerJoinListener(Graves plugin) {
         this.plugin = plugin;
     }
 
+    /**
+     * Handles the PlayerJoinEvent to notify players about available plugin updates.
+     *
+     * This method checks if the plugin's update check is enabled and if the player has the
+     * permission to receive update notifications. If so, it runs an asynchronous task to
+     * fetch the latest version of the plugin and compares it with the player's current version.
+     *
+     * If the player's version is outdated, a message is sent to the player indicating the
+     * current version, the latest version, and a link to the Spigot resource page.
+     *
+     * The comparison is handled carefully to ensure proper handling of version format errors.
+     *
+     * @param event The PlayerJoinEvent to handle.
+     */
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();

@@ -12,13 +12,33 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.inventory.EquipmentSlot;
 
+/**
+ * Listener for handling PlayerInteractAtEntityEvent to interact with graves represented by ArmorStands.
+ */
 public class PlayerInteractAtEntityListener implements Listener {
     private final Graves plugin;
 
+    /**
+     * Constructs a PlayerInteractAtEntityListener with the specified Graves plugin.
+     *
+     * @param plugin The Graves plugin instance.
+     */
     public PlayerInteractAtEntityListener(Graves plugin) {
         this.plugin = plugin;
     }
 
+    /**
+     * Handles the PlayerInteractAtEntityEvent when a player interacts with an ArmorStand entity.
+     *
+     * If the interacted entity is an ArmorStand and represents a grave, the interaction will
+     * either open the grave or cancel the event based on the grave's state and the player's actions.
+     *
+     * The event is only processed if:
+     * - The hand used for the interaction is the main hand (or the plugin version does not support a second hand).
+     * - The player is not in Spectator mode (if the server version is 1.7).
+     *
+     * @param event The PlayerInteractAtEntityEvent to handle.
+     */
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onPlayerInteractAtEntity(PlayerInteractAtEntityEvent event) {
         Player player = event.getPlayer();

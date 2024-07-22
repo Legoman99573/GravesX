@@ -6,13 +6,27 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 
+/**
+ * Listens for ProjectBreakEvent from FurnitureLib and handles the event based on the presence of associated graves.
+ */
 public class ProjectBreakListener implements Listener {
     private final FurnitureLib furnitureLib;
 
+    /**
+     * Constructs a new ProjectBreakListener with the specified FurnitureLib instance.
+     *
+     * @param furnitureLib The FurnitureLib instance to use.
+     */
     public ProjectBreakListener(FurnitureLib furnitureLib) {
         this.furnitureLib = furnitureLib;
     }
 
+    /**
+     * Handles ProjectBreakEvent. If the project being broken is associated with a grave,
+     * it cancels the event to prevent the break.
+     *
+     * @param event The ProjectBreakEvent to handle.
+     */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onProjectBreak(ProjectBreakEvent event) {
         event.setCancelled(event.getID().getUUID() != null

@@ -16,11 +16,19 @@ import java.io.File;
 import java.sql.*;
 import java.util.*;
 
+/**
+ * Manages data storage and retrieval for the Graves plugin.
+ */
 public final class DataManager {
     private final Graves plugin;
     private Type type;
     private HikariDataSource dataSource;
 
+    /**
+     * Initializes the DataManager with the specified plugin instance and sets up the database connection.
+     *
+     * @param plugin the Graves plugin instance.
+     */
     public DataManager(Graves plugin) {
         this.plugin = plugin;
 
@@ -56,6 +64,9 @@ public final class DataManager {
         }
     }
 
+    /**
+     * Enum representing the types of databases supported.
+     */
     public enum Type {
         SQLITE,
         MYSQL,
@@ -63,6 +74,9 @@ public final class DataManager {
         INVALID
     }
 
+    /**
+     * Loads data from the database asynchronously.
+     */
     private void load() {
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
@@ -99,6 +113,11 @@ public final class DataManager {
         });
     }
 
+    /**
+     * Loads database tables.
+     *
+     * @throws SQLException if an SQL error occurs.
+     */
     private void loadTables() throws SQLException {
         setupGraveTable();
         setupBlockTable();
@@ -127,10 +146,18 @@ public final class DataManager {
         }
     }
 
+    /**
+     * Reloads the data manager with the current type.
+     */
     public void reload() {
         reload(type);
     }
 
+    /**
+     * Reloads the data manager with the specified type.
+     *
+     * @param type the type of database.
+     */
     public void reload(Type type) {
         loadType(type);
         if ((type == Type.MYSQL || type == Type.MARIADB) && !testMySQLConnection()) {
@@ -141,6 +168,11 @@ public final class DataManager {
         load();
     }
 
+    /**
+     * Loads the database type and sets up the data source.
+     *
+     * @param type the type of database.
+     */
     public void loadType(Type type) {
         this.type = type;
         if (type == Type.SQLITE) {
@@ -213,6 +245,11 @@ public final class DataManager {
         }
     }
 
+    /**
+     * Configures the SQLite data source.
+     *
+     * @param config the HikariConfig to configure.
+     */
     private void configureSQLite(HikariConfig config) {
         config.setJdbcUrl("jdbc:sqlite:" + plugin.getDataFolder() + File.separator + "data" + File.separator + "data.db");
         config.setConnectionTimeout(30000); // 30 seconds
@@ -224,6 +261,9 @@ public final class DataManager {
         config.setDriverClassName("org.sqlite.JDBC");
     }
 
+    /**
+     * Migrates root data to a sub-data directory.
+     */
     @SuppressWarnings("ResultOfMethodCallIgnored")
     private void migrateRootDataSubData() {
         new File(plugin.getDataFolder(), "data").mkdirs();
@@ -237,10 +277,22 @@ public final class DataManager {
         }
     }
 
+    /**
+     * Checks if chunk data exists for a specified location.
+     *
+     * @param location the location to check.
+     * @return true if chunk data exists, false otherwise.
+     */
     public boolean hasChunkData(Location location) {
         return plugin.getCacheManager().getChunkMap().containsKey(LocationUtil.chunkToString(location));
     }
 
+    /**
+     * Retrieves chunk data for a specified location.
+     *
+     * @param location the location to retrieve chunk data for.
+     * @return the chunk data.
+     */
     public ChunkData getChunkData(Location location) {
         String chunkString = LocationUtil.chunkToString(location);
         ChunkData chunkData;
@@ -254,10 +306,21 @@ public final class DataManager {
         return chunkData;
     }
 
+    /**
+     * Removes chunk data.
+     *
+     * @param chunkData the chunk data to remove.
+     */
     public void removeChunkData(ChunkData chunkData) {
         plugin.getCacheManager().getChunkMap().remove(LocationUtil.chunkToString(chunkData.getLocation()));
     }
 
+    /**
+     * Retrieves a list of columns for a specified table.
+     *
+     * @param tableName the table name.
+     * @return the list of columns.
+     */
     public List<String> getColumnList(String tableName) {
         List<String> columnList = new ArrayList<>();
         ResultSet resultSet = null;
@@ -281,6 +344,12 @@ public final class DataManager {
         return columnList;
     }
 
+    /**
+     * Checks if a table exists in the database.
+     *
+     * @param tableName the table name.
+     * @return true if the table exists, false otherwise.
+     */
     public boolean tableExists(String tableName) {
         ResultSet resultSet = null;
         try {
@@ -298,6 +367,14 @@ public final class DataManager {
         }
     }
 
+    /**
+     * Adds a column to a table if it does not exist.
+     *
+     * @param tableName       the table name.
+     * @param columnName      the column name.
+     * @param columnDefinition the column definition.
+     * @throws SQLException if an SQL error occurs.
+     */
     private void addColumnIfNotExists(String tableName, String columnName, String columnDefinition) throws SQLException {
         List<String> columnList = getColumnList(tableName);
         if (!columnList.contains(columnName)) {
@@ -305,6 +382,11 @@ public final class DataManager {
         }
     }
 
+    /**
+     * Sets up the grave table in the database.
+     *
+     * @throws SQLException if an SQL error occurs.
+     */
     public void setupGraveTable() throws SQLException {
         String name = "grave";
         if (!tableExists(name)) {
@@ -357,6 +439,11 @@ public final class DataManager {
         addColumnIfNotExists(name, "permissions", "TEXT");
     }
 
+    /**
+     * Sets up the block table in the database.
+     *
+     * @throws SQLException if an SQL error occurs.
+     */
     public void setupBlockTable() throws SQLException {
         String name = "block";
         if (!tableExists(name)) {
@@ -373,6 +460,11 @@ public final class DataManager {
         addColumnIfNotExists(name, "replace_data", "TEXT");
     }
 
+    /**
+     * Sets up the hologram table in the database.
+     *
+     * @throws SQLException if an SQL error occurs.
+     */
     public void setupHologramTable() throws SQLException {
         String name = "hologram";
         if (!tableExists(name)) {
@@ -389,6 +481,12 @@ public final class DataManager {
         addColumnIfNotExists(name, "location", "VARCHAR(255)");
     }
 
+    /**
+     * Sets up an entity table in the database.
+     *
+     * @param name the name of the table.
+     * @throws SQLException if an SQL error occurs.
+     */
     private void setupEntityTable(String name) throws SQLException {
         if (!tableExists(name)) {
             executeUpdate("CREATE TABLE IF NOT EXISTS " + name + " (" +
@@ -402,6 +500,9 @@ public final class DataManager {
         addColumnIfNotExists(name, "uuid_grave", "VARCHAR(255)");
     }
 
+    /**
+     * Loads the grave map from the database.
+     */
     private void loadGraveMap() {
         plugin.getCacheManager().getGraveMap().clear();
 
@@ -417,6 +518,9 @@ public final class DataManager {
         }
     }
 
+    /**
+     * Loads the block map from the database.
+     */
     private void loadBlockMap() {
         try (ResultSet resultSet = executeQuery("SELECT * FROM block;")) {
             while (resultSet != null && resultSet.next()) {
@@ -432,6 +536,12 @@ public final class DataManager {
         }
     }
 
+    /**
+     * Loads an entity map from the database.
+     *
+     * @param table the table name.
+     * @param type  the type of entity data.
+     */
     private void loadEntityMap(String table, EntityData.Type type) {
         try (ResultSet resultSet = executeQuery("SELECT * FROM " + table + ";")) {
             while (resultSet != null && resultSet.next()) {
@@ -455,6 +565,9 @@ public final class DataManager {
         }
     }
 
+    /**
+     * Loads the hologram map from the database.
+     */
     private void loadHologramMap() {
         try (ResultSet resultSet = executeQuery("SELECT * FROM hologram;")) {
             while (resultSet != null && resultSet.next()) {
@@ -479,6 +592,12 @@ public final class DataManager {
         }
     }
 
+    /**
+     * Loads entity data from the database.
+     *
+     * @param table the table name.
+     * @param type  the type of entity data.
+     */
     private void loadEntityDataMap(String table, EntityData.Type type) {
         try (ResultSet resultSet = executeQuery("SELECT * FROM " + table + ";")) {
             while (resultSet != null && resultSet.next()) {
@@ -501,6 +620,11 @@ public final class DataManager {
         }
     }
 
+    /**
+     * Adds block data to the database.
+     *
+     * @param blockData the block data to add.
+     */
     public void addBlockData(BlockData blockData) {
         getChunkData(blockData.getLocation()).addBlockData(blockData);
 
@@ -514,6 +638,11 @@ public final class DataManager {
                         "VALUES (" + location + ", " + uuidGrave + ", " + replaceMaterial + ", " + replaceData + ");"));
     }
 
+    /**
+     * Removes block data from the database.
+     *
+     * @param location the location of the block data to remove.
+     */
     public void removeBlockData(Location location) {
         getChunkData(location).removeBlockData(location);
 
@@ -522,6 +651,11 @@ public final class DataManager {
                         + LocationUtil.locationToString(location) + "';"));
     }
 
+    /**
+     * Adds hologram data to the database.
+     *
+     * @param hologramData the hologram data to add.
+     */
     public void addHologramData(HologramData hologramData) {
         getChunkData(hologramData.getLocation()).addEntityData(hologramData);
 
@@ -535,6 +669,11 @@ public final class DataManager {
                         + uuidEntity + ", " + uuidGrave + ", " + line + ", " + location + ");"));
     }
 
+    /**
+     * Removes hologram data from the database.
+     *
+     * @param entityDataList the list of entity data to remove.
+     */
     public void removeHologramData(List<EntityData> entityDataList) {
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             try (Connection connection = getConnection();
@@ -551,6 +690,11 @@ public final class DataManager {
         });
     }
 
+    /**
+     * Adds entity data to the database.
+     *
+     * @param entityData the entity data to add.
+     */
     public void addEntityData(EntityData entityData) {
         getChunkData(entityData.getLocation()).addEntityData(entityData);
 
@@ -567,10 +711,20 @@ public final class DataManager {
         }
     }
 
+    /**
+     * Removes entity data from the database.
+     *
+     * @param entityData the entity data to remove.
+     */
     public void removeEntityData(EntityData entityData) {
         removeEntityData(Collections.singletonList(entityData));
     }
 
+    /**
+     * Removes a list of entity data from the database.
+     *
+     * @param entityDataList the list of entity data to remove.
+     */
     public void removeEntityData(List<EntityData> entityDataList) {
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             try (Connection connection = getConnection();
@@ -592,6 +746,12 @@ public final class DataManager {
         });
     }
 
+    /**
+     * Returns the table name for the specified entity data type.
+     *
+     * @param type the entity data type.
+     * @return the table name.
+     */
     public String entityDataTypeTable(EntityData.Type type) {
         switch (type) {
             case ARMOR_STAND:
@@ -615,6 +775,11 @@ public final class DataManager {
         }
     }
 
+    /**
+     * Adds a grave to the database.
+     *
+     * @param grave the grave to add.
+     */
     public void addGrave(Grave grave) {
         plugin.getCacheManager().getGraveMap().put(grave.getUUID(), grave);
 
@@ -661,10 +826,20 @@ public final class DataManager {
                         + timeProtection + ", " + timeCreation + ", " + permissions + ");"));
     }
 
+    /**
+     * Removes a grave from the database.
+     *
+     * @param grave the grave to remove.
+     */
     public void removeGrave(Grave grave) {
         removeGrave(grave.getUUID());
     }
 
+    /**
+     * Removes a grave from the database by UUID.
+     *
+     * @param uuid the UUID of the grave to remove.
+     */
     public void removeGrave(UUID uuid) {
         plugin.getCacheManager().getGraveMap().remove(uuid);
 
@@ -673,6 +848,13 @@ public final class DataManager {
         });
     }
 
+    /**
+     * Updates a grave in the database.
+     *
+     * @param grave  the grave to update.
+     * @param column the column to update.
+     * @param string the new value for the column.
+     */
     public void updateGrave(Grave grave, String column, String string) {
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             executeUpdate("UPDATE grave SET " + column + " = '" + string + "' WHERE uuid = '"
@@ -680,6 +862,12 @@ public final class DataManager {
         });
     }
 
+    /**
+     * Converts a ResultSet to a Grave object.
+     *
+     * @param resultSet the ResultSet to convert.
+     * @return the Grave object.
+     */
     public Grave resultSetToGrave(ResultSet resultSet) {
         try {
             Grave grave = new Grave(UUID.fromString(resultSet.getString("uuid")));
@@ -733,10 +921,20 @@ public final class DataManager {
         return null;
     }
 
+    /**
+     * Checks if the database connection is active.
+     *
+     * @return true if the connection is active, false otherwise.
+     */
     private boolean isConnected() {
         return dataSource != null && !dataSource.isClosed();
     }
 
+    /**
+     * Retrieves a connection from the data source.
+     *
+     * @return the database connection.
+     */
     private Connection getConnection() {
         try {
             return dataSource.getConnection();
@@ -747,12 +945,20 @@ public final class DataManager {
         }
     }
 
+    /**
+     * Closes the database connection.
+     */
     public void closeConnection() {
         if (dataSource != null && !dataSource.isClosed()) {
             dataSource.close();
         }
     }
 
+    /**
+     * Executes a batch of SQL statements.
+     *
+     * @param statement the statement containing the batch.
+     */
     private void executeBatch(Statement statement) {
         try {
             statement.executeBatch();
@@ -761,6 +967,11 @@ public final class DataManager {
         }
     }
 
+    /**
+     * Executes an update SQL statement.
+     *
+     * @param sql the SQL statement.
+     */
     private void executeUpdate(String sql) {
         try (Connection connection = getConnection();
              Statement statement = connection.createStatement()) {
@@ -773,6 +984,12 @@ public final class DataManager {
         }
     }
 
+    /**
+     * Executes a query SQL statement.
+     *
+     * @param sql the SQL statement.
+     * @return the ResultSet of the query.
+     */
     private ResultSet executeQuery(String sql) {
         Connection connection = null;
         Statement statement = null;
@@ -792,6 +1009,11 @@ public final class DataManager {
         return null;
     }
 
+    /**
+     * Closes a database connection.
+     *
+     * @param connection the connection to close.
+     */
     private void closeConnection(Connection connection) {
         if (connection != null) {
             try {
@@ -802,6 +1024,11 @@ public final class DataManager {
         }
     }
 
+    /**
+     * Closes a statement.
+     *
+     * @param statement the statement to close.
+     */
     private void closeStatement(Statement statement) {
         if (statement != null) {
             try {
@@ -812,6 +1039,11 @@ public final class DataManager {
         }
     }
 
+    /**
+     * Closes a ResultSet.
+     *
+     * @param resultSet the ResultSet to close.
+     */
     private void closeResultSet(ResultSet resultSet) {
         if (resultSet != null) {
             try {
@@ -822,6 +1054,11 @@ public final class DataManager {
         }
     }
 
+    /**
+     * Tests the MySQL connection.
+     *
+     * @return true if the connection is successful, false otherwise.
+     */
     private boolean testMySQLConnection() {
         try (Connection testConnection = getConnection()) {
             return testConnection != null && !testConnection.isClosed();
@@ -831,6 +1068,9 @@ public final class DataManager {
         }
     }
 
+    /**
+     * Migrates data from SQLite to MySQL.
+     */
     private void migrateToMySQL() {
         File dataFolder = new File(plugin.getDataFolder(), "data");
         File sqliteFile = new File(dataFolder, "data.db");
@@ -931,6 +1171,13 @@ public final class DataManager {
         }
     }
 
+    /**
+     * Maps SQLite data types to MySQL data types.
+     *
+     * @param sqliteType the SQLite data type.
+     * @param columnName the column name.
+     * @return the MySQL data type.
+     */
     private String mapSQLiteTypeToMySQL(String sqliteType, String columnName) {
         switch (sqliteType.toUpperCase()) {
             case "INT":
@@ -961,6 +1208,9 @@ public final class DataManager {
         }
     }
 
+    /**
+     * Keeps the database connection alive by periodically executing a query.
+     */
     private void keepConnectionAlive() {
         plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin, () -> {
             if (isConnected()) {

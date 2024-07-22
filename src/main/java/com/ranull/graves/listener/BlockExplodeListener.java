@@ -12,13 +12,26 @@ import org.bukkit.event.block.BlockExplodeEvent;
 
 import java.util.Iterator;
 
+/**
+ * Listens for BlockExplodeEvent to handle interactions with grave blocks when they are affected by explosions.
+ */
 public class BlockExplodeListener implements Listener {
     private final Graves plugin;
 
+    /**
+     * Constructs a new BlockExplodeListener with the specified Graves plugin.
+     *
+     * @param plugin The Graves plugin instance.
+     */
     public BlockExplodeListener(Graves plugin) {
         this.plugin = plugin;
     }
 
+    /**
+     * Handles BlockExplodeEvent to manage grave interactions when blocks are exploded.
+     *
+     * @param event The BlockExplodeEvent to handle.
+     */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockExplode(BlockExplodeEvent event) {
         Iterator<Block> iterator = event.blockList().iterator();
@@ -30,6 +43,7 @@ public class BlockExplodeListener implements Listener {
             if (grave != null) {
                 Location location = block.getLocation();
 
+                // Remove newly created graves from explosion impact
                 if ((System.currentTimeMillis() - grave.getTimeCreation()) < 1000) {
                     iterator.remove();
                 } else if (plugin.getConfig("explode", grave).getBoolean("explode")) {

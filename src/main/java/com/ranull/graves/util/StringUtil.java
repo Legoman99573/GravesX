@@ -17,7 +17,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Utility class for handling and formatting strings, including placeholders and color codes.
+ */
 public final class StringUtil {
+
+    /**
+     * Formats a string by capitalizing each word and replacing underscores with spaces.
+     *
+     * @param string The string to format.
+     * @return The formatted string.
+     */
     public static String format(String string) {
         return capitalizeFully(string.replace("_", " "));
     }
@@ -46,6 +56,17 @@ public final class StringUtil {
         return parseString(string, entity, plugin.getEntityManager().getEntityName(entity), location, grave, plugin);
     }
 
+    /**
+     * Parses a string and replaces placeholders with corresponding values.
+     *
+     * @param string    The string to parse.
+     * @param entity    The entity involved.
+     * @param name      The name to replace in the string.
+     * @param location  The location to replace in the string.
+     * @param grave     The grave object to replace in the string.
+     * @param plugin    The plugin instance.
+     * @return The parsed string with placeholders replaced.
+     */
     public static String parseString(String string, Entity entity, String name, Location location, Grave grave,
                                      Graves plugin) {
         if (location != null) {
@@ -178,6 +199,13 @@ public final class StringUtil {
         return string.replace("&", "§");
     }
 
+    /**
+     * Parses time placeholders in a string and replaces them with the corresponding values.
+     *
+     * @param string The string to parse.
+     * @param grave  The grave object.
+     * @return The parsed string with time placeholders replaced.
+     */
     public static String parseTime(String string, Grave grave) {
         long time = grave.getTimeCreation() - grave.getTimeAlive();
         int day = (int) TimeUnit.SECONDS.toDays(time);
@@ -204,6 +232,14 @@ public final class StringUtil {
         return string;
     }
 
+    /**
+     * Gets the date string for a given time in a specific format.
+     *
+     * @param grave The grave object.
+     * @param time  The time in milliseconds.
+     * @param plugin The plugin instance.
+     * @return The formatted date string.
+     */
     public static String getDateString(Grave grave, long time, Graves plugin) {
         if (time > 0) {
             return new SimpleDateFormat(plugin.getConfig("time.date", grave)
@@ -213,6 +249,14 @@ public final class StringUtil {
         return plugin.getConfig("time.infinite", grave).getString("time.infinite");
     }
 
+    /**
+     * Gets the time string for a given duration in milliseconds.
+     *
+     * @param grave The grave object.
+     * @param time  The time in milliseconds.
+     * @param plugin The plugin instance.
+     * @return The formatted time string.
+     */
     public static String getTimeString(Grave grave, long time, Graves plugin) {
         if (time > 0) {
             time = time / 1000;
@@ -252,6 +296,12 @@ public final class StringUtil {
         return plugin.getConfig("time.infinite", grave).getString("time.infinite");
     }
 
+    /**
+     * Normalizes whitespace in a string.
+     *
+     * @param string The string to normalize.
+     * @return The normalized string.
+     */
     private static String normalizeSpace(String string) {
         try {
             string = StringUtils.normalizeSpace(string);
@@ -261,6 +311,12 @@ public final class StringUtil {
         return string;
     }
 
+    /**
+     * Capitalizes each word in a string fully.
+     *
+     * @param string The string to capitalize.
+     * @return The capitalized string.
+     */
     private static String capitalizeFully(String string) {
         try {
             string = WordUtils.capitalizeFully(string);

@@ -28,6 +28,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Integration class for handling communication with the Oraxen plugin.
+ * Manages creation, removal, and verification of Oraxen furniture and blocks.
+ */
 public final class Oraxen extends EntityDataManager {
     private final Graves plugin;
     private final Plugin oraxenPlugin;
@@ -35,6 +39,12 @@ public final class Oraxen extends EntityDataManager {
     private final EntityDamageListener entityDamageListener;
     private final HangingBreakListener hangingBreakListener;
 
+    /**
+     * Constructs a new Oraxen instance and initializes listeners.
+     *
+     * @param plugin       The main Graves plugin instance.
+     * @param oraxenPlugin The Oraxen plugin instance.
+     */
     public Oraxen(Graves plugin, Plugin oraxenPlugin) {
         super(plugin);
 
@@ -48,6 +58,9 @@ public final class Oraxen extends EntityDataManager {
         registerListeners();
     }
 
+    /**
+     * Saves the data related to the Oraxen plugin.
+     */
     public void saveData() {
         if (plugin.getConfig().getBoolean("settings.integration.oraxen.write")) {
             ResourceUtil.copyResources("data/plugin/" + oraxenPlugin.getName().toLowerCase() + "/items",
@@ -59,12 +72,18 @@ public final class Oraxen extends EntityDataManager {
         }
     }
 
+    /**
+     * Registers event listeners for Oraxen-related events.
+     */
     public void registerListeners() {
         plugin.getServer().getPluginManager().registerEvents(playerInteractEntityListener, plugin);
         plugin.getServer().getPluginManager().registerEvents(entityDamageListener, plugin);
         plugin.getServer().getPluginManager().registerEvents(hangingBreakListener, plugin);
     }
 
+    /**
+     * Unregisters event listeners to prevent memory leaks or other issues.
+     */
     public void unregisterListeners() {
         if (playerInteractEntityListener != null) {
             HandlerList.unregisterAll(playerInteractEntityListener);
@@ -79,6 +98,12 @@ public final class Oraxen extends EntityDataManager {
         }
     }
 
+    /**
+     * Creates and places Oraxen furniture at a specified location.
+     *
+     * @param location The location where the furniture will be placed.
+     * @param grave    The grave related to the furniture.
+     */
     public void createFurniture(Location location, Grave grave) {
         if (plugin.getConfig("oraxen.furniture.enabled", grave)
                 .getBoolean("oraxen.furniture.enabled")) {
@@ -105,14 +130,29 @@ public final class Oraxen extends EntityDataManager {
         }
     }
 
+    /**
+     * Removes all Oraxen furniture associated with a specified grave.
+     *
+     * @param grave The grave whose associated furniture will be removed.
+     */
     public void removeFurniture(Grave grave) {
         removeFurniture(getEntityDataMap(getLoadedEntityDataList(grave)));
     }
 
+    /**
+     * Removes a specific Oraxen furniture entity based on entity data.
+     *
+     * @param entityData The entity data of the furniture to be removed.
+     */
     public void removeFurniture(EntityData entityData) {
         removeFurniture(getEntityDataMap(Collections.singletonList(entityData)));
     }
 
+    /**
+     * Removes Oraxen furniture entities based on a map of entity data to entities.
+     *
+     * @param entityDataMap A map of entity data to entities to be removed.
+     */
     public void removeFurniture(Map<EntityData, Entity> entityDataMap) {
         List<EntityData> entityDataList = new ArrayList<>();
 
@@ -124,6 +164,12 @@ public final class Oraxen extends EntityDataManager {
         plugin.getDataManager().removeEntityData(entityDataList);
     }
 
+    /**
+     * Creates and places an Oraxen block at a specified location.
+     *
+     * @param location The location where the block will be placed.
+     * @param grave    The grave related to the block.
+     */
     public void createBlock(Location location, Grave grave) {
         if (plugin.getConfig("oraxen.block.enabled", grave)
                 .getBoolean("oraxen.block.enabled")) {
@@ -141,6 +187,12 @@ public final class Oraxen extends EntityDataManager {
         }
     }
 
+    /**
+     * Checks if a block at a specified location is a custom Oraxen block.
+     *
+     * @param location The location of the block to check.
+     * @return True if the block is a custom Oraxen block, false otherwise.
+     */
     @SuppressWarnings("deprecation")
     public boolean isCustomBlock(Location location) {
         if (location.getBlock().getBlockData() instanceof NoteBlock) {
@@ -154,16 +206,33 @@ public final class Oraxen extends EntityDataManager {
         return false;
     }
 
+    /**
+     * Removes a block at a specified location.
+     *
+     * @param location The location of the block to be removed.
+     */
     public void removeBlock(Location location) {
         location.getBlock().setType(Material.AIR);
     }
 
+    /**
+     * Retrieves a FurnitureMechanic by name from the Oraxen plugin.
+     *
+     * @param string The name of the furniture mechanic.
+     * @return The FurnitureMechanic if found, otherwise null.
+     */
     public FurnitureMechanic getFurnitureMechanic(String string) {
         MechanicFactory mechanicFactory = MechanicsManager.getMechanicFactory("furniture");
 
         return mechanicFactory != null ? (FurnitureMechanic) mechanicFactory.getMechanic(string) : null;
     }
 
+    /**
+     * Retrieves a NoteBlockMechanic by name from the Oraxen plugin.
+     *
+     * @param string The name of the note block mechanic.
+     * @return The NoteBlockMechanic if found, otherwise null.
+     */
     public NoteBlockMechanic getNoteBlockMechanic(String string) {
         MechanicFactory mechanicFactory = MechanicsManager.getMechanicFactory("noteblock");
 

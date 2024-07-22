@@ -17,6 +17,9 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
+/**
+ * Integration with the GriefDefender plugin for managing permissions related to graves.
+ */
 public final class GriefDefender {
     private final Core core;
     private final Registry registry;
@@ -24,6 +27,9 @@ public final class GriefDefender {
     private final Flag createFlag;
     private final Flag teleportFlag;
 
+    /**
+     * Constructs a GriefDefender instance and registers custom flags.
+     */
     public GriefDefender() {
         core = com.griefdefender.api.GriefDefender.getCore();
         registry = com.griefdefender.api.GriefDefender.getRegistry();
@@ -38,6 +44,11 @@ public final class GriefDefender {
         }
     }
 
+    /**
+     * Builds the flag for creating graves.
+     *
+     * @return The creation flag.
+     */
     private Flag buildCreateFlag() {
         return Flag.builder()
                 .id("graves:graves-create")
@@ -46,6 +57,11 @@ public final class GriefDefender {
                 .build();
     }
 
+    /**
+     * Builds the flag for teleporting to graves.
+     *
+     * @return The teleport flag.
+     */
     private Flag buildTeleportFlag() {
         return Flag.builder()
                 .id("graves:graves-teleport")
@@ -54,6 +70,13 @@ public final class GriefDefender {
                 .build();
     }
 
+    /**
+     * Checks if a player has permission to create a grave at a specified location.
+     *
+     * @param player   The player whose permissions are being checked.
+     * @param location The location where the grave would be created.
+     * @return True if the player can create a grave, false otherwise.
+     */
     public boolean canCreateGrave(Player player, Location location) {
         if (location.getWorld() != null) {
             PlayerData playerData = core.getPlayerData(location.getWorld().getUID(), player.getUniqueId());
@@ -61,7 +84,6 @@ public final class GriefDefender {
             if (playerData != null) {
                 Claim claim = core.getClaimAt(location);
                 Set<Context> contextSet = new HashSet<>();
-
                 contextSet.add(new Context("graves:graves_create", player.getName()));
 
                 Tristate tristate = permissionManager.getActiveFlagPermissionValue(null, location, claim,
@@ -70,11 +92,11 @@ public final class GriefDefender {
                 return tristate == Tristate.TRUE;
             }
         }
-
         return false;
     }
 
     /*
+    // Commented-out methods for potential future functionality with GriefDefender:
 
     public boolean canCreateGrave(Location location) {
         return createFlag != null
@@ -95,7 +117,15 @@ public final class GriefDefender {
     }
      */
 
+    /**
+     * Checks if an entity has permission to teleport to a specific location.
+     * This is a placeholder method and needs implementation.
+     *
+     * @param entity   The entity whose teleportation permission is being checked.
+     * @param location The location to which the entity wants to teleport.
+     * @return True if the entity can teleport, false otherwise.
+     */
     public boolean canTeleport(Entity entity, Location location) {
-        return true; // TODO
+        return true; // TODO: Implement actual teleport permission check
     }
 }

@@ -21,13 +21,26 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * The ImportManager class handles the import of graves from external plugins.
+ */
 public final class ImportManager {
     private final Graves plugin;
 
+    /**
+     * Initializes a new instance of the ImportManager class.
+     *
+     * @param plugin The plugin instance.
+     */
     public ImportManager(Graves plugin) {
         this.plugin = plugin;
     }
 
+    /**
+     * Imports graves from external plugins.
+     *
+     * @return A list of imported graves.
+     */
     public List<Grave> importExternalPluginGraves() {
         List<Grave> graveList = new ArrayList<>();
 
@@ -36,6 +49,11 @@ public final class ImportManager {
         return graveList;
     }
 
+    /**
+     * Imports graves from the AngelChest plugin.
+     *
+     * @return A list of graves imported from AngelChest.
+     */
     private List<Grave> importAngelChest() {
         List<Grave> graveList = new ArrayList<>();
         File angelChest = new File(plugin.getPluginsFolder(), "AngelChest");
@@ -61,6 +79,12 @@ public final class ImportManager {
         return graveList;
     }
 
+    /**
+     * Converts an AngelChest file to a Grave object.
+     *
+     * @param file The AngelChest file.
+     * @return The converted Grave object.
+     */
     public Grave convertAngelChestToGrave(File file) {
         FileConfiguration angelChest = loadFile(file);
 
@@ -99,9 +123,7 @@ public final class ImportManager {
                 grave.setOwnerTextureSignature(SkinUtil.getSignature(player));
             }
 
-            //grave.setTimeCreation(angelChest.getLong("created", System.currentTimeMillis()));
             grave.setTimeCreation(System.currentTimeMillis());
-            //grave.setTimeAlive(angelChest.getInt("secondsLeft", 0) * 10000L);
             grave.setTimeAlive(plugin.getConfig("grave.time", grave).getInt("grave.time") * 1000L);
             grave.setProtection(angelChest.getBoolean("isProtected", false));
             grave.setExperience(angelChest.getInt("experience", 0));
@@ -149,6 +171,12 @@ public final class ImportManager {
         return null;
     }
 
+    /**
+     * Loads a YAML file and returns its configuration.
+     *
+     * @param file The file to load.
+     * @return The file configuration.
+     */
     private FileConfiguration loadFile(File file) {
         if (YAMLUtil.isValidYAML(file)) {
             try {

@@ -7,6 +7,9 @@ import org.bukkit.World;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
 
+/**
+ * The IntegrationManager class manages the integration of various plugins with the Graves plugin.
+ */
 public final class IntegrationManager {
     private final Graves plugin;
     private MultiPaper multiPaper;
@@ -28,15 +31,26 @@ public final class IntegrationManager {
     private PlayerNPC playerNPC;
     private PlaceholderAPI placeholderAPI;
 
+    /**
+     * Initializes a new instance of the IntegrationManager class.
+     *
+     * @param plugin The plugin instance.
+     */
     public IntegrationManager(Graves plugin) {
         this.plugin = plugin;
     }
 
+    /**
+     * Reloads the integrations by unloading and then loading them.
+     */
     public void reload() {
         unload();
         load();
     }
 
+    /**
+     * Loads all integrations.
+     */
     public void load() {
         loadMultiPaper();
         loadVault();
@@ -60,6 +74,9 @@ public final class IntegrationManager {
         loadCompatibilityWarnings();
     }
 
+    /**
+     * Unloads all integrations.
+     */
     public void unload() {
         if (furnitureLib != null) {
             furnitureLib.unregisterListeners();

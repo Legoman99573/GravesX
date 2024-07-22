@@ -16,17 +16,31 @@ import org.bukkit.inventory.meta.ItemMeta;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Manages the creation and manipulation of ItemStacks related to graves.
+ */
 public final class ItemStackManager extends EntityDataManager {
     private final Graves plugin;
 
     private Entity e = null;
 
+    /**
+     * Initializes a new instance of the ItemStackManager class.
+     *
+     * @param plugin The plugin instance.
+     */
     public ItemStackManager(Graves plugin) {
         super(plugin);
 
         this.plugin = plugin;
     }
 
+    /**
+     * Creates an ItemStack representing the obituary of a grave.
+     *
+     * @param grave The grave to create an obituary for.
+     * @return The created ItemStack.
+     */
     public ItemStack getGraveObituary(Grave grave) {
         ItemStack itemStack = new ItemStack(Material.WRITTEN_BOOK, 1);
         BookMeta bookMeta = (BookMeta) itemStack.getItemMeta();
@@ -75,6 +89,12 @@ public final class ItemStackManager extends EntityDataManager {
         return itemStack;
     }
 
+    /**
+     * Creates an ItemStack representing the head of a grave owner.
+     *
+     * @param grave The grave to create a head for.
+     * @return The created ItemStack.
+     */
     public ItemStack getGraveHead(Grave grave) {
         ItemStack itemStack = plugin.getCompatibility().getSkullItemStack(grave, plugin);
         ItemMeta itemMeta = itemStack.getItemMeta();
@@ -101,6 +121,13 @@ public final class ItemStackManager extends EntityDataManager {
         return itemStack;
     }
 
+    /**
+     * Creates an ItemStack representing a grave in a list.
+     *
+     * @param number The number to display on the item.
+     * @param grave  The grave to create the ItemStack for.
+     * @return The created ItemStack.
+     */
     public ItemStack createGraveListItemStack(int number, Grave grave) {
         Material material;
         Enchantment durability = plugin.getVersionManager().getEnchantmentForVersion("DURABILITY");
@@ -160,6 +187,13 @@ public final class ItemStackManager extends EntityDataManager {
         return itemStack;
     }
 
+    /**
+     * Creates an ItemStack for a grave menu slot.
+     *
+     * @param slot  The slot number.
+     * @param grave The grave to create the ItemStack for.
+     * @return The created ItemStack.
+     */
     public ItemStack createGraveMenuItemStack(int slot, Grave grave) {
         String materialString = plugin.getConfig("gui.menu.grave.slot." + slot + ".material", grave)
                 .getString("gui.menu.grave.slot." + slot + ".material", "PAPER");
@@ -205,6 +239,13 @@ public final class ItemStackManager extends EntityDataManager {
         return itemStack;
     }
 
+    /**
+     * Creates an ItemStack for a graveyard slot.
+     *
+     * @param slot  The slot number.
+     * @param grave The grave to create the ItemStack for.
+     * @return The created ItemStack.
+     */
     public ItemStack createGraveyardItemStack(int slot, Grave grave) {
         String materialString = plugin.getConfig("gui.menu.grave.slot." + slot + ".material", grave)
                 .getString("gui.menu.grave.slot." + slot + ".material", "PAPER");

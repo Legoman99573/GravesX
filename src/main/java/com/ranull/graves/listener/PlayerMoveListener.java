@@ -9,18 +9,39 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
 
+/**
+ * Listener for handling PlayerMoveEvent to manage interactions with graves and related mechanics.
+ */
 public class PlayerMoveListener implements Listener {
     private final Graves plugin;
 
+    /**
+     * Constructs a PlayerMoveListener with the specified Graves plugin.
+     *
+     * @param plugin The Graves plugin instance.
+     */
     public PlayerMoveListener(Graves plugin) {
         this.plugin = plugin;
     }
 
+    /**
+     * Handles the PlayerMoveEvent to manage interactions with graves and update player locations.
+     *
+     * This method checks if the player has moved and whether the new location is inside a border and safe.
+     * It then updates the player's last known solid location if applicable.
+     *
+     * Additionally, if the player is moving over a location that is known to contain a grave,
+     * and if the grave's configuration allows walking over it, the grave is automatically looted
+     * if the player is allowed to open it.
+     *
+     * @param event The PlayerMoveEvent to handle.
+     */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();

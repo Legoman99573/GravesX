@@ -10,13 +10,26 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 
+/**
+ * Listens for BlockBreakEvent to handle interactions with grave blocks.
+ */
 public class BlockBreakListener implements Listener {
     private final Graves plugin;
 
+    /**
+     * Constructs a new BlockBreakListener with the specified Graves plugin.
+     *
+     * @param plugin The Graves plugin instance.
+     */
     public BlockBreakListener(Graves plugin) {
         this.plugin = plugin;
     }
 
+    /**
+     * Handles BlockBreakEvent to manage grave interactions when a block is broken.
+     *
+     * @param event The BlockBreakEvent to handle.
+     */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent event) {
         Player player = event.getPlayer();
@@ -24,10 +37,12 @@ public class BlockBreakListener implements Listener {
         Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
 
         if (grave != null) {
+            // Check if breaking the grave is allowed
             if (plugin.getConfig("grave.break", grave).getBoolean("grave.break")) {
                 if (plugin.getEntityManager().canOpenGrave(player, grave)) {
                     GraveBreakEvent graveBreakEvent = new GraveBreakEvent(block, player, grave);
 
+                    // Set whether items should be dropped
                     graveBreakEvent.setDropItems(plugin.getConfig("drop.break", grave).getBoolean("drop.break"));
                     plugin.getServer().getPluginManager().callEvent(graveBreakEvent);
 
@@ -41,7 +56,6 @@ public class BlockBreakListener implements Listener {
                                 plugin.getGraveManager().breakGrave(block.getLocation(), grave);
                             } else {
                                 event.setCancelled(true);
-
                                 return;
                             }
                         } else if (graveBreakEvent.isDropItems()) {

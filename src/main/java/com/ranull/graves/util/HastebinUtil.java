@@ -8,7 +8,18 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Utility class for posting data to Hastebin.
+ */
 public final class HastebinUtil {
+
+    /**
+     * Posts the given data to Hastebin and returns the URL of the posted data.
+     *
+     * @param data The data to be posted.
+     * @param raw  Whether to return the raw URL or the formatted URL.
+     * @return The URL of the posted data, or null if the post was unsuccessful.
+     */
     public static String postDataToHastebin(String data, boolean raw) {
         String urlString = "https://www.toptal.com/developers/hastebin/documents/";
         String pasteRawURLString = "https://www.toptal.com/developers/hastebin/raw/";
@@ -22,16 +33,18 @@ public final class HastebinUtil {
             httpsURLConnection.setUseCaches(false);
             httpsURLConnection.setRequestMethod("POST");
 
-            DataOutputStream dataOutputStream = new DataOutputStream(httpsURLConnection.getOutputStream());
+            try (DataOutputStream dataOutputStream = new DataOutputStream(httpsURLConnection.getOutputStream())) {
+                dataOutputStream.write(data.getBytes(StandardCharsets.UTF_8));
+            }
 
-            dataOutputStream.write(data.getBytes(StandardCharsets.UTF_8));
+            String response;
+            try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(httpsURLConnection.getInputStream()))) {
+                response = bufferedReader.readLine();
+            }
 
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(httpsURLConnection.getInputStream()));
-            String response = bufferedReader.readLine();
-
-            if (response.contains("\"key\"")) {
+            if (response != null && response.contains("\"key\"")) {
                 response = response.substring(response.indexOf(":") + 2, response.length() - 2);
-                response = ((raw ? pasteRawURLString : pasteURLString) + response);
+                response = (raw ? pasteRawURLString : pasteURLString) + response;
             }
 
             return !response.equals(urlString) ? response : null;

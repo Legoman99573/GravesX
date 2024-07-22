@@ -12,13 +12,26 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 
 import java.util.Iterator;
 
+/**
+ * Listener for handling entity explosion events and managing graves affected by explosions.
+ */
 public class EntityExplodeListener implements Listener {
     private final Graves plugin;
 
+    /**
+     * Constructs an EntityExplodeListener with the specified Graves plugin.
+     *
+     * @param plugin The Graves plugin instance.
+     */
     public EntityExplodeListener(Graves plugin) {
         this.plugin = plugin;
     }
 
+    /**
+     * Handles the EntityExplodeEvent to manage graves affected by the explosion.
+     *
+     * @param event The EntityExplodeEvent to handle.
+     */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityExplode(EntityExplodeEvent event) {
         Iterator<Block> iterator = event.blockList().iterator();

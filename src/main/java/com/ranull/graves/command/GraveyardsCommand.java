@@ -14,9 +14,17 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Handles command execution and tab completion for the Graveyards functionality.
+ */
 public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
     private final Graves plugin;
 
+    /**
+     * Constructor to initialize the GraveyardsCommand with the Graves plugin.
+     *
+     * @param plugin The Graves plugin instance.
+     */
     public GraveyardsCommand(Graves plugin) {
         this.plugin = plugin;
     }
@@ -27,113 +35,27 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
         if (commandSender instanceof Player) {
             Player player = (Player) commandSender;
 
-            // Disable for everyone except Ranull, not ready for production.
+            // Disable for everyone except JaySmethers, not ready for production.
             if (!player.getName().contains("JaySmethers")) {
                 commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
                         + "Graveyards not ready for production.");
-
                 return true;
             }
 
             if (args.length < 1) {
                 player.sendMessage("/graveyards create");
                 player.sendMessage("/graveyards modify");
-            } else if (args[0].equalsIgnoreCase("create")) {
-                if (args.length < 2) {
-                    player.sendMessage("/graveyard create (type)");
-                } else if (args[1].equalsIgnoreCase("worldguard")) {
-                    if (plugin.getIntegrationManager().getWorldGuard() != null) {
-                        if (plugin.getConfig().getBoolean("settings.graveyard.worldguard.enabled")) {
-                            if (args.length < 3) {
-                                player.sendMessage("/graveyard create worldguard (region)");
-                            } else {
-                                String region = args[2];
-                                World world = plugin.getIntegrationManager().getWorldGuard().getRegionWorld(args[2]);
-
-                                if (world != null) {
-                                    if (plugin.getIntegrationManager().getWorldGuard().isMember(region, player) || player.isOp()) {
-                                        Graveyard graveyard = plugin.getGraveyardManager()
-                                                .createGraveyard(player.getLocation(), region, world, Graveyard.Type.WORLDGUARD);
-
-                                        player.sendMessage("creating graveyard " + region);
-                                        plugin.getGraveyardManager().startModifyingGraveyard(player, graveyard);
-                                    } else {
-                                        player.sendMessage("you are not a member of this region");
-                                    }
-                                } else {
-                                    player.sendMessage("region not found " + region);
-                                }
-                            }
-                        } else {
-                            player.sendMessage("worldguard support disabled");
-                        }
-                    } else {
-                        player.sendMessage("worldguard not detected");
-                    }
-                } else if (args[1].equalsIgnoreCase("towny")) {
-                    if (plugin.getIntegrationManager().hasTowny()) {
-                        if (plugin.getConfig().getBoolean("settings.graveyard.towny.enabled")) {
-                            if (args.length < 3) {
-                                player.sendMessage("/graveyard create towny (name)");
-                            } else {
-                                String name = args[2].replace("_", " ");
-
-                                if (plugin.getIntegrationManager().getTowny().hasTownPlot(player, name)) {
-                                    Graveyard graveyard = plugin.getGraveyardManager()
-                                            .createGraveyard(player.getLocation(), name, player.getWorld(),
-                                                    Graveyard.Type.TOWNY);
-
-                                    player.sendMessage("creating graveyard " + name);
-                                    plugin.getGraveyardManager().startModifyingGraveyard(player, graveyard);
-                                } else {
-                                    player.sendMessage("plot not found " + name);
-                                }
-                            }
-                        } else {
-                            player.sendMessage("towny support disabled");
-                        }
-                    } else {
-                        player.sendMessage("towny not detected");
-                    }
-                } else {
-                    player.sendMessage("unknown type " + args[1]);
-                }
-            } else if (args[0].equalsIgnoreCase("modify")) {
-                if (plugin.getGraveyardManager().isModifyingGraveyard(player)) {
-                    plugin.getGraveyardManager().stopModifyingGraveyard(player);
-                } else {
-                    if (args.length < 2) {
-                        player.sendMessage("/graveyard modify (type)");
-                    } else if (args[1].equalsIgnoreCase("worldguard")) {
-                        if (plugin.getIntegrationManager().getWorldGuard() != null) {
-                            if (plugin.getConfig().getBoolean("settings.graveyard.worldguard.enabled")) {
-                                if (args.length < 3) {
-                                    player.sendMessage("/graveyard modify worldguard (region)");
-                                } else {
-                                    String region = args[2];
-                                    World world = plugin.getIntegrationManager().getWorldGuard().getRegionWorld(args[2]);
-
-                                    if (world != null) {
-                                        Graveyard graveyard = plugin.getGraveyardManager()
-                                                .getGraveyardByKey("worldguard|" + world.getName() + "|" + region);
-
-                                        if (graveyard != null) {
-                                            player.sendMessage("graveyard found");
-                                            plugin.getGraveyardManager().startModifyingGraveyard(player, graveyard);
-                                        } else {
-                                            player.sendMessage("graveyard " + region + " not found");
-                                        }
-                                    }
-                                }
-                            } else {
-                                player.sendMessage("worldguard support disabled");
-                            }
-                        } else {
-                            player.sendMessage("worldguard not detected");
-                        }
-                    } else {
-                        player.sendMessage("unknown type " + args[1]);
-                    }
+            } else {
+                switch (args[0].toLowerCase()) {
+                    case "create":
+                        handleCreateCommand(player, args);
+                        break;
+                    case "modify":
+                        handleModifyCommand(player, args);
+                        break;
+                    default:
+                        player.sendMessage("Unknown command " + args[0]);
+                        break;
                 }
             }
         } else {
@@ -148,5 +70,144 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(@NotNull CommandSender commandSender, @NotNull Command command,
                                       @NotNull String string, @NotNull String @NotNull [] args) {
         return new ArrayList<>();
+    }
+
+    private void handleCreateCommand(Player player, String[] args) {
+        if (args.length < 2) {
+            player.sendMessage("/graveyard create (type)");
+            return;
+        }
+
+        switch (args[1].toLowerCase()) {
+            case "worldguard":
+                handleWorldGuardCreate(player, args);
+                break;
+            case "towny":
+                handleTownyCreate(player, args);
+                break;
+            default:
+                player.sendMessage("Unknown type " + args[1]);
+                break;
+        }
+    }
+
+    private void handleModifyCommand(Player player, String[] args) {
+        if (plugin.getGraveyardManager().isModifyingGraveyard(player)) {
+            plugin.getGraveyardManager().stopModifyingGraveyard(player);
+        } else {
+            if (args.length < 2) {
+                player.sendMessage("/graveyard modify (type)");
+            } else {
+                switch (args[1].toLowerCase()) {
+                    case "worldguard":
+                        handleWorldGuardModify(player, args);
+                        break;
+                    default:
+                        player.sendMessage("Unknown type " + args[1]);
+                        break;
+                }
+            }
+        }
+    }
+
+    private void handleWorldGuardCreate(Player player, String[] args) {
+        if (plugin.getIntegrationManager().getWorldGuard() == null) {
+            player.sendMessage("WorldGuard not detected");
+            return;
+        }
+
+        if (!plugin.getConfig().getBoolean("settings.graveyard.worldguard.enabled")) {
+            player.sendMessage("WorldGuard support disabled");
+            return;
+        }
+
+        if (args.length < 3) {
+            player.sendMessage("/graveyard create worldguard (region)");
+            return;
+        }
+
+        String region = args[2];
+        World world = plugin.getIntegrationManager().getWorldGuard().getRegionWorld(region);
+
+        if (world == null) {
+            player.sendMessage("Region not found " + region);
+            return;
+        }
+
+        if (!plugin.getIntegrationManager().getWorldGuard().isMember(region, player) && !player.isOp()) {
+            player.sendMessage("You are not a member of this region");
+            return;
+        }
+
+        Graveyard graveyard = plugin.getGraveyardManager()
+                .createGraveyard(player.getLocation(), region, world, Graveyard.Type.WORLDGUARD);
+
+        player.sendMessage("Creating graveyard " + region);
+        plugin.getGraveyardManager().startModifyingGraveyard(player, graveyard);
+    }
+
+    private void handleTownyCreate(Player player, String[] args) {
+        if (!plugin.getIntegrationManager().hasTowny()) {
+            player.sendMessage("Towny not detected");
+            return;
+        }
+
+        if (!plugin.getConfig().getBoolean("settings.graveyard.towny.enabled")) {
+            player.sendMessage("Towny support disabled");
+            return;
+        }
+
+        if (args.length < 3) {
+            player.sendMessage("/graveyard create towny (name)");
+            return;
+        }
+
+        String name = args[2].replace("_", " ");
+
+        if (!plugin.getIntegrationManager().getTowny().hasTownPlot(player, name)) {
+            player.sendMessage("Plot not found " + name);
+            return;
+        }
+
+        Graveyard graveyard = plugin.getGraveyardManager()
+                .createGraveyard(player.getLocation(), name, player.getWorld(), Graveyard.Type.TOWNY);
+
+        player.sendMessage("Creating graveyard " + name);
+        plugin.getGraveyardManager().startModifyingGraveyard(player, graveyard);
+    }
+
+    private void handleWorldGuardModify(Player player, String[] args) {
+        if (plugin.getIntegrationManager().getWorldGuard() == null) {
+            player.sendMessage("WorldGuard not detected");
+            return;
+        }
+
+        if (!plugin.getConfig().getBoolean("settings.graveyard.worldguard.enabled")) {
+            player.sendMessage("WorldGuard support disabled");
+            return;
+        }
+
+        if (args.length < 3) {
+            player.sendMessage("/graveyard modify worldguard (region)");
+            return;
+        }
+
+        String region = args[2];
+        World world = plugin.getIntegrationManager().getWorldGuard().getRegionWorld(region);
+
+        if (world == null) {
+            player.sendMessage("Region not found " + region);
+            return;
+        }
+
+        Graveyard graveyard = plugin.getGraveyardManager().getGraveyardByKey("worldguard|" + world.getName() + "|" + region);
+
+        if (graveyard == null) {
+            player.sendMessage("Graveyard " + region + " not found");
+            return;
+        }
+
+        player.sendMessage("Graveyard found");
+        plugin.getGraveyardManager().startModifyingGraveyard(player, graveyard);
     }
 }

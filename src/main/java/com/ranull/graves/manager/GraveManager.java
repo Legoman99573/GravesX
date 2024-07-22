@@ -25,15 +25,25 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.*;
 
+/**
+ * Manages the operations and lifecycle of graves within the Graves plugin.
+ */
 public final class GraveManager {
     private final Graves plugin;
 
+    /**
+     * Initializes the GraveManager with the specified plugin instance.
+     *
+     * @param plugin the Graves plugin instance.
+     */
     public GraveManager(Graves plugin) {
         this.plugin = plugin;
-
         startGraveTimer();
     }
 
+    /**
+     * Starts the grave timer task that periodically checks and updates graves.
+     */
     private void startGraveTimer() {
         plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
             List<Grave> graveRemoveList = new ArrayList<>();
@@ -51,8 +61,7 @@ public final class GraveManager {
 
                     if (!graveTimeoutEvent.isCancelled()) {
                         if (graveTimeoutEvent.getLocation() != null
-                                && plugin.getConfig("drop.timeout", grave)
-                                .getBoolean("drop.timeout")) {
+                                && plugin.getConfig("drop.timeout", grave).getBoolean("drop.timeout")) {
                             dropGraveItems(graveTimeoutEvent.getLocation(), grave);
                             dropGraveExperience(graveTimeoutEvent.getLocation(), grave);
                         }
@@ -140,6 +149,9 @@ public final class GraveManager {
         }, 10L, 20L);
     }
 
+    /**
+     * Unloads all open grave inventories for online players.
+     */
     @SuppressWarnings("ConstantConditions")
     public void unload() {
         for (Player player : plugin.getServer().getOnlinePlayers()) {
@@ -157,11 +169,22 @@ public final class GraveManager {
         }
     }
 
+    /**
+     * Toggles the protection state of a grave.
+     *
+     * @param grave the grave to toggle protection for.
+     */
     public void toggleGraveProtection(Grave grave) {
         grave.setProtection(!grave.getProtection());
         plugin.getDataManager().updateGrave(grave, "protection", String.valueOf(grave.getProtection() ? 1 : 0));
     }
 
+    /**
+     * Spawns particle effects around a grave.
+     *
+     * @param location the location of the grave.
+     * @param grave    the grave to spawn particles for.
+     */
     public void graveParticle(Location location, Grave grave) {
         if (plugin.getVersionManager().hasParticle()
                 && location.getWorld() != null
@@ -215,6 +238,11 @@ public final class GraveManager {
         }
     }
 
+    /**
+     * Removes a grave and its associated data.
+     *
+     * @param grave the grave to remove.
+     */
     public void removeGrave(Grave grave) {
         closeGrave(grave);
         plugin.getBlockManager().removeBlock(grave);
@@ -246,49 +274,48 @@ public final class GraveManager {
             plugin.getIntegrationManager().getPlayerNPC().removeCorpse(grave);
         }
 
-
         plugin.debugMessage("Removing grave " + grave.getUUID(), 1);
     }
 
+    /**
+     * Removes entity data associated with a grave.
+     *
+     * @param entityData the entity data to remove.
+     */
     public void removeEntityData(EntityData entityData) {
         switch (entityData.getType()) {
             case HOLOGRAM: {
                 plugin.getHologramManager().removeHologram(entityData);
-
                 break;
             }
-
             case FURNITURELIB: {
                 plugin.getIntegrationManager().getFurnitureLib().removeEntityData(entityData);
-
                 break;
             }
-
             case FURNITUREENGINE: {
                 plugin.getIntegrationManager().getFurnitureEngine().removeEntityData(entityData);
-
                 break;
             }
-
             case ITEMSADDER: {
                 plugin.getIntegrationManager().getItemsAdder().removeEntityData(entityData);
-
                 break;
             }
-
             case ORAXEN: {
                 plugin.getIntegrationManager().getOraxen().removeEntityData(entityData);
-
                 break;
             }
             case PLAYERNPC: {
                 plugin.getIntegrationManager().getPlayerNPC().removeEntityData(entityData);
-
                 break;
             }
         }
     }
 
+    /**
+     * Closes any open inventories associated with a grave.
+     *
+     * @param grave the grave to close inventories for.
+     */
     @SuppressWarnings("ConstantConditions")
     public void closeGrave(Grave grave) {
         List<HumanEntity> inventoryViewers = grave.getInventory().getViewers();
@@ -314,10 +341,25 @@ public final class GraveManager {
         }
     }
 
+    /**
+     * Creates a new grave for the specified entity and list of item stacks.
+     *
+     * @param entity        the entity to create the grave for.
+     * @param itemStackList the list of item stacks to be included in the grave.
+     * @return the created grave.
+     */
     public Grave createGrave(Entity entity, List<ItemStack> itemStackList) {
         return createGrave(entity, itemStackList, plugin.getPermissionList(entity));
     }
 
+    /**
+     * Creates a new grave for the specified entity, list of item stacks, and permissions.
+     *
+     * @param entity          the entity to create the grave for.
+     * @param itemStackList   the list of item stacks to be included in the grave.
+     * @param permissionList  the list of permissions associated with the grave.
+     * @return the created grave.
+     */
     public Grave createGrave(Entity entity, List<ItemStack> itemStackList, List<String> permissionList) {
         Grave grave = new Grave(UUID.randomUUID());
         String entityName = plugin.getEntityManager().getEntityName(entity);
@@ -336,6 +378,12 @@ public final class GraveManager {
         return grave;
     }
 
+    /**
+     * Retrieves the storage mode for a given string representation.
+     *
+     * @param string the string representation of the storage mode.
+     * @return the corresponding storage mode.
+     */
     public Grave.StorageMode getStorageMode(String string) {
         try {
             Grave.StorageMode storageMode = Grave.StorageMode.valueOf(string.toUpperCase());
@@ -351,6 +399,12 @@ public final class GraveManager {
         return Grave.StorageMode.COMPACT;
     }
 
+    /**
+     * Places a grave at a specified location.
+     *
+     * @param location the location to place the grave.
+     * @param grave    the grave to be placed.
+     */
     public void placeGrave(Location location, Grave grave) {
         plugin.getBlockManager().createBlock(location, grave);
         plugin.getHologramManager().createHologram(location, grave);
@@ -382,6 +436,16 @@ public final class GraveManager {
         }
     }
 
+    /**
+     * Retrieves the grave inventory for a specified grave and living entity.
+     *
+     * @param grave                  the grave.
+     * @param livingEntity           the living entity.
+     * @param graveItemStackList     the list of item stacks to be included in the grave.
+     * @param removedItemStackList   the list of item stacks to be removed.
+     * @param permissionList         the list of permissions associated with the grave.
+     * @return the created grave inventory.
+     */
     public Inventory getGraveInventory(Grave grave, LivingEntity livingEntity,
                                        List<ItemStack> graveItemStackList, List<ItemStack> removedItemStackList,
                                        List<String> permissionList) {
@@ -396,6 +460,16 @@ public final class GraveManager {
                 title, storageMode);
     }
 
+    /**
+     * Creates a grave inventory with the specified parameters.
+     *
+     * @param inventoryHolder  the holder of the inventory.
+     * @param location         the location of the grave.
+     * @param itemStackList    the list of item stacks to be included in the inventory.
+     * @param title            the title of the inventory.
+     * @param storageMode      the storage mode for the inventory.
+     * @return the created inventory.
+     */
     public Inventory createGraveInventory(InventoryHolder inventoryHolder, Location location,
                                           List<ItemStack> itemStackList, String title, Grave.StorageMode storageMode) {
         if (storageMode == Grave.StorageMode.COMPACT || storageMode == Grave.StorageMode.CHESTSORT) {
@@ -462,6 +536,12 @@ public final class GraveManager {
         return null;
     }
 
+    /**
+     * Gets the size of the item stacks array.
+     *
+     * @param itemStacks the array of item stacks.
+     * @return the size of the item stacks array.
+     */
     public int getItemStacksSize(ItemStack[] itemStacks) {
         int counter = 0;
 
@@ -474,10 +554,27 @@ public final class GraveManager {
         return counter;
     }
 
+    /**
+     * Filters the grave item stack list based on the living entity and permission list.
+     *
+     * @param itemStackList     the original list of item stacks.
+     * @param livingEntity      the living entity.
+     * @param permissionList    the list of permissions associated with the grave.
+     * @return the filtered list of item stacks.
+     */
     public List<ItemStack> filterGraveItemStackList(List<ItemStack> itemStackList, LivingEntity livingEntity, List<String> permissionList) {
         return filterGraveItemStackList(itemStackList, new ArrayList<>(), livingEntity, permissionList);
     }
 
+    /**
+     * Filters the grave item stack list based on the living entity, removed item stacks, and permission list.
+     *
+     * @param itemStackList         the original list of item stacks.
+     * @param removedItemStackList  the list of item stacks to be removed.
+     * @param livingEntity          the living entity.
+     * @param permissionList        the list of permissions associated with the grave.
+     * @return the filtered list of item stacks.
+     */
     public List<ItemStack> filterGraveItemStackList(List<ItemStack> itemStackList, List<ItemStack> removedItemStackList,
                                                     LivingEntity livingEntity, List<String> permissionList) {
         itemStackList = new ArrayList<>(itemStackList);
@@ -518,10 +615,21 @@ public final class GraveManager {
         return itemStackList;
     }
 
+    /**
+     * Breaks a grave at its death location.
+     *
+     * @param grave the grave to be broken.
+     */
     public void breakGrave(Grave grave) {
         breakGrave(grave.getLocationDeath(), grave);
     }
 
+    /**
+     * Breaks a grave at the specified location.
+     *
+     * @param location the location to break the grave.
+     * @param grave    the grave to be broken.
+     */
     public void breakGrave(Location location, Grave grave) {
         dropGraveItems(location, grave);
         dropGraveExperience(location, grave);
@@ -529,6 +637,12 @@ public final class GraveManager {
         plugin.debugMessage("Grave " + grave.getUUID() + " broken", 1);
     }
 
+    /**
+     * Drops the items from a grave at the specified location.
+     *
+     * @param location the location to drop the items.
+     * @param grave    the grave containing the items.
+     */
     public void dropGraveItems(Location location, Grave grave) {
         if (grave != null && location.getWorld() != null) {
             for (ItemStack itemStack : grave.getInventory()) {
@@ -541,6 +655,12 @@ public final class GraveManager {
         }
     }
 
+    /**
+     * Gives the experience from a grave to a player.
+     *
+     * @param player the player to receive the experience.
+     * @param grave  the grave containing the experience.
+     */
     public void giveGraveExperience(Player player, Grave grave) {
         if (grave.getExperience() > 0) {
             player.giveExp(grave.getExperience());
@@ -549,6 +669,12 @@ public final class GraveManager {
         }
     }
 
+    /**
+     * Drops the experience from a grave at the specified location.
+     *
+     * @param location the location to drop the experience.
+     * @param grave    the grave containing the experience.
+     */
     public void dropGraveExperience(Location location, Grave grave) {
         if (grave.getExperience() > 0 && location.getWorld() != null) {
             ExperienceOrb experienceOrb = (ExperienceOrb) location.getWorld()
@@ -559,18 +685,42 @@ public final class GraveManager {
         }
     }
 
+    /**
+     * Retrieves a list of graves associated with a player.
+     *
+     * @param player the player to retrieve the graves for.
+     * @return the list of graves.
+     */
     public List<Grave> getGraveList(Player player) {
         return getGraveList(player.getUniqueId());
     }
 
+    /**
+     * Retrieves a list of graves associated with an offline player.
+     *
+     * @param player the offline player to retrieve the graves for.
+     * @return the list of graves.
+     */
     public List<Grave> getGraveList(OfflinePlayer player) {
         return getGraveList(player.getUniqueId());
     }
 
+    /**
+     * Retrieves a list of graves associated with an entity.
+     *
+     * @param entity the entity to retrieve the graves for.
+     * @return the list of graves.
+     */
     public List<Grave> getGraveList(Entity entity) {
         return getGraveList(entity.getUniqueId());
     }
 
+    /**
+     * Retrieves a list of graves associated with a UUID.
+     *
+     * @param uuid the UUID to retrieve the graves for.
+     * @return the list of graves.
+     */
     public List<Grave> getGraveList(UUID uuid) {
         List<Grave> graveList = new ArrayList<>();
 
@@ -583,10 +733,24 @@ public final class GraveManager {
         return graveList;
     }
 
+    /**
+     * Retrieves the number of graves associated with an entity.
+     *
+     * @param entity the entity to retrieve the grave count for.
+     * @return the number of graves.
+     */
     public int getGraveCount(Entity entity) {
         return getGraveList(entity).size();
     }
 
+    /**
+     * Opens a grave for a player.
+     *
+     * @param entity   the entity attempting to open the grave.
+     * @param location the location of the grave.
+     * @param grave    the grave to be opened.
+     * @return true if the grave was opened successfully, false otherwise.
+     */
     public boolean openGrave(Entity entity, Location location, Grave grave) {
         if (entity instanceof Player) {
             Player player = (Player) entity;
@@ -614,6 +778,12 @@ public final class GraveManager {
         return false;
     }
 
+    /**
+     * Cleans up compasses from a player's inventory that are associated with a grave.
+     *
+     * @param player the player to clean up the compasses for.
+     * @param grave  the grave associated with the compasses.
+     */
     public void cleanupCompasses(Player player, Grave grave) {
         for (Map.Entry<ItemStack, UUID> entry : plugin.getEntityManager()
                 .getCompassesFromInventory(player).entrySet()) {
@@ -623,6 +793,13 @@ public final class GraveManager {
         }
     }
 
+    /**
+     * Retrieves a list of locations associated with a grave.
+     *
+     * @param baseLocation the base location.
+     * @param grave        the grave to retrieve the locations for.
+     * @return the list of locations.
+     */
     public List<Location> getGraveLocationList(Location baseLocation, Grave grave) {
         List<Location> locationList = new ArrayList<>(plugin.getBlockManager().getBlockList(grave));
         Map<Double, Location> locationMap = new HashMap<>();
@@ -649,12 +826,26 @@ public final class GraveManager {
         return locationList;
     }
 
+    /**
+     * Retrieves the nearest grave location to a specified location.
+     *
+     * @param location the base location.
+     * @param grave    the grave to retrieve the location for.
+     * @return the nearest grave location.
+     */
     public Location getGraveLocation(Location location, Grave grave) {
         List<Location> locationList = plugin.getGraveManager().getGraveLocationList(location, grave);
 
         return !locationList.isEmpty() ? locationList.get(0) : null;
     }
 
+    /**
+     * Automatically loots a grave for a player.
+     *
+     * @param entity   the entity looting the grave.
+     * @param location the location of the grave.
+     * @param grave    the grave to be looted.
+     */
     public void autoLootGrave(Entity entity, Location location, Grave grave) {
         if (entity instanceof Player) {
             Player player = (Player) entity;
@@ -672,7 +863,7 @@ public final class GraveManager {
                             if (counter < inventorySize) {
                                 player.getInventory().setItem(counter, itemStack);
                                 grave.getInventory().remove(itemStack);
-                                if (counter == 	17 && plugin.getVersionManager().hasSecondHand()) {
+                                if (counter == 17 && plugin.getVersionManager().hasSecondHand()) {
                                     player.getInventory().setItem(17, itemStack);
                                     grave.getInventory().remove(itemStack);
                                 }
@@ -727,19 +918,47 @@ public final class GraveManager {
         }
     }
 
+    /**
+     * Retrieves the damage reason for a specified damage cause and grave.
+     *
+     * @param damageCause the cause of the damage.
+     * @param grave       the grave associated with the damage.
+     * @return the damage reason.
+     */
     public String getDamageReason(EntityDamageEvent.DamageCause damageCause, Grave grave) {
         return plugin.getConfig("message.death-reason." + damageCause.name(), grave)
                 .getString("message.death-reason." + damageCause.name(), StringUtil.format(damageCause.name()));
     }
 
+    /**
+     * Plays an effect at a specified location.
+     *
+     * @param string   the effect string.
+     * @param location the location to play the effect.
+     */
     public void playEffect(String string, Location location) {
         playEffect(string, location, null);
     }
 
+    /**
+     * Plays an effect at a specified location for a grave.
+     *
+     * @param string   the effect string.
+     * @param location the location to play the effect.
+     * @param grave    the grave associated with the effect.
+     */
     public void playEffect(String string, Location location, Grave grave) {
         playEffect(string, location, 0, grave);
     }
 
+    /**
+     * Plays an effect at a specified location with additional data for a grave.
+     *
+     * @param string   the effect string.
+     * @param location the location to play the effect.
+     * @param data     additional data for the effect.
+     * @param grave    the grave associated with the effect.
+     */
     public void playEffect(String string, Location location, int data, Grave grave) {
         if (location.getWorld() != null) {
             if (grave != null) {
@@ -756,10 +975,26 @@ public final class GraveManager {
         }
     }
 
+    /**
+     * Checks if an item stack should be ignored based on the entity and grave.
+     *
+     * @param itemStack the item stack to check.
+     * @param entity    the entity.
+     * @param grave     the grave.
+     * @return true if the item stack should be ignored, false otherwise.
+     */
     public boolean shouldIgnoreItemStack(ItemStack itemStack, Entity entity, Grave grave) {
         return shouldIgnoreItemStack(itemStack, entity, grave.getPermissionList());
     }
 
+    /**
+     * Checks if an item stack should be ignored based on the entity and permissions.
+     *
+     * @param itemStack      the item stack to check.
+     * @param entity         the entity.
+     * @param permissionList the list of permissions.
+     * @return true if the item stack should be ignored, false otherwise.
+     */
     public boolean shouldIgnoreItemStack(ItemStack itemStack, Entity entity, List<String> permissionList) {
         if (plugin.getConfig("ignore.item.material", entity, permissionList)
                 .getStringList("ignore.item.material").contains(itemStack.getType().name())) {
@@ -817,10 +1052,23 @@ public final class GraveManager {
         return false;
     }
 
+    /**
+     * @deprecated This method is deprecated and will be removed in future versions.
+     * Use {@link #shouldIgnoreBlock(Block, Entity, List<String>)} instead.
+     */
+    @Deprecated
     public boolean shouldIgnoreBlock(Block block, Entity entity, Grave grave) {
         return shouldIgnoreBlock(block, entity, grave.getPermissionList());
     }
 
+    /**
+     * Checks if a block should be ignored based on the entity and permissions.
+     *
+     * @param block           the block to check.
+     * @param entity          the entity.
+     * @param permissionList  the list of permissions.
+     * @return true if the block should be ignored, false otherwise.
+     */
     public boolean shouldIgnoreBlock(Block block, Entity entity, List<String> permissionList) {
         List<String> stringList = plugin.getConfig("ignore.block.material", entity, permissionList)
                 .getStringList("ignore.block.material");

@@ -15,14 +15,28 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * The HologramManager class is responsible for managing holograms associated with graves.
+ */
 public final class HologramManager extends EntityDataManager {
     private final Graves plugin;
+
+    /**
+     * Initializes a new instance of the HologramManager class.
+     *
+     * @param plugin The plugin instance.
+     */
     public HologramManager(Graves plugin) {
         super(plugin);
-
         this.plugin = plugin;
     }
 
+    /**
+     * Creates a hologram at the specified location for a given grave.
+     *
+     * @param location The location where the hologram should be created.
+     * @param grave    The grave associated with the hologram.
+     */
     public void createHologram(Location location, Grave grave) {
         if (!plugin.getVersionManager().is_v1_7()
                 && plugin.getConfig("hologram.enabled", grave).getBoolean("hologram.enabled")) {
@@ -81,14 +95,29 @@ public final class HologramManager extends EntityDataManager {
         }
     }
 
+    /**
+     * Removes all holograms associated with a grave.
+     *
+     * @param grave The grave whose holograms should be removed.
+     */
     public void removeHologram(Grave grave) {
         removeHologram(getEntityDataMap(getLoadedEntityDataList(grave)));
     }
 
+    /**
+     * Removes a specific hologram associated with an entity data.
+     *
+     * @param entityData The entity data of the hologram to remove.
+     */
     public void removeHologram(EntityData entityData) {
         removeHologram(getEntityDataMap(Collections.singletonList(entityData)));
     }
 
+    /**
+     * Removes multiple holograms associated with a map of entity data to entities.
+     *
+     * @param entityDataMap The map of entity data to entities.
+     */
     public void removeHologram(Map<EntityData, Entity> entityDataMap) {
         List<EntityData> entityDataList = new ArrayList<>();
 

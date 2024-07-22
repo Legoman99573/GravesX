@@ -23,15 +23,27 @@ import org.bukkit.util.NumberConversions;
 
 import java.util.*;
 
+/**
+ * Manages the operations and lifecycle of entities within the Graves plugin.
+ */
 public final class EntityManager extends EntityDataManager {
     private final Graves plugin;
 
+    /**
+     * Initializes the EntityManager with the specified plugin instance.
+     *
+     * @param plugin the Graves plugin instance.
+     */
     public EntityManager(Graves plugin) {
         super(plugin);
-
         this.plugin = plugin;
     }
 
+    /**
+     * Swings the main hand of the specified player.
+     *
+     * @param player the player whose main hand to swing.
+     */
     public void swingMainHand(Player player) {
         if (plugin.getVersionManager().hasSwingHand()) {
             player.swingMainHand();
@@ -40,6 +52,14 @@ public final class EntityManager extends EntityDataManager {
         }
     }
 
+    /**
+     * Creates a grave compass for the specified player, location, and grave.
+     *
+     * @param player   the player for whom the compass is created.
+     * @param location the location to set on the compass.
+     * @param grave    the grave associated with the compass.
+     * @return the created compass item stack.
+     */
     public ItemStack createGraveCompass(Player player, Location location, Grave grave) {
         if (plugin.getVersionManager().hasPersistentData()) {
             Material material = Material.COMPASS;
@@ -99,6 +119,12 @@ public final class EntityManager extends EntityDataManager {
         return null;
     }
 
+    /**
+     * Retrieves a map of compasses and their associated UUIDs from a player's inventory.
+     *
+     * @param player the player whose inventory to check.
+     * @return a map of compasses and their associated UUIDs.
+     */
     public Map<ItemStack, UUID> getCompassesFromInventory(HumanEntity player) {
         Map<ItemStack, UUID> itemStackUUIDMap = new HashMap<>();
 
@@ -115,6 +141,12 @@ public final class EntityManager extends EntityDataManager {
         return itemStackUUIDMap;
     }
 
+    /**
+     * Retrieves the grave UUID from an item stack.
+     *
+     * @param itemStack the item stack to check.
+     * @return the grave UUID, or null if not found.
+     */
     public UUID getGraveUUIDFromItemStack(ItemStack itemStack) {
         if (plugin.getVersionManager().hasPersistentData() && itemStack != null && itemStack.getItemMeta() != null) {
             if (itemStack.getItemMeta().getPersistentDataContainer().has(new NamespacedKey(plugin, "graveUUID"),
@@ -127,6 +159,13 @@ public final class EntityManager extends EntityDataManager {
         return null;
     }
 
+    /**
+     * Teleports an entity to a specified location associated with a grave.
+     *
+     * @param entity   the entity to teleport.
+     * @param location the location to teleport to.
+     * @param grave    the grave associated with the teleportation.
+     */
     public void teleportEntity(Entity entity, Location location, Grave grave) {
         if (canTeleport(entity, location)) {
             location = LocationUtil.roundLocation(location);
@@ -177,6 +216,14 @@ public final class EntityManager extends EntityDataManager {
         }
     }
 
+    /**
+     * Calculates the cost of teleportation between two locations.
+     *
+     * @param location1 the starting location.
+     * @param location2 the destination location.
+     * @param grave     the grave associated with the teleportation.
+     * @return the teleportation cost.
+     */
     public double getTeleportCost(Location location1, Location location2, Grave grave) {
         double cost = plugin.getConfig("teleport.cost", grave).getDouble("teleport.cost");
 
@@ -208,6 +255,13 @@ public final class EntityManager extends EntityDataManager {
         return cost;
     }
 
+    /**
+     * Checks if an entity can teleport to a specified location.
+     *
+     * @param entity   the entity to check.
+     * @param location the location to check.
+     * @return true if the entity can teleport, false otherwise.
+     */
     public boolean canTeleport(Entity entity, Location location) {
         return (!plugin.getIntegrationManager().hasWorldGuard()
                 || plugin.getIntegrationManager().getWorldGuard().canTeleport(entity, location))
@@ -215,19 +269,49 @@ public final class EntityManager extends EntityDataManager {
                 || plugin.getIntegrationManager().getGriefDefender().canTeleport(entity, location));
     }
 
+    /**
+     * Plays a world sound at the player's location.
+     *
+     * @param string the sound identifier.
+     * @param player the player whose location to play the sound at.
+     */
     public void playWorldSound(String string, Player player) {
         playWorldSound(string, player.getLocation(), null);
     }
 
+    /**
+     * Plays a world sound at the player's location, associated with a grave.
+     *
+     * @param string the sound identifier.
+     * @param player the player whose location to play the sound at.
+     * @param grave  the grave associated with the sound.
+     */
     public void playWorldSound(String string, Player player, Grave grave) {
         playWorldSound(string, player.getLocation(), grave);
     }
 
+    /**
+     * Plays a world sound at a specified location, associated with a grave.
+     *
+     * @param string   the sound identifier.
+     * @param location the location to play the sound at.
+     * @param grave    the grave associated with the sound.
+     */
     public void playWorldSound(String string, Location location, Grave grave) {
         playWorldSound(string, location, grave != null ? grave.getOwnerType() : null, grave != null
                 ? grave.getPermissionList() : null, 1, 1);
     }
 
+    /**
+     * Plays a world sound at a specified location with additional parameters.
+     *
+     * @param string         the sound identifier.
+     * @param location       the location to play the sound at.
+     * @param entityType     the type of entity associated with the sound.
+     * @param permissionList the list of permissions associated with the sound.
+     * @param volume         the volume of the sound.
+     * @param pitch          the pitch of the sound.
+     */
     public void playWorldSound(String string, Location location, EntityType entityType, List<String> permissionList,
                                float volume, float pitch) {
         if (location.getWorld() != null) {
@@ -243,22 +327,62 @@ public final class EntityManager extends EntityDataManager {
         }
     }
 
+    /**
+     * Plays a player-specific sound at the entity's location.
+     *
+     * @param string the sound identifier.
+     * @param entity the entity to play the sound for.
+     * @param grave  the grave associated with the sound.
+     */
     public void playPlayerSound(String string, Entity entity, Grave grave) {
         playPlayerSound(string, entity, entity.getLocation(), grave.getPermissionList(), 1, 1);
     }
 
+    /**
+     * Plays a player-specific sound at a specified location for an entity.
+     *
+     * @param string   the sound identifier.
+     * @param entity   the entity to play the sound for.
+     * @param location the location to play the sound at.
+     * @param grave    the grave associated with the sound.
+     */
     public void playPlayerSound(String string, Entity entity, Location location, Grave grave) {
         playPlayerSound(string, entity, location, grave.getPermissionList(), 1, 1);
     }
 
+    /**
+     * Plays a player-specific sound at the entity's location with a permission list.
+     *
+     * @param string         the sound identifier.
+     * @param entity         the entity to play the sound for.
+     * @param permissionList the list of permissions associated with the sound.
+     */
     public void playPlayerSound(String string, Entity entity, List<String> permissionList) {
         playPlayerSound(string, entity, entity.getLocation(), permissionList, 1, 1);
     }
 
+    /**
+     * Plays a player-specific sound at a specified location with a permission list.
+     *
+     * @param string         the sound identifier.
+     * @param entity         the entity to play the sound for.
+     * @param location       the location to play the sound at.
+     * @param permissionList the list of permissions associated with the sound.
+     */
     public void playPlayerSound(String string, Entity entity, Location location, List<String> permissionList) {
         playPlayerSound(string, entity, location, permissionList, 1, 1);
     }
 
+    /**
+     * Plays a player-specific sound at a specified location with additional parameters.
+     *
+     * @param string         the sound identifier.
+     * @param entity         the entity to play the sound for.
+     * @param location       the location to play the sound at.
+     * @param permissionList the list of permissions associated with the sound.
+     * @param volume         the volume of the sound.
+     * @param pitch          the pitch of the sound.
+     */
     public void playPlayerSound(String string, Entity entity, Location location, List<String> permissionList,
                                 float volume, float pitch) {
         if (entity instanceof Player) {
@@ -275,30 +399,73 @@ public final class EntityManager extends EntityDataManager {
         }
     }
 
+    /**
+     * Sends a message to a command sender.
+     *
+     * @param string        the message identifier.
+     * @param commandSender the command sender to send the message to.
+     */
     public void sendMessage(String string, CommandSender commandSender) {
         if (commandSender instanceof Player) {
             Player player = (Player) commandSender;
-
             sendMessage(string, player, player.getLocation(), null, plugin.getPermissionList(player));
         }
     }
 
+    /**
+     * Sends a message to an entity.
+     *
+     * @param string the message identifier.
+     * @param entity the entity to send the message to.
+     */
     public void sendMessage(String string, Entity entity) {
         sendMessage(string, entity, entity.getLocation(), null, plugin.getPermissionList(entity));
     }
 
+    /**
+     * Sends a message to an entity with a permission list.
+     *
+     * @param string         the message identifier.
+     * @param entity         the entity to send the message to.
+     * @param permissionList the list of permissions associated with the message.
+     */
     public void sendMessage(String string, Entity entity, List<String> permissionList) {
         sendMessage(string, entity, entity.getLocation(), null, permissionList);
     }
 
+    /**
+     * Sends a message to an entity at a specified location with a permission list.
+     *
+     * @param string         the message identifier.
+     * @param entity         the entity to send the message to.
+     * @param location       the location associated with the message.
+     * @param permissionList the list of permissions associated with the message.
+     */
     public void sendMessage(String string, Entity entity, Location location, List<String> permissionList) {
         sendMessage(string, entity, location, null, permissionList);
     }
 
+    /**
+     * Sends a message to an entity at a specified location associated with a grave.
+     *
+     * @param string   the message identifier.
+     * @param entity   the entity to send the message to.
+     * @param location the location associated with the message.
+     * @param grave    the grave associated with the message.
+     */
     public void sendMessage(String string, Entity entity, Location location, Grave grave) {
         sendMessage(string, entity, location, grave, null);
     }
 
+    /**
+     * Sends a message to an entity with a custom name and a permission list.
+     *
+     * @param string         the message identifier.
+     * @param entity         the entity to send the message to.
+     * @param name           the custom name associated with the message.
+     * @param location       the location associated with the message.
+     * @param permissionList the list of permissions associated with the message.
+     */
     public void sendMessage(String string, Entity entity, String name, Location location, List<String> permissionList) {
         sendMessage(string, entity, name, location, null, permissionList);
     }
@@ -330,10 +497,26 @@ public final class EntityManager extends EntityDataManager {
         }
     }
 
+    /**
+     * Runs commands associated with an entity, location, and grave.
+     *
+     * @param string   the command identifier.
+     * @param entity   the entity associated with the command.
+     * @param location the location associated with the command.
+     * @param grave    the grave associated with the command.
+     */
     public void runCommands(String string, Entity entity, Location location, Grave grave) {
         runCommands(string, entity, null, location, grave);
     }
 
+    /**
+     * Runs commands associated with a name, location, and grave.
+     *
+     * @param string   the command identifier.
+     * @param name     the name associated with the command.
+     * @param location the location associated with the command.
+     * @param grave    the grave associated with the command.
+     */
     public void runCommands(String string, String name, Location location, Grave grave) {
         runCommands(string, null, name, location, grave);
     }
@@ -361,20 +544,33 @@ public final class EntityManager extends EntityDataManager {
         }
     }
 
+    /**
+     * Runs a function associated with an entity and a specified function name.
+     *
+     * @param entity   the entity to run the function for.
+     * @param function the name of the function to run.
+     * @return true if the function was run successfully, false otherwise.
+     */
     public boolean runFunction(Entity entity, String function) {
         return runFunction(entity, function, null);
     }
 
+    /**
+     * Runs a function associated with an entity, a specified function name, and a grave.
+     *
+     * @param entity   the entity to run the function for.
+     * @param function the name of the function to run.
+     * @param grave    the grave associated with the function.
+     * @return true if the function was run successfully, false otherwise.
+     */
     public boolean runFunction(Entity entity, String function, Grave grave) {
         switch (function.toLowerCase()) {
             case "list": {
                 plugin.getGUIManager().openGraveList(entity);
-
                 return true;
             }
             case "menu": {
                 plugin.getGUIManager().openGraveMenu(entity, grave);
-
                 return true;
             }
             case "teleport":
@@ -383,7 +579,7 @@ public final class EntityManager extends EntityDataManager {
                         && (EntityUtil.hasPermission(entity, "graves.teleport")
                         || EntityUtil.hasPermission(entity, "graves.bypass"))) {
                     if (EntityUtil.hasPermission(entity, "graves.bypass") && grave.getOwnerUUID() != entity.getUniqueId()) {
-                        entity.teleport(plugin.getGraveManager().getGraveLocation(grave.getLocationDeath().add(1,0,1), grave));
+                        entity.teleport(plugin.getGraveManager().getGraveLocation(grave.getLocationDeath().add(1, 0, 1), grave));
                     } else {
                         plugin.getEntityManager().teleportEntity(entity, plugin.getGraveManager()
                                 .getGraveLocationList(entity.getLocation(), grave).get(0), grave);
@@ -392,7 +588,6 @@ public final class EntityManager extends EntityDataManager {
                     plugin.getEntityManager().sendMessage("message.teleport-disabled", entity,
                             entity.getLocation(), grave);
                 }
-
                 return true;
             }
             case "protect":
@@ -402,12 +597,10 @@ public final class EntityManager extends EntityDataManager {
                     playPlayerSound("sound.protection-change", entity, grave);
                     plugin.getGUIManager().openGraveMenu(entity, grave, false);
                 }
-
                 return true;
             }
             case "distance": {
                 Location location = plugin.getGraveManager().getGraveLocation(entity.getLocation(), grave);
-
                 if (location != null) {
                     if (entity.getWorld().equals(location.getWorld())) {
                         plugin.getEntityManager().sendMessage("message.distance", entity, location, grave);
@@ -415,7 +608,6 @@ public final class EntityManager extends EntityDataManager {
                         plugin.getEntityManager().sendMessage("message.distance-world", entity, location, grave);
                     }
                 }
-
                 return true;
             }
             case "open":
@@ -442,7 +634,6 @@ public final class EntityManager extends EntityDataManager {
             }
             case "autoloot": {
                 plugin.getGraveManager().autoLootGrave(entity, entity.getLocation(), grave);
-
                 return true;
             }
         }
@@ -450,6 +641,13 @@ public final class EntityManager extends EntityDataManager {
         return false;
     }
 
+    /**
+     * Checks if a player can open a specified grave.
+     *
+     * @param player the player attempting to open the grave.
+     * @param grave  the grave to check.
+     * @return true if the player can open the grave, false otherwise.
+     */
     public boolean canOpenGrave(Player player, Grave grave) {
         if (grave.getTimeProtectionRemaining() == 0 || player.hasPermission("graves.bypass")) {
             return true;
@@ -480,6 +678,14 @@ public final class EntityManager extends EntityDataManager {
         }
     }
 
+    /**
+     * Spawns a zombie at a specified location, targeting a specified entity, and associated with a grave.
+     *
+     * @param location     the location to spawn the zombie.
+     * @param entity       the entity associated with the zombie spawn.
+     * @param targetEntity the entity to be targeted by the zombie.
+     * @param grave        the grave associated with the zombie spawn.
+     */
     public void spawnZombie(Location location, Entity entity, LivingEntity targetEntity, Grave grave) {
         if ((plugin.getConfig("zombie.spawn-owner", grave).getBoolean("zombie.spawn-owner")
                 && grave.getOwnerUUID().equals(entity.getUniqueId())
@@ -489,6 +695,12 @@ public final class EntityManager extends EntityDataManager {
         }
     }
 
+    /**
+     * Spawns a zombie at a specified location, associated with a grave.
+     *
+     * @param location the location to spawn the zombie.
+     * @param grave    the grave associated with the zombie spawn.
+     */
     public void spawnZombie(Location location, Grave grave) {
         spawnZombie(location, null, grave);
     }
@@ -573,6 +785,12 @@ public final class EntityManager extends EntityDataManager {
         }
     }
 
+    /**
+     * Creates an armor stand at a specified location associated with a grave.
+     *
+     * @param location the location to create the armor stand.
+     * @param grave    the grave associated with the armor stand.
+     */
     public void createArmorStand(Location location, Grave grave) {
         if (!plugin.getVersionManager().is_v1_7()
                 && plugin.getConfig("armor-stand.enabled", grave).getBoolean("armor-stand.enabled")) {
@@ -648,6 +866,12 @@ public final class EntityManager extends EntityDataManager {
         }
     }
 
+    /**
+     * Creates an item frame at a specified location associated with a grave.
+     *
+     * @param location the location to create the item frame.
+     * @param grave    the grave associated with the item frame.
+     */
     public void createItemFrame(Location location, Grave grave) {
         if (plugin.getConfig("item-frame.enabled", grave).getBoolean("item-frame.enabled")) {
             double offsetX = plugin.getConfig("item-frame.offset.x", grave).getDouble("item-frame.offset.x");
@@ -703,10 +927,20 @@ public final class EntityManager extends EntityDataManager {
         }
     }
 
+    /**
+     * Removes all entities associated with a grave.
+     *
+     * @param grave the grave whose entities to remove.
+     */
     public void removeEntity(Grave grave) {
         removeEntity(getEntityDataMap(getLoadedEntityDataList(grave)));
     }
 
+    /**
+     * Removes a map of entity data and their associated entities.
+     *
+     * @param entityDataMap the map of entity data and entities to remove.
+     */
     public void removeEntity(Map<EntityData, Entity> entityDataMap) {
         List<EntityData> entityDataList = new ArrayList<>();
 
@@ -722,6 +956,13 @@ public final class EntityManager extends EntityDataManager {
         plugin.getDataManager().removeEntityData(entityDataList);
     }
 
+    /**
+     * Retrieves a map of equipment slots and their corresponding item stacks for a living entity and grave.
+     *
+     * @param livingEntity the living entity to retrieve the equipment for.
+     * @param grave        the grave associated with the equipment.
+     * @return a map of equipment slots and their corresponding item stacks.
+     */
     public Map<EquipmentSlot, ItemStack> getEquipmentMap(LivingEntity livingEntity, Grave grave) {
         Map<EquipmentSlot, ItemStack> equipmentSlotItemStackMap = new HashMap<>();
 

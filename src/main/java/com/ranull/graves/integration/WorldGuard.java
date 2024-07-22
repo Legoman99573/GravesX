@@ -20,12 +20,20 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Provides integration with WorldGuard for managing regions and flags related to graves.
+ */
 public final class WorldGuard {
     private final JavaPlugin plugin;
     private final com.sk89q.worldguard.WorldGuard worldGuard;
     private final StateFlag createFlag;
     private final StateFlag teleportFlag;
 
+    /**
+     * Constructs a new WorldGuard integration instance with the specified plugin.
+     *
+     * @param plugin The JavaPlugin instance.
+     */
     public WorldGuard(JavaPlugin plugin) {
         this.plugin = plugin;
         this.worldGuard = com.sk89q.worldguard.WorldGuard.getInstance();
@@ -33,6 +41,12 @@ public final class WorldGuard {
         this.teleportFlag = getFlag("graves-teleport");
     }
 
+    /**
+     * Retrieves or registers a StateFlag with the specified name.
+     *
+     * @param string The name of the flag.
+     * @return The StateFlag if found or created, otherwise {@code null}.
+     */
     private StateFlag getFlag(String string) {
         if (plugin.getServer().getPluginManager().isPluginEnabled("WorldGuard")) {
             Flag<?> flag = worldGuard.getFlagRegistry().get(string);
@@ -43,13 +57,10 @@ public final class WorldGuard {
         } else {
             try {
                 StateFlag flag = new StateFlag(string, true);
-
                 worldGuard.getFlagRegistry().register(flag);
-
                 return flag;
             } catch (FlagConflictException exception) {
                 Flag<?> flag = worldGuard.getFlagRegistry().get(string);
-
                 if (flag instanceof StateFlag) {
                     return (StateFlag) flag;
                 }
@@ -59,6 +70,12 @@ public final class WorldGuard {
         return null;
     }
 
+    /**
+     * Checks if the location allows creating graves based on WorldGuard regions and flags.
+     *
+     * @param location The location to check.
+     * @return {@code true} if grave creation is allowed, otherwise {@code false}.
+     */
     public boolean hasCreateGrave(Location location) {
         if (location.getWorld() != null && createFlag != null) {
             RegionManager regionManager = worldGuard.getPlatform().getRegionContainer()
@@ -79,30 +96,62 @@ public final class WorldGuard {
         return false;
     }
 
+    /**
+     * Checks if the entity has permission to create graves at the specified location.
+     *
+     * @param entity   The entity to check.
+     * @param location The location to check.
+     * @return {@code true} if the entity can create graves, otherwise {@code false}.
+     */
     public boolean canCreateGrave(Entity entity, Location location) {
         return entity instanceof Player && createFlag != null
                 && worldGuard.getPlatform().getRegionContainer().createQuery().testState(BukkitAdapter.adapt(location),
                 WorldGuardPlugin.inst().wrapPlayer((Player) entity), createFlag);
     }
 
+    /**
+     * Checks if graves can be created at the specified location based on WorldGuard flags.
+     *
+     * @param location The location to check.
+     * @return {@code true} if graves can be created, otherwise {@code false}.
+     */
     public boolean canCreateGrave(Location location) {
         return createFlag != null
                 && worldGuard.getPlatform().getRegionContainer().createQuery().testState(BukkitAdapter.adapt(location),
                 (RegionAssociable) null, createFlag);
     }
 
+    /**
+     * Checks if the entity has permission to teleport at the specified location.
+     *
+     * @param entity   The entity to check.
+     * @param location The location to check.
+     * @return {@code true} if the entity can teleport, otherwise {@code false}.
+     */
     public boolean canTeleport(Entity entity, Location location) {
-        return entity instanceof Player && createFlag != null
+        return entity instanceof Player && teleportFlag != null
                 && worldGuard.getPlatform().getRegionContainer().createQuery().testState(BukkitAdapter.adapt(location),
                 WorldGuardPlugin.inst().wrapPlayer((Player) entity), teleportFlag);
     }
 
+    /**
+     * Checks if teleportation is allowed at the specified location based on WorldGuard flags.
+     *
+     * @param location The location to check.
+     * @return {@code true} if teleportation is allowed, otherwise {@code false}.
+     */
     public boolean canTeleport(Location location) {
-        return createFlag != null
+        return teleportFlag != null
                 && worldGuard.getPlatform().getRegionContainer().createQuery().testState(BukkitAdapter.adapt(location),
                 (RegionAssociable) null, teleportFlag);
     }
 
+    /**
+     * Retrieves the world associated with a specified WorldGuard region.
+     *
+     * @param region The name of the region.
+     * @return The associated World, or {@code null} if the region is not found.
+     */
     public World getRegionWorld(String region) {
         for (RegionManager regionManager : worldGuard.getPlatform().getRegionContainer().getLoaded()) {
             if (regionManager.getRegions().containsKey(region)) {
@@ -113,6 +162,13 @@ public final class WorldGuard {
         return null;
     }
 
+    /**
+     * Checks if a player is a member of a specified WorldGuard region.
+     *
+     * @param region The name of the region.
+     * @param player The player to check.
+     * @return {@code true} if the player is a member, otherwise {@code false}.
+     */
     public boolean isMember(String region, Player player) {
         for (RegionManager regionManager : worldGuard.getPlatform().getRegionContainer().getLoaded()) {
             if (regionManager.getRegions().containsKey(region)) {
@@ -127,6 +183,13 @@ public final class WorldGuard {
         return false;
     }
 
+    /**
+     * Checks if a location is inside a specified WorldGuard region.
+     *
+     * @param location The location to check.
+     * @param region   The name of the region.
+     * @return {@code true} if the location is inside the region, otherwise {@code false}.
+     */
     public boolean isInsideRegion(Location location, String region) {
         if (location.getWorld() != null) {
             RegionManager regionManager = worldGuard.getPlatform().getRegionContainer()
@@ -147,6 +210,12 @@ public final class WorldGuard {
         return false;
     }
 
+    /**
+     * Calculates a rough location for a graveyard based on its WorldGuard region.
+     *
+     * @param graveyard The graveyard to calculate the location for.
+     * @return The calculated location, or {@code null} if the region is not found.
+     */
     public Location calculateRoughLocation(Graveyard graveyard) {
         RegionManager regionManager = worldGuard.getPlatform().getRegionContainer()
                 .get(BukkitAdapter.adapt(graveyard.getWorld()));
@@ -183,6 +252,12 @@ public final class WorldGuard {
         return null;
     }
 
+    /**
+     * Retrieves a list of region keys for a specified location.
+     *
+     * @param location The location to retrieve region keys for.
+     * @return A list of region keys.
+     */
     public List<String> getRegionKeyList(Location location) {
         List<String> regionNameList = new ArrayList<>();
 
