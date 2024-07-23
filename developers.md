@@ -262,3 +262,43 @@ public class GraveEventListener implements Listener {
     }
 }
 ```
+
+### 8. GraveAutoLootEvent
+
+The `GraveAutoLootEvent` class represents an event that occurs when a grave is automatically looted. This event is cancellable, meaning it can be prevented from occurring by event listeners.
+
+#### Methods
+
+- `Grave getGrave()`: Gets the grave that is being looted.
+- `Location getLocation()`: Gets the location of the grave that is being looted.
+- `void setLocation(Location location)`: Sets the location of the grave that is being looted.
+- `boolean isCancelled()`: Checks whether the event is cancelled.
+- `void setCancelled(boolean cancel)`: Sets whether the event should be cancelled.
+- `@Nullable Entity getEntity()`: Gets the entity that caused the event, if any.
+
+#### Example Usage
+
+```java
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import com.ranull.graves.event.GraveAutoLootEvent;
+
+public class GraveEventListener implements Listener {
+
+    @EventHandler
+    public void onGraveAutoLoot(GraveAutoLootEvent event) {
+        Grave grave = event.getGrave();
+        Location location = event.getLocation();
+        Entity entity = event.getEntity();
+
+        if (shouldCancelLoot(grave, location, entity)) {
+            event.setCancelled(true);
+        }
+    }
+
+    private boolean shouldCancelLoot(Grave grave, Location location, Entity entity) {
+        // Custom logic to determine if the event should be cancelled
+        return false;
+    }
+}
+```
