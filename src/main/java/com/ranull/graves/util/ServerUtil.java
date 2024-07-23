@@ -6,7 +6,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.configuration.file.FileConfiguration;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -41,7 +44,7 @@ public final class ServerUtil {
         stringList.add("");
 
         stringList.add("Operating System Information:");
-        stringList.add("OS Name: " + getSystemProperty("os.name"));
+        stringList.add("OS Name: " + getOsName());
         stringList.add("OS Version: " + getSystemProperty("os.version"));
         stringList.add("OS Architecture: " + getSystemProperty("os.arch"));
         stringList.add("User Name: " + getSystemProperty("user.name"));
@@ -69,7 +72,7 @@ public final class ServerUtil {
         stringList.add("Usable Space: " + formatBytes(root.getUsableSpace()));
         stringList.add("");
 
-        stringList.add("Minecraft Server Information");
+        stringList.add("Minecraft Server Information:");
         stringList.add("Implementation Name: " + plugin.getServer().getName());
         stringList.add("Implementation Version: " + plugin.getServer().getVersion());
         stringList.add("Bukkit Version: " + plugin.getServer().getBukkitVersion());
@@ -79,7 +82,6 @@ public final class ServerUtil {
         } catch (Exception e) {
             stringList.add("NMS Version: " + Bukkit.getServer().getVersion());
         }
-        stringList.add("Database Type: " + plugin.getConfig().getString("settings.storage.type", "SQLITE").toUpperCase());
         stringList.add("Player Count: " + plugin.getServer().getOnlinePlayers().size());
         stringList.add("Player List: " + plugin.getServer().getOnlinePlayers().stream()
                 .map(Player::getName)
@@ -88,7 +90,9 @@ public final class ServerUtil {
         stringList.add("Plugin List: " + Arrays.stream(plugin.getServer().getPluginManager().getPlugins())
                 .map(Plugin::getName)
                 .collect(Collectors.joining(", ")));
+        stringList.add("");
 
+        stringList.add("Graves Information:");
         // Add plugin-specific information
         stringList.add(plugin.getDescription().getName() + " Version: "
                 + plugin.getDescription().getVersion());
@@ -97,6 +101,7 @@ public final class ServerUtil {
             stringList.add(plugin.getDescription().getName() + " API Version: "
                     + plugin.getDescription().getAPIVersion());
         }
+        stringList.add("Graves Database Type: " + plugin.getConfig().getString("settings.storage.type", "SQLITE").toUpperCase());
 
         stringList.add(plugin.getDescription().getName() + " Config Version: "
                 + plugin.getConfig().getInt("config-version"));
@@ -125,7 +130,7 @@ public final class ServerUtil {
     private static String formatBytes(long bytes) {
         if (bytes < 1024) return bytes + " B";
         int exp = (int) (Math.log(bytes) / Math.log(1024));
-        String pre = ("KMGTPE").charAt(exp-1) + "i";
+        String pre = ("KMGTPE").charAt(exp-1) + "";
         return String.format("%.1f %sB", bytes / Math.pow(1024, exp), pre);
     }
 
@@ -156,5 +161,38 @@ public final class ServerUtil {
 
     private static boolean isRunningAsUnixRoot() {
         return "0".equals(System.getProperty("user.name"));
+    }
+
+    /**
+     * Gets the detailed OS name from the system files.
+     *
+     * @return A string with the OS name.
+     */
+    private static String getOsName() {
+        String osName = System.getProperty("os.name");
+        if (osName.toLowerCase().contains("linux")) {
+            return getLinuxOsName();
+        }
+        return osName;
+    }
+
+    /**
+     * Reads the OS name from the /etc/os-release file on Unix-like systems.
+     *
+     * @return A string with the OS name.
+     */
+    private static String getLinuxOsName() {
+        String osReleaseFile = "/etc/os-release";
+        try (BufferedReader reader = new BufferedReader(new FileReader(osReleaseFile))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.startsWith("PRETTY_NAME=")) {
+                    return line.split("=")[1].replaceAll("\"", "");
+                }
+            }
+        } catch (IOException meh) {
+            // Just return as Linux. No need to error out.
+        }
+        return "Linux";
     }
 }
