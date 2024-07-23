@@ -20,13 +20,16 @@ import com.sk89q.worldedit.session.PasteBuilder;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.entity.Entity;
 import org.bukkit.plugin.Plugin;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -138,6 +141,7 @@ public final class WorldEdit {
                 int width = region.getWidth();
                 int height = region.getHeight();
                 int length = region.getLength();
+                //Location center = new Location(location.getWorld(), region.getWidth() + offset.getBlockX(), region.getHeight() + offset.getBlockY(), region.getLength() + offset.getBlockZ());
                 Location corner;
                 try {
                     corner = location.clone().add(offset.getBlockX(), offset.getBlockY(), offset.getBlockZ());
@@ -165,6 +169,12 @@ public final class WorldEdit {
                 }
 
                 corner.getBlock().setType(Material.BEDROCK);
+                // plugin.getServer().broadcastMessage(leftTopCorner.toString());
+                // leftTopCorner.getBlock().setType(Material.BEDROCK);
+                // plugin.getServer().broadcastMessage(region.toString());
+                // plugin.getServer().broadcastMessage(location.toString());
+                // center.getBlock().setType(Material.BEDROCK);
+
             } else {
                 plugin.debugMessage("Can't find schematic " + name, 1);
             }
@@ -182,6 +192,11 @@ public final class WorldEdit {
     public boolean hasSchematic(String string) {
         return stringClipboardMap.containsKey(string.toLowerCase().replace(".schem", ""));
     }
+
+    public void getAreaSchematic(Location location, float yaw, File file) {
+
+    }
+
 
     /**
      * Pastes a schematic at the specified location.
@@ -229,6 +244,11 @@ public final class WorldEdit {
 
         return null;
     }
+
+    private PasteBuilder getSchematic(Location location, float yaw, String name) {
+        return getSchematic(location, yaw, name, true);
+    }
+
 
     /**
      * Retrieves a PasteBuilder for the specified schematic at the given location with rotation based on yaw.

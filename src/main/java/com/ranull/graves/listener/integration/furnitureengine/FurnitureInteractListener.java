@@ -33,7 +33,7 @@ public class FurnitureInteractListener implements Listener {
      * @param event The FurnitureInteractEvent to handle.
      */
     @EventHandler
-    public void onFurnitureInteract(FurnitureInteractEvent event) {
+    public void onFurnitureBreak(FurnitureInteractEvent event) {
         ItemFrame itemFrame = furnitureEngine.getItemFrame(event.getFurnitureLocation());
 
         if (itemFrame != null) {

@@ -10,12 +10,12 @@ import java.util.UUID;
  * Represents serialized location data including world UUID, coordinates, and orientation.
  */
 public class LocationData implements Serializable {
-    private UUID uuid;
-    private float yaw;
-    private float pitch;
-    private double x;
-    private double y;
-    private double z;
+    UUID uuid;
+    float yaw;
+    float pitch;
+    double x;
+    double y;
+    double z;
 
     /**
      * Constructs a new LocationData instance from a given Location.
@@ -23,12 +23,12 @@ public class LocationData implements Serializable {
      * @param location The location to serialize.
      */
     public LocationData(Location location) {
-        this.uuid = location.getWorld() != null ? location.getWorld().getUID() : null;
-        this.yaw = location.getYaw();
-        this.pitch = location.getPitch();
-        this.x = location.getX();
-        this.y = location.getY();
-        this.z = location.getZ();
+        uuid = location.getWorld() != null ? location.getWorld().getUID() : null;
+        yaw = location.getYaw();
+        pitch = location.getPitch();
+        x = location.getX();
+        y = location.getY();
+        z = location.getZ();
     }
 
     /**

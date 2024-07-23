@@ -82,7 +82,7 @@ public class ChunkData implements Serializable {
      * @return The location of the chunk.
      */
     public Location getLocation() {
-        return new Location(world, x << 4, 0, z << 4);
+        return new Location(world, x >> 4, 0, z >> 4);
     }
 
     /**

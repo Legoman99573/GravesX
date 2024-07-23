@@ -93,9 +93,8 @@ public final class GraveManager {
                     Location location = new Location(chunkData.getWorld(),
                             chunkData.getX() << 4, 0, chunkData.getZ() << 4);
 
-                    // Entity data
                     for (EntityData entityData : new ArrayList<>(chunkData.getEntityDataMap().values())) {
-                        if (plugin.getCacheManager().getGraveMap().containsKey(entityData.getUUIDGrave())) {
+                        if (entityData != null && plugin.getCacheManager().getGraveMap().containsKey(entityData.getUUIDGrave())) {
                             if (plugin.isEnabled() && entityData instanceof HologramData) {
                                 HologramData hologramData = (HologramData) entityData;
                                 Grave grave = plugin.getCacheManager().getGraveMap().get(hologramData.getUUIDGrave());
@@ -1053,7 +1052,7 @@ public final class GraveManager {
     }
 
     /**
-     * @deprecated This method is deprecated and will be removed in future versions.
+     * @deprecated This method is deprecated.
      * Use {@link #shouldIgnoreBlock(Block, Entity, List<String>)} instead.
      */
     @Deprecated

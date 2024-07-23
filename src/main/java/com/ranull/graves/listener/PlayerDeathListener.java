@@ -40,21 +40,26 @@ public class PlayerDeathListener implements Listener {
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onPlayerDeathEvent(PlayerDeathEvent event) {
         List<ItemStack> itemStackList = event.getDrops();
-        List<ItemStack> itemsToRemove = new ArrayList<>(); // To prevent ConcurrentModificationException
+        List<ItemStack> itemsToRemove = new ArrayList<>(); // To prevent ConcurrentModificationException from occuring
 
         for (ItemStack itemStack : itemStackList) {
-            if (itemStack != null && itemStack.getType() == Material.COMPASS) {
-                // Check if the item stack is associated with a grave
-                if (plugin.getEntityManager().getGraveUUIDFromItemStack(itemStack) != null
+            ItemStack first = itemStackList.get(0);
+            if (first != null && first.getType().toString().toLowerCase().contains("compass")) {
+                if (plugin.getEntityManager().getGraveUUIDFromItemStack(first) != null
                         && plugin.getConfig("compass.destroy", event.getEntity()).getBoolean("compass.destroy")) {
-                    itemsToRemove.add(itemStack);
+                    itemsToRemove.add(first);
+                }
+            } else {
+                if (itemStack != null && itemStack.getType().toString().toLowerCase().contains("compass")) {
+                    if (plugin.getEntityManager().getGraveUUIDFromItemStack(itemStack) != null
+                            && plugin.getConfig("compass.destroy", event.getEntity()).getBoolean("compass.destroy")) {
+                        itemsToRemove.add(itemStack);
+                    }
                 }
             }
         }
 
-        // Remove the identified items from the drop list
         itemStackList.removeAll(itemsToRemove);
-        // Cache the remaining item stacks
         plugin.getCacheManager().getRemovedItemStackMap()
                 .put(event.getEntity().getUniqueId(), new ArrayList<>(itemStackList));
     }

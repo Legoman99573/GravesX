@@ -1,6 +1,7 @@
 package com.ranull.graves.util;
 
 import com.ranull.graves.Graves;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
@@ -28,7 +29,13 @@ public final class ServerUtil {
         stringList.add("Implementation Name: " + plugin.getServer().getName());
         stringList.add("Implementation Version: " + plugin.getServer().getVersion());
         stringList.add("Bukkit Version: " + plugin.getServer().getBukkitVersion());
-        stringList.add("NMS Version: " + plugin.getServer().getClass().getPackage().getName().split("\\.")[3]);
+        try {
+            stringList.add("NMS Version: " + plugin.getServer().getClass().getPackage().getName().split("\\.")[3]);
+
+        } catch (Exception e) {
+            stringList.add("NMS Version: " + Bukkit.getServer().getVersion());
+        }
+        stringList.add("Database Type: " + plugin.getConfig().getString("settings.storage.type", "SQLITE"));
         stringList.add("Player Count: " + plugin.getServer().getOnlinePlayers().size());
         stringList.add("Player List: " + plugin.getServer().getOnlinePlayers().stream()
                 .map(Player::getName)
