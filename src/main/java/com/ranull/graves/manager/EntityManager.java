@@ -2,6 +2,7 @@ package com.ranull.graves.manager;
 
 import com.ranull.graves.Graves;
 import com.ranull.graves.data.EntityData;
+import com.ranull.graves.event.GraveAutoLootEvent;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.*;
 import org.bukkit.*;
@@ -633,7 +634,10 @@ public final class EntityManager extends EntityDataManager {
                 return true;
             }
             case "autoloot": {
-                plugin.getGraveManager().autoLootGrave(entity, entity.getLocation(), grave);
+                GraveAutoLootEvent graveAutoLootEvent = new GraveAutoLootEvent(entity, entity.getLocation(), grave);
+                if (graveAutoLootEvent.isCancelled()) {
+                    plugin.getGraveManager().autoLootGrave(entity, entity.getLocation(), grave);
+                }
                 return true;
             }
         }

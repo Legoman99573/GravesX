@@ -1,6 +1,7 @@
 package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
+import com.ranull.graves.event.GraveAutoLootEvent;
 import com.ranull.graves.event.GraveBreakEvent;
 import com.ranull.graves.type.Grave;
 import org.bukkit.block.Block;
@@ -49,14 +50,17 @@ public class BlockBreakListener implements Listener {
                     if (!graveBreakEvent.isCancelled()) {
                         if (plugin.getConfig("drop.auto-loot.enabled", grave).getBoolean("drop.auto-loot.enabled")) {
                             player.sendMessage("here");
-                            plugin.getGraveManager().autoLootGrave(player, block.getLocation(), grave);
+                            GraveAutoLootEvent graveAutoLootEvent = new GraveAutoLootEvent(player, block.getLocation(), grave);
+                            if (!graveAutoLootEvent.isCancelled()) {
+                                plugin.getGraveManager().autoLootGrave(player, block.getLocation(), grave);
 
-                            if (graveBreakEvent.isDropItems() && plugin.getConfig("drop.auto-loot.break", grave)
-                                    .getBoolean("drop.auto-loot.break")) {
-                                plugin.getGraveManager().breakGrave(block.getLocation(), grave);
-                            } else {
-                                event.setCancelled(true);
-                                return;
+                                if (graveBreakEvent.isDropItems() && plugin.getConfig("drop.auto-loot.break", grave)
+                                        .getBoolean("drop.auto-loot.break")) {
+                                    plugin.getGraveManager().breakGrave(block.getLocation(), grave);
+                                } else {
+                                    event.setCancelled(true);
+                                    return;
+                                }
                             }
                         } else if (graveBreakEvent.isDropItems()) {
                             plugin.getGraveManager().breakGrave(block.getLocation(), grave);

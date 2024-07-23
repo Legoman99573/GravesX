@@ -49,14 +49,14 @@ public class PlayerJoinListener implements Listener {
                     try {
                         double pluginVersion = Double.parseDouble(plugin.getVersion());
                         double pluginVersionLatest = Double.parseDouble(latestVersion);
-                        int comparisonResult = compareVersions(String.valueOf(pluginVersion), latestVersion);
+                        int comparisonResult = compareVersions(String.valueOf(pluginVersion), String.valueOf(pluginVersionLatest));
 
-                        if (comparisonResult < 0) {
+                        if (comparisonResult > 0) {
                             player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
                                     + "Outdated version detected " + pluginVersion
                                     + ", latest version is " + pluginVersionLatest
                                     + ", https://www.spigotmc.org/resources/" + plugin.getSpigotID() + "/");
-                        } else if (comparisonResult > 0) {
+                        } else if (comparisonResult < 0) {
                             player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
                                     + "Development version detected " + pluginVersion
                                     + ", Report any bugs to https://discord.ranull.com/");

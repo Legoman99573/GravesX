@@ -3,6 +3,7 @@ package com.ranull.graves.listener;
 import com.ranull.graves.Graves;
 import com.ranull.graves.data.BlockData;
 import com.ranull.graves.data.ChunkData;
+import com.ranull.graves.event.GraveAutoLootEvent;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.LocationUtil;
 import org.bukkit.GameMode;
@@ -77,7 +78,10 @@ public class PlayerMoveListener implements Listener {
                         if (grave != null && plugin.getConfig("block.walk-over", grave).getBoolean("block.walk-over")
                                 && plugin.getEntityManager().canOpenGrave(player, grave)) {
                             plugin.getGraveManager().cleanupCompasses(player, grave);
-                            plugin.getGraveManager().autoLootGrave(event.getPlayer(), location, grave);
+                            GraveAutoLootEvent graveAutoLootEvent = new GraveAutoLootEvent(event.getPlayer(), location, grave);
+                            if (!graveAutoLootEvent.isCancelled()) {
+                                plugin.getGraveManager().autoLootGrave(event.getPlayer(), location, grave);
+                            }
                         }
                     }
                 }

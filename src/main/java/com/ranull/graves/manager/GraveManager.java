@@ -5,6 +5,7 @@ import com.ranull.graves.data.BlockData;
 import com.ranull.graves.data.ChunkData;
 import com.ranull.graves.data.EntityData;
 import com.ranull.graves.data.HologramData;
+import com.ranull.graves.event.GraveAutoLootEvent;
 import com.ranull.graves.event.GraveTimeoutEvent;
 import com.ranull.graves.inventory.GraveList;
 import com.ranull.graves.inventory.GraveMenu;
