@@ -389,13 +389,21 @@ public class Graves extends JavaPlugin {
 
                 if (serverDumpInfo.equals(message)) {
                     try {
-                        String name = "graves-dump-" + System.currentTimeMillis() + ".txt";
-                        PrintWriter printWriter = new PrintWriter(name, "UTF-8");
+                        // Create the directory if it doesn't exist
+                        File dumpDir = new File(getDataFolder(), "dump");
+                        if (!dumpDir.exists()) {
+                            dumpDir.mkdirs();
+                        }
 
+                        // Create the file within the dump directory
+                        String name = "graves-dump-" + System.currentTimeMillis() + ".txt";
+                        File dumpFile = new File(dumpDir, name);
+
+                        PrintWriter printWriter = new PrintWriter(dumpFile, "UTF-8");
                         printWriter.write(serverDumpInfo);
                         printWriter.close();
 
-                        message = name;
+                        message = dumpFile.getAbsolutePath();
                     } catch (FileNotFoundException | UnsupportedEncodingException exception) {
                         exception.printStackTrace();
                     }

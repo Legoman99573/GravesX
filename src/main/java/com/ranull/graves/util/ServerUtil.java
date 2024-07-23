@@ -4,6 +4,7 @@ import com.ranull.graves.Graves;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.configuration.file.FileConfiguration;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -56,8 +57,17 @@ public final class ServerUtil {
 
         stringList.add(plugin.getDescription().getName() + " Config Version: "
                 + plugin.getConfig().getInt("config-version"));
-        stringList.add(plugin.getDescription().getName() + " Config Base64: "
-                + Base64.getEncoder().encodeToString(plugin.getConfig().saveToString().getBytes()));
+
+        // Replace the password in the config string and encode it back to Base64
+        FileConfiguration config = plugin.getConfig();
+        String configString = config.saveToString();
+        String password = config.getString("settings.storage.mysql.password", "");
+        if (!password.isEmpty()) {
+            String maskedPassword = password.replaceAll(".", "*");
+            configString = configString.replace(password, maskedPassword);
+        }
+        String configBase64 = Base64.getEncoder().encodeToString(configString.getBytes());
+        stringList.add(plugin.getDescription().getName() + " Config Base64: " + configBase64);
 
         // Join all information into a single string separated by new lines
         return String.join("\n", stringList);
