@@ -57,6 +57,18 @@ public final class DataManager {
                     plugin.getServer().getPluginManager().disablePlugin(this.plugin);
                 }
                 break;
+            case H2:
+                plugin.getLogger().warning("H2 is planned for a future release. Falling back to SQLite for now...");
+                loadType(Type.SQLITE);
+                load();
+                keepConnectionAlive(); // If we don't enable this, connection will close or time out :/
+                break;
+            case POSTGRESQL:
+                plugin.getLogger().warning("PostgreSQL is planned for a future release. Falling back to SQLite for now...");
+                loadType(Type.SQLITE);
+                load();
+                keepConnectionAlive(); // If we don't enable this, connection will close or time out :/
+                break;
             default:
                 plugin.getLogger().severe("Database Type is invalid. Only valid options: SQLITE and MYSQL. Disabling plugin...");
                 plugin.getServer().getPluginManager().disablePlugin(this.plugin);
@@ -71,6 +83,8 @@ public final class DataManager {
         SQLITE,
         MYSQL,
         MARIADB,
+        POSTGRESQL,
+        H2,
         INVALID
     }
 
