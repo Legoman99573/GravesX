@@ -328,32 +328,44 @@ public class Graves extends JavaPlugin {
         }
     }
 
-    public void updateChecker() {
+    private void updateChecker() {
         if (getConfig().getBoolean("settings.update.check")) {
-            getLogger().info("Checking for " + getDescription().getName() + " updates...");
             getServer().getScheduler().runTaskAsynchronously(this, () -> {
                 String latestVersion = getLatestVersion();
+                String installedVersion = getDescription().getVersion();
 
-                if (latestVersion != null) {
-                    String installedVersion = getDescription().getVersion();
+                // Debugging statements
+                //getLogger().info("Installed Version: " + installedVersion);
+                //getLogger().info("Latest Version: " + latestVersion);
+
+                if (latestVersion != null && !installedVersion.equalsIgnoreCase(latestVersion)) {
                     try {
-                        if (compareVersions(installedVersion, latestVersion) < 0) {
+                        int comparisonResult = compareVersions(installedVersion, latestVersion);
+                        // getLogger().info("Version Comparison Result: " + comparisonResult);
+
+                        if (comparisonResult < 0) {
                             getLogger().warning("You are using an outdated version of " + getDescription().getName() + ".");
                             getLogger().warning("Installed Version: " + installedVersion);
                             getLogger().warning("Latest Version:  " + latestVersion);
                             getLogger().warning("Grab the latest release from https://www.spigotmc.org/resources/" + getSpigotID() + "/");
+                        } else if (comparisonResult > 0) {
+                            getLogger().severe("You are running " + getDescription().getName() + " version " + installedVersion + ", which is a development build and is not production safe.");
+                            getLogger().severe("THERE WILL NOT BE SUPPORT IF YOU LOSE GRAVE DATA FROM DEVELOPMENT OR COMPILED BUILDS. THIS BUILD IS FOR TESTING PURPOSES ONLY");
+                            getLogger().severe("Keep note that you are using a development version when you report bugs.");
+                            getLogger().severe("If the same issue occurs in "  + latestVersion + ", then let us know in https://discord.ranull.com/.");
                         } else {
                             getLogger().info("You are running the latest version of " + getDescription().getName() + ".");
                         }
                     } catch (NumberFormatException exception) {
+                        getLogger().severe("NumberFormatException: " + exception.getMessage());
                         if (!installedVersion.equalsIgnoreCase(latestVersion)) {
                             getLogger().severe("You are either running an outdated version of " + getDescription().getName() + " or a development version.");
-                            getLogger().warning("You are using an outdated version of " + getDescription().getName() + ".");
-                            getLogger().warning("Installed Version: " + installedVersion);
-                            getLogger().warning("Latest Version:  " + latestVersion);
-                            getLogger().warning("Grab the latest release from https://www.spigotmc.org/resources/" + getSpigotID() + "/");
+                            getLogger().severe("Installed Version: " + installedVersion);
+                            getLogger().severe("Latest Version:  " + latestVersion);
                         }
                     }
+                } else {
+                    getLogger().info("You are running the latest version of " + getDescription().getName() + ".");
                 }
             });
         }

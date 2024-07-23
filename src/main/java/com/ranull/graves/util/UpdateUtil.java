@@ -17,8 +17,11 @@ public final class UpdateUtil {
      * @return The latest version of the resource as a String, or null if an error occurs.
      */
     public static String getLatestVersion(int resourceId) {
-        try (InputStream inputStream = new URL("https://api.spigotmc.org/legacy/update.php?resource="
-                + resourceId).openStream();
+        // Add a timestamp to the URL to avoid caching
+        long timestamp = System.currentTimeMillis();
+        String urlString = "https://api.spigotmc.org/legacy/update.php?resource=" + resourceId + "&t=" + timestamp;
+
+        try (InputStream inputStream = new URL(urlString).openStream();
              Scanner scanner = new Scanner(inputStream)) {
 
             if (scanner.hasNext()) {
