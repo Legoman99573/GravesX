@@ -1,4 +1,4 @@
-config-version: 4 # Config version, you should never manually change this.
+config-version: 5 # Config version, you should never manually change this.
 
 ###############
 # Core Config #
@@ -58,6 +58,12 @@ settings:
   ##########
   update:
     check: true # Should Graves try and check for an update.
+
+  ###########
+  # Metrics #
+  ###########
+  metrics:
+    enabled: true # Should we report metrics to bstats? Available here: https://bstats.org/plugin/bukkit/Graves/12849
 
   #################
   # Compatibility #

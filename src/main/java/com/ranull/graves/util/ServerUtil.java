@@ -101,7 +101,7 @@ public final class ServerUtil {
             stringList.add(plugin.getDescription().getName() + " API Version: "
                     + plugin.getDescription().getAPIVersion());
         }
-        stringList.add("Graves Database Type: " + plugin.getConfig().getString("settings.storage.type", "SQLITE").toUpperCase());
+        stringList.add(plugin.getDescription().getName() + " Database Type: " + plugin.getConfig().getString("settings.storage.type", "SQLITE").toUpperCase());
 
         stringList.add(plugin.getDescription().getName() + " Config Version: "
                 + plugin.getConfig().getInt("config-version"));

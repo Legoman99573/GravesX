@@ -12,7 +12,6 @@ import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.*;
 import org.bstats.bukkit.Metrics;
 import org.bstats.charts.SingleLineChart;
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
@@ -59,9 +58,9 @@ public class Graves extends JavaPlugin {
         if (gravesDirectory.exists() && gravesDirectory.isDirectory()) {
             getLogger().warning("Your server has legacy version of Graves. Migrating the folder to GravesX for you.");
             if (gravesDirectory.renameTo(newGravesDirectory)) {
-                getLogger().info("Successfully renamed Graves to GravesX.");
+                getLogger().info("Successfully renamed legacy folder Graves to GravesX.");
             } else {
-                getLogger().severe("Failed to rename Graves to GravesX. Ensure the folder doesn't already exist.");
+                getLogger().severe("Failed to rename legacy folder Graves to GravesX. Ensure the folder doesn't already exist.");
             }
         }
         saveDefaultConfig();
@@ -89,7 +88,9 @@ public class Graves extends JavaPlugin {
         graveManager = new GraveManager(this);
         graveyardManager = new GraveyardManager(this);
 
-        registerMetrics();
+        if (getConfig().getBoolean("settings.metrics.enabled", true)) {
+            registerMetrics();
+        }
         registerCommands();
         registerListeners();
         registerRecipes();
@@ -305,7 +306,7 @@ public class Graves extends JavaPlugin {
     }
 
     private void updateConfig() {
-        double currentConfigVersion = 4;
+        double currentConfigVersion = 5;
         double configVersion = getConfig().getInt("config-version");
 
         if (configVersion < currentConfigVersion) {
@@ -327,39 +328,53 @@ public class Graves extends JavaPlugin {
         }
     }
 
-    private void updateChecker() {
+    public void updateChecker() {
         if (getConfig().getBoolean("settings.update.check")) {
+            getLogger().info("Checking for " + getDescription().getName() + " updates...");
             getServer().getScheduler().runTaskAsynchronously(this, () -> {
                 String latestVersion = getLatestVersion();
 
                 if (latestVersion != null) {
+                    String installedVersion = getDescription().getVersion();
                     try {
-                        double pluginVersion = Double.parseDouble(getDescription().getVersion());
-                        double pluginVersionLatest = Double.parseDouble(latestVersion);
-
-                        if (pluginVersion != pluginVersionLatest) {
-                            if (pluginVersion < pluginVersionLatest) {
-                                getLogger().warning("You are using a development version of GravesX. Keep note of this when reporting bugs and make sure this doesn't occur on release.");
-                            } else {
-                                getLogger().warning("You are using an outdated version of GravesX. \nInstalled Version: " + pluginVersion
-                                        + "\nLatest Version:  " + pluginVersionLatest
-                                        + "\nGrab the latest release from https://www.spigotmc.org/resources/" + getSpigotID() + "/");
-                            }
+                        if (compareVersions(installedVersion, latestVersion) < 0) {
+                            getLogger().warning("You are using an outdated version of " + getDescription().getName() + ".");
+                            getLogger().warning("Installed Version: " + installedVersion);
+                            getLogger().warning("Latest Version:  " + latestVersion);
+                            getLogger().warning("Grab the latest release from https://www.spigotmc.org/resources/" + getSpigotID() + "/");
                         } else {
-                            getLogger().info("You are running the latest version of GravesX.");
+                            getLogger().info("You are running the latest version of " + getDescription().getName() + ".");
                         }
                     } catch (NumberFormatException exception) {
-                        if (!getDescription().getVersion().equalsIgnoreCase(latestVersion)) {
-                            getLogger().severe("Unable to get the current version of GravesX. This is a bug.");
-                            exception.printStackTrace();
-                            getLogger().warning("You are using an outdated version of GravesX. \nInstalled Version: Unknown"
-                                    + "\nLatest Version:  " + latestVersion
-                                    + "\nGrab the latest release from https://www.spigotmc.org/resources/" + getSpigotID() + "/");
+                        if (!installedVersion.equalsIgnoreCase(latestVersion)) {
+                            getLogger().severe("You are either running an outdated version of " + getDescription().getName() + " or a development version.");
+                            getLogger().warning("You are using an outdated version of " + getDescription().getName() + ".");
+                            getLogger().warning("Installed Version: " + installedVersion);
+                            getLogger().warning("Latest Version:  " + latestVersion);
+                            getLogger().warning("Grab the latest release from https://www.spigotmc.org/resources/" + getSpigotID() + "/");
                         }
                     }
                 }
             });
         }
+    }
+
+    private int compareVersions(String version1, String version2) {
+        String[] levels1 = version1.split("\\.");
+        String[] levels2 = version2.split("\\.");
+
+        int length = Math.max(levels1.length, levels2.length);
+        for (int i = 0; i < length; i++) {
+            int v1 = i < levels1.length ? Integer.parseInt(levels1[i]) : 0;
+            int v2 = i < levels2.length ? Integer.parseInt(levels2[i]) : 0;
+            if (v1 < v2) {
+                return -1;
+            }
+            if (v1 > v2) {
+                return 1;
+            }
+        }
+        return 0;
     }
 
     private void compatibilityChecker() {
