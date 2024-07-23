@@ -36,7 +36,7 @@ public final class ServerUtil {
         } catch (Exception e) {
             stringList.add("NMS Version: " + Bukkit.getServer().getVersion());
         }
-        stringList.add("Database Type: " + plugin.getConfig().getString("settings.storage.type", "SQLITE"));
+        stringList.add("Database Type: " + plugin.getConfig().getString("settings.storage.type", "SQLITE").toUpperCase());
         stringList.add("Player Count: " + plugin.getServer().getOnlinePlayers().size());
         stringList.add("Player List: " + plugin.getServer().getOnlinePlayers().stream()
                 .map(Player::getName)

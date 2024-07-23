@@ -94,22 +94,20 @@ public final class GraveManager {
                             chunkData.getX() << 4, 0, chunkData.getZ() << 4);
 
                     for (EntityData entityData : new ArrayList<>(chunkData.getEntityDataMap().values())) {
-                        if (entityData != null && plugin.getCacheManager().getGraveMap().containsKey(entityData.getUUIDGrave())) {
+                        if (entityData != null && entityData.getUUIDGrave() != null && plugin.getCacheManager().getGraveMap().containsKey(entityData.getUUIDGrave())) {
                             if (plugin.isEnabled() && entityData instanceof HologramData) {
                                 HologramData hologramData = (HologramData) entityData;
                                 Grave grave = plugin.getCacheManager().getGraveMap().get(hologramData.getUUIDGrave());
 
                                 if (grave != null) {
-                                    List<String> lineList = plugin.getConfig("hologram.line", grave)
-                                            .getStringList("hologram.line");
+                                    List<String> lineList = plugin.getConfig("hologram.line", grave).getStringList("hologram.line");
 
                                     Collections.reverse(lineList);
 
                                     for (Entity entity : entityData.getLocation().getChunk().getEntities()) {
                                         if (entity.getUniqueId().equals(entityData.getUUIDEntity())) {
                                             if (hologramData.getLine() < lineList.size()) {
-                                                entity.setCustomName(StringUtil.parseString(lineList
-                                                        .get(hologramData.getLine()), location, grave, plugin));
+                                                entity.setCustomName(StringUtil.parseString(lineList.get(hologramData.getLine()), location, grave, plugin));
                                             } else {
                                                 entityDataRemoveList.add(hologramData);
                                             }
