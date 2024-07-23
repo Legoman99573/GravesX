@@ -364,8 +364,6 @@ public class Graves extends JavaPlugin {
                             getLogger().severe("Latest Version:  " + latestVersion);
                         }
                     }
-                } else {
-                    getLogger().info("You are running the latest version of " + getDescription().getName() + ".");
                 }
             });
         }

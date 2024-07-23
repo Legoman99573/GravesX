@@ -49,12 +49,17 @@ public class PlayerJoinListener implements Listener {
                     try {
                         double pluginVersion = Double.parseDouble(plugin.getVersion());
                         double pluginVersionLatest = Double.parseDouble(latestVersion);
+                        int comparisonResult = compareVersions(String.valueOf(pluginVersion), latestVersion);
 
-                        if (pluginVersionLatest != 4.9 && pluginVersion < pluginVersionLatest) {
+                        if (comparisonResult < 0) {
                             player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
                                     + "Outdated version detected " + pluginVersion
                                     + ", latest version is " + pluginVersionLatest
                                     + ", https://www.spigotmc.org/resources/" + plugin.getSpigotID() + "/");
+                        } else if (comparisonResult > 0) {
+                            player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
+                                    + "Development version detected " + pluginVersion
+                                    + ", Report any bugs to https://discord.ranull.com/");
                         }
                     } catch (NumberFormatException exception) {
                         if (!plugin.getVersion().equalsIgnoreCase(latestVersion) && !latestVersion.equalsIgnoreCase("4.9")) {
@@ -67,5 +72,23 @@ public class PlayerJoinListener implements Listener {
                 }
             });
         }
+    }
+
+    private int compareVersions(String version1, String version2) {
+        String[] levels1 = version1.split("\\.");
+        String[] levels2 = version2.split("\\.");
+
+        int length = Math.max(levels1.length, levels2.length);
+        for (int i = 0; i < length; i++) {
+            int v1 = i < levels1.length ? Integer.parseInt(levels1[i]) : 0;
+            int v2 = i < levels2.length ? Integer.parseInt(levels2[i]) : 0;
+            if (v1 < v2) {
+                return -1;
+            }
+            if (v1 > v2) {
+                return 1;
+            }
+        }
+        return 0;
     }
 }
