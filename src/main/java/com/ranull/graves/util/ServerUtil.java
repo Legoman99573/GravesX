@@ -26,8 +26,50 @@ public final class ServerUtil {
      */
     public static String getServerDumpInfo(Graves plugin) {
         List<String> stringList = new ArrayList<>();
-
         // Add basic server information
+        stringList.add("Java Information:");
+        stringList.add("Java Version: " + getSystemProperty("java.version"));
+        stringList.add("Java Vendor: " + getSystemProperty("java.vendor"));
+        stringList.add("Java Vendor URL: " + getSystemProperty("java.vendor.url"));
+        stringList.add("Java Home: " + getSystemProperty("java.home"));
+        stringList.add("Java VM Specification Version: " + getSystemProperty("java.vm.specification.version"));
+        stringList.add("Java VM Specification Vendor: " + getSystemProperty("java.vm.specification.vendor"));
+        stringList.add("Java VM Specification Name: " + getSystemProperty("java.vm.specification.name"));
+        stringList.add("Java VM Version: " + getSystemProperty("java.vm.version"));
+        stringList.add("Java VM Vendor: " + getSystemProperty("java.vm.vendor"));
+        stringList.add("Java VM Name: " + getSystemProperty("java.vm.name"));
+        stringList.add("");
+
+        stringList.add("Operating System Information:");
+        stringList.add("OS Name: " + getSystemProperty("os.name"));
+        stringList.add("OS Version: " + getSystemProperty("os.version"));
+        stringList.add("OS Architecture: " + getSystemProperty("os.arch"));
+        stringList.add("User Name: " + getSystemProperty("user.name"));
+        stringList.add("User Home: " + getSystemProperty("user.home"));
+        stringList.add("User Directory: " + getSystemProperty("user.dir"));
+        // Check for top-level access
+        if (isRunningAsRoot()) {
+            stringList.add("WARNING: This " + plugin.getServer().getName() + " server is running with top-level access (root/administrator)");
+            plugin.getLogger().warning("This server is running with top-level access (root/administrator), which is unsafe and can lead to security vulnerabilities. We recommend creating a user account or running the server in a Docker container.");
+        }
+        stringList.add("");
+
+        stringList.add("System RAM Information:");
+        Runtime runtime = Runtime.getRuntime();
+        stringList.add("Max Memory: " + formatBytes(runtime.maxMemory()));
+        stringList.add("Total Memory: " + formatBytes(runtime.totalMemory()));
+        stringList.add("Free Memory: " + formatBytes(runtime.freeMemory()));
+        stringList.add("Used Memory: " + formatBytes(runtime.totalMemory() - runtime.freeMemory()));
+        stringList.add("");
+
+        stringList.add("System Disk Space Information:");
+        File root = new File("/");
+        stringList.add("Total Space: " + formatBytes(root.getTotalSpace()));
+        stringList.add("Free Space: " + formatBytes(root.getFreeSpace()));
+        stringList.add("Usable Space: " + formatBytes(root.getUsableSpace()));
+        stringList.add("");
+
+        stringList.add("Minecraft Server Information");
         stringList.add("Implementation Name: " + plugin.getServer().getName());
         stringList.add("Implementation Version: " + plugin.getServer().getVersion());
         stringList.add("Bukkit Version: " + plugin.getServer().getBukkitVersion());
@@ -37,22 +79,6 @@ public final class ServerUtil {
         } catch (Exception e) {
             stringList.add("NMS Version: " + Bukkit.getServer().getVersion());
         }
-        stringList.add("Java Version: " + System.getProperty("java.version"));
-        stringList.add("OS Name: " + System.getProperty("os.name"));
-        stringList.add("OS Version: " + System.getProperty("os.version"));
-
-        Runtime runtime = Runtime.getRuntime();
-        stringList.add("Max Memory (MB): " + (runtime.maxMemory() / (1024 * 1024)));
-        stringList.add("Total Memory (MB): " + (runtime.totalMemory() / (1024 * 1024)));
-        stringList.add("Free Memory (MB): " + (runtime.freeMemory() / (1024 * 1024)));
-        stringList.add("Used Memory (MB): " + ((runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024)));
-
-        // Add storage space statistics
-        File root = new File("/");
-        stringList.add("Total Space: " + formatBytes(root.getTotalSpace()));
-        stringList.add("Free Space: " + formatBytes(root.getFreeSpace()));
-        stringList.add("Usable Space: " + formatBytes(root.getUsableSpace()));
-
         stringList.add("Database Type: " + plugin.getConfig().getString("settings.storage.type", "SQLITE").toUpperCase());
         stringList.add("Player Count: " + plugin.getServer().getOnlinePlayers().size());
         stringList.add("Player List: " + plugin.getServer().getOnlinePlayers().stream()
@@ -101,5 +127,34 @@ public final class ServerUtil {
         int exp = (int) (Math.log(bytes) / Math.log(1024));
         String pre = ("KMGTPE").charAt(exp-1) + "i";
         return String.format("%.1f %sB", bytes / Math.pow(1024, exp), pre);
+    }
+
+    private static String getSystemProperty(String key) {
+        String value = System.getProperty(key);
+        return value != null ? value : "Unknown";
+    }
+
+    private static boolean isRunningAsRoot() {
+        String osName = System.getProperty("os.name").toLowerCase();
+        if (osName.contains("win")) {
+            return isRunningAsWindowsAdmin();
+        } else {
+            return isRunningAsUnixRoot();
+        }
+    }
+
+    private static boolean isRunningAsWindowsAdmin() {
+        try {
+            Process process = Runtime.getRuntime().exec("net session");
+            process.getOutputStream().close();
+            int exitCode = process.waitFor();
+            return exitCode == 0;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private static boolean isRunningAsUnixRoot() {
+        return "0".equals(System.getProperty("user.name"));
     }
 }
