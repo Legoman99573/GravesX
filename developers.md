@@ -302,3 +302,44 @@ public class GraveEventListener implements Listener {
     }
 }
 ```
+
+### 9. GraveZombieSpawnEvent
+
+The `GraveZombieSpawnEvent` class represents an event that occurs when a zombie spawns at a grave. This event is cancellable, meaning it can be prevented from occurring by event listeners.
+
+#### Methods
+
+- `Grave getGrave()`: Gets the grave where the zombie is spawning.
+- `Location getLocation()`: Gets the location of the grave where the zombie is spawning.
+- `Entity getEntity()`: Gets the entity that caused the event.
+- `EntityType getEntityType()`: Gets the type of the entity that caused the event.
+- `boolean isCancelled()`: Checks whether the event is cancelled.
+- `void setCancelled(boolean cancel)`: Sets whether the event should be cancelled.
+
+#### Example Usage
+
+```java
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import com.ranull.graves.event.GraveZombieSpawnEvent;
+
+public class GraveEventListener implements Listener {
+
+    @EventHandler
+    public void onGraveZombieSpawn(GraveZombieSpawnEvent event) {
+        Grave grave = event.getGrave();
+        Location location = event.getLocation();
+        Entity entity = event.getEntity();
+        EntityType entityType = event.getEntityType();
+
+        if (shouldCancelSpawn(grave, location, entity, entityType)) {
+            event.setCancelled(true);
+        }
+    }
+
+    private boolean shouldCancelSpawn(Grave grave, Location location, Entity entity, EntityType entityType) {
+        // Custom logic to determine if the event should be cancelled
+        return false;
+    }
+}
+```

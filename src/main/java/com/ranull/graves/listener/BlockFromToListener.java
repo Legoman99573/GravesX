@@ -1,10 +1,14 @@
 package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
+import com.ranull.graves.event.GraveAutoLootEvent;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockFromToEvent;
+
+import java.util.Objects;
 
 /**
  * Listens for BlockFromToEvent to prevent water or lava from flowing over grave blocks.
@@ -31,6 +35,17 @@ public class BlockFromToListener implements Listener {
         // Check if the destination block of the fluid is a grave
         if (plugin.getBlockManager().getGraveFromBlock(event.getToBlock()) != null) {
             event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void autoLootTest(GraveAutoLootEvent e) {
+        if (e instanceof Player) {
+            Player player = ((Player) e).getPlayer();
+            assert player != null;
+            if (!Objects.equals(e.getGrave().getOwnerName(), player.getName())) {
+                e.setCancelled(true);
+            }
         }
     }
 }

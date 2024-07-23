@@ -72,6 +72,10 @@
                             <pattern>com.mysql</pattern>
                             <shadedPattern>${project.groupId}.${project.artifactId}.mysql</shadedPattern>
                         </relocation>
+                        <relocation>
+                            <pattern>net.kyori</pattern>
+                            <shadedPattern>${project.groupId}.${project.artifactId}.kyori</shadedPattern>
+                        </relocation>
                     </relocations>
                 </configuration>
                 <executions>
@@ -366,14 +370,14 @@
         <dependency>
             <groupId>net.kyori</groupId>
             <artifactId>adventure-text-minimessage</artifactId>
-            <version>4.13.0</version>
-            <scope>provided</scope>
+            <version>4.17.0</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>net.kyori</groupId>
             <artifactId>adventure-platform-bukkit</artifactId>
-            <version>4.3.0</version>
-            <scope>provided</scope>
+            <version>4.3.3</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>de.themoep</groupId>

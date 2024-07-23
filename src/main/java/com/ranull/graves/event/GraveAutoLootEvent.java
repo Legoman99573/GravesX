@@ -17,7 +17,7 @@ public class GraveAutoLootEvent extends Event implements Cancellable {
     private boolean cancel;
 
     /**
-     * Constructs a new GraveBlockPlaceEvent.
+     * Constructs a new GraveAutoLootEvent.
      *
      * @param entity    Gets the entity
      * @param location  Gets the grave location

@@ -3,6 +3,7 @@ package com.ranull.graves.manager;
 import com.ranull.graves.Graves;
 import com.ranull.graves.data.EntityData;
 import com.ranull.graves.event.GraveAutoLootEvent;
+import com.ranull.graves.event.GraveZombieSpawnEvent;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.*;
 import org.bukkit.*;
@@ -712,6 +713,8 @@ public final class EntityManager extends EntityDataManager {
     @SuppressWarnings("deprecation")
     private void spawnZombie(Location location, LivingEntity targetEntity, Grave grave) {
         if (location != null && location.getWorld() != null && grave.getOwnerType() == EntityType.PLAYER) {
+            GraveZombieSpawnEvent graveZombieSpawnEvent = new GraveZombieSpawnEvent(location, targetEntity, grave);
+            if (graveZombieSpawnEvent.isCancelled()) return;
             String zombieType = plugin.getConfig("zombie.type", grave)
                     .getString("zombie.type", "ZOMBIE").toUpperCase();
             EntityType entityType = EntityType.ZOMBIE;
