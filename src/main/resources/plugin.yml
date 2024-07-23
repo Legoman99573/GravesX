@@ -8,7 +8,7 @@ authors:
   - JaySmethers
   - Legoman99573
 load: POSTWORLD
-website: https://gitlab.com/JaySmethers/graves/-/wikis/home/dev-build
+website: https://www.spigotmc.org/resources/gravesx.118271/
 
 loadbefore:
   - GriefPrevention

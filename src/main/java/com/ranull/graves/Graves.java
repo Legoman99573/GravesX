@@ -337,16 +337,24 @@ public class Graves extends JavaPlugin {
                         double pluginVersion = Double.parseDouble(getDescription().getVersion());
                         double pluginVersionLatest = Double.parseDouble(latestVersion);
 
-                        if (pluginVersion < pluginVersionLatest) {
-                            getLogger().info("Update: Outdated version detected " + pluginVersion
-                                    + ", latest version is " + pluginVersionLatest
-                                    + ", https://www.spigotmc.org/resources/" + getSpigotID() + "/");
+                        if (pluginVersion != pluginVersionLatest) {
+                            if (pluginVersion < pluginVersionLatest) {
+                                getLogger().warning("You are using a development version of GravesX. Keep note of this when reporting bugs and make sure this doesn't occur on release.");
+                            } else {
+                                getLogger().warning("You are using an outdated version of GravesX. \nInstalled Version: " + pluginVersion
+                                        + "\nLatest Version:  " + pluginVersionLatest
+                                        + "\nGrab the latest release from https://www.spigotmc.org/resources/" + getSpigotID() + "/");
+                            }
+                        } else {
+                            getLogger().info("You are running the latest version of GravesX.");
                         }
                     } catch (NumberFormatException exception) {
                         if (!getDescription().getVersion().equalsIgnoreCase(latestVersion)) {
-                            getLogger().info("Update: Outdated version detected " + getDescription().getVersion()
-                                    + ", latest version is " + latestVersion + ", https://www.spigotmc.org/resources/"
-                                    + getSpigotID() + "/");
+                            getLogger().severe("Unable to get the current version of GravesX. This is a bug.");
+                            exception.printStackTrace();
+                            getLogger().warning("You are using an outdated version of GravesX. \nInstalled Version: Unknown"
+                                    + "\nLatest Version:  " + latestVersion
+                                    + "\nGrab the latest release from https://www.spigotmc.org/resources/" + getSpigotID() + "/");
                         }
                     }
                 }
@@ -368,7 +376,7 @@ public class Graves extends JavaPlugin {
         }
 
         if (versionManager.isMohist()) {
-            infoMessage("Mohist detected, not injecting custom recipes.");
+            infoMessage("Mohist detected, not injecting custom recipes. We also do not recommend Mohist nor will provide support if something goes wrong. Read here why: https://essentialsx.net/do-not-use-mohist.html");
         }
     }
 

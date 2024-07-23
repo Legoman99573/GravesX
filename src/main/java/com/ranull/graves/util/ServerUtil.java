@@ -6,6 +6,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.configuration.file.FileConfiguration;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -36,6 +37,22 @@ public final class ServerUtil {
         } catch (Exception e) {
             stringList.add("NMS Version: " + Bukkit.getServer().getVersion());
         }
+        stringList.add("Java Version: " + System.getProperty("java.version"));
+        stringList.add("OS Name: " + System.getProperty("os.name"));
+        stringList.add("OS Version: " + System.getProperty("os.version"));
+
+        Runtime runtime = Runtime.getRuntime();
+        stringList.add("Max Memory (MB): " + (runtime.maxMemory() / (1024 * 1024)));
+        stringList.add("Total Memory (MB): " + (runtime.totalMemory() / (1024 * 1024)));
+        stringList.add("Free Memory (MB): " + (runtime.freeMemory() / (1024 * 1024)));
+        stringList.add("Used Memory (MB): " + ((runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024)));
+
+        // Add storage space statistics
+        File root = new File("/");
+        stringList.add("Total Space: " + formatBytes(root.getTotalSpace()));
+        stringList.add("Free Space: " + formatBytes(root.getFreeSpace()));
+        stringList.add("Usable Space: " + formatBytes(root.getUsableSpace()));
+
         stringList.add("Database Type: " + plugin.getConfig().getString("settings.storage.type", "SQLITE").toUpperCase());
         stringList.add("Player Count: " + plugin.getServer().getOnlinePlayers().size());
         stringList.add("Player List: " + plugin.getServer().getOnlinePlayers().stream()
@@ -71,5 +88,18 @@ public final class ServerUtil {
 
         // Join all information into a single string separated by new lines
         return String.join("\n", stringList);
+    }
+
+    /**
+     * Formats a byte count into a human-readable string with appropriate units.
+     *
+     * @param bytes The number of bytes.
+     * @return A string with the byte count formatted in B, KB, MB, GB, TB, or PB.
+     */
+    private static String formatBytes(long bytes) {
+        if (bytes < 1024) return bytes + " B";
+        int exp = (int) (Math.log(bytes) / Math.log(1024));
+        String pre = ("KMGTPE").charAt(exp-1) + "i";
+        return String.format("%.1f %sB", bytes / Math.pow(1024, exp), pre);
     }
 }
