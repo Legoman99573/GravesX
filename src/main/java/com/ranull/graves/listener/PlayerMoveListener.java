@@ -79,6 +79,8 @@ public class PlayerMoveListener implements Listener {
                                 && plugin.getEntityManager().canOpenGrave(player, grave)) {
                             plugin.getGraveManager().cleanupCompasses(player, grave);
                             GraveAutoLootEvent graveAutoLootEvent = new GraveAutoLootEvent(event.getPlayer(), location, grave);
+
+                            plugin.getServer().getPluginManager().callEvent(graveAutoLootEvent);
                             if (!graveAutoLootEvent.isCancelled()) {
                                 plugin.getGraveManager().autoLootGrave(event.getPlayer(), location, grave);
                             }

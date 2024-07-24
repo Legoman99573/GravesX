@@ -636,6 +636,8 @@ public final class EntityManager extends EntityDataManager {
             }
             case "autoloot": {
                 GraveAutoLootEvent graveAutoLootEvent = new GraveAutoLootEvent(entity, entity.getLocation(), grave);
+
+                plugin.getServer().getPluginManager().callEvent(graveAutoLootEvent);
                 if (graveAutoLootEvent.isCancelled()) {
                     plugin.getGraveManager().autoLootGrave(entity, entity.getLocation(), grave);
                 }
@@ -714,6 +716,8 @@ public final class EntityManager extends EntityDataManager {
     private void spawnZombie(Location location, LivingEntity targetEntity, Grave grave) {
         if (location != null && location.getWorld() != null && grave.getOwnerType() == EntityType.PLAYER) {
             GraveZombieSpawnEvent graveZombieSpawnEvent = new GraveZombieSpawnEvent(location, targetEntity, grave);
+
+            plugin.getServer().getPluginManager().callEvent(graveZombieSpawnEvent);
             if (graveZombieSpawnEvent.isCancelled()) return;
             String zombieType = plugin.getConfig("zombie.type", grave)
                     .getString("zombie.type", "ZOMBIE").toUpperCase();

@@ -6,7 +6,6 @@ import org.bukkit.entity.Entity;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class GraveAutoLootEvent extends Event implements Cancellable {
@@ -55,9 +54,12 @@ public class GraveAutoLootEvent extends Event implements Cancellable {
      *
      * @return The list of handlers.
      */
-    @NotNull
     @Override
     public HandlerList getHandlers() {
+        return HANDLERS;
+    }
+
+    public static HandlerList getHandlerList() {
         return HANDLERS;
     }
 
