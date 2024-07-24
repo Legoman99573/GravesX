@@ -638,7 +638,7 @@ public final class EntityManager extends EntityDataManager {
                 GraveAutoLootEvent graveAutoLootEvent = new GraveAutoLootEvent(entity, entity.getLocation(), grave);
 
                 plugin.getServer().getPluginManager().callEvent(graveAutoLootEvent);
-                if (graveAutoLootEvent.isCancelled()) {
+                if (!graveAutoLootEvent.isCancelled()) {
                     plugin.getGraveManager().autoLootGrave(entity, entity.getLocation(), grave);
                 }
                 return true;

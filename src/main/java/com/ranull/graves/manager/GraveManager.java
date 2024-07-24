@@ -5,6 +5,7 @@ import com.ranull.graves.data.BlockData;
 import com.ranull.graves.data.ChunkData;
 import com.ranull.graves.data.EntityData;
 import com.ranull.graves.data.HologramData;
+import com.ranull.graves.event.GraveAutoLootEvent;
 import com.ranull.graves.event.GraveTimeoutEvent;
 import com.ranull.graves.inventory.GraveList;
 import com.ranull.graves.inventory.GraveMenu;
@@ -758,7 +759,11 @@ public final class GraveManager {
                 cleanupCompasses(player, grave);
 
                 if (player.isSneaking() && player.hasPermission("graves.autoloot")) {
-                    autoLootGrave(player, location, grave);
+                    GraveAutoLootEvent graveAutoLootEvent = new GraveAutoLootEvent(player, location, grave);
+
+                    plugin.getServer().getPluginManager().callEvent(graveAutoLootEvent);
+                    if (!graveAutoLootEvent.isCancelled())
+                        autoLootGrave(player, location, grave);
                 } else if (player.hasPermission("graves.open")) {
                     player.openInventory(grave.getInventory());
                     plugin.getEntityManager().runCommands("event.command.open", player, location, grave);
