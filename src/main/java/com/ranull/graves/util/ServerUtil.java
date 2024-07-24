@@ -53,7 +53,7 @@ public final class ServerUtil {
         // Check for top-level access
         if (isRunningAsRoot()) {
             stringList.add("WARNING: This " + plugin.getServer().getName() + " server is running with top-level access (root/administrator)");
-            plugin.getLogger().warning("This server is running with top-level access (root/administrator), which is unsafe and can lead to security vulnerabilities. We recommend creating a user account or running the server in a Docker container.");
+            plugin.getLogger().warning("This server is running with top-level access (root/administrator), which is unsafe and can lead to security vulnerabilities. We recommend creating a user account or running the server in a rootless Docker container.");
         }
         stringList.add("");
 
