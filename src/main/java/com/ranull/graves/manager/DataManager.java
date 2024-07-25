@@ -337,24 +337,22 @@ public final class DataManager {
      */
     public List<String> getColumnList(String tableName) {
         List<String> columnList = new ArrayList<>();
-        ResultSet resultSet = null;
-        try {
-            if (type == Type.MYSQL || type == Type.MARIADB) {
-                resultSet = executeQuery("DESCRIBE " + tableName + ";");
-                while (resultSet != null && resultSet.next()) {
-                    columnList.add(resultSet.getString("Field"));
-                }
-            } else if (type == Type.SQLITE) {
-                resultSet = executeQuery("PRAGMA table_info(" + tableName + ");");
-                while (resultSet != null && resultSet.next()) {
-                    columnList.add(resultSet.getString("name"));
-                }
+        String query = (type == Type.MYSQL || type == Type.MARIADB)
+                ? "DESCRIBE " + tableName + ";"
+                : "PRAGMA table_info(" + tableName + ");";
+
+        try (Connection connection = getConnection(); // Ensure you get a connection
+             Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(query)) {
+
+            while (resultSet.next()) {
+                String columnName = (type == Type.MYSQL || type == Type.MARIADB) ? resultSet.getString("Field") : resultSet.getString("name");
+                columnList.add(columnName);
             }
         } catch (SQLException exception) {
             exception.printStackTrace();
-        } finally {
-            closeResultSet(resultSet);
         }
+
         return columnList;
     }
 
@@ -366,18 +364,25 @@ public final class DataManager {
      */
     public boolean tableExists(String tableName) {
         ResultSet resultSet = null;
-        try {
+        try (Connection connection = getConnection();
+             Statement statement = connection.createStatement()) {
             if (type == Type.MYSQL || type == Type.MARIADB) {
-                resultSet = executeQuery("SHOW TABLES LIKE '" + tableName + "';");
+                resultSet = statement.executeQuery("SHOW TABLES LIKE '" + tableName + "';");
             } else {
-                resultSet = executeQuery("SELECT name FROM sqlite_master WHERE type='table' AND name='" + tableName + "';");
+                resultSet = statement.executeQuery("SELECT name FROM sqlite_master WHERE type='table' AND name='" + tableName + "';");
             }
             return resultSet != null && resultSet.next();
         } catch (SQLException exception) {
             exception.printStackTrace();
             return false;
         } finally {
-            closeResultSet(resultSet);
+            if (resultSet != null) {
+                try {
+                    resultSet.close();
+                } catch (SQLException exception) {
+                    exception.printStackTrace();
+                }
+            }
         }
     }
 
@@ -520,8 +525,13 @@ public final class DataManager {
     private void loadGraveMap() {
         plugin.getCacheManager().getGraveMap().clear();
 
-        try (ResultSet resultSet = executeQuery("SELECT * FROM grave;")) {
-            while (resultSet != null && resultSet.next()) {
+        String query = "SELECT * FROM grave;";
+
+        try (Connection connection = getConnection();
+             Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(query)) {
+
+            while (resultSet.next()) {
                 Grave grave = resultSetToGrave(resultSet);
                 if (grave != null) {
                     plugin.getCacheManager().getGraveMap().put(grave.getUUID(), grave);
@@ -536,8 +546,13 @@ public final class DataManager {
      * Loads the block map from the database.
      */
     private void loadBlockMap() {
-        try (ResultSet resultSet = executeQuery("SELECT * FROM block;")) {
-            while (resultSet != null && resultSet.next()) {
+        String query = "SELECT * FROM block;";
+
+        try (Connection connection = getConnection();
+             Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(query)) {
+
+            while (resultSet.next()) {
                 Location location = LocationUtil.stringToLocation(resultSet.getString("location"));
                 UUID uuidGrave = UUID.fromString(resultSet.getString("uuid_grave"));
                 String replaceMaterial = resultSet.getString("replace_material");
@@ -557,8 +572,13 @@ public final class DataManager {
      * @param type  the type of entity data.
      */
     private void loadEntityMap(String table, EntityData.Type type) {
-        try (ResultSet resultSet = executeQuery("SELECT * FROM " + table + ";")) {
-            while (resultSet != null && resultSet.next()) {
+        String query = "SELECT * FROM " + table + ";";
+
+        try (Connection connection = getConnection();
+             Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(query)) {
+
+            while (resultSet.next()) {
                 Location location = null;
 
                 if (resultSet.getString("location") != null) {
@@ -583,8 +603,13 @@ public final class DataManager {
      * Loads the hologram map from the database.
      */
     private void loadHologramMap() {
-        try (ResultSet resultSet = executeQuery("SELECT * FROM hologram;")) {
-            while (resultSet != null && resultSet.next()) {
+        String query = "SELECT * FROM hologram;";
+
+        try (Connection connection = getConnection();
+             Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(query)) {
+
+            while (resultSet.next()) {
                 Location location = null;
 
                 if (resultSet.getString("location") != null) {
@@ -613,8 +638,13 @@ public final class DataManager {
      * @param type  the type of entity data.
      */
     private void loadEntityDataMap(String table, EntityData.Type type) {
-        try (ResultSet resultSet = executeQuery("SELECT * FROM " + table + ";")) {
-            while (resultSet != null && resultSet.next()) {
+        String query = "SELECT * FROM " + table + ";";
+
+        try (Connection connection = getConnection();
+             Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(query)) {
+
+            while (resultSet.next()) {
                 Location location = null;
 
                 if (resultSet.getString("location") != null) {
@@ -622,6 +652,7 @@ public final class DataManager {
                 } else if (resultSet.getString("chunk") != null) {
                     location = LocationUtil.chunkStringToLocation(resultSet.getString("chunk"));
                 }
+
                 if (location != null) {
                     UUID uuidEntity = UUID.fromString(resultSet.getString("uuid_entity"));
                     UUID uuidGrave = UUID.fromString(resultSet.getString("uuid_grave"));
@@ -987,14 +1018,24 @@ public final class DataManager {
      * @param sql the SQL statement.
      */
     private void executeUpdate(String sql) {
-        try (Connection connection = getConnection();
-             Statement statement = connection.createStatement()) {
+        Statement statement = null;
+        try (Connection connection = getConnection()) {
             if (connection != null) {
+                statement = connection.createStatement();
                 statement.executeUpdate(sql);
             }
         } catch (SQLException exception) {
-            if (type == Type.SQLITE) return; // Will always fail. It doesn't cause any issues, so just don't log it.
+            // Log the SQL exception for both MySQL and SQLite
+            plugin.getLogger().severe("Error executing SQL update: " + exception.getMessage());
             exception.printStackTrace();
+        } finally {
+            if (statement != null) {
+                try {
+                    statement.close();
+                } catch (SQLException exception) {
+                    exception.printStackTrace();
+                }
+            }
         }
     }
 
@@ -1004,23 +1045,33 @@ public final class DataManager {
      * @param sql the SQL statement.
      * @return the ResultSet of the query.
      */
-    private ResultSet executeQuery(String sql) {
-        Connection connection = null;
+    private ResultSet executeQuery(String sql) throws SQLException {
+        ResultSet resultSet = null;
         Statement statement = null;
-        try {
-            connection = getConnection();
+        try (Connection connection = getConnection()) {
             if (connection != null) {
                 statement = connection.createStatement();
-                return statement.executeQuery(sql);
+                resultSet = statement.executeQuery(sql);
             }
         } catch (SQLException exception) {
             exception.printStackTrace();
         } finally {
-            // Note: We do not close ResultSet here because it is used outside this method.
-            closeStatement(statement);
-            closeConnection(connection);
+            if (resultSet != null) {
+                try {
+                    resultSet.close();
+                } catch (SQLException exception) {
+                    exception.printStackTrace();
+                }
+            }
+            if (statement != null) {
+                try {
+                    statement.close();
+                } catch (SQLException exception) {
+                    exception.printStackTrace();
+                }
+            }
         }
-        return null;
+        return resultSet;
     }
 
     /**
@@ -1195,6 +1246,7 @@ public final class DataManager {
     private String mapSQLiteTypeToMySQL(String sqliteType, String columnName) {
         switch (sqliteType.toUpperCase()) {
             case "INT":
+            case "BIGINT":
             case "INTEGER":
                 if ("protection".equals(columnName))
                     return "INT(1)";
