@@ -45,11 +45,12 @@ public final class DataManager {
                 load();
                 keepConnectionAlive(); // If we don't enable this, connection will close or time out :/
                 break;
+            case POSTGRESQL:
             case MYSQL:
             case MARIADB:
                 loadType(this.type);
                 if (testMySQLConnection()) {
-                    migrateToMySQL();
+                    migrate();
                     load();
                     keepConnectionAlive(); // If we don't enable this, connection will close or time out :/
                 } else {
@@ -59,12 +60,6 @@ public final class DataManager {
                 break;
             case H2:
                 plugin.getLogger().warning("H2 is planned for a future release. Falling back to SQLite for now...");
-                loadType(Type.SQLITE);
-                load();
-                keepConnectionAlive(); // If we don't enable this, connection will close or time out :/
-                break;
-            case POSTGRESQL:
-                plugin.getLogger().warning("PostgreSQL is planned for a future release. Falling back to SQLite for now...");
                 loadType(Type.SQLITE);
                 load();
                 keepConnectionAlive(); // If we don't enable this, connection will close or time out :/
@@ -189,12 +184,59 @@ public final class DataManager {
      */
     public void loadType(Type type) {
         this.type = type;
-        if (type == Type.SQLITE) {
+        if (type == Type.POSTGRESQL) {
+            String host = plugin.getConfig().getString("settings.storage.postgresql.host", "localhost");
+            int port = plugin.getConfig().getInt("settings.storage.postgresql.port", 3306);
+            String user = plugin.getConfig().getString("settings.storage.postgresql.username", "username");
+            String password = plugin.getConfig().getString("settings.storage.postgresql.password", "password");
+            String database = plugin.getConfig().getString("settings.storage.postgresql.database", "graves");
+            long maxLifetime = plugin.getConfig().getLong("settings.storage.postgresql.maxLifetime", 1800000);
+            int maxConnections = plugin.getConfig().getInt("settings.storage.postgresql.maxConnections", 20); // Increased pool size
+            long connectionTimeout = plugin.getConfig().getLong("settings.storage.postgresql.connectionTimeout", 30000);
+            boolean ssl = plugin.getConfig().getBoolean("settings.storage.postgresql.ssl", true);
+            String allowPublicKeyRetrieval = plugin.getConfig().getString("settings.storage.postgresql.sslfactory", "com.ranull.graves.postgresql.ssl.NonValidatingFactory");
+            String verifyServerCertificate = plugin.getConfig().getString("settings.storage.postgresql.sslmode", "disable");
+            String sslrootcert = plugin.getConfig().getString("settings.storage.postgresql.sslrootcert", "/path/to/server.crt");
+            String sslcert = plugin.getConfig().getString("settings.storage.postgresql.sslcert", "/path/to/client.crt");
+            String sslkey = plugin.getConfig().getString("settings.storage.postgresql.sslkey", "/path/to/client.key");
+            HikariConfig config = new HikariConfig();
+            config.setJdbcUrl("jdbc:postgresql://" + host + ":" + port + "/" + database);
+            config.setUsername(user);
+            config.setPassword(password);
+            config.addDataSourceProperty("autoReconnect", "true");
+            config.addDataSourceProperty("cachePrepStmts", "true");
+            config.addDataSourceProperty("prepStmtCacheSize", "250");
+            config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+            config.addDataSourceProperty("useServerPrepStmts", "true");
+            config.addDataSourceProperty("useLocalSessionState", "true");
+            config.addDataSourceProperty("cacheResultSetMetadata", "true");
+            config.addDataSourceProperty("cacheServerConfiguration", "true");
+            config.addDataSourceProperty("elideSetAutoCommits", "true");
+            config.addDataSourceProperty("maintainTimeStats", "false");
+            config.addDataSourceProperty("alwaysSendSetIsolation", "false");
+            config.addDataSourceProperty("cacheCallableStmts", "true");
+            config.addDataSourceProperty("ssl", String.valueOf(ssl));
+            if (ssl) {
+                config.addDataSourceProperty("sslfactory", allowPublicKeyRetrieval);
+                config.addDataSourceProperty("sslmode", verifyServerCertificate);
+                config.addDataSourceProperty("sslrootcert", sslrootcert);
+                config.addDataSourceProperty("sslcert", sslcert);
+                config.addDataSourceProperty("sslkey", sslkey);
+            }
+            config.setDriverClassName("com.ranull.graves.postgresql.ds.PGSimpleDataSource");
+            config.setMaximumPoolSize(maxConnections);
+            config.setMaxLifetime(maxLifetime);
+            config.setMinimumIdle(2);
+            config.setConnectionTimeout(connectionTimeout);
+            config.setPoolName("Graves PostgreSQL");
+            config.setIdleTimeout(600000); // 10 minutes
+            config.setConnectionTestQuery("SELECT 1");
+            config.setLeakDetectionThreshold(15000); // Detect connection leaks
+        } else if (type == Type.SQLITE) {
             migrateRootDataSubData();
             HikariConfig config = new HikariConfig();
             configureSQLite(config);
             dataSource = new HikariDataSource(config);
-
         } else {
             // MySQL or MariaDB configuration
             String host = plugin.getConfig().getString("settings.storage.mysql.host", "localhost");
@@ -230,8 +272,10 @@ public final class DataManager {
             config.addDataSourceProperty("alwaysSendSetIsolation", "false");
             config.addDataSourceProperty("cacheCallableStmts", "true");
             config.addDataSourceProperty("useSSL", String.valueOf(useSSL));
-            config.addDataSourceProperty("allowPublicKeyRetrieval", String.valueOf(allowPublicKeyRetrieval));
-            config.addDataSourceProperty("verifyServerCertificate", String.valueOf(verifyServerCertificate));
+            if (useSSL) {
+                config.addDataSourceProperty("allowPublicKeyRetrieval", String.valueOf(allowPublicKeyRetrieval));
+                config.addDataSourceProperty("verifyServerCertificate", String.valueOf(verifyServerCertificate));
+            }
             config.setMaximumPoolSize(maxConnections);
             config.setMaxLifetime(maxLifetime);
             config.setMinimumIdle(2);
@@ -254,7 +298,7 @@ public final class DataManager {
             dataSource = new HikariDataSource(config);
 
             if (testMySQLConnection()) {
-                migrateToMySQL();
+                migrate();
             }
         }
     }
@@ -1134,9 +1178,9 @@ public final class DataManager {
     }
 
     /**
-     * Migrates data from SQLite to MySQL.
+     * Migrates data from SQLite to the target database (MySQL or PostgreSQL).
      */
-    private void migrateToMySQL() {
+    public void migrate() {
         File dataFolder = new File(plugin.getDataFolder(), "data");
         File sqliteFile = new File(dataFolder, "data.db");
 
@@ -1164,13 +1208,13 @@ public final class DataManager {
                     for (int i = 1; i <= tableMetaData.getColumnCount(); i++) {
                         String columnName = tableMetaData.getColumnName(i);
                         String sqliteType = tableMetaData.getColumnTypeName(i);
-                        String mysqlType = mapSQLiteTypeToMySQL(sqliteType, columnName);
-                        plugin.getLogger().info("Mapping column: " + columnName + " of type: " + sqliteType + " to MySQL type: " + mysqlType);
+                        String targetType = mapSQLiteTypeToTargetDB(sqliteType, columnName);
+                        plugin.getLogger().info("Mapping column: " + columnName + " of type: " + sqliteType + " to target DB type: " + targetType);
 
-                        if (mysqlType != null) {
+                        if (targetType != null) {
                             createTableQuery.append(columnName)
                                     .append(" ")
-                                    .append(mysqlType)
+                                    .append(targetType)
                                     .append(i == tableMetaData.getColumnCount() ? ")" : ", ");
                             columns.add(columnName);
                         }
@@ -1185,13 +1229,20 @@ public final class DataManager {
                     executeUpdate(createTableQuery.toString());
 
                     // Modify columns if necessary
-                    if ("grave".equals(tableName)) {
+                    if ("grave".equals(tableName) && this.type == Type.MYSQL) {
                         plugin.getLogger().info("Altering table " + tableName + " to ensure column sizes are correct.");
                         executeUpdate("ALTER TABLE grave MODIFY owner_texture TEXT");
                         executeUpdate("ALTER TABLE grave MODIFY owner_texture_signature TEXT");
                         executeUpdate("ALTER TABLE grave MODIFY time_creation BIGINT");
                         executeUpdate("ALTER TABLE grave MODIFY time_protection BIGINT");
                         executeUpdate("ALTER TABLE grave MODIFY time_alive BIGINT");
+                    } else if ("grave".equals(tableName) && this.type == Type.POSTGRESQL) {
+                        plugin.getLogger().info("Altering table " + tableName + " to ensure column sizes are correct.");
+                        executeUpdate("ALTER TABLE grave ALTER COLUMN owner_texture TYPE TEXT");
+                        executeUpdate("ALTER TABLE grave ALTER COLUMN owner_texture_signature TYPE TEXT");
+                        executeUpdate("ALTER TABLE grave ALTER COLUMN time_creation TYPE BIGINT");
+                        executeUpdate("ALTER TABLE grave ALTER COLUMN time_protection TYPE BIGINT");
+                        executeUpdate("ALTER TABLE grave ALTER COLUMN time_alive TYPE BIGINT");
                     }
 
                     while (tableData.next()) {
@@ -1222,7 +1273,7 @@ public final class DataManager {
                 }
             }
         } catch (SQLException e) {
-            plugin.getLogger().severe("Error migrating SQLite to MySQL: " + e.getMessage());
+            plugin.getLogger().severe("Error migrating SQLite to target DB: " + e.getMessage());
             migrationSuccess = false;
         }
 
@@ -1237,41 +1288,67 @@ public final class DataManager {
     }
 
     /**
-     * Maps SQLite data types to MySQL data types.
+     * Maps SQLite data types to target database data types (MySQL or PostgreSQL).
      *
      * @param sqliteType the SQLite data type.
      * @param columnName the column name.
-     * @return the MySQL data type.
+     * @return the target database data type.
      */
-    private String mapSQLiteTypeToMySQL(String sqliteType, String columnName) {
-        switch (sqliteType.toUpperCase()) {
-            case "INT":
-            case "BIGINT":
-            case "INTEGER":
-                if ("protection".equals(columnName))
-                    return "INT(1)";
-                if ("time_protection".equals(columnName) || "time_creation".equals(columnName) || "time_alive".equals(columnName))
-                    return "BIGINT";
-                return "INT(16)";
-            case "VARCHAR":
-                return "VARCHAR(255)";
-            case "FLOAT":
-                return "FLOAT(16)";
-            case "TEXT":
-                if ("owner_texture".equals(columnName) || "owner_texture_signature".equals(columnName) || "inventory".equals(columnName) || "equipment".equals(columnName) || "permissions".equals(columnName)) {
+    private String mapSQLiteTypeToTargetDB(String sqliteType, String columnName) {
+        if (this.type == Type.MYSQL) {
+            switch (sqliteType.toUpperCase()) {
+                case "INT":
+                case "BIGINT":
+                case "INTEGER":
+                    if ("protection".equals(columnName))
+                        return "INT(1)";
+                    if ("time_protection".equals(columnName) || "time_creation".equals(columnName) || "time_alive".equals(columnName))
+                        return "BIGINT";
+                    return "INT(16)";
+                case "VARCHAR":
+                    return "VARCHAR(255)";
+                case "FLOAT":
+                    return "FLOAT(16)";
+                case "TEXT":
                     return "TEXT";
-                }
-                return "VARCHAR(255)";
-            case "BLOB":
-                return "BLOB";
-            case "REAL":
-                return "DOUBLE";
-            case "NUMERIC":
-                return "DECIMAL(10, 5)";
-            default:
-                plugin.getLogger().warning("Unhandled SQLite type: " + sqliteType + " for column: " + columnName);
-                return null; // Ignore unhandled types
+                case "BLOB":
+                    return "BLOB";
+                case "REAL":
+                    return "DOUBLE";
+                case "NUMERIC":
+                    return "DECIMAL(10, 5)";
+                default:
+                    plugin.getLogger().warning("Unhandled SQLite type: " + sqliteType + " for column: " + columnName);
+                    return null; // Ignore unhandled types
+            }
+        } else if (this.type == Type.POSTGRESQL) {
+            switch (sqliteType.toUpperCase()) {
+                case "INT":
+                case "BIGINT":
+                case "INTEGER":
+                    if ("protection".equals(columnName))
+                        return "BOOLEAN";
+                    if ("time_protection".equals(columnName) || "time_creation".equals(columnName) || "time_alive".equals(columnName))
+                        return "BIGINT";
+                    return "INTEGER";
+                case "VARCHAR":
+                    return "VARCHAR(255)";
+                case "FLOAT":
+                    return "REAL";
+                case "TEXT":
+                    return "TEXT";
+                case "BLOB":
+                    return "BYTEA";
+                case "REAL":
+                    return "DOUBLE PRECISION";
+                case "NUMERIC":
+                    return "NUMERIC(10, 5)";
+                default:
+                    plugin.getLogger().warning("Unhandled SQLite type: " + sqliteType + " for column: " + columnName);
+                    return null; // Ignore unhandled types
+            }
         }
+        return null;
     }
 
     /**
