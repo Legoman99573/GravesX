@@ -73,6 +73,10 @@
                             <shadedPattern>${project.groupId}.${project.artifactId}.mysql</shadedPattern>
                         </relocation>
                         <relocation>
+                            <pattern>org.postgresql</pattern>
+                            <shadedPattern>${project.groupId}.${project.artifactId}.postgresql</shadedPattern>
+                        </relocation>
+                        <relocation>
                             <pattern>net.kyori</pattern>
                             <shadedPattern>${project.groupId}.${project.artifactId}.kyori</shadedPattern>
                         </relocation>
@@ -223,6 +227,11 @@
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
             <version>9.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.7.3</version>
         </dependency>
         <dependency>
             <groupId>com.github.puregero</groupId>
