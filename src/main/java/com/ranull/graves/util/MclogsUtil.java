@@ -28,28 +28,25 @@ public final class MclogsUtil {
     public static String postLogToMclogs(String content) {
         try {
             URL url = new URL(API_URL);
-            HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
+            HttpsURLConnection httpsURLConnection = (HttpsURLConnection) url.openConnection();
 
-            connection.setDoOutput(true);
-            connection.setUseCaches(false);
-            connection.setRequestMethod("POST");
-            connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            httpsURLConnection.setDoOutput(true);
+            httpsURLConnection.setUseCaches(false);
+            httpsURLConnection.setRequestMethod("POST");
+            httpsURLConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
 
             String urlParameters = "content=" + URLEncoder.encode(content, StandardCharsets.UTF_8.toString());
 
-            try (DataOutputStream out = new DataOutputStream(connection.getOutputStream())) {
-                out.writeBytes(urlParameters);
-                out.flush();
+            try (DataOutputStream dataOutputStream = new DataOutputStream(httpsURLConnection.getOutputStream())) {
+                dataOutputStream.writeBytes(urlParameters);
+                dataOutputStream.flush();
             }
 
-            int responseCode = connection.getResponseCode();
-            System.out.println("Response Code: " + responseCode);
-
             StringBuilder response;
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+            try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(httpsURLConnection.getInputStream()))) {
                 String inputLine;
                 response = new StringBuilder();
-                while ((inputLine = in.readLine()) != null) {
+                while ((inputLine = bufferedReader.readLine()) != null) {
                     response.append(inputLine);
                 }
             }
@@ -58,7 +55,7 @@ public final class MclogsUtil {
             if (jsonResponse.getBoolean("success")) {
                 return jsonResponse.getString("url");
             } else {
-                System.out.println("Log upload failed. Error: " + jsonResponse.getString("error"));
+                // System.out.println("Log upload failed. Error: " + jsonResponse.getString("error"));
                 return null;
             }
         } catch (IOException | JSONException exception) {
