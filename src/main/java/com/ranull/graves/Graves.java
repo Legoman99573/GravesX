@@ -424,6 +424,9 @@ public class Graves extends JavaPlugin {
 
                     if (response != null) {
                         message = response;
+                        getLogger().info("Log uploaded successfully. URL: " + response);
+                    } else {
+                        getLogger().warning("Log upload failed. No response received.");
                     }
                 }
 
