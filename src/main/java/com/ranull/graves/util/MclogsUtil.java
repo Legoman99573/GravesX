@@ -26,41 +26,57 @@ public final class MclogsUtil {
      * @return The URL of the posted log, or null if the post was unsuccessful.
      */
     public static String postLogToMclogs(String content) {
+        HttpsURLConnection connection = null;
         try {
             URL url = new URL(API_URL);
-            HttpsURLConnection httpsURLConnection = (HttpsURLConnection) url.openConnection();
+            connection = (HttpsURLConnection) url.openConnection();
 
-            httpsURLConnection.setDoOutput(true);
-            httpsURLConnection.setUseCaches(false);
-            httpsURLConnection.setRequestMethod("POST");
-            httpsURLConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            connection.setDoOutput(true);
+            connection.setUseCaches(false);
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
 
             String urlParameters = "content=" + URLEncoder.encode(content, StandardCharsets.UTF_8.toString());
 
-            try (DataOutputStream dataOutputStream = new DataOutputStream(httpsURLConnection.getOutputStream())) {
+            try (DataOutputStream dataOutputStream = new DataOutputStream(connection.getOutputStream())) {
                 dataOutputStream.writeBytes(urlParameters);
                 dataOutputStream.flush();
             }
 
-            StringBuilder response;
-            try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(httpsURLConnection.getInputStream()))) {
-                String inputLine;
-                response = new StringBuilder();
-                while ((inputLine = bufferedReader.readLine()) != null) {
-                    response.append(inputLine);
-                }
-            }
+            int responseCode = connection.getResponseCode();
 
-            JSONObject jsonResponse = new JSONObject(response.toString());
-            if (jsonResponse.getBoolean("success")) {
-                return jsonResponse.getString("url");
+            if (responseCode == HttpsURLConnection.HTTP_OK) {
+                StringBuilder response = new StringBuilder();
+                try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                    String inputLine;
+                    while ((inputLine = bufferedReader.readLine()) != null) {
+                        response.append(inputLine);
+                    }
+                }
+
+                JSONObject jsonResponse = new JSONObject(response.toString());
+                if (jsonResponse.getBoolean("success")) {
+                    return jsonResponse.getString("url");
+                } else {
+                    throw (new IOException("Log upload failed. Error: " + jsonResponse.getString("error")));
+                }
             } else {
-                // System.out.println("Log upload failed. Error: " + jsonResponse.getString("error"));
-                return null;
+                StringBuilder errorResponse = new StringBuilder();
+                try (BufferedReader errorBufferedReader = new BufferedReader(new InputStreamReader(connection.getErrorStream()))) {
+                    String errorInputLine;
+                    while ((errorInputLine = errorBufferedReader.readLine()) != null) {
+                        errorResponse.append(errorInputLine);
+                    }
+                }
+                throw (new IOException("Error response: " + errorResponse));
             }
         } catch (IOException | JSONException exception) {
             exception.printStackTrace();
             return null;
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
         }
     }
 }
