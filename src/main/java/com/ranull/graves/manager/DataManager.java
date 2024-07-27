@@ -1295,14 +1295,14 @@ public final class DataManager {
     }
 
     /**
-     * Maps SQLite data types to target database data types (MySQL or PostgreSQL).
+     * Maps SQLite data types to target database data types (MySQL/MariaDB or PostgreSQL).
      *
      * @param sqliteType the SQLite data type.
      * @param columnName the column name.
      * @return the target database data type.
      */
     private String mapSQLiteTypeToTargetDB(String sqliteType, String columnName) {
-        if (this.type == Type.MYSQL) {
+        if (this.type == Type.MYSQL || this.type == Type.MARIADB) {
             switch (sqliteType.toUpperCase()) {
                 case "INT":
                 case "BIGINT":
