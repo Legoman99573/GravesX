@@ -117,7 +117,11 @@ public final class GraveManager {
                                 }
                             }
                         } else {
-                            entityDataRemoveList.add(entityData);
+                            if (entityData != null) { // Null check before adding to the list
+                                entityDataRemoveList.add(entityData);
+                            } else {
+                                plugin.debugMessage("Encountered null EntityData while processing chunk: " + entry.getKey(), 3);
+                            }
                         }
                     }
 
@@ -137,7 +141,13 @@ public final class GraveManager {
 
             if (plugin.isEnabled()) {
                 graveRemoveList.forEach(GraveManager.this::removeGrave);
-                entityDataRemoveList.forEach(GraveManager.this::removeEntityData);
+                entityDataRemoveList.forEach(entityData -> {
+                    if (entityData != null) { // Null check before calling removeEntityData
+                        GraveManager.this.removeEntityData(entityData);
+                    } else {
+                        plugin.debugMessage("Attempted to remove null EntityData", 3);
+                    }
+                });
                 blockDataRemoveList.forEach(blockData -> plugin.getBlockManager().removeBlock(blockData));
                 graveRemoveList.clear();
                 blockDataRemoveList.clear();
@@ -281,6 +291,10 @@ public final class GraveManager {
      * @param entityData the entity data to remove.
      */
     public void removeEntityData(EntityData entityData) {
+        if (entityData.getType() == null) {
+            plugin.debugMessage("Attempted to remove null entity data. This is not a bug", 3);
+            return;
+        }
         switch (entityData.getType()) {
             case HOLOGRAM: {
                 plugin.getHologramManager().removeHologram(entityData);

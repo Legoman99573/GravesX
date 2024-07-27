@@ -15,6 +15,7 @@ import org.bukkit.inventory.ItemStack;
 import java.io.File;
 import java.sql.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Manages data storage and retrieval for the Graves plugin.
@@ -894,7 +895,13 @@ public final class DataManager {
         float yaw = grave.getYaw();
         float pitch = grave.getPitch();
         String inventory = "'" + InventoryUtil.inventoryToString(grave.getInventory()) + "'";
-        String equipment = "'" + Base64Util.objectToBase64(grave.getEquipmentMap()) + "'";
+
+        // Convert EquipmentSlot keys to String and filter out null values from the map before serialization
+        Map<String, Object> equipmentMap = grave.getEquipmentMap().entrySet().stream()
+                .filter(entry -> entry.getValue() != null)
+                .collect(Collectors.toMap(entry -> entry.getKey().name(), Map.Entry::getValue));
+
+        String equipment = "'" + Base64Util.objectToBase64(equipmentMap) + "'";
         String permissions = grave.getPermissionList() != null && !grave.getPermissionList().isEmpty()
                 ? "'" + StringUtils.join(grave.getPermissionList(), "|") + "'" : "NULL";
         int protection = grave.getProtection() ? 1 : 0;
