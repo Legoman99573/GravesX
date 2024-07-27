@@ -411,15 +411,8 @@ public class Graves extends JavaPlugin {
                 String serverDumpInfo = ServerUtil.getServerDumpInfo(this);
                 String message = serverDumpInfo;
 
-                if (getConfig().getString("settings.dump.method", "MCLOGS")
-                        .equalsIgnoreCase("HASTEBIN")) {
-                    String response = HastebinUtil.postDataToHastebin(serverDumpInfo, true);
-
-                    if (response != null) {
-                        message = response;
-                    }
-                } else if (getConfig().getString("settings.dump.method", "MCLOGS")
-                        .equalsIgnoreCase("MCLOGS")) {
+                if (getConfig().getString("settings.dump.method", "MCLOGS").equalsIgnoreCase("MCLOGS") ||
+                    getConfig().getString("settings.dump.method", "MCLOGS").equalsIgnoreCase("HASTEBIN")) {
                     String response = MclogsUtil.postLogToMclogs(serverDumpInfo);
 
                     if (response != null) {

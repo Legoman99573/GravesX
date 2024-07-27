@@ -64,9 +64,9 @@ settings:
   # Dump #
   #########
   # Dump server information to help debug the plugin.
-  # Methods: HASTEBIN, MCLOGS, FILE
+  # Methods: MCLOGS, FILE
   dump:
-    method: MCLOGS # HASTEBIN, MCLOGS, FILE
+    method: MCLOGS # MCLOGS, FILE
 
   ##########
   # Update #
