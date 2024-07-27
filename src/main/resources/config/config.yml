@@ -37,8 +37,8 @@ settings:
       maxLifetime: 1800000 # Max lifetime of a connection. DO NOT CHANGE UNLESS YOU KNOW WHAT YOU ARE DOING
       connectionTimeout: 30000 # How long before the connection times out. DO NOT CHANGE UNLESS YOU KNOW WHAT YOU ARE DOING. Only increase if your connection keeps timing out.
       ssl: false # Should we use SSL? Unless you know what you are doing, leave this at false.
-      sslfactory: "com.ranull.graves.postgresql.ssl.NonValidatingFactory" # SSL Factory class. Shaded to com.ranull.graves.postgresql but you can use a different one.
-      sslmode: "disable" # Options: disable, allow,prefer, require, verify-ca, verify-full\
+      sslfactory: "com.ranull.graves.postgresql.ssl.NonValidatingFactory" # SSL Factory class. Shaded to com.ranull.graves.postgresql but you can use the direct class if you like, but it is not recommended.
+      sslmode: "disable" # Options: disable, allow, prefer, require, verify-ca, verify-full
       sslrootcert: "/path/to/server.crt" # Server Root Certificate
       sslcert: "/path/to/client.crt" # SSL Certificate
       sslkey: "/path/to/client.key" # SSL Key
@@ -48,7 +48,7 @@ settings:
   #########
   # Data storage system.
   cache:
-    type: NORMAL # Cache type.
+    type: NORMAL # Cache type. Implementation Unused
 
   #########
   # Debug #
