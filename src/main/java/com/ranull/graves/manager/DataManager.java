@@ -317,7 +317,7 @@ public final class DataManager {
         config.setMaximumPoolSize(50); // Might as well increase this.
         config.setPoolName("Graves SQLite");
         config.addDataSourceProperty("autoReconnect", "true");
-        config.setDriverClassName("org.sqlite.JDBC");
+        config.setDriverClassName("com.ranull.graves.sqlite.JDBC");
     }
 
     /**

@@ -120,7 +120,7 @@ public final class GraveManager {
                             if (entityData != null) { // Null check before adding to the list
                                 entityDataRemoveList.add(entityData);
                             } else {
-                                plugin.debugMessage("Encountered null EntityData while processing chunk: " + entry.getKey(), 3);
+                                plugin.debugMessage("Encountered null EntityData while processing chunk: " + entry.getKey() + ". Item details: " + entityData.toString(), 2);
                             }
                         }
                     }
@@ -145,7 +145,7 @@ public final class GraveManager {
                     if (entityData != null) { // Null check before calling removeEntityData
                         GraveManager.this.removeEntityData(entityData);
                     } else {
-                        plugin.debugMessage("Attempted to remove null EntityData", 3);
+                        plugin.debugMessage("Attempted to remove null EntityData", 2);
                     }
                 });
                 blockDataRemoveList.forEach(blockData -> plugin.getBlockManager().removeBlock(blockData));

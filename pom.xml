@@ -57,6 +57,10 @@
                             <shadedPattern>${project.groupId}.${project.artifactId}.bstats</shadedPattern>
                         </relocation>
                         <relocation>
+                            <pattern>org.json</pattern>
+                            <shadedPattern>${project.groupId}.${project.artifactId}.json</shadedPattern>
+                        </relocation>
+                        <relocation>
                             <pattern>com.github.puregero.multilib</pattern>
                             <shadedPattern>${project.groupId}.${project.artifactId}.multilib</shadedPattern>
                         </relocation>
@@ -75,6 +79,10 @@
                         <relocation>
                             <pattern>org.postgresql</pattern>
                             <shadedPattern>${project.groupId}.${project.artifactId}.postgresql</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>org.sqlite</pattern>
+                            <shadedPattern>${project.groupId}.${project.artifactId}.sqlite</shadedPattern>
                         </relocation>
                         <relocation>
                             <pattern>net.kyori</pattern>
@@ -137,6 +145,11 @@
             <url>https://libraries.minecraft.net/</url>
         </repository>
         <repository>
+            <id>oraxen</id>
+            <name>Oraxen Repository</name>
+            <url>https://repo.oraxen.com/releases</url>
+        </repository>
+        <repository>
             <id>ranull-repo</id>
             <url>https://repo.ranull.com/maven/#/ranull/</url>
         </repository>
@@ -192,6 +205,11 @@
             <id>jitpack.io</id>
             <url>https://jitpack.io/</url>
         </repository>
+        <repository>
+            <id>codemc-repo</id>
+            <url>https://repo.codemc.io/repository/maven-public/</url>
+            <layout>default</layout>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -216,27 +234,31 @@
         <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
-            <version>5.0.1</version>
+            <version>5.1.0</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
             <artifactId>mariadb-java-client</artifactId>
             <version>3.0.3</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
             <version>9.0.0</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <version>42.7.3</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.github.puregero</groupId>
             <artifactId>multilib</artifactId>
-            <version>1.1.12</version>
+            <version>1.2.3</version>
             <scope>compile</scope>
         </dependency>
         <!--refer to libs/README.md-->
@@ -273,7 +295,7 @@
         <dependency>
             <groupId>me.lokka30</groupId>
             <artifactId>treasury</artifactId>
-            <version>1.2.0</version>
+            <version>1.2.1</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -297,7 +319,7 @@
         <dependency>
             <groupId>com.palmergames.bukkit.towny</groupId>
             <artifactId>towny</artifactId>
-            <version>0.98.1.12</version>
+            <version>0.100.3.10</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -309,7 +331,7 @@
         <dependency>
             <groupId>me.clip</groupId>
             <artifactId>placeholderapi</artifactId>
-            <version>2.11.1</version>
+            <version>2.11.6</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -325,10 +347,10 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.github.xerial</groupId>
+            <groupId>org.xerial</groupId>
             <artifactId>sqlite-jdbc</artifactId>
-            <version>3.36.0.3</version>
-            <scope>provided</scope>
+            <version>3.46.0.0</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.github.Ste3et</groupId>
@@ -339,13 +361,13 @@
         <dependency>
             <groupId>com.github.LoneDev6</groupId>
             <artifactId>api-itemsadder</artifactId>
-            <version>3.6.2-beta-r3-b</version>
+            <version>3.6.3-beta-14</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.github.oraxen</groupId>
+            <groupId>io.th0rgal</groupId>
             <artifactId>oraxen</artifactId>
-            <version>1.156.2</version>
+            <version>1.178.0</version>
             <scope>provided</scope>
             <exclusions>
                 <exclusion>
@@ -404,6 +426,13 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>3.14.0</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20240303</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 </project>
