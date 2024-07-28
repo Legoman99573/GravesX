@@ -1,6 +1,7 @@
 package com.ranull.graves.util;
 
 import com.ranull.graves.Graves;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -197,11 +198,28 @@ public final class InventoryUtil {
     public static String inventoryToString(Inventory inventory) {
         List<String> stringList = new ArrayList<>();
 
-        for (ItemStack itemStack : inventory.getContents()) {
-            String base64 = Base64Util.objectToBase64(itemStack != null ? itemStack : new ItemStack(Material.AIR));
+        for (int i = 0; i < inventory.getSize(); i++) {
+            ItemStack itemStack = inventory.getItem(i);
 
-            if (base64 != null) {
-                stringList.add(base64);
+            if (itemStack != null) {
+                try {
+                    String base64 = Base64Util.objectToBase64(itemStack);
+
+                    if (base64 != null) {
+                        stringList.add(base64);
+                    } else {
+                        Bukkit.getLogger().warning("Base64 conversion returned null for item at slot " + i + ": " + itemStack);
+                    }
+                } catch (NullPointerException e) {
+                    Bukkit.getLogger().warning("Exception during Base64 conversion for item at slot " + i + ": " + itemStack.getType() + " - " + e.getMessage());
+                    Bukkit.getLogger().severe("NBT Data: " + itemStack);
+                    Bukkit.getLogger().warning("Removed problematic item " + itemStack.getType() + " from slot " + i + ". While the grave will still generate. This is likely a Spigot/Paper bug.");
+                    inventory.setItem(i, null);  // Removing the problematic item from the inventory
+                    Bukkit.getLogger().warning("Stack Trace:");
+                    e.printStackTrace();
+                }
+            } else {
+                inventory.setItem(i, null);  // Removing the null item from the inventory
             }
         }
 
