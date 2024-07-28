@@ -207,8 +207,6 @@ public final class InventoryUtil {
 
                     if (base64 != null) {
                         stringList.add(base64);
-                    } else {
-                        Bukkit.getLogger().warning("Base64 conversion returned null for item at slot " + i + ": " + itemStack);
                     }
                 } catch (NullPointerException e) {
                     Bukkit.getLogger().warning("Exception during Base64 conversion for item at slot " + i + ": " + itemStack.getType() + " - " + e.getMessage());
