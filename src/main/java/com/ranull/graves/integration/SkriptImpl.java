@@ -41,9 +41,7 @@ public class SkriptImpl {
     private void register() {
         SkriptAddon addon = Skript.registerAddon(plugin);
         try {
-            addon.loadClasses("com.ranull.graves.event.integration.skript", "events");
-            //new EvtGraveAutoLoot();
-            //Skript.registerEvent("Grave Auto Loot", EvtGraveAutoLoot.class, GraveAutoLootEvent.class, "[grave] auto loot[ing] [(of|for) %-entitydatas%]");
+            addon.loadClasses("com.ranull.graves.event.integration.skript");
             plugin.integrationMessage("Skript integration loaded successfully.");
         } catch (Exception e) {
             e.printStackTrace();
