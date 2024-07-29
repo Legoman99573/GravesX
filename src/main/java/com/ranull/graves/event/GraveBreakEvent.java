@@ -3,6 +3,7 @@ package com.ranull.graves.event;
 import com.ranull.graves.type.Grave;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Cancellable;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.jetbrains.annotations.NotNull;
@@ -12,10 +13,11 @@ import org.jetbrains.annotations.NotNull;
  * by a player. This event extends the BlockBreakEvent and includes additional
  * information about the grave and whether items should drop upon breaking the grave block.
  */
-public class GraveBreakEvent extends BlockBreakEvent {
+public class GraveBreakEvent extends BlockBreakEvent implements Cancellable {
     private static final HandlerList HANDLERS = new HandlerList();
     private final Grave grave;
     private boolean dropItems;
+    private boolean isCancelled;
 
     /**
      * Constructs a new GraveBreakEvent.
@@ -28,6 +30,7 @@ public class GraveBreakEvent extends BlockBreakEvent {
         super(block, player);
         this.dropItems = true;
         this.grave = grave;
+        this.isCancelled = false;
     }
 
     /**
@@ -74,6 +77,26 @@ public class GraveBreakEvent extends BlockBreakEvent {
      */
     public void setDropItems(boolean dropItems) {
         this.dropItems = dropItems;
+    }
+
+    /**
+     * Gets the cancellation state of this event. A cancelled event will not be executed in the server, but will still pass to other plugins.
+     *
+     * @return True if this event is cancelled.
+     */
+    @Override
+    public boolean isCancelled() {
+        return this.isCancelled;
+    }
+
+    /**
+     * Sets the cancellation state of this event. A cancelled event will not be executed in the server, but will still pass to other plugins.
+     *
+     * @param cancel True if you wish to cancel this event.
+     */
+    @Override
+    public void setCancelled(boolean cancel) {
+        this.isCancelled = cancel;
     }
 
     /**

@@ -13,15 +13,15 @@ import org.jetbrains.annotations.NotNull;
 public class GraveZombieSpawnEvent extends Event implements Cancellable {
     private static final HandlerList HANDLERS = new HandlerList();
     private final Grave grave;
-    private Location location;
+    private final Location location;
     private final LivingEntity targetEntity;
     private boolean cancel;
 
     /**
-     * Constructs a new GraveAutoLootEvent.
+     * Constructs a new GraveZombieSpawnEvent.
      *
-     * @param targetEntity    Gets the entity
-     * @param location        Gets the grave location
+     * @param targetEntity    The entity that the zombie is targeting.
+     * @param location        The location where the zombie is spawning.
      * @param grave           The grave associated with the event.
      */
     public GraveZombieSpawnEvent(Location location, LivingEntity targetEntity, Grave grave) {
@@ -41,16 +41,16 @@ public class GraveZombieSpawnEvent extends Event implements Cancellable {
     }
 
     /**
-     * Gets the entity for which the grave is being created.
+     * Gets the entity for which the zombie is targeting.
      *
-     * @return The entity.
+     * @return The target entity.
      */
-    public Entity getEntity() {
+    public LivingEntity getTargetEntity() {
         return targetEntity;
     }
 
     /**
-     * Gets the type of the entity for which the grave is being created.
+     * Gets the type of the entity for which the zombie is targeting.
      *
      * @return The entity type.
      */
@@ -59,12 +59,21 @@ public class GraveZombieSpawnEvent extends Event implements Cancellable {
     }
 
     /**
-     * Gets the grave being created.
+     * Gets the grave associated with this event.
      *
      * @return The grave.
      */
     public Grave getGrave() {
         return grave;
+    }
+
+    /**
+     * Gets the location where the zombie is spawning.
+     *
+     * @return The location.
+     */
+    public Location getLocation() {
+        return location;
     }
 
     /**

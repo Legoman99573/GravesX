@@ -342,6 +342,25 @@ settings:
             enabled: false # Should corpses glow?
             color: RED # Glow color.
 
+      ############
+      # Citizens #
+      ############
+      # The option requires Citizens, you must have this installed to use corpses, only supported on 1.17+.
+      citizens:
+        corpse:
+          enabled: false # Should we create a corpse?
+          pose: "SLEEPING" # What pose should the entity use? https://sergiferry.github.io/PlayerNPC/dev/sergiferry/playernpc/api/NPC.Pose.html
+          offset:
+            x: 0 # Corpse offset X.
+            y: 0 # Corpse offset Y.
+            z: 0 # Corpse offset Z.
+          armor: true # Should the corpse wear the players armor?
+          hand: true # Should the corpse hold the players items?
+          collide: false # Should corpses be collidable?
+          glow:
+            enabled: false # Should corpses glow?
+            color: RED # Glow color.
+
       #############
       # Schematic #
       #############

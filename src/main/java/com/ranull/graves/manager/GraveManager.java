@@ -282,6 +282,10 @@ public final class GraveManager {
             plugin.getIntegrationManager().getPlayerNPC().removeCorpse(grave);
         }
 
+        if (plugin.getIntegrationManager().hasCitizensNPC()) {
+            plugin.getIntegrationManager().getCitizensNPC().removeCorpse(grave);
+        }
+
         plugin.debugMessage("Removing grave " + grave.getUUID(), 1);
     }
 
@@ -318,6 +322,10 @@ public final class GraveManager {
             }
             case PLAYERNPC: {
                 plugin.getIntegrationManager().getPlayerNPC().removeEntityData(entityData);
+                break;
+            }
+            case CITIZENSNPC: {
+                plugin.getIntegrationManager().getCitizensNPC().removeEntityData(entityData);
                 break;
             }
         }
@@ -445,6 +453,10 @@ public final class GraveManager {
 
         if (plugin.getIntegrationManager().hasPlayerNPC()) {
             plugin.getIntegrationManager().getPlayerNPC().createCorpse(location, grave);
+        }
+
+        if (plugin.getIntegrationManager().hasCitizensNPC()) {
+            plugin.getIntegrationManager().getCitizensNPC().createCorpse(location, grave);
         }
     }
 

@@ -1,10 +1,12 @@
 package com.ranull.graves.event;
 
 import com.ranull.graves.type.Grave;
+import org.bukkit.entity.Entity;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.inventory.InventoryView;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * The GraveOpenEvent class represents an event where an inventory associated
@@ -14,6 +16,7 @@ import org.jetbrains.annotations.NotNull;
 public class GraveOpenEvent extends InventoryOpenEvent {
     private static final HandlerList HANDLERS = new HandlerList();
     private final Grave grave;
+    private final Entity entity;
 
     /**
      * Constructs a new GraveOpenEvent.
@@ -21,9 +24,10 @@ public class GraveOpenEvent extends InventoryOpenEvent {
      * @param inventoryView The inventory view that is being opened.
      * @param grave         The grave associated with the inventory view.
      */
-    public GraveOpenEvent(InventoryView inventoryView, Grave grave) {
+    public GraveOpenEvent(InventoryView inventoryView, Grave grave, Entity entity) {
         super(inventoryView);
         this.grave = grave;
+        this.entity = entity;
     }
 
     /**
@@ -54,5 +58,15 @@ public class GraveOpenEvent extends InventoryOpenEvent {
      */
     public Grave getGrave() {
         return grave;
+    }
+
+    /**
+     * Gets the entity that caused the explosion, if any.
+     *
+     * @return The entity that caused the explosion, or null if there is no entity.
+     */
+    @Nullable
+    public Entity getEntity() {
+        return entity;
     }
 }

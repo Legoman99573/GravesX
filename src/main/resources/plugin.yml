@@ -10,6 +10,13 @@ authors:
 load: POSTWORLD
 website: https://www.spigotmc.org/resources/gravesx.118271/
 
+libraries:
+  - org.xerial:sqlite-jdbc:3.46.0.0
+  - org.json:json:20240303
+  - org.postgresql:postgresql:42.7.3
+  - org.mariadb.jdbc:mariadb-java-client:3.0.3
+  - com.mysql:mysql-connector-j:9.0.0
+
 loadbefore:
   - GriefPrevention
   - GriefDefender
@@ -34,6 +41,7 @@ softdepend:
   - ItemBridge
   - PlayerNPC
   - Skript
+  - Citizens
 
 commands:
   graves:

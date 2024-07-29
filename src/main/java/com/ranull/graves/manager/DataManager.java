@@ -120,6 +120,11 @@ public final class DataManager {
                 loadEntityDataMap("playernpc", EntityData.Type.PLAYERNPC);
                 plugin.getIntegrationManager().getPlayerNPC().createCorpses();
             }
+
+            if (plugin.getIntegrationManager().hasCitizensNPC()) {
+                loadEntityDataMap("citizensnpc", EntityData.Type.CITIZENSNPC);
+                plugin.getIntegrationManager().getCitizensNPC().createCorpses();
+            }
         });
     }
 
@@ -153,6 +158,10 @@ public final class DataManager {
 
         if (plugin.getIntegrationManager().hasPlayerNPC()) {
             setupEntityTable("playernpc");
+        }
+
+        if (plugin.getIntegrationManager().hasCitizensNPC()) {
+            setupEntityTable("citizensnpc");
         }
     }
 
@@ -224,7 +233,7 @@ public final class DataManager {
                 config.addDataSourceProperty("sslcert", sslcert);
                 config.addDataSourceProperty("sslkey", sslkey);
             }
-            config.setDriverClassName("com.ranull.graves.postgresql.ds.PGSimpleDataSource");
+            config.setDriverClassName("org.postgresql.ds.PGSimpleDataSource");
             config.setMaximumPoolSize(maxConnections);
             config.setMaxLifetime(maxLifetime);
             config.setMinimumIdle(2);
@@ -291,9 +300,9 @@ public final class DataManager {
             config.setLeakDetectionThreshold(15000); // Detect connection leaks
 
             if (type == Type.MARIADB) {
-                config.setDriverClassName("com.ranull.graves.mariadb.jdbc.Driver");
+                config.setDriverClassName("org.mariadb.jdbc.Driver");
             } else {
-                config.setDriverClassName("com.ranull.graves.mysql.cj.jdbc.Driver");
+                config.setDriverClassName("com.mysql.cj.jdbc.Driver");
             }
 
             dataSource = new HikariDataSource(config);
@@ -860,6 +869,8 @@ public final class DataManager {
                 return "oraxen";
             case PLAYERNPC:
                 return "playernpc";
+            case CITIZENSNPC:
+                return "citizensnpc";
             default:
                 return type.name().toLowerCase().replace("_", "");
         }

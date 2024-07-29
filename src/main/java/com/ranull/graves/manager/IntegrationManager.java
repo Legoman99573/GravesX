@@ -1,5 +1,7 @@
 package com.ranull.graves.manager;
 
+import ch.njol.skript.Skript;
+import ch.njol.skript.SkriptAddon;
 import com.ranull.graves.Graves;
 import com.ranull.graves.integration.*;
 import net.milkbowl.vault.economy.Economy;
@@ -29,7 +31,9 @@ public final class IntegrationManager {
     private MineDown mineDown;
     private ItemBridge itemBridge;
     private PlayerNPC playerNPC;
+    private CitizensNPC citizensNPC;
     private PlaceholderAPI placeholderAPI;
+    private SkriptImpl skriptImpl;
 
     /**
      * Initializes a new instance of the IntegrationManager class.
@@ -68,9 +72,10 @@ public final class IntegrationManager {
         loadMineDown();
         loadChestSort();
         loadPlayerNPC();
+        loadCitizensNPC();
         loadItemBridge();
         loadPlaceholderAPI();
-        //loadSkript(); // TODO
+        loadSkript();
         loadCompatibilityWarnings();
     }
 
@@ -98,8 +103,16 @@ public final class IntegrationManager {
             playerNPC.unregisterListeners();
         }
 
+        if (citizensNPC != null) {
+            citizensNPC.unregisterListeners();
+        }
+
         if (towny != null) {
             towny.unregisterListeners();
+        }
+
+        if (skriptImpl != null) {
+            skriptImpl = null;
         }
     }
 
@@ -167,6 +180,14 @@ public final class IntegrationManager {
         return playerNPC;
     }
 
+    public SkriptAddon getSkript() {
+        return skriptImpl.getSkriptAddon();
+    }
+
+    public CitizensNPC getCitizensNPC() {
+        return citizensNPC;
+    }
+
     public boolean hasMultiPaper() {
         return multiPaper != null;
     }
@@ -176,7 +197,7 @@ public final class IntegrationManager {
     }
 
     public boolean hasProtocolLib() {
-        return protectionLib != null;
+        return protocolLib != null;
     }
 
     public boolean hasWorldEdit() {
@@ -231,8 +252,16 @@ public final class IntegrationManager {
         return playerNPC != null;
     }
 
+    public boolean hasCitizensNPC() {
+        return citizensNPC != null;
+    }
+
     public boolean hasPlaceholderAPI() {
         return placeholderAPI != null;
+    }
+
+    public boolean hasSkript() {
+        return skriptImpl != null;
     }
 
     private void loadMultiPaper() {
@@ -512,6 +541,21 @@ public final class IntegrationManager {
         }
     }
 
+    private void loadCitizensNPC() {
+        if (plugin.getConfig().getBoolean("settings.integration.citizens.enabled")) {
+            Plugin citizensPlugin = plugin.getServer().getPluginManager().getPlugin("Citizens");
+
+            if (citizensPlugin != null && citizensPlugin.isEnabled()) {
+                citizensNPC = new CitizensNPC(plugin);
+
+                plugin.integrationMessage("Hooked into " + citizensPlugin.getName() + " "
+                        + citizensPlugin.getDescription().getVersion() + ".");
+            }
+        } else {
+            citizensNPC = null;
+        }
+    }
+
     private void loadItemBridge() {
         if (plugin.getConfig().getBoolean("settings.integration.itembridge.enabled")) {
             Plugin itemBridgePlugin = plugin.getServer().getPluginManager().getPlugin("ItemBridge");
@@ -547,6 +591,18 @@ public final class IntegrationManager {
             }
         } else {
             placeholderAPI = null;
+        }
+    }
+
+    private void loadSkript() {
+        if (plugin.getConfig().getBoolean("settings.integration.skript.enabled")) {
+            Plugin skriptPlugin = plugin.getServer().getPluginManager().getPlugin("Skript");
+            if (skriptPlugin != null && skriptPlugin.isEnabled()) {
+                skriptImpl = new SkriptImpl(plugin);
+                plugin.integrationMessage("Hooked into " + skriptPlugin.getName() + " " + skriptPlugin.getDescription().getVersion() + ".");
+            }
+        } else {
+            skriptImpl = null;
         }
     }
 

@@ -57,6 +57,7 @@ The `GraveBreakEvent` class represents an event where a grave block is broken by
 - `int getBlockExp()`: Gets the experience points associated with breaking the grave.
 - `boolean isDropItems()`: Checks whether items should drop upon breaking the grave block.
 - `void setDropItems(boolean dropItems)`: Sets whether items should drop upon breaking the grave block.
+- `void setCancelled(boolean cancel)`: Sets whether the event should be cancelled.
 
 #### Example Usage
 
@@ -80,7 +81,7 @@ public class GraveEventListener implements Listener {
     }
 
     private boolean shouldPreventItemDrop(Grave grave, Player player) {
-        // Custom logic to determine if item drops should be prevented
+        // Custom logic to determine if item drops should be prevented or cancel the event
         return false;
     }
 }

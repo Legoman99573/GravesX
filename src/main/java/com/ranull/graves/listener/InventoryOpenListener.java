@@ -3,6 +3,7 @@ package com.ranull.graves.listener;
 import com.ranull.graves.Graves;
 import com.ranull.graves.event.GraveOpenEvent;
 import com.ranull.graves.type.Grave;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -34,7 +35,8 @@ public class InventoryOpenListener implements Listener {
     public void onInventoryOpen(InventoryOpenEvent event) {
         if (event.getInventory().getHolder() instanceof Grave) {
             Grave grave = (Grave) event.getInventory().getHolder();
-            GraveOpenEvent graveOpenEvent = new GraveOpenEvent(event.getView(), grave);
+            Player player = (Player) event.getPlayer();
+            GraveOpenEvent graveOpenEvent = new GraveOpenEvent(event.getView(), grave, player);
 
             // Call the custom GraveOpenEvent
             plugin.getServer().getPluginManager().callEvent(graveOpenEvent);

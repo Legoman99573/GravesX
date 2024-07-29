@@ -76,6 +76,7 @@ public class EntityData implements Serializable {
         FURNITUREENGINE,
         ITEMSADDER,
         ORAXEN,
-        PLAYERNPC
+        PLAYERNPC,
+        CITIZENSNPC
     }
 }
