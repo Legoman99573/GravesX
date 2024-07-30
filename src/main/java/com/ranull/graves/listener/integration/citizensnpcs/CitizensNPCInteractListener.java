@@ -4,7 +4,8 @@ import com.ranull.graves.Graves;
 import com.ranull.graves.integration.CitizensNPC;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.UUIDUtil;
-import net.citizensnpcs.api.event.NPCClickEvent;
+import net.citizensnpcs.api.event.NPCLeftClickEvent;
+import net.citizensnpcs.api.event.NPCRightClickEvent;
 import net.citizensnpcs.api.npc.NPC;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -37,7 +38,24 @@ public class CitizensNPCInteractListener implements Listener {
      * @param event The NPCClickEvent to handle.
      */
     @EventHandler(priority = EventPriority.LOW)
-    public void onNPCInteract(NPCClickEvent event) {
+    public void onNPCInteract(NPCLeftClickEvent event) {
+        NPC npc = event.getNPC();
+
+        if (npc.data().has("grave_uuid")) {
+            UUID uuid = UUIDUtil.getUUID(npc.data().get("grave_uuid").toString());
+
+            if (uuid != null) {
+                Grave grave = plugin.getCacheManager().getGraveMap().get(uuid);
+
+                if (grave != null) {
+                    event.setCancelled(plugin.getGraveManager().openGrave(event.getClicker(), npc.getStoredLocation(), grave));
+                }
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOW)
+    public void onNPCInteractRight(NPCRightClickEvent event) {
         NPC npc = event.getNPC();
 
         if (npc.data().has("grave_uuid")) {

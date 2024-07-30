@@ -247,6 +247,7 @@ public final class DataManager {
             HikariConfig config = new HikariConfig();
             configureSQLite(config);
             dataSource = new HikariDataSource(config);
+            checkAndUnlockDatabase(); // Check and unlock the database if needed
         } else {
             // MySQL or MariaDB configuration
             String host = plugin.getConfig().getString("settings.storage.mysql.host", "localhost");
@@ -319,11 +320,18 @@ public final class DataManager {
      * @param config the HikariConfig to configure.
      */
     private void configureSQLite(HikariConfig config) {
+        String journal_mode = plugin.getConfig().getString("settings.storage.sqlite.journal-mode", "WAL");
+        String synchronous = plugin.getConfig().getString("settings.storage.sqlite.synchronous", "OFF");
+
         config.setJdbcUrl("jdbc:sqlite:" + plugin.getDataFolder() + File.separator + "data" + File.separator + "data.db");
         config.setConnectionTimeout(30000); // 30 seconds
         config.setIdleTimeout(600000); // 10 minutes
         config.setMaxLifetime(1800000); // 30 minutes
         config.setMaximumPoolSize(50); // Might as well increase this.
+        config.addDataSourceProperty("dataSource.journalMode", journal_mode); // DELETE | TRUNCATE | PERSIST | MEMORY | WAL | OFF
+        config.addDataSourceProperty("dataSource.synchronous", synchronous); // 0 | OFF | 1 | NORMAL | 2 | FULL | 3 | EXTRA
+        config.setConnectionInitSql("PRAGMA busy_timeout = 30000");
+        config.setConnectionInitSql("PRAGMA journal_mode=" + journal_mode + "; PRAGMA synchronous=" + synchronous + ";");
         config.setPoolName("Graves SQLite");
         config.addDataSourceProperty("autoReconnect", "true");
         config.setDriverClassName("org.sqlite.JDBC");
@@ -1375,6 +1383,7 @@ public final class DataManager {
     private void keepConnectionAlive() {
         plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin, () -> {
             if (isConnected()) {
+                checkAndUnlockDatabase(); // Good to check
                 try (Connection connection = getConnection();
                      PreparedStatement statement = connection.prepareStatement("SELECT 1")) {
                     statement.executeQuery();
@@ -1383,5 +1392,34 @@ public final class DataManager {
                 }
             }
         }, 0L, 25 * 20L); // 25 seconds interval
+    }
+
+    /**
+     * Checks if the SQLite database is locked and attempts to unlock it by running COMMIT or ROLLBACK.
+     */
+    public void checkAndUnlockDatabase() {
+        if (type != Type.SQLITE) return;
+        String checkQuery = "SELECT 1";
+        try (Connection connection = getConnection();
+             Statement statement = connection.createStatement()) {
+            statement.executeQuery(checkQuery);
+        } catch (SQLException e) {
+            if (e.getMessage().contains("database is locked")) {
+                plugin.getLogger().severe("Database is locked. Attempting to unlock...");
+                try (Connection connection = getConnection()) {
+                    connection.setAutoCommit(false);
+                    connection.commit();
+                    plugin.getLogger().info("Database unlocked successfully using COMMIT.");
+                } catch (SQLException commitException) {
+                    plugin.getLogger().severe("Failed to unlock database using COMMIT: " + commitException.getMessage());
+                    try (Connection connection = getConnection()) {
+                        connection.rollback();
+                        plugin.getLogger().info("Database unlocked successfully using ROLLBACK.");
+                    } catch (SQLException rollbackException) {
+                        plugin.getLogger().severe("Failed to unlock database using ROLLBACK: " + rollbackException.getMessage());
+                    }
+                }
+            }
+        }
     }
 }

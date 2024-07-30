@@ -8,15 +8,21 @@ import com.ranull.graves.manager.EntityDataManager;
 import com.ranull.graves.type.Grave;
 import net.citizensnpcs.api.CitizensAPI;
 import net.citizensnpcs.api.npc.NPC;
+import net.citizensnpcs.api.trait.trait.Equipment;
 import net.citizensnpcs.trait.SkinTrait;
+import net.citizensnpcs.util.NMS;
+import net.citizensnpcs.util.PlayerAnimation;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
-import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
 
 import java.util.*;
 
@@ -104,7 +110,10 @@ public final class CitizensNPC extends EntityDataManager {
 
                 if (player != null && npcLocation.getWorld() != null) {
                     location.getBlock().setType(Material.AIR);
-                    NPC npc = CitizensAPI.getNPCRegistry().createNPC(EntityType.PLAYER, grave.getUUID().toString());
+
+                    // Create NPC name from location
+                    String npcName = getNPCNameFromLocation(npcLocation);
+                    NPC npc = CitizensAPI.getNPCRegistry().createNPC(EntityType.PLAYER, npcName);
                     npc.spawn(npcLocation);
 
                     npc.getOrAddTrait(SkinTrait.class).setSkinPersistent(
@@ -112,6 +121,15 @@ public final class CitizensNPC extends EntityDataManager {
                             grave.getOwnerTextureSignature(),
                             grave.getOwnerTexture()
                     );
+
+                    // Create a scoreboard team for the NPC
+                    Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+                    Team team = scoreboard.getTeam("npcTeam");
+                    if (team == null) {
+                        team = scoreboard.registerNewTeam("npcTeam");
+                    }
+                    team.addEntry(npc.getName());
+                    NMS.setTeamNameTagVisible(team, false); // doesnt work
 
                     try {
                         double x = plugin.getConfig("citizens.corpse.offset.x", grave)
@@ -122,24 +140,27 @@ public final class CitizensNPC extends EntityDataManager {
                                 .getDouble("citizens.corpse.offset.z");
                         npcLocation.add(x, y, z);
                     } catch (IllegalArgumentException handled) {
-                        npcLocation.add(0.5, -0.2, 0.5);
+                        npcLocation.add(-2.0, -0.2, 0.0);
                     }
 
                     npc.setProtected(plugin.getConfig("citizens.corpse.collide", grave).getBoolean("citizens.corpse.collide"));
 
-                    // Set NPC equipment directly if it's a Player
+                    // Set NPC equipment
+                    setNPCEquipment(npc, grave, Equipment.EquipmentSlot.HELMET, "citizens.corpse.armor");
+                    setNPCEquipment(npc, grave, Equipment.EquipmentSlot.CHESTPLATE, "citizens.corpse.armor");
+                    setNPCEquipment(npc, grave, Equipment.EquipmentSlot.LEGGINGS, "citizens.corpse.armor");
+                    setNPCEquipment(npc, grave, Equipment.EquipmentSlot.BOOTS, "citizens.corpse.armor");
+                    setNPCEquipment(npc, grave, Equipment.EquipmentSlot.HAND, "citizens.corpse.hand");
+
+                    if (plugin.getVersionManager().hasSecondHand()) {
+                        setNPCEquipment(npc, grave, Equipment.EquipmentSlot.OFF_HAND, "citizens.corpse.hand");
+                    }
+
+                    // Make the NPC perform the configured animation (default is sleeping)
                     if (npc.getEntity() instanceof Player) {
                         Player npcPlayer = (Player) npc.getEntity();
-
-                        setNPCEquipment(npcPlayer, grave, EquipmentSlot.HEAD, "citizens.corpse.armor");
-                        setNPCEquipment(npcPlayer, grave, EquipmentSlot.CHEST, "citizens.corpse.armor");
-                        setNPCEquipment(npcPlayer, grave, EquipmentSlot.LEGS, "citizens.corpse.armor");
-                        setNPCEquipment(npcPlayer, grave, EquipmentSlot.FEET, "citizens.corpse.armor");
-                        setNPCEquipment(npcPlayer, grave, EquipmentSlot.HAND, "citizens.corpse.hand");
-
-                        if (plugin.getVersionManager().hasSecondHand()) {
-                            setNPCEquipment(npcPlayer, grave, EquipmentSlot.OFF_HAND, "citizens.corpse.hand");
-                        }
+                        PlayerAnimation.valueOf(plugin.getConfig("citizens.corpse.pose", grave)
+                                .getString("citizens.corpse.pose", "SLEEP").toUpperCase()).play(npcPlayer);
                     }
 
                     if (plugin.getConfig("citizens.corpse.glow.enabled", grave)
@@ -167,31 +188,17 @@ public final class CitizensNPC extends EntityDataManager {
         });
     }
 
-    private void setNPCEquipment(Player npcPlayer, Grave grave, EquipmentSlot slot, String configPath) {
+    private void setNPCEquipment(NPC npc, Grave grave, Equipment.EquipmentSlot slot, String configPath) {
         if (plugin.getConfig(configPath, grave).getBoolean(configPath) && grave.getEquipmentMap().containsKey(slot)) {
             ItemStack item = grave.getEquipmentMap().get(slot);
-            switch (slot) {
-                case HEAD:
-                    npcPlayer.getInventory().setHelmet(item);
-                    break;
-                case CHEST:
-                case BODY:
-                    npcPlayer.getInventory().setChestplate(item);
-                    break;
-                case LEGS:
-                    npcPlayer.getInventory().setLeggings(item);
-                    break;
-                case FEET:
-                    npcPlayer.getInventory().setBoots(item);
-                    break;
-                case HAND:
-                    npcPlayer.getInventory().setItemInMainHand(item);
-                    break;
-                case OFF_HAND:
-                    npcPlayer.getInventory().setItemInOffHand(item);
-                    break;
-            }
+            npc.getOrAddTrait(Equipment.class).set(slot, item);
         }
+    }
+
+    private String getNPCNameFromLocation(Location location) {
+        String npcName = location.getWorld().getName() + "_" + location.getBlockX() + "_"
+                + location.getBlockY() + "_" + location.getBlockZ();
+        return npcName.replace("|", "");
     }
 
     /**
@@ -200,9 +207,14 @@ public final class CitizensNPC extends EntityDataManager {
      * @param grave The grave whose associated NPC corpse should be removed.
      */
     public void removeCorpse(Grave grave) {
-        NPC npc = getNPCByUUID(grave.getUUID());
-        if (npc != null) {
-            npc.destroy();
+        Location location = grave.getLocation();
+        if (location != null) {
+            String npcName = getNPCNameFromLocation(location);
+            NPC npc = getNPCByName(npcName);
+            //Bukkit.dispatchCommand(Bukkit.getServer().getConsoleSender(), "npc select" + npcName);
+            if (npc != null) {
+                npc.destroy();
+            }
         }
         removeCorpse(getEntityDataNPCMap(getLoadedEntityDataList(grave)));
     }
@@ -213,6 +225,15 @@ public final class CitizensNPC extends EntityDataManager {
      * @param entityData The entity data whose associated NPC corpse should be removed.
      */
     public void removeCorpse(EntityData entityData) {
+        Location location = entityData.getLocation();
+        if (location != null) {
+            String npcName = getNPCNameFromLocation(location);
+            NPC npc = getNPCByName(npcName);
+            CitizensAPI.getNPCRegistry().deregister(npc);
+            if (npc != null) {
+                npc.destroy();
+            }
+        }
         removeCorpse(getEntityDataNPCMap(Collections.singletonList(entityData)));
     }
 
@@ -225,7 +246,8 @@ public final class CitizensNPC extends EntityDataManager {
         List<EntityData> entityDataList = new ArrayList<>();
 
         for (Map.Entry<EntityData, NPC> entry : entityDataMap.entrySet()) {
-            entry.getValue().destroy();
+            NMS.remove(entry.getValue().getEntity());
+            CitizensAPI.getNPCRegistry().deregister(entry.getValue());
             entityDataList.add(entry.getKey());
         }
 
@@ -242,18 +264,22 @@ public final class CitizensNPC extends EntityDataManager {
         Map<EntityData, NPC> entityDataMap = new HashMap<>();
 
         for (EntityData entityData : entityDataList) {
-            NPC npc = getNPCByUUID(entityData.getUUIDGrave());
-            if (npc != null) {
-                entityDataMap.put(entityData, npc);
+            Location location = entityData.getLocation();
+            if (location != null) {
+                String npcName = getNPCNameFromLocation(location);
+                NPC npc = getNPCByName(npcName);
+                if (npc != null) {
+                    entityDataMap.put(entityData, npc);
+                }
             }
         }
 
         return entityDataMap;
     }
 
-    private NPC getNPCByUUID(UUID uuid) {
+    private NPC getNPCByName(String name) {
         for (NPC npc : CitizensAPI.getNPCRegistry()) {
-            if (uuid.equals(npc.getUniqueId())) {
+            if (name.equals(npc.getName())) {
                 return npc;
             }
         }

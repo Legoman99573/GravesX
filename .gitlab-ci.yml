@@ -1,23 +1,40 @@
-# The Docker image that will be used to build your app
-image: maven:3.8.6-jdk-11
-# Functions that should be executed before the build script is run
-before_script:
-  - mvn install:install-file -Dfile=libs/authlib-5.0.47-graves.jar
-    -DgroupId=com.mojang -DartifactId=authlib -Dversion=5.0.47-graves
-    -Dpackaging=jar
-pages:
+# This file is a template, and might need editing before it works on your project.
+# This is a sample GitLab CI/CD configuration file that should run without any modifications.
+# It demonstrates a basic 3 stage CI/CD pipeline. Instead of real tests or scripts,
+# it uses echo commands to simulate the pipeline execution.
+#
+# A pipeline is composed of independent jobs that run scripts, grouped into stages.
+# Stages run in sequential order, but jobs within stages run in parallel.
+#
+# For more information, see: https://docs.gitlab.com/ee/ci/yaml/index.html#stages
+#
+# You can copy and paste this template into a new `.gitlab-ci.yml` file.
+# You should not add this template to an existing `.gitlab-ci.yml` file by using the `include:` keyword.
+#
+# To contribute improvements to CI/CD templates, please follow the Development guide at:
+# https://docs.gitlab.com/ee/development/cicd/templates.html
+# This specific template is located at:
+# https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Getting-Started.gitlab-ci.yml
+
+stages:          # List of stages for jobs, and their order of execution
+  - build
+  - deploy
+
+build-job:       # This job runs in the build stage, which runs first.
+  stage: build
+  image: maven:3.8.6-jdk-11  # Use a Maven Docker image with Java 11
+  before_script:
+    - mvn install:install-file -Dfile=libs/authlib-5.0.47-graves.jar -DgroupId=com.mojang -DartifactId=authlib -Dversion=5.0.47-graves -Dpackaging=jar
   script:
-    - echo "Compiling the code to jar..."
-    - mvn compile -Dmaven.compiler.failOnError=false
-    - echo "Deploying to pages..."
-    - mvn site -Dmaven.compiler.failOnError=false
+    - echo "Compiling the code..."
   artifacts:
     paths:
       - target/*.jar
       - /*.jar
-      # The folder that contains the files to be exposed at the Page URL
-      - target/site
-  rules:
-    # This ensures that only pushes to the default branch will trigger
-    # a pages deploy
-    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
+
+deploy-job:      # This job runs in the deploy stage.
+  stage: deploy  # It only runs when *both* jobs in the test stage complete successfully.
+  environment: production
+  script:
+    - echo "Deploying application..."
+    - echo "Application successfully deployed."

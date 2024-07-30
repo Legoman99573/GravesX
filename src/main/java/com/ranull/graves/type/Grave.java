@@ -39,6 +39,7 @@ public class Grave implements InventoryHolder, Serializable {
     private long timeAlive;
     private long timeCreation;
     private long timeProtection;
+    private Location location;
 
     /**
      * Constructs a new Grave with the specified UUID.
@@ -512,6 +513,14 @@ public class Grave implements InventoryHolder, Serializable {
 
     public void getOwnerDisplayName(String ownerNameDisplay) {
         this.ownerNameDisplay = ownerNameDisplay;
+    }
+
+    public Location getLocation() {
+        return location;
+    }
+
+    public void getLocation(Location location) {
+        this.location = location;
     }
 
     /**
