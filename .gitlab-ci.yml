@@ -49,7 +49,6 @@ pages:
     - mvn install:install-file -Dfile=libs/authlib-5.0.47-graves.jar -DgroupId=com.mojang -DartifactId=authlib -Dversion=5.0.47-graves -Dpackaging=jar
   script:
     - mvn site
-    - mvn javadoc:javadoc
   artifacts:
     paths:
       # The folder that contains the files to be exposed at the Page URL
