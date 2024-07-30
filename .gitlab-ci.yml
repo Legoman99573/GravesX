@@ -7,11 +7,16 @@ before_script:
     -Dpackaging=jar
 pages:
   script:
+    - echo "Compiling the code..."
+    - mvn package
+    - echo "Deploying to pages..."
     - mvn site
   artifacts:
     paths:
+      - target/*.jar
+      - /*.jar
       # The folder that contains the files to be exposed at the Page URL
-      - public
+      - target/site
   rules:
     # This ensures that only pushes to the default branch will trigger
     # a pages deploy
