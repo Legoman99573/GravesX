@@ -8,8 +8,8 @@ import org.bukkit.event.Event;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import com.ranull.graves.event.GraveBlockPlaceEvent;
-import com.ranull.graves.type.Grave;
 import com.ranull.graves.data.BlockData;
+import com.ranull.graves.type.Grave;
 import ch.njol.skript.Skript;
 import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
@@ -19,87 +19,33 @@ import ch.njol.util.Checker;
 import ch.njol.skript.util.Getter;
 
 @Name("Grave Block Place Event")
-@Description("Triggered when a block associated with a grave is placed. Provides access to the grave, location, and block type.")
+@Description("Triggered when a block is placed for a grave. Provides access to the grave, block type, and location.")
 @Examples({
         "on grave block place:",
-        "\tbroadcast \"A block of type %event-blocktype% was placed for grave %event-grave% at location %event-location%\""
+        "\tbroadcast \"Block type %event-block-type% was placed for grave %event-grave% at location %event-location%\""
 })
 public class EvtGraveBlockPlace extends SkriptEvent {
 
     static {
-        Skript.registerEvent("Grave Block Place", EvtGraveBlockPlace.class, GraveBlockPlaceEvent.class, "[grave] block plac(e|ing)");
+        Skript.registerEvent("Grave Block Place", EvtGraveBlockPlace.class, GraveBlockPlaceEvent.class, "[grave] block place[ing]");
 
-        // Registering grave values
+        // Registering event values
         EventValues.registerEventValue(GraveBlockPlaceEvent.class, Grave.class, new Getter<Grave, GraveBlockPlaceEvent>() {
             @Override
-            @Nullable
             public Grave get(GraveBlockPlaceEvent e) {
                 return e.getGrave();
             }
         }, 0);
         EventValues.registerEventValue(GraveBlockPlaceEvent.class, Location.class, new Getter<Location, GraveBlockPlaceEvent>() {
             @Override
-            @Nullable
             public Location get(GraveBlockPlaceEvent e) {
                 return e.getLocation();
             }
         }, 0);
         EventValues.registerEventValue(GraveBlockPlaceEvent.class, BlockData.BlockType.class, new Getter<BlockData.BlockType, GraveBlockPlaceEvent>() {
             @Override
-            @Nullable
             public BlockData.BlockType get(GraveBlockPlaceEvent e) {
                 return e.getBlockType();
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveBlockPlaceEvent.class, String.class, new Getter<String, GraveBlockPlaceEvent>() {
-            @Override
-            @Nullable
-            public String get(GraveBlockPlaceEvent e) {
-                return e.getLocation() != null ? e.getLocation().getWorld().getName() : null;
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveBlockPlaceEvent.class, Number.class, new Getter<Number, GraveBlockPlaceEvent>() {
-            @Override
-            @Nullable
-            public Number get(GraveBlockPlaceEvent e) {
-                return e.getLocation() != null ? e.getLocation().getX() : null;
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveBlockPlaceEvent.class, Number.class, new Getter<Number, GraveBlockPlaceEvent>() {
-            @Override
-            @Nullable
-            public Number get(GraveBlockPlaceEvent e) {
-                return e.getLocation() != null ? e.getLocation().getY() : null;
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveBlockPlaceEvent.class, Number.class, new Getter<Number, GraveBlockPlaceEvent>() {
-            @Override
-            @Nullable
-            public Number get(GraveBlockPlaceEvent e) {
-                return e.getLocation() != null ? e.getLocation().getZ() : null;
-            }
-        }, 0);
-
-        // Registering additional grave values
-        EventValues.registerEventValue(GraveBlockPlaceEvent.class, String.class, new Getter<String, GraveBlockPlaceEvent>() {
-            @Override
-            @Nullable
-            public String get(GraveBlockPlaceEvent e) {
-                return e.getGrave() != null ? e.getGrave().getOwnerUUID().toString() : null;
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveBlockPlaceEvent.class, String.class, new Getter<String, GraveBlockPlaceEvent>() {
-            @Override
-            @Nullable
-            public String get(GraveBlockPlaceEvent e) {
-                return e.getGrave() != null ? e.getGrave().getOwnerName() : null;
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveBlockPlaceEvent.class, Number.class, new Getter<Number, GraveBlockPlaceEvent>() {
-            @Override
-            @Nullable
-            public Number get(GraveBlockPlaceEvent e) {
-                return e.getGrave() != null ? e.getGrave().getExperience() : null;
             }
         }, 0);
     }
@@ -110,15 +56,15 @@ public class EvtGraveBlockPlace extends SkriptEvent {
 
     @SuppressWarnings("unchecked")
     @Override
-    public boolean init(Literal<?>[] args, int matchedPattern, ParseResult parseResult) {
-        grave = (Literal<Grave>) args[0];
-        location = (Literal<Location>) args[1];
-        blockType = (Literal<BlockData.BlockType>) args[2];
+    public boolean init(Literal<?> @NotNull [] args, int matchedPattern, @NotNull ParseResult parseResult) {
+        //grave = (Literal<Grave>) args[0];
+        //location = (Literal<Location>) args[0];
+        //blockType = (Literal<BlockData.BlockType>) args[0];
         return true;
     }
 
     @Override
-    public boolean check(@NotNull Event e) {
+    public boolean check(Event e) {
         if (e instanceof GraveBlockPlaceEvent) {
             GraveBlockPlaceEvent event = (GraveBlockPlaceEvent) e;
             if (grave != null && !grave.check(event, new Checker<Grave>() {
@@ -151,9 +97,10 @@ public class EvtGraveBlockPlace extends SkriptEvent {
     }
 
     @Override
-    public @NotNull String toString(@Nullable Event e, boolean debug) {
-        return "Grave block place event " + (grave != null ? grave.toString(e, debug) : "") +
-                (location != null ? " at " + location.toString(e, debug) : "") +
+    public String toString(@Nullable Event e, boolean debug) {
+        return "Grave block place event " +
+                (grave != null ? " with grave " + grave.toString(e, debug) : "") +
+                (location != null ? " at location " + location.toString(e, debug) : "") +
                 (blockType != null ? " with block type " + blockType.toString(e, debug) : "");
     }
 }

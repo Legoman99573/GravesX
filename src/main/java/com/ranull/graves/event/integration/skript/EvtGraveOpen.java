@@ -3,7 +3,6 @@ package com.ranull.graves.event.integration.skript;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
-import ch.njol.skript.entity.EntityData;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.Event;
 import org.bukkit.inventory.InventoryView;
@@ -20,103 +19,59 @@ import ch.njol.util.Checker;
 import ch.njol.skript.util.Getter;
 
 @Name("Grave Open Event")
-@Description("Triggered when an inventory associated with a grave is opened. Provides access to the grave, player, and inventory view.")
+@Description("Triggered when an inventory associated with a grave is opened. Provides access to the entity, grave, and inventory view.")
 @Examples({
         "on grave open:",
-        "\tbroadcast \"%player% opened the inventory of grave %event-grave%\"",
-        "\tbroadcast \"Grave owner: %event-grave's owner displayname% (UUID: %event-grave's owner uuid%)\""
+        "\tbroadcast \"Entity %event-entity% opened grave %event-grave% at location %event-location%\"",
+        "\tbroadcast \"Inventory: %event-inventory-view%\""
 })
 public class EvtGraveOpen extends SkriptEvent {
 
     static {
         Skript.registerEvent("Grave Open", EvtGraveOpen.class, GraveOpenEvent.class, "[grave] open[ing]");
 
-        // Registering entity values
+        // Registering event values
         EventValues.registerEventValue(GraveOpenEvent.class, Entity.class, new Getter<Entity, GraveOpenEvent>() {
             @Override
-            @Nullable
             public Entity get(GraveOpenEvent e) {
                 return e.getEntity();
             }
         }, 0);
-        EventValues.registerEventValue(GraveOpenEvent.class, String.class, new Getter<String, GraveOpenEvent>() {
-            @Override
-            @Nullable
-            public String get(GraveOpenEvent e) {
-                return e.getEntity() != null ? e.getEntity().getName() : null;
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveOpenEvent.class, String.class, new Getter<String, GraveOpenEvent>() {
-            @Override
-            @Nullable
-            public String get(GraveOpenEvent e) {
-                return e.getEntity() != null ? e.getEntity().getUniqueId().toString() : null;
-            }
-        }, 0);
-
-        // Registering grave values
         EventValues.registerEventValue(GraveOpenEvent.class, Grave.class, new Getter<Grave, GraveOpenEvent>() {
             @Override
-            @Nullable
             public Grave get(GraveOpenEvent e) {
                 return e.getGrave();
             }
         }, 0);
-
-        // Registering additional grave values
-        EventValues.registerEventValue(GraveOpenEvent.class, String.class, new Getter<String, GraveOpenEvent>() {
-            @Override
-            @Nullable
-            public String get(GraveOpenEvent e) {
-                return e.getGrave() != null ? e.getGrave().getOwnerUUID().toString() : null;
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveOpenEvent.class, String.class, new Getter<String, GraveOpenEvent>() {
-            @Override
-            @Nullable
-            public String get(GraveOpenEvent e) {
-                return e.getGrave() != null ? e.getGrave().getOwnerName() : null;
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveOpenEvent.class, Number.class, new Getter<Number, GraveOpenEvent>() {
-            @Override
-            @Nullable
-            public Number get(GraveOpenEvent e) {
-                return e.getGrave() != null ? e.getGrave().getExperience() : null;
-            }
-        }, 0);
-
-        // Registering inventory view value
         EventValues.registerEventValue(GraveOpenEvent.class, InventoryView.class, new Getter<InventoryView, GraveOpenEvent>() {
             @Override
-            @Nullable
             public InventoryView get(GraveOpenEvent e) {
-                return e.getView();
+                return e.getInventoryView();
             }
         }, 0);
     }
 
-    private Literal<EntityData<?>> entities;
+    private Literal<Entity> entity;
     private Literal<Grave> grave;
     private Literal<InventoryView> inventoryView;
 
     @SuppressWarnings("unchecked")
     @Override
-    public boolean init(Literal<?>[] args, int matchedPattern, @NotNull ParseResult parseResult) {
-        entities = (Literal<EntityData<?>>) args[0];
-        grave = (Literal<Grave>) args[1];
-        inventoryView = (Literal<InventoryView>) args[2];
+    public boolean init(Literal<?> @NotNull [] args, int matchedPattern, @NotNull ParseResult parseResult) {
+        //entity = (Literal<Entity>) args[0];
+        //grave = (Literal<Grave>) args[0];
+        //inventoryView = (Literal<InventoryView>) args[0];
         return true;
     }
 
     @Override
-    public boolean check(@NotNull Event e) {
+    public boolean check(Event e) {
         if (e instanceof GraveOpenEvent) {
             GraveOpenEvent event = (GraveOpenEvent) e;
-            if (entities != null && !entities.check(event, new Checker<EntityData<?>>() {
+            if (entity != null && !entity.check(event, new Checker<Entity>() {
                 @Override
-                public boolean check(EntityData<?> data) {
-                    return data.isInstance(event.getEntity());
+                public boolean check(Entity ent) {
+                    return ent.equals(event.getEntity());
                 }
             })) {
                 return false;
@@ -132,7 +87,7 @@ public class EvtGraveOpen extends SkriptEvent {
             if (inventoryView != null && !inventoryView.check(event, new Checker<InventoryView>() {
                 @Override
                 public boolean check(InventoryView view) {
-                    return view.equals(event.getView());
+                    return view.equals(event.getInventoryView());
                 }
             })) {
                 return false;
@@ -143,8 +98,9 @@ public class EvtGraveOpen extends SkriptEvent {
     }
 
     @Override
-    public @NotNull String toString(@Nullable Event e, boolean debug) {
-        return "Grave open event " + (entities != null ? entities.toString(e, debug) : "") +
+    public String toString(@Nullable Event e, boolean debug) {
+        return "Grave open event " +
+                (entity != null ? " with entity " + entity.toString(e, debug) : "") +
                 (grave != null ? " with grave " + grave.toString(e, debug) : "") +
                 (inventoryView != null ? " with inventory view " + inventoryView.toString(e, debug) : "");
     }

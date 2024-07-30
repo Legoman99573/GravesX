@@ -506,6 +506,14 @@ public class Grave implements InventoryHolder, Serializable {
         return counter;
     }
 
+    public String getOwnerDisplayName() {
+        return ownerNameDisplay;
+    }
+
+    public void getOwnerDisplayName(String ownerNameDisplay) {
+        this.ownerNameDisplay = ownerNameDisplay;
+    }
+
     /**
      * Enum for defining different storage modes for the grave.
      */

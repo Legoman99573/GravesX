@@ -3,21 +3,18 @@ package com.ranull.graves.event;
 import com.ranull.graves.type.Grave;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Cancellable;
 import org.bukkit.event.HandlerList;
-import org.bukkit.event.block.BlockBreakEvent;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * The GraveBreakEvent class represents an event where a grave block is broken
- * by a player. This event extends the BlockBreakEvent and includes additional
+ * by a player. This event extends the GraveEvent and includes additional
  * information about the grave and whether items should drop upon breaking the grave block.
  */
-public class GraveBreakEvent extends BlockBreakEvent implements Cancellable {
+public class GraveBreakEvent extends GraveEvent {
     private static final HandlerList HANDLERS = new HandlerList();
-    private final Grave grave;
+    private final Block block;
     private boolean dropItems;
-    private boolean isCancelled;
 
     /**
      * Constructs a new GraveBreakEvent.
@@ -27,29 +24,18 @@ public class GraveBreakEvent extends BlockBreakEvent implements Cancellable {
      * @param grave  The grave associated with the block being broken.
      */
     public GraveBreakEvent(Block block, Player player, Grave grave) {
-        super(block, player);
+        super(grave, null, block.getLocation(), null, null, null, null, player);
+        this.block = block;
         this.dropItems = true;
-        this.grave = grave;
-        this.isCancelled = false;
     }
 
     /**
-     * Gets the list of handlers for this event.
+     * Gets the block being broken.
      *
-     * @return The list of handlers.
+     * @return The block being broken.
      */
-    @NotNull
-    public static HandlerList getHandlerList() {
-        return HANDLERS;
-    }
-
-    /**
-     * Gets the grave associated with the event.
-     *
-     * @return The grave associated with the event.
-     */
-    public Grave getGrave() {
-        return grave;
+    public Block getBlock() {
+        return block;
     }
 
     /**
@@ -58,7 +44,7 @@ public class GraveBreakEvent extends BlockBreakEvent implements Cancellable {
      * @return The experience points.
      */
     public int getBlockExp() {
-        return grave.getExperience();
+        return getGrave().getExperience();
     }
 
     /**
@@ -80,26 +66,6 @@ public class GraveBreakEvent extends BlockBreakEvent implements Cancellable {
     }
 
     /**
-     * Gets the cancellation state of this event. A cancelled event will not be executed in the server, but will still pass to other plugins.
-     *
-     * @return True if this event is cancelled.
-     */
-    @Override
-    public boolean isCancelled() {
-        return this.isCancelled;
-    }
-
-    /**
-     * Sets the cancellation state of this event. A cancelled event will not be executed in the server, but will still pass to other plugins.
-     *
-     * @param cancel True if you wish to cancel this event.
-     */
-    @Override
-    public void setCancelled(boolean cancel) {
-        this.isCancelled = cancel;
-    }
-
-    /**
      * Gets the list of handlers for this event.
      *
      * @return The list of handlers.
@@ -107,6 +73,11 @@ public class GraveBreakEvent extends BlockBreakEvent implements Cancellable {
     @NotNull
     @Override
     public HandlerList getHandlers() {
+        return HANDLERS;
+    }
+
+    @NotNull
+    public static HandlerList getHandlerList() {
         return HANDLERS;
     }
 }
