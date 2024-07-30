@@ -19,6 +19,7 @@
 stages:          # List of stages for jobs, and their order of execution
   - build
   - deploy
+  - pages
 
 build-job:       # This job runs in the build stage, which runs first.
   stage: build
@@ -38,3 +39,22 @@ deploy-job:      # This job runs in the deploy stage.
   script:
     - echo "Deploying application..."
     - echo "Application successfully deployed."
+
+pages:
+# The Docker image that will be used to build your app
+  image: maven:3.8.6-jdk-11
+  # Functions that should be executed before the build script is run
+  before_script:
+    - mvn install:install-file -Dfile=libs/authlib-5.0.47-graves.jar -DgroupId=com.mojang -DartifactId=authlib -Dversion=5.0.47-graves -Dpackaging=jar
+  pages:
+    script:
+      - mvn site
+      - mvn javadoc:javadoc
+    artifacts:
+      paths:
+        # The folder that contains the files to be exposed at the Page URL
+        - public
+    rules:
+      # This ensures that only pushes to the default branch will trigger
+      # a pages deploy
+      - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
