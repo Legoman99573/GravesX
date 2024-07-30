@@ -265,7 +265,7 @@ public final class IntegrationManager {
     }
 
     private void loadMultiPaper() {
-        if (plugin.getConfig().getBoolean("settings.integration.multipaper.enabled")) {
+        if (plugin.getConfig().getBoolean("settings.integration.multipaper.enabled", true)) {
             try {
                 Class.forName("puregero.multipaper.MultiPaper", false, getClass().getClassLoader());
 
@@ -280,7 +280,7 @@ public final class IntegrationManager {
     }
 
     private void loadVault() {
-        if (plugin.getConfig().getBoolean("settings.integration.vault.enabled")) {
+        if (plugin.getConfig().getBoolean("settings.integration.vault.enabled", true)) {
             Plugin vaultPlugin = plugin.getServer().getPluginManager().getPlugin("Vault");
 
             if (vaultPlugin != null && vaultPlugin.isEnabled()) {
@@ -300,7 +300,7 @@ public final class IntegrationManager {
     }
 
     private void loadProtocolLib() {
-        if (plugin.getConfig().getBoolean("settings.integration.protocollib.enabled")) {
+        if (plugin.getConfig().getBoolean("settings.integration.protocollib.enabled", true)) {
             Plugin protocolLibPlugin = plugin.getServer().getPluginManager().getPlugin("ProtocolLib");
 
             if (protocolLibPlugin != null && protocolLibPlugin.isEnabled()) {
@@ -315,7 +315,7 @@ public final class IntegrationManager {
     }
 
     public void loadWorldGuard() {
-        if (plugin.getConfig().getBoolean("settings.integration.worldguard.enabled")) {
+        if (plugin.getConfig().getBoolean("settings.integration.worldguard.enabled", true)) {
             Plugin worldGuardPlugin = plugin.getServer().getPluginManager().getPlugin("WorldGuard");
 
             if (worldGuardPlugin != null) {
@@ -340,7 +340,7 @@ public final class IntegrationManager {
     }
 
     public void loadTowny() {
-        if (plugin.getConfig().getBoolean("settings.integration.towny.enabled")) {
+        if (plugin.getConfig().getBoolean("settings.integration.towny.enabled", true)) {
             Plugin townyPlugin = plugin.getServer().getPluginManager().getPlugin("Towny");
 
             if (townyPlugin != null) {
@@ -355,7 +355,7 @@ public final class IntegrationManager {
     }
 
     private void loadWorldEdit() {
-        if (plugin.getConfig().getBoolean("settings.integration.worldedit.enabled")) {
+        if (plugin.getConfig().getBoolean("settings.integration.worldedit.enabled", true)) {
             Plugin worldEditPlugin = plugin.getServer().getPluginManager().getPlugin("WorldEdit");
 
             if (worldEditPlugin != null && worldEditPlugin.isEnabled()) {
@@ -379,7 +379,7 @@ public final class IntegrationManager {
     }
 
     private void loadGriefDefender() {
-        if (plugin.getConfig().getBoolean("settings.integration.griefdefender.enabled")) {
+        if (plugin.getConfig().getBoolean("settings.integration.griefdefender.enabled", true)) {
             Plugin griefDefenderPlugin = plugin.getServer().getPluginManager().getPlugin("GriefDefender");
 
             if (griefDefenderPlugin != null && griefDefenderPlugin.isEnabled()) {
@@ -396,7 +396,7 @@ public final class IntegrationManager {
     }
 
     private void loadFurnitureLib() {
-        if (plugin.getConfig().getBoolean("settings.integration.furniturelib.enabled")) {
+        if (plugin.getConfig().getBoolean("settings.integration.furniturelib.enabled", true)) {
             Plugin furnitureLibPlugin = plugin.getServer().getPluginManager().getPlugin("FurnitureLib");
 
             if (furnitureLibPlugin != null && furnitureLibPlugin.isEnabled()) {
@@ -411,7 +411,7 @@ public final class IntegrationManager {
     }
 
     private void loadFurnitureEngine() {
-        if (plugin.getConfig().getBoolean("settings.integration.furnitureengine.enabled")) {
+        if (plugin.getConfig().getBoolean("settings.integration.furnitureengine.enabled", true)) {
             Plugin furnitureEnginePlugin = plugin.getServer().getPluginManager().getPlugin("FurnitureEngine");
 
             if (furnitureEnginePlugin != null && furnitureEnginePlugin.isEnabled()) {
@@ -434,7 +434,7 @@ public final class IntegrationManager {
     }
 
     private void loadProtectionLib() {
-        if (plugin.getConfig().getBoolean("settings.integration.protectionlib.enabled")) {
+        if (plugin.getConfig().getBoolean("settings.integration.protectionlib.enabled", true)) {
             Plugin protectionLibPlugin = plugin.getServer().getPluginManager().getPlugin("ProtectionLib");
 
             if (protectionLibPlugin != null && protectionLibPlugin.isEnabled()) {
@@ -449,7 +449,7 @@ public final class IntegrationManager {
     }
 
     private void loadItemsAdder() {
-        if (plugin.getConfig().getBoolean("settings.integration.itemsadder.enabled")) {
+        if (plugin.getConfig().getBoolean("settings.integration.itemsadder.enabled", true)) {
             Plugin itemsAdderPlugin = plugin.getServer().getPluginManager().getPlugin("ItemsAdder");
 
             if (itemsAdderPlugin != null && itemsAdderPlugin.isEnabled()) {
@@ -464,7 +464,7 @@ public final class IntegrationManager {
     }
 
     private void loadOraxen() {
-        if (plugin.getConfig().getBoolean("settings.integration.oraxen.enabled")) {
+        if (plugin.getConfig().getBoolean("settings.integration.oraxen.enabled", true)) {
             Plugin oraxenPlugin = plugin.getServer().getPluginManager().getPlugin("Oraxen");
 
             if (oraxenPlugin != null && oraxenPlugin.isEnabled()) {
@@ -479,7 +479,7 @@ public final class IntegrationManager {
     }
 
     private void loadMiniMessage() {
-        if (plugin.getConfig().getBoolean("settings.integration.minimessage.enabled")) {
+        if (plugin.getConfig().getBoolean("settings.integration.minimessage.enabled", true)) {
             try {
                 Class.forName("net.kyori.adventure.text.minimessage.MiniMessage", false,
                         getClass().getClassLoader());
@@ -497,7 +497,7 @@ public final class IntegrationManager {
     }
 
     private void loadMineDown() {
-        if (plugin.getConfig().getBoolean("settings.integration.minedown.enabled")) {
+        if (plugin.getConfig().getBoolean("settings.integration.minedown.enabled", true)) {
             Plugin mineDownPlugin = plugin.getServer().getPluginManager().getPlugin("MineDownPlugin");
 
             if (mineDownPlugin != null && mineDownPlugin.isEnabled()) {
@@ -512,7 +512,7 @@ public final class IntegrationManager {
     }
 
     private void loadChestSort() {
-        if (plugin.getConfig().getBoolean("settings.integration.chestsort.enabled")) {
+        if (plugin.getConfig().getBoolean("settings.integration.chestsort.enabled", true)) {
             Plugin chestSortPlugin = plugin.getServer().getPluginManager().getPlugin("ChestSort");
 
             if (chestSortPlugin != null && chestSortPlugin.isEnabled()) {
@@ -527,7 +527,7 @@ public final class IntegrationManager {
     }
 
     private void loadPlayerNPC() {
-        if (plugin.getConfig().getBoolean("settings.integration.playernpc.enabled")) {
+        if (plugin.getConfig().getBoolean("settings.integration.playernpc.enabled", true)) {
             Plugin playerNPCPlugin = plugin.getServer().getPluginManager().getPlugin("PlayerNPC");
 
             if (playerNPCPlugin != null && playerNPCPlugin.isEnabled()) {
@@ -542,7 +542,7 @@ public final class IntegrationManager {
     }
 
     private void loadCitizensNPC() {
-        if (plugin.getConfig().getBoolean("settings.integration.citizens.enabled")) {
+        if (plugin.getConfig().getBoolean("settings.integration.citizens.enabled", true)) {
             Plugin citizensPlugin = plugin.getServer().getPluginManager().getPlugin("Citizens");
 
             if (citizensPlugin != null && citizensPlugin.isEnabled()) {
@@ -557,7 +557,7 @@ public final class IntegrationManager {
     }
 
     private void loadItemBridge() {
-        if (plugin.getConfig().getBoolean("settings.integration.itembridge.enabled")) {
+        if (plugin.getConfig().getBoolean("settings.integration.itembridge.enabled", true)) {
             Plugin itemBridgePlugin = plugin.getServer().getPluginManager().getPlugin("ItemBridge");
 
             if (itemBridgePlugin != null && itemBridgePlugin.isEnabled()) {

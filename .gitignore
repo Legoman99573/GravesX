@@ -64,9 +64,4 @@ fabric.properties
 
 # Maven
 log/
-target/classes
-target/generated-sources
-target/maven-archiver
-target/maven-status
-target/original-*.jar
-target/*-shaded.jar
+target/
