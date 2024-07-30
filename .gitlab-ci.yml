@@ -7,8 +7,8 @@ before_script:
     -Dpackaging=jar
 pages:
   script:
-    - echo "Compiling the code..."
-    - mvn package
+    - echo "Compiling the code to jar..."
+    - mvn compile
     - echo "Deploying to pages..."
     - mvn site
   artifacts:
