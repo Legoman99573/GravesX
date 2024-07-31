@@ -75,8 +75,17 @@ public final class IntegrationManager {
         loadCitizensNPC();
         loadItemBridge();
         loadPlaceholderAPI();
-        loadSkript();
         loadCompatibilityWarnings();
+    }
+
+    public void loadNoReload() {
+        loadSkript();
+    }
+
+    public void unloadNoReload() {
+        if (skriptImpl != null) {
+            skriptImpl = null;
+        }
     }
 
     /**
@@ -109,10 +118,6 @@ public final class IntegrationManager {
 
         if (towny != null) {
             towny.unregisterListeners();
-        }
-
-        if (skriptImpl != null) {
-            skriptImpl = null;
         }
     }
 
@@ -594,7 +599,7 @@ public final class IntegrationManager {
         }
     }
 
-    private void loadSkript() { //TODO Find another way to handle this as it breaks the plugin if you use /graves reload
+    private void loadSkript() {
         if (plugin.getConfig().getBoolean("settings.integration.skript.enabled")) {
             Plugin skriptPlugin = plugin.getServer().getPluginManager().getPlugin("Skript");
             if (skriptPlugin != null && skriptPlugin.isEnabled()) {

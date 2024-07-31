@@ -73,6 +73,7 @@ public class Graves extends JavaPlugin {
     @Override
     public void onEnable() {
         integrationManager.load();
+        integrationManager.loadNoReload();
 
         versionManager = new VersionManager();
         cacheManager = new CacheManager();
@@ -109,6 +110,7 @@ public class Graves extends JavaPlugin {
         graveManager.unload();
         graveyardManager.unload();
         integrationManager.unload();
+        integrationManager.unloadNoReload();
 
         if (recipeManager != null) {
             recipeManager.unload();

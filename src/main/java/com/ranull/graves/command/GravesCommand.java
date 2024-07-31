@@ -53,9 +53,6 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
                 case "gui":
                     handleListGuiCommand(commandSender, args);
                     break;
-                case "help":
-                    sendHelpMenu(commandSender);
-                    break;
                 case "givetoken":
                     handleGiveTokenCommand(commandSender, args);
                     break;
@@ -77,6 +74,7 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
                 case "import":
                     handleImportCommand(commandSender);
                     break;
+                case "help":
                 default:
                     sendHelpMenu(commandSender);
                     break;
@@ -300,9 +298,7 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
         if (commandSender.hasPermission("graves.reload")) {
             Plugin skriptPlugin = plugin.getServer().getPluginManager().getPlugin("Skript");
             if (skriptPlugin != null && skriptPlugin.isEnabled()) {
-                commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
-                        + "Unable to reload plugin while using Skript.");
-                return;
+                plugin.getLogger().warning("Skript v." + skriptPlugin.getDescription().getVersion() + " detected. Skript Integration option will only take effect on restart.");
             }
             plugin.reload();
             commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
