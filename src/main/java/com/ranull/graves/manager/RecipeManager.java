@@ -165,7 +165,7 @@ public final class RecipeManager {
             for (String string : lineList.get(0).split(" ")) {
                 Material material = Material.matchMaterial(string);
 
-                if (material != null) {
+                if (material != null && material != Material.AIR) {
                     shapedRecipe.setIngredient(getChar(recipeKey), material);
                 }
 
@@ -175,7 +175,7 @@ public final class RecipeManager {
             for (String string : lineList.get(1).split(" ")) {
                 Material material = Material.matchMaterial(string);
 
-                if (material != null) {
+                if (material != null && material != Material.AIR) {
                     shapedRecipe.setIngredient(getChar(recipeKey), material);
                 }
 
@@ -185,7 +185,7 @@ public final class RecipeManager {
             for (String string : lineList.get(2).split(" ")) {
                 Material material = Material.matchMaterial(string);
 
-                if (material != null) {
+                if (material != null && material != Material.AIR) {
                     shapedRecipe.setIngredient(getChar(recipeKey), material);
                 }
 
