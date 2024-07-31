@@ -17,10 +17,9 @@ public class GraveProtectionExpiredEvent extends GraveEvent {
      * Constructs a new GraveProtectionExpiredEvent.
      *
      * @param grave The grave whose protection is expiring.
-     * @param entity The entity associated with the event, if applicable.
      */
-    public GraveProtectionExpiredEvent(Grave grave, Entity entity) {
-        super(grave, entity, grave.getLocationDeath(), null, null, null, null, entity instanceof Player ? (Player) entity : null);
+    public GraveProtectionExpiredEvent(Grave grave) {
+        super(grave, null, grave.getLocationDeath(), null, null, null, null, null);
     }
 
     @NotNull

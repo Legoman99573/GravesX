@@ -4,8 +4,7 @@ import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
 import ch.njol.util.Checker;
-import com.ranull.graves.util.UUIDUtil;
-import org.bukkit.entity.Player;
+import org.bukkit.Location;
 import org.bukkit.event.Event;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -18,20 +17,16 @@ import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.registrations.EventValues;
 import ch.njol.skript.util.Getter;
 
-import java.util.UUID;
-
 @Name("Grave Protection Expired Event")
-@Description("Triggered when a grave's protection expires. Provides access to the grave and the UUID of the owner.")
+@Description("Triggered when a grave's protection expires. Provides access to the grave and location.")
 @Examples({
         "on grave protection expired:",
-        "\tbroadcast \"Grave %event-grave% protection expired!\"",
-        "\tif event-uuid is set:",
-        "\t\tsend \"Your grave's protection has expired!\" to uuid of event-uuid"
+        "\tbroadcast \"Grave %event-grave% protection expired at location %event-location%\""
 })
 public class EvtGraveProtectionExpired extends SkriptEvent {
 
     static {
-        Skript.registerEvent("Grave Protection Expired", EvtGraveProtectionExpired.class, GraveProtectionExpiredEvent.class, "[grave] protection expir(ing|ed)");
+        Skript.registerEvent("Grave Protection Expired", EvtGraveProtectionExpired.class, GraveProtectionExpiredEvent.class, "[grave] protect(ing|ed|ion) expir(ing|ed)");
 
         // Registering event values
         EventValues.registerEventValue(GraveProtectionExpiredEvent.class, Grave.class, new Getter<Grave, GraveProtectionExpiredEvent>() {
@@ -40,21 +35,22 @@ public class EvtGraveProtectionExpired extends SkriptEvent {
                 return e.getGrave();
             }
         }, 0);
-
-        EventValues.registerEventValue(GraveProtectionExpiredEvent.class, UUID.class, new Getter<UUID, GraveProtectionExpiredEvent>() {
+        EventValues.registerEventValue(GraveProtectionExpiredEvent.class, Location.class, new Getter<Location, GraveProtectionExpiredEvent>() {
             @Override
-            public UUID get(GraveProtectionExpiredEvent e) {
-                return e.getGrave().getOwnerUUID();
+            public Location get(GraveProtectionExpiredEvent e) {
+                return e.getLocation();
             }
         }, 0);
     }
 
     private Literal<Grave> grave;
+    private Literal<Location> location;
 
     @SuppressWarnings("unchecked")
     @Override
     public boolean init(Literal<?> @NotNull [] args, int matchedPattern, @NotNull ParseResult parseResult) {
-        grave = (Literal<Grave>) args[0];
+        //grave = (Literal<Grave>) args[0];
+        //location = (Literal<Location>) args[0];
         return true;
     }
 
@@ -70,6 +66,14 @@ public class EvtGraveProtectionExpired extends SkriptEvent {
             })) {
                 return false;
             }
+            if (location != null && !location.check(event, new Checker<Location>() {
+                @Override
+                public boolean check(Location loc) {
+                    return loc.equals(event.getLocation());
+                }
+            })) {
+                return false;
+            }
             return true;
         }
         return false;
@@ -77,7 +81,8 @@ public class EvtGraveProtectionExpired extends SkriptEvent {
 
     @Override
     public String toString(@Nullable Event e, boolean debug) {
-        return "Grave protection expired event " +
-                (grave != null ? " with grave " + grave.toString(e, debug) : "");
+        return "Grave protection expired event "  +
+                (grave != null ? " with grave " + grave.toString(e, debug) : "") +
+                (location != null ? " at location " + location.toString(e, debug) : "");
     }
 }

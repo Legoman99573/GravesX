@@ -3,7 +3,7 @@ package com.ranull.graves.event.integration.skript;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
-import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.inventory.InventoryView;
 import org.jetbrains.annotations.NotNull;
@@ -19,11 +19,10 @@ import ch.njol.util.Checker;
 import ch.njol.skript.util.Getter;
 
 @Name("Grave Open Event")
-@Description("Triggered when an inventory associated with a grave is opened. Provides access to the entity, grave, and inventory view.")
+@Description("Triggered when an inventory associated with a grave is opened. Provides access to the player, grave, and inventory view.")
 @Examples({
         "on grave open:",
-        "\tbroadcast \"Entity %event-entity% opened grave %event-grave% at location %event-location%\"",
-        "\tbroadcast \"Inventory: %event-inventory-view%\""
+        "\tbroadcast \"%event-player% opened grave %event-grave% at location %event-location%\"",
 })
 public class EvtGraveOpen extends SkriptEvent {
 
@@ -31,10 +30,10 @@ public class EvtGraveOpen extends SkriptEvent {
         Skript.registerEvent("Grave Open", EvtGraveOpen.class, GraveOpenEvent.class, "[grave] open[ing]");
 
         // Registering event values
-        EventValues.registerEventValue(GraveOpenEvent.class, Entity.class, new Getter<Entity, GraveOpenEvent>() {
+        EventValues.registerEventValue(GraveOpenEvent.class, Player.class, new Getter<Player, GraveOpenEvent>() {
             @Override
-            public Entity get(GraveOpenEvent e) {
-                return e.getEntity();
+            public Player get(GraveOpenEvent e) {
+                return e.getPlayer();
             }
         }, 0);
         EventValues.registerEventValue(GraveOpenEvent.class, Grave.class, new Getter<Grave, GraveOpenEvent>() {
@@ -51,7 +50,7 @@ public class EvtGraveOpen extends SkriptEvent {
         }, 0);
     }
 
-    private Literal<Entity> entity;
+    private Literal<Player> player;
     private Literal<Grave> grave;
     private Literal<InventoryView> inventoryView;
 
@@ -68,10 +67,10 @@ public class EvtGraveOpen extends SkriptEvent {
     public boolean check(Event e) {
         if (e instanceof GraveOpenEvent) {
             GraveOpenEvent event = (GraveOpenEvent) e;
-            if (entity != null && !entity.check(event, new Checker<Entity>() {
+            if (player != null && !player.check(event, new Checker<Player>() {
                 @Override
-                public boolean check(Entity ent) {
-                    return ent.equals(event.getEntity());
+                public boolean check(Player p) {
+                    return p.equals(event.getPlayer());
                 }
             })) {
                 return false;
@@ -100,7 +99,7 @@ public class EvtGraveOpen extends SkriptEvent {
     @Override
     public String toString(@Nullable Event e, boolean debug) {
         return "Grave open event " +
-                (entity != null ? " with entity " + entity.toString(e, debug) : "") +
+                (player != null ? " with player " + player.toString(e, debug) : "") +
                 (grave != null ? " with grave " + grave.toString(e, debug) : "") +
                 (inventoryView != null ? " with inventory view " + inventoryView.toString(e, debug) : "");
     }

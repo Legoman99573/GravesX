@@ -287,15 +287,18 @@ public final class GraveManager {
      */
     public void toggleGraveProtection(Grave grave) {
         boolean currentProtection = grave.getProtection();
+        long protectionRemaining = grave.getTimeProtectionRemaining();
         grave.setProtection(!currentProtection);
         plugin.getDataManager().updateGrave(grave, "protection", String.valueOf(grave.getProtection() ? 1 : 0));
 
-        if (currentProtection) {
-            // Assuming the owner of the grave is the relevant entity
-            Entity ownerEntity = grave.getOwnerUUID() != null ? plugin.getServer().getEntity(grave.getOwnerUUID()) : null;
+        if (protectionRemaining == -1) {
+            plugin.debugMessage("Grave " + grave.getUUID() + " has infinite protection, skipping protection remaining handling.", 2);
+            return;
+        }
 
+        if (currentProtection) {
             // Trigger GraveProtectionExpiredEvent when protection expires
-            GraveProtectionExpiredEvent event = new GraveProtectionExpiredEvent(grave, ownerEntity);
+            GraveProtectionExpiredEvent event = new GraveProtectionExpiredEvent(grave);
             plugin.getServer().getPluginManager().callEvent(event);
 
             // If the event is cancelled, revert the protection state
@@ -303,6 +306,7 @@ public final class GraveManager {
                 grave.setProtection(true);
                 plugin.debugMessage("GraveProtectionExpiredEvent called for grave: " + grave.getUUID(), 2);
                 plugin.getDataManager().updateGrave(grave, "protection", "1");
+                grave.setTimeProtection(-1);
             } else {
                 // Log the grave details
                 plugin.debugMessage("Grave protection expired for grave: " + grave.getUUID(), 1);

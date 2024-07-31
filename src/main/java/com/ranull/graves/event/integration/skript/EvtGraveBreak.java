@@ -24,8 +24,6 @@ import ch.njol.skript.util.Getter;
 @Examples({
         "on grave break:",
         "\tbroadcast \"%event-player% broke grave %event-grave% at block %event-block%\"",
-        "\tbroadcast \"Block type: %event-block-type%\"",
-        "\tbroadcast \"Grave owner: %event-grave's owner displayname% (UUID: %event-grave's owner uuid%)\""
 })
 public class EvtGraveBreak extends SkriptEvent {
 

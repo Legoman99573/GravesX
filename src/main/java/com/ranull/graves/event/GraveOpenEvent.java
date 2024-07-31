@@ -2,6 +2,7 @@ package com.ranull.graves.event;
 
 import com.ranull.graves.type.Grave;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.inventory.InventoryView;
@@ -22,8 +23,8 @@ public class GraveOpenEvent extends GraveEvent {
      * @param inventoryView The inventory view that is being opened.
      * @param grave         The grave associated with the inventory view.
      */
-    public GraveOpenEvent(InventoryView inventoryView, Grave grave, Entity entity) {
-        super(grave, entity, null, inventoryView, null, null, null, null);
+    public GraveOpenEvent(InventoryView inventoryView, Grave grave, Player player) {
+        super(grave, null, null, inventoryView, null, null, null, player);
     }
 
     @Override

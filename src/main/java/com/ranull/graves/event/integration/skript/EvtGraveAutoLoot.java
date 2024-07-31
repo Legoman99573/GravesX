@@ -22,11 +22,7 @@ import ch.njol.skript.util.Getter;
 @Description("Triggered when an entity auto loots a grave. Provides access to the entity, grave, and location.")
 @Examples({
         "on grave auto loot:",
-        "\tbroadcast \"%event-entity% auto looted grave %event-grave% at location %event-location%\"",
-        "\tbroadcast \"Entity UUID: %event-entity's uuid%\"",
-        "\tbroadcast \"Location: %event-location's x%, %event-location's y%, %event-location's z%\"",
-        "\tbroadcast \"Grave owner: %event-grave's owner displayname% (UUID: %event-grave's owner uuid%)\"",
-        "\tbroadcast \"Experience in grave: %event-grave's experience%\""
+        "\tbroadcast \"Entity %event-entity% auto looted grave %event-grave% at location %event-location%\"",
 })
 public class EvtGraveAutoLoot extends SkriptEvent {
 

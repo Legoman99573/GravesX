@@ -22,7 +22,7 @@ import ch.njol.skript.util.Getter;
 @Description("Triggered when a block is placed for a grave. Provides access to the grave, block type, and location.")
 @Examples({
         "on grave block place:",
-        "\tbroadcast \"Block type %event-block-type% was placed for grave %event-grave% at location %event-location%\""
+        "\tbroadcast \"Block type %event-block-type% was placed for grave %event-grave% at location %event-location% by entity %event-entity%\""
 })
 public class EvtGraveBlockPlace extends SkriptEvent {
 

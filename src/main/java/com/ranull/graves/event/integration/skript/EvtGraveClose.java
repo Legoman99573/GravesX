@@ -3,6 +3,7 @@ package com.ranull.graves.event.integration.skript;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
+import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.inventory.InventoryView;
 import org.jetbrains.annotations.NotNull;
@@ -21,7 +22,7 @@ import ch.njol.skript.util.Getter;
 @Description("Triggered when an inventory associated with a grave is closed. Provides access to the grave and inventory view.")
 @Examples({
         "on grave close:",
-        "\tbroadcast \"Entity %event-entity% closed grave %event-grave% at inventory %event-inventory-view%\""
+        "\tbroadcast \"%event-player% closed grave %event-grave% at block %event-block% and inventory %event-inventory-view%\""
 })
 public class EvtGraveClose extends SkriptEvent {
 
@@ -29,6 +30,12 @@ public class EvtGraveClose extends SkriptEvent {
         Skript.registerEvent("Grave Close", EvtGraveClose.class, GraveCloseEvent.class, "[grave] clos(e|ing)");
 
         // Registering event values
+        EventValues.registerEventValue(GraveCloseEvent.class, Player.class, new Getter<Player, GraveCloseEvent>() {
+            @Override
+            public Player get(GraveCloseEvent e) {
+                return e.getPlayer();
+            }
+        }, 0);
         EventValues.registerEventValue(GraveCloseEvent.class, Grave.class, new Getter<Grave, GraveCloseEvent>() {
             @Override
             public Grave get(GraveCloseEvent e) {
@@ -43,6 +50,7 @@ public class EvtGraveClose extends SkriptEvent {
         }, 0);
     }
 
+    private Literal<Player> player;
     private Literal<Grave> grave;
     private Literal<InventoryView> inventoryView;
 
@@ -58,6 +66,14 @@ public class EvtGraveClose extends SkriptEvent {
     public boolean check(Event e) {
         if (e instanceof GraveCloseEvent) {
             GraveCloseEvent event = (GraveCloseEvent) e;
+            if (player != null && !player.check(event, new Checker<Player>() {
+                @Override
+                public boolean check(Player p) {
+                    return p.equals(event.getPlayer());
+                }
+            })) {
+                return false;
+            }
             if (grave != null && !grave.check(event, new Checker<Grave>() {
                 @Override
                 public boolean check(Grave g) {

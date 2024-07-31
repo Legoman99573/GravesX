@@ -1,6 +1,7 @@
 package com.ranull.graves.event;
 
 import com.ranull.graves.type.Grave;
+import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.InventoryView;
 import org.jetbrains.annotations.NotNull;
@@ -17,10 +18,11 @@ public class GraveCloseEvent extends GraveEvent {
      * Constructs a new GraveCloseEvent.
      *
      * @param inventoryView The inventory view that is being closed.
+     * @param player The player breaking the block.
      * @param grave         The grave associated with the inventory view.
      */
-    public GraveCloseEvent(InventoryView inventoryView, Grave grave) {
-        super(grave, null, null, inventoryView, null, null, null, null);
+    public GraveCloseEvent(InventoryView inventoryView, Grave grave, Player player) {
+        super(grave, null, grave.getLocation(), inventoryView, null, null, null, player);
     }
 
     @Override
