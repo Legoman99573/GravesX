@@ -6,6 +6,7 @@ import com.ranull.graves.data.ChunkData;
 import com.ranull.graves.data.EntityData;
 import com.ranull.graves.data.HologramData;
 import com.ranull.graves.event.GraveAutoLootEvent;
+import com.ranull.graves.event.GraveProtectionExpiredEvent;
 import com.ranull.graves.event.GraveTimeoutEvent;
 import com.ranull.graves.inventory.GraveList;
 import com.ranull.graves.inventory.GraveMenu;
@@ -74,10 +75,17 @@ public final class GraveManager {
      */
     private void processGraves(List<Grave> graveRemoveList) {
         for (Grave grave : new ArrayList<>(plugin.getCacheManager().getGraveMap().values())) {
-            // Log the current state of the grave
-            plugin.debugMessage("Checking grave: " + grave.getUUID() + " with remaining time: " + grave.getTimeAliveRemaining(), 2);
 
             long remainingTime = grave.getTimeAliveRemaining();
+
+            // If the remaining time is -1, do not activate the event
+            if (remainingTime == -1) {
+                plugin.debugMessage("Grave " + grave.getUUID() + " has infinite time remaining, skipping timeout handling.", 2);
+                return;
+            }
+
+            // Log the current state of the grave
+            plugin.debugMessage("Checking grave: " + grave.getUUID() + " with remaining time: " + remainingTime, 2);
 
             // Check if the grave should be removed
             if (remainingTime == 0) {
@@ -128,7 +136,7 @@ public final class GraveManager {
             graveRemoveList.add(grave);
         } else {
             // Log the cancellation and set the grave's time to -1
-            plugin.debugMessage("GraveTimeoutEvent cancelled for grave: " + grave.getUUID() + ", setting protection to forever.", 2);
+            plugin.debugMessage("GraveTimeoutEvent cancelled for grave: " + grave.getUUID() + ", setting time alive to forever.", 2);
             grave.setTimeAliveRemaining(-1);
         }
     }
@@ -278,8 +286,29 @@ public final class GraveManager {
      * @param grave the grave to toggle protection for.
      */
     public void toggleGraveProtection(Grave grave) {
-        grave.setProtection(!grave.getProtection());
+        boolean currentProtection = grave.getProtection();
+        grave.setProtection(!currentProtection);
         plugin.getDataManager().updateGrave(grave, "protection", String.valueOf(grave.getProtection() ? 1 : 0));
+
+        if (currentProtection) {
+            // Assuming the owner of the grave is the relevant entity
+            Entity ownerEntity = grave.getOwnerUUID() != null ? plugin.getServer().getEntity(grave.getOwnerUUID()) : null;
+
+            // Trigger GraveProtectionExpiredEvent when protection expires
+            GraveProtectionExpiredEvent event = new GraveProtectionExpiredEvent(grave, ownerEntity);
+            plugin.getServer().getPluginManager().callEvent(event);
+
+            // If the event is cancelled, revert the protection state
+            if (event.isCancelled()) {
+                grave.setProtection(true);
+                plugin.debugMessage("GraveProtectionExpiredEvent called for grave: " + grave.getUUID(), 2);
+                plugin.getDataManager().updateGrave(grave, "protection", "1");
+            } else {
+                // Log the grave details
+                plugin.debugMessage("Grave protection expired for grave: " + grave.getUUID(), 1);
+                plugin.getDataManager().updateGrave(grave, "protection", String.valueOf(grave.getProtection() ? 1 : 0));
+            }
+        }
     }
 
     /**
