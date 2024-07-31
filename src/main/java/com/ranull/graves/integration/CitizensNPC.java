@@ -160,7 +160,7 @@ public final class CitizensNPC extends EntityDataManager {
                     if (npc.getEntity() instanceof Player) {
                         Player npcPlayer = (Player) npc.getEntity();
                         PlayerAnimation.valueOf(plugin.getConfig("citizens.corpse.pose", grave)
-                                .getString("citizens.corpse.pose", "SLEEP").toUpperCase()).play(npcPlayer);
+                                .getString("citizens.corpse.pose", "SLEEP").toUpperCase()).play(npcPlayer); // Uh yeah its fucking possible citizens devs. ~Legoman99573 after having multiple beers :)
                     }
 
                     if (plugin.getConfig("citizens.corpse.glow.enabled", grave)
