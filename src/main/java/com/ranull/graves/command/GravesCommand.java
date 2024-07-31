@@ -12,6 +12,7 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -297,6 +298,12 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
 
     private void handleReloadCommand(CommandSender commandSender) {
         if (commandSender.hasPermission("graves.reload")) {
+            Plugin skriptPlugin = plugin.getServer().getPluginManager().getPlugin("Skript");
+            if (skriptPlugin != null && skriptPlugin.isEnabled()) {
+                commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
+                        + "Unable to reload plugin while using Skript.");
+                return;
+            }
             plugin.reload();
             commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
                     + "Reloaded config file.");

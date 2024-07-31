@@ -594,7 +594,7 @@ public final class IntegrationManager {
         }
     }
 
-    private void loadSkript() {
+    private void loadSkript() { //TODO Find another way to handle this as it breaks the plugin if you use /graves reload
         if (plugin.getConfig().getBoolean("settings.integration.skript.enabled")) {
             Plugin skriptPlugin = plugin.getServer().getPluginManager().getPlugin("Skript");
             if (skriptPlugin != null && skriptPlugin.isEnabled()) {
