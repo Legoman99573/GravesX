@@ -450,17 +450,29 @@ public class Grave implements InventoryHolder, Serializable {
     }
 
     /**
+     * Sets the remaining time (in milliseconds) the grave is set to be alive.
+     * A value of -1 indicates the grave should not expire.
+     *
+     * @param timeAlive The new remaining time alive.
+     */
+    public void setTimeAliveRemaining(long timeAlive) {
+        this.timeAlive = timeAlive;
+    }
+
+    /**
      * Gets the remaining time (in milliseconds) the grave is set to be alive.
      *
      * @return The remaining time alive.
      */
     public long getTimeAliveRemaining() {
         if (timeAlive < 0) {
-            return -1;
+            return -1; // Indicates the grave is not set to expire
         } else {
-            long timeAliveRemaining = (timeAlive + 1000) - (System.currentTimeMillis() - timeCreation);
+            long elapsedTime = System.currentTimeMillis() - timeCreation;
+            long timeAliveRemaining = timeAlive - elapsedTime;
 
-            return timeAliveRemaining >= 0 ? timeAliveRemaining : 0;
+            // Return 0 if the remaining time is less than or equal to 0
+            return Math.max(timeAliveRemaining, 0);
         }
     }
 
@@ -471,11 +483,12 @@ public class Grave implements InventoryHolder, Serializable {
      */
     public long getTimeProtectionRemaining() {
         if (timeProtection < 0) {
-            return -1;
+            return -1; // Indicates the grave is not set to expire protection
         } else {
-            long timeProtectionRemaining = (timeProtection + 1000) - (System.currentTimeMillis() - timeCreation);
+            long elapsedTime = System.currentTimeMillis() - timeCreation;
+            long timeProtectionRemaining = timeProtection - elapsedTime;
 
-            return timeProtectionRemaining >= 0 ? timeProtectionRemaining : 0;
+            return Math.max(timeProtectionRemaining, 0);
         }
     }
 

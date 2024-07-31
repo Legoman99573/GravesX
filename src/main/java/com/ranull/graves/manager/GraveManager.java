@@ -46,115 +46,210 @@ public final class GraveManager {
      * Starts the grave timer task that periodically checks and updates graves.
      */
     private void startGraveTimer() {
-        plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
-            List<Grave> graveRemoveList = new ArrayList<>();
-            List<EntityData> entityDataRemoveList = new ArrayList<>();
-            List<BlockData> blockDataRemoveList = new ArrayList<>();
+        plugin.getServer().getScheduler().runTaskTimer(plugin, this::checkAndUpdateGraves, 10L, 10L); // 10 ticks = 0.5 seconds
+    }
 
-            // Graves
-            for (Map.Entry<UUID, Grave> entry : plugin.getCacheManager().getGraveMap().entrySet()) {
-                Grave grave = entry.getValue();
+    /**
+     * Checks and updates graves, entities, and blocks, removing expired elements and triggering necessary events.
+     */
+    private void checkAndUpdateGraves() {
+        List<Grave> graveRemoveList = new ArrayList<>();
+        List<EntityData> entityDataRemoveList = new ArrayList<>();
+        List<BlockData> blockDataRemoveList = new ArrayList<>();
 
-                if (grave.getTimeAliveRemaining() >= 0 && grave.getTimeAliveRemaining() <= 1000) {
-                    GraveTimeoutEvent graveTimeoutEvent = new GraveTimeoutEvent(grave);
+        // Process Graves
+        processGraves(graveRemoveList);
 
-                    plugin.getServer().getPluginManager().callEvent(graveTimeoutEvent);
+        // Process Chunks
+        processChunks(entityDataRemoveList, blockDataRemoveList);
 
-                    if (!graveTimeoutEvent.isCancelled()) {
-                        if (graveTimeoutEvent.getLocation() != null
-                                && plugin.getConfig("drop.timeout", grave).getBoolean("drop.timeout")) {
-                            dropGraveItems(graveTimeoutEvent.getLocation(), grave);
-                            dropGraveExperience(graveTimeoutEvent.getLocation(), grave);
-                        }
+        // Remove expired graves, entities, and blocks
+        removeExpiredElements(graveRemoveList, entityDataRemoveList, blockDataRemoveList);
+    }
 
-                        if (grave.getOwnerType() == EntityType.PLAYER && grave.getOwnerUUID() != null) {
-                            Player player = plugin.getServer().getPlayer(grave.getOwnerUUID());
+    /**
+     * Processes all graves to check their remaining time and protection status.
+     *
+     * @param graveRemoveList the list to which graves to be removed will be added.
+     */
+    private void processGraves(List<Grave> graveRemoveList) {
+        for (Grave grave : new ArrayList<>(plugin.getCacheManager().getGraveMap().values())) {
+            // Log the current state of the grave
+            plugin.debugMessage("Checking grave: " + grave.getUUID() + " with remaining time: " + grave.getTimeAliveRemaining(), 2);
 
-                            if (player != null) {
-                                plugin.getEntityManager().sendMessage("message.timeout", player,
-                                        graveTimeoutEvent.getLocation(), grave);
-                            }
-                        }
+            long remainingTime = grave.getTimeAliveRemaining();
 
-                        graveRemoveList.add(grave);
-                    }
-                }
+            // Check if the grave should be removed
+            if (remainingTime == 0) {
+                handleGraveTimeout(grave, graveRemoveList);
+            }
 
-                // Protection
-                if (grave.getProtection() && grave.getTimeProtectionRemaining() == 0) {
-                    toggleGraveProtection(grave);
+            // Handle grave protection timeout
+            if (grave.getProtection() && grave.getTimeProtectionRemaining() == 0) {
+                toggleGraveProtection(grave);
+            }
+        }
+    }
+
+    /**
+     * Handles the timeout of a grave by calling the GraveTimeoutEvent and removing the grave if not cancelled.
+     *
+     * @param grave the grave to check for timeout.
+     * @param graveRemoveList the list to which graves to be removed will be added.
+     */
+    private void handleGraveTimeout(Grave grave, List<Grave> graveRemoveList) {
+        long remainingTime = grave.getTimeAliveRemaining();
+        plugin.debugMessage("Handling timeout for grave: " + grave.getUUID() + " with remaining time: " + remainingTime, 1);
+
+        // If the remaining time is -1, do not activate the event
+        if (remainingTime == -1) {
+            plugin.debugMessage("Grave " + grave.getUUID() + " has infinite time remaining, skipping timeout handling.", 2);
+            return;
+        }
+
+        GraveTimeoutEvent graveTimeoutEvent = new GraveTimeoutEvent(grave);
+        plugin.getServer().getPluginManager().callEvent(graveTimeoutEvent);
+
+        if (!graveTimeoutEvent.isCancelled()) {
+            plugin.debugMessage("GraveTimeoutEvent not cancelled for grave: " + grave.getUUID(), 2);
+
+            if (graveTimeoutEvent.getLocation() != null && plugin.getConfig("drop.timeout", grave).getBoolean("drop.timeout")) {
+                dropGraveItems(graveTimeoutEvent.getLocation(), grave);
+                dropGraveExperience(graveTimeoutEvent.getLocation(), grave);
+            }
+
+            if (grave.getOwnerType() == EntityType.PLAYER && grave.getOwnerUUID() != null) {
+                Player player = plugin.getServer().getPlayer(grave.getOwnerUUID());
+                if (player != null) {
+                    plugin.getEntityManager().sendMessage("message.timeout", player, graveTimeoutEvent.getLocation(), grave);
                 }
             }
 
-            // Chunks
-            for (Map.Entry<String, ChunkData> entry : plugin.getCacheManager().getChunkMap().entrySet()) {
-                ChunkData chunkData = entry.getValue();
+            graveRemoveList.add(grave);
+        } else {
+            // Log the cancellation and set the grave's time to -1
+            plugin.debugMessage("GraveTimeoutEvent cancelled for grave: " + grave.getUUID() + ", setting protection to forever.", 2);
+            grave.setTimeAliveRemaining(-1);
+        }
+    }
 
-                if (chunkData.isLoaded()) {
-                    Location location = new Location(chunkData.getWorld(),
-                            chunkData.getX() << 4, 0, chunkData.getZ() << 4);
-
-                    for (EntityData entityData : new ArrayList<>(chunkData.getEntityDataMap().values())) {
-                        if (entityData != null && entityData.getUUIDGrave() != null && plugin.getCacheManager().getGraveMap().containsKey(entityData.getUUIDGrave())) {
-                            if (plugin.isEnabled() && entityData instanceof HologramData) {
-                                HologramData hologramData = (HologramData) entityData;
-                                Grave grave = plugin.getCacheManager().getGraveMap().get(hologramData.getUUIDGrave());
-
-                                if (grave != null) {
-                                    List<String> lineList = plugin.getConfig("hologram.line", grave).getStringList("hologram.line");
-
-                                    Collections.reverse(lineList);
-
-                                    for (Entity entity : entityData.getLocation().getChunk().getEntities()) {
-                                        if (entity.getUniqueId().equals(entityData.getUUIDEntity())) {
-                                            if (hologramData.getLine() < lineList.size()) {
-                                                entity.setCustomName(StringUtil.parseString(lineList.get(hologramData.getLine()), location, grave, plugin));
-                                            } else {
-                                                entityDataRemoveList.add(hologramData);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        } else {
-                            if (entityData != null) { // Null check before adding to the list
-                                entityDataRemoveList.add(entityData);
-                            } else {
-                                plugin.debugMessage("Encountered null EntityData while processing chunk: " + entry.getKey() + ". Item details: " + entityData.toString(), 2);
-                            }
-                        }
-                    }
-
-                    // Blocks
-                    for (BlockData blockData : new ArrayList<>(chunkData.getBlockDataMap().values())) {
-                        if (blockData.getLocation().getWorld() != null) {
-                            if (plugin.getCacheManager().getGraveMap().containsKey(blockData.getGraveUUID())) {
-                                graveParticle(blockData.getLocation(), plugin.getCacheManager().getGraveMap()
-                                        .get(blockData.getGraveUUID()));
-                            } else {
-                                blockDataRemoveList.add(blockData);
-                            }
-                        }
-                    }
-                }
+    /**
+     * Processes all chunks to handle entities and blocks within them.
+     *
+     * @param entityDataRemoveList the list to which entity data to be removed will be added.
+     * @param blockDataRemoveList the list to which block data to be removed will be added.
+     */
+    private void processChunks(List<EntityData> entityDataRemoveList, List<BlockData> blockDataRemoveList) {
+        for (ChunkData chunkData : plugin.getCacheManager().getChunkMap().values()) {
+            if (!chunkData.isLoaded()) {
+                continue;
             }
 
-            if (plugin.isEnabled()) {
-                graveRemoveList.forEach(GraveManager.this::removeGrave);
-                entityDataRemoveList.forEach(entityData -> {
-                    if (entityData != null) { // Null check before calling removeEntityData
-                        GraveManager.this.removeEntityData(entityData);
+            Location location = new Location(chunkData.getWorld(), chunkData.getX() << 4, 0, chunkData.getZ() << 4);
+
+            // Process Entity Data
+            processEntityData(chunkData, entityDataRemoveList, location);
+
+            // Process Block Data
+            processBlockData(chunkData, blockDataRemoveList);
+        }
+    }
+
+    /**
+     * Removes expired graves, entities, and blocks from the system.
+     *
+     * @param graveRemoveList the list of graves to be removed.
+     * @param entityDataRemoveList the list of entity data to be removed.
+     * @param blockDataRemoveList the list of block data to be removed.
+     */
+    private void removeExpiredElements(List<Grave> graveRemoveList, List<EntityData> entityDataRemoveList, List<BlockData> blockDataRemoveList) {
+        if (plugin.isEnabled()) {
+            for (Grave grave : graveRemoveList) {
+                plugin.debugMessage("Removing grave: " + grave.getUUID(), 2);
+                removeGrave(grave);
+            }
+            entityDataRemoveList.forEach(entityData -> {
+                if (entityData != null) { // Null check before calling removeEntityData
+                    removeEntityData(entityData);
+                } else {
+                    plugin.debugMessage("Attempted to remove null EntityData", 2);
+                }
+            });
+            blockDataRemoveList.forEach(blockData -> plugin.getBlockManager().removeBlock(blockData));
+            graveRemoveList.clear();
+            entityDataRemoveList.clear();
+            blockDataRemoveList.clear();
+            plugin.getGUIManager().refreshMenus();
+        }
+    }
+
+    /**
+     * Processes the entity data within the given chunk.
+     *
+     * @param chunkData          the data of the chunk being processed.
+     * @param entityDataRemoveList the list to which entity data to be removed will be added.
+     * @param location           the location representing the chunk coordinates.
+     */
+    private void processEntityData(ChunkData chunkData, List<EntityData> entityDataRemoveList, Location location) {
+        for (EntityData entityData : new ArrayList<>(chunkData.getEntityDataMap().values())) {
+            if (entityData == null) {
+                plugin.debugMessage("Encountered null EntityData while processing chunk at coordinates: ("
+                        + chunkData.getX() + ", " + chunkData.getZ() + ").", 2);
+                continue;
+            }
+
+            if (entityData.getUUIDGrave() != null && plugin.getCacheManager().getGraveMap().containsKey(entityData.getUUIDGrave())) {
+                if (plugin.isEnabled() && entityData instanceof HologramData) {
+                    processHologramData((HologramData) entityData, location, entityDataRemoveList);
+                }
+            } else {
+                entityDataRemoveList.add(entityData);
+            }
+        }
+    }
+
+    /**
+     * Processes hologram data within the chunk.
+     *
+     * @param hologramData       the hologram data to be processed.
+     * @param location           the location representing the chunk coordinates.
+     * @param entityDataRemoveList the list to which hologram data to be removed will be added.
+     */
+    private void processHologramData(HologramData hologramData, Location location, List<EntityData> entityDataRemoveList) {
+        Grave grave = plugin.getCacheManager().getGraveMap().get(hologramData.getUUIDGrave());
+
+        if (grave != null) {
+            List<String> lineList = plugin.getConfig("hologram.line", grave).getStringList("hologram.line");
+            Collections.reverse(lineList);
+
+            for (Entity entity : hologramData.getLocation().getChunk().getEntities()) {
+                if (entity.getUniqueId().equals(hologramData.getUUIDEntity())) {
+                    if (hologramData.getLine() < lineList.size()) {
+                        entity.setCustomName(StringUtil.parseString(lineList.get(hologramData.getLine()), location, grave, plugin));
                     } else {
-                        plugin.debugMessage("Attempted to remove null EntityData", 2);
+                        entityDataRemoveList.add(hologramData);
                     }
-                });
-                blockDataRemoveList.forEach(blockData -> plugin.getBlockManager().removeBlock(blockData));
-                graveRemoveList.clear();
-                blockDataRemoveList.clear();
-                entityDataRemoveList.clear();
-                plugin.getGUIManager().refreshMenus();
+                }
             }
-        }, 10L, 20L);
+        }
+    }
+
+    /**
+     * Processes the block data within the given chunk.
+     *
+     * @param chunkData          the data of the chunk being processed.
+     * @param blockDataRemoveList the list to which block data to be removed will be added.
+     */
+    private void processBlockData(ChunkData chunkData, List<BlockData> blockDataRemoveList) {
+        for (BlockData blockData : new ArrayList<>(chunkData.getBlockDataMap().values())) {
+            if (blockData.getLocation().getWorld() != null) {
+                if (plugin.getCacheManager().getGraveMap().containsKey(blockData.getGraveUUID())) {
+                    graveParticle(blockData.getLocation(), plugin.getCacheManager().getGraveMap().get(blockData.getGraveUUID()));
+                } else {
+                    blockDataRemoveList.add(blockData);
+                }
+            }
+        }
     }
 
     /**
@@ -252,6 +347,7 @@ public final class GraveManager {
      * @param grave the grave to remove.
      */
     public void removeGrave(Grave grave) {
+        plugin.debugMessage("Starting removal of grave: " + grave.getUUID(), 1);
         closeGrave(grave);
         plugin.getBlockManager().removeBlock(grave);
         plugin.getHologramManager().removeHologram(grave);
@@ -286,7 +382,10 @@ public final class GraveManager {
             plugin.getIntegrationManager().getCitizensNPC().removeCorpse(grave);
         }
 
-        plugin.debugMessage("Removing grave " + grave.getUUID(), 1);
+        // Remove the grave from the cache
+        plugin.getCacheManager().getGraveMap().remove(grave.getUUID());
+
+        plugin.debugMessage("Grave " + grave.getUUID() + " removed from cache", 1);
     }
 
     /**
