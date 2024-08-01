@@ -579,6 +579,8 @@ public final class EntityManager extends EntityDataManager {
             case "teleportation": {
                 if (plugin.getConfig("teleport.enabled", grave).getBoolean("teleport.enabled")
                         && (EntityUtil.hasPermission(entity, "graves.teleport")
+                        || plugin.getConfig("teleport.enabled", grave).getBoolean("teleport.enabled")
+                        && EntityUtil.hasPermission(entity, "graves.teleport.world." + grave.getLocationDeath().getWorld().getName())
                         || EntityUtil.hasPermission(entity, "graves.bypass"))) {
                     if (EntityUtil.hasPermission(entity, "graves.bypass") && grave.getOwnerUUID() != entity.getUniqueId()) {
                         entity.teleport(plugin.getGraveManager().getGraveLocation(grave.getLocationDeath().add(1, 0, 1), grave));

@@ -7,6 +7,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.block.Skull;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.plugin.Plugin;
 
 import java.lang.reflect.Field;
@@ -36,6 +37,26 @@ public final class SkinUtil {
             Field profileField = skull.getClass().getDeclaredField("profile");
             profileField.setAccessible(true);
             profileField.set(skull, gameProfile);
+        } catch (NoSuchFieldException | IllegalAccessException exception) {
+            exception.printStackTrace();
+        }
+    }
+
+    /**
+     * Sets the texture of a Skull item stack.
+     *
+     * @param skullMeta The SkullMeta item meta.
+     * @param name      The name associated with the texture.
+     * @param base64    The Base64 encoded texture.
+     */
+    public static void setSkullBlockTexture(SkullMeta skullMeta, String name, String base64) {
+        GameProfile gameProfile = new GameProfile(UUID.randomUUID(), name);
+        gameProfile.getProperties().put("textures", new Property("textures", base64));
+
+        try {
+            Field profileField = skullMeta.getClass().getDeclaredField("profile");
+            profileField.setAccessible(true);
+            profileField.set(skullMeta, gameProfile);
         } catch (NoSuchFieldException | IllegalAccessException exception) {
             exception.printStackTrace();
         }

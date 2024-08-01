@@ -156,7 +156,12 @@ public final class CompatibilityMaterialData implements Compatibility {
                     skullMeta.setOwner(grave.getOwnerName());
                     itemStack.setItemMeta(skullMeta);
                 } else {
-                    // TODO ENTITY
+                    SkullMeta skullMeta = (SkullMeta) itemStack.getItemMeta();
+
+                    String texture = grave.getOwnerTexture();
+                    if (texture != null && !texture.isEmpty()) {
+                        SkinUtil.setSkullBlockTexture(skullMeta, grave.getOwnerName(), texture);
+                    }
                 }
             }
 

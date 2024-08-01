@@ -113,6 +113,10 @@ permissions:
     default: true
     description: Can teleport to grave
 
+  graves.teleport.world.*:
+    default: true
+    description: Allows teleportation to graves in specific worlds.
+
   graves.bypass:
     default: op
     description: Bypass grave protection and cost to teleport to others graves

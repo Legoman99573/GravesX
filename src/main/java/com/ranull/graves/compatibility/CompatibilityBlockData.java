@@ -45,47 +45,80 @@ public final class CompatibilityBlockData implements Compatibility {
     @Override
     public BlockData setBlockData(Location location, Material material, Grave grave, Graves plugin) {
         if (material != null) {
-            Block block = location.getBlock();
-            String originalMaterial = block.getType().name();
-            String replaceMaterial = location.getBlock().getType().name();
-            String replaceData = location.getBlock().getBlockData().clone().getAsString(true);
-
-            // Levelled
-            if (block.getBlockData() instanceof Levelled) {
-                Levelled leveled = (Levelled) block.getBlockData();
-
-                if (leveled.getLevel() != 0) {
-                    replaceMaterial = null;
-                    replaceData = null;
-                }
-            }
-
-            // Air
-            if (block.getType() == Material.NETHER_PORTAL || block.getBlockData() instanceof Openable) {
-                replaceMaterial = null;
-                replaceData = null;
-            }
-
-            // Set type
-            location.getBlock().setType(material);
-
-            // Waterlogged
-            if (block.getBlockData() instanceof Waterlogged) {
-                Waterlogged waterlogged = (Waterlogged) block.getBlockData();
-
-                waterlogged.setWaterlogged(MaterialUtil.isWater(originalMaterial));
-                block.setBlockData(waterlogged);
-            }
-
-            // Update skull
-            if (material == Material.PLAYER_HEAD && block.getState() instanceof Skull) {
-                updateSkullBlock(block, grave, plugin);
-            }
-
-            return new BlockData(location, grave.getUUID(), replaceMaterial, replaceData);
+            return handleBlockPlacement(location, material, grave, plugin);
         }
 
         return new BlockData(location, grave.getUUID(), null, null);
+    }
+
+    /**
+     * Handles the block placement logic.
+     *
+     * @param location The location where the block data should be set.
+     * @param material The material of the block to set.
+     * @param grave    The grave associated with the block.
+     * @param plugin   The Graves plugin instance.
+     * @return The BlockData representing the set block data.
+     */
+    private BlockData handleBlockPlacement(Location location, Material material, Grave grave, Graves plugin) {
+        Block block = location.getBlock();
+        String originalMaterial = block.getType().name();
+        String replaceMaterial = location.getBlock().getType().name();
+        String replaceData = location.getBlock().getBlockData().clone().getAsString(true);
+
+        if (isLevelledBlock(block)) {
+            replaceMaterial = null;
+            replaceData = null;
+        }
+
+        if (isSpecialBlock(block)) {
+            replaceMaterial = null;
+            replaceData = null;
+        }
+
+        location.getBlock().setType(material);
+
+        if (block.getBlockData() instanceof Waterlogged) {
+            setWaterlogged(block, originalMaterial);
+        }
+
+        if (material == Material.PLAYER_HEAD && block.getState() instanceof Skull) {
+            updateSkullBlock(block, grave, plugin);
+        }
+
+        return new BlockData(location, grave.getUUID(), replaceMaterial, replaceData);
+    }
+
+    /**
+     * Checks if the block is a Levelled block.
+     *
+     * @param block The block to check.
+     * @return True if the block is a Levelled block, false otherwise.
+     */
+    private boolean isLevelledBlock(Block block) {
+        return block.getBlockData() instanceof Levelled && ((Levelled) block.getBlockData()).getLevel() != 0;
+    }
+
+    /**
+     * Checks if the block is a special block (Nether Portal or Openable).
+     *
+     * @param block The block to check.
+     * @return True if the block is a special block, false otherwise.
+     */
+    private boolean isSpecialBlock(Block block) {
+        return block.getType() == Material.NETHER_PORTAL || block.getBlockData() instanceof Openable;
+    }
+
+    /**
+     * Sets the waterlogged state of the block.
+     *
+     * @param block            The block to set the waterlogged state for.
+     * @param originalMaterial The original material of the block.
+     */
+    private void setWaterlogged(Block block, String originalMaterial) {
+        Waterlogged waterlogged = (Waterlogged) block.getBlockData();
+        waterlogged.setWaterlogged(MaterialUtil.isWater(originalMaterial));
+        block.setBlockData(waterlogged);
     }
 
     /**
@@ -136,6 +169,20 @@ public final class CompatibilityBlockData implements Compatibility {
         skullRotate.setRotation(BlockFaceUtil.getYawBlockFace(grave.getYaw()).getOppositeFace());
         skull.setBlockData(skullRotate);
 
+        applySkullData(skull, grave, plugin, headType, headBase64, headName);
+    }
+
+    /**
+     * Applies the skull data to the skull block.
+     *
+     * @param skull     The skull block.
+     * @param grave     The grave associated with the skull.
+     * @param plugin    The Graves plugin instance.
+     * @param headType  The type of head.
+     * @param headBase64 The base64 encoded texture of the head.
+     * @param headName  The name of the head.
+     */
+    private void applySkullData(Skull skull, Grave grave, Graves plugin, int headType, String headBase64, String headName) {
         if (headType == 0) {
             if (grave.getOwnerType() == EntityType.PLAYER) {
                 skull.setOwningPlayer(plugin.getServer().getOfflinePlayer(grave.getOwnerUUID()));
@@ -163,20 +210,40 @@ public final class CompatibilityBlockData implements Compatibility {
     @Override
     public ItemStack getSkullItemStack(Grave grave, Graves plugin) {
         ItemStack itemStack = new ItemStack(Material.PLAYER_HEAD);
+        SkullMeta skullMeta = (SkullMeta) itemStack.getItemMeta();
 
-        if (itemStack.getItemMeta() != null) {
+        if (skullMeta != null) {
             if (grave.getOwnerType() == EntityType.PLAYER) {
                 OfflinePlayer offlinePlayer = plugin.getServer().getOfflinePlayer(grave.getOwnerUUID());
-                SkullMeta skullMeta = (SkullMeta) itemStack.getItemMeta();
-
                 skullMeta.setOwningPlayer(offlinePlayer);
-                itemStack.setItemMeta(skullMeta);
-            } else {
-                // TODO ENTITY
+            } else if (grave.getOwnerType() != null) {
+                String entityTexture = getEntityTexture(grave.getOwnerType());
+                if (entityTexture != null) {
+                    SkinUtil.setSkullBlockTexture(skullMeta, grave.getOwnerName(), entityTexture);
+                }
             }
+
+            itemStack.setItemMeta(skullMeta);
         }
 
         return itemStack;
+    }
+
+    /**
+     * Gets the texture for a given entity type.
+     *
+     * @param entityType The type of the entity.
+     * @return The texture of the entity as a string, or null if no texture is available.
+     */
+    private String getEntityTexture(EntityType entityType) {
+        switch (entityType) {
+            case ZOMBIE:
+                return "base64_texture_for_zombie";
+            case SKELETON:
+                return "base64_texture_for_skeleton";
+            default:
+                return null;
+        }
     }
 
     /**
@@ -190,27 +257,35 @@ public final class CompatibilityBlockData implements Compatibility {
         if (itemStack.getType() == Material.PLAYER_HEAD && itemStack.getItemMeta() != null) {
             SkullMeta skullMeta = (SkullMeta) itemStack.getItemMeta();
 
-            try {
-                Field profileField = skullMeta.getClass().getDeclaredField("profile");
+            return extractSkullTexture(skullMeta);
+        }
 
-                profileField.setAccessible(true);
+        return null;
+    }
 
-                GameProfile gameProfile = (GameProfile) profileField.get(skullMeta);
+    /**
+     * Extracts the texture of the skull from the SkullMeta.
+     *
+     * @param skullMeta The SkullMeta to extract the texture from.
+     * @return The texture of the skull as a string.
+     */
+    private String extractSkullTexture(SkullMeta skullMeta) {
+        try {
+            Field profileField = skullMeta.getClass().getDeclaredField("profile");
 
-                if (gameProfile != null && gameProfile.getProperties().containsKey("textures")) {
-                    Collection<Property> propertyCollection = gameProfile.getProperties().get("textures");
+            profileField.setAccessible(true);
 
-                    if (!propertyCollection.isEmpty()) {
-                        try {
-                            return propertyCollection.stream().findFirst().get().value();
-                        } catch (NoSuchMethodError meh) {
-                            return propertyCollection.stream().findFirst().get().getValue();
-                        }
-                    }
+            GameProfile gameProfile = (GameProfile) profileField.get(skullMeta);
+
+            if (gameProfile != null && gameProfile.getProperties().containsKey("textures")) {
+                Collection<Property> propertyCollection = gameProfile.getProperties().get("textures");
+
+                if (!propertyCollection.isEmpty()) {
+                    return propertyCollection.stream().findFirst().get().getValue();
                 }
-            } catch (NoSuchFieldException | IllegalAccessException exception) {
-                exception.printStackTrace();
             }
+        } catch (NoSuchFieldException | IllegalAccessException exception) {
+            exception.printStackTrace();
         }
 
         return null;

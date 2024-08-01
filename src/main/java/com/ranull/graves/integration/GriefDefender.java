@@ -119,13 +119,24 @@ public final class GriefDefender {
 
     /**
      * Checks if an entity has permission to teleport to a specific location.
-     * This is a placeholder method and needs implementation.
      *
      * @param entity   The entity whose teleportation permission is being checked.
      * @param location The location to which the entity wants to teleport.
      * @return True if the entity can teleport, false otherwise.
      */
     public boolean canTeleport(Entity entity, Location location) {
-        return true; // TODO: Implement actual teleport permission check
+        if (entity instanceof Player) {
+            Player player = (Player) entity;
+            String worldName = location.getWorld().getName();
+
+            // Check for world-specific teleport permission
+            if (player.hasPermission("graves.teleport.world." + worldName)) {
+                return true;
+            }
+
+            // Check for general teleport permission
+            return player.hasPermission("graves.teleport");
+        }
+        return false;
     }
 }
