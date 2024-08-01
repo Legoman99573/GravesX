@@ -150,6 +150,14 @@
       <url>https://repo.oraxen.com/releases</url>
     </repository>
     <repository>
+      <releases>
+        <updatePolicy>always</updatePolicy>
+        <checksumPolicy>warn</checksumPolicy>
+      </releases>
+      <snapshots>
+        <updatePolicy>always</updatePolicy>
+        <checksumPolicy>warn</checksumPolicy>
+      </snapshots>
       <id>ranull-repo</id>
       <url>https://repo.ranull.com/maven/#/ranull/</url>
     </repository>

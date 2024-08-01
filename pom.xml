@@ -189,6 +189,16 @@
         <repository>
             <id>ranull-repo</id>
             <url>https://repo.ranull.com/maven/#/ranull/</url>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+                <checksumPolicy>warn</checksumPolicy>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+                <checksumPolicy>warn</checksumPolicy>
+            </snapshots>
         </repository>
         <repository>
             <id>ranull-repo-external</id>
