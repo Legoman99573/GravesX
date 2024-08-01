@@ -25,7 +25,10 @@ build-job:       # This job runs in the build stage, which runs first.
   # image: maven:3.8.6-jdk-11  # Use a Maven Docker image with Java 11
   before_script:
     - apt-get update
-    - apt-get -y install maven openjdk-21
+    - wget https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.deb
+    - sudo dpkg -i jdk-21_linux-x64_bin.deb
+    - java -version
+    - apt-get -y install maven
     - echo "Including custom authlib library."
     - mvn install:install-file -Dfile=libs/authlib-5.0.47-graves.jar -DgroupId=com.mojang -DartifactId=authlib -Dversion=5.0.47-graves -Dpackaging=jar
   script:
