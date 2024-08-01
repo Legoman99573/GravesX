@@ -16,7 +16,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.command.CommandSender;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
@@ -211,7 +210,6 @@ public final class CitizensNPC extends EntityDataManager {
         if (location != null) {
             String npcName = getNPCNameFromLocation(location);
             NPC npc = getNPCByName(npcName);
-            //Bukkit.dispatchCommand(Bukkit.getServer().getConsoleSender(), "npc select" + npcName);
             if (npc != null) {
                 npc.destroy();
             }

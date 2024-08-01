@@ -2,9 +2,6 @@ package com.ranull.graves.event;
 
 import com.ranull.graves.type.Grave;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import org.bukkit.event.Cancellable;
-import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
