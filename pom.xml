@@ -196,13 +196,23 @@
             </releases>
             <snapshots>
                 <enabled>true</enabled>
-                <updatePolicy>always</updatePolicy>
+                <updatePolicy>daily</updatePolicy>
                 <checksumPolicy>warn</checksumPolicy>
             </snapshots>
         </repository>
         <repository>
             <id>ranull-repo-external</id>
             <url>https://repo.ranull.com/maven/external/</url>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>daily</updatePolicy>
+                <checksumPolicy>warn</checksumPolicy>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+                <checksumPolicy>warn</checksumPolicy>
+            </snapshots>
         </repository>
         <repository>
             <id>citizens-repo</id>
@@ -262,6 +272,29 @@
             <layout>default</layout>
         </repository>
     </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>ranull-repo</id>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <url>https://repo.ranull.com/maven/#/ranull/</url>
+        </pluginRepository>
+        <pluginRepository>
+            <id>ranull-repo-external</id>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <url>https://repo.ranull.com/maven/external/</url>
+        </pluginRepository>
+    </pluginRepositories>
 
     <dependencies>
         <dependency>

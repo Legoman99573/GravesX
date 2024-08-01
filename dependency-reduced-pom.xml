@@ -162,6 +162,14 @@
       <url>https://repo.ranull.com/maven/#/ranull/</url>
     </repository>
     <repository>
+      <releases>
+        <updatePolicy>always</updatePolicy>
+        <checksumPolicy>warn</checksumPolicy>
+      </releases>
+      <snapshots>
+        <updatePolicy>always</updatePolicy>
+        <checksumPolicy>warn</checksumPolicy>
+      </snapshots>
       <id>ranull-repo-external</id>
       <url>https://repo.ranull.com/maven/external/</url>
     </repository>
@@ -222,6 +230,20 @@
       <url>https://repo.codemc.io/repository/maven-public/</url>
     </repository>
   </repositories>
+  <pluginRepositories>
+    <pluginRepository>
+      <releases />
+      <snapshots />
+      <id>ranull-repo</id>
+      <url>https://repo.ranull.com/maven/#/ranull/</url>
+    </pluginRepository>
+    <pluginRepository>
+      <releases />
+      <snapshots />
+      <id>ranull-repo-external</id>
+      <url>https://repo.ranull.com/maven/external/</url>
+    </pluginRepository>
+  </pluginRepositories>
   <dependencies>
     <dependency>
       <groupId>org.spigotmc</groupId>
