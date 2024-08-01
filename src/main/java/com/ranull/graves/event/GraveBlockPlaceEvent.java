@@ -25,7 +25,7 @@ public class GraveBlockPlaceEvent extends GraveEvent {
      * @param blockType The type of the block being placed.
      */
     public GraveBlockPlaceEvent(Grave grave, Location location, BlockData.BlockType blockType) {
-        super(grave, null, location, null, null, blockType, null, null);
+        super(grave, null, location, null, null, blockType, null, null, null);
     }
 
     @Override

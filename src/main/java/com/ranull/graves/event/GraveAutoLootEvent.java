@@ -10,7 +10,7 @@ public class GraveAutoLootEvent extends GraveEvent {
     private static final HandlerList HANDLERS = new HandlerList();
 
     public GraveAutoLootEvent(Entity entity, Location location, Grave grave) {
-        super(grave, entity, location, null, null, null, null, null);
+        super(grave, entity, location, null, null, null, null, null, null);
     }
 
     @Override

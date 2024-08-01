@@ -8,26 +8,40 @@ import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * The GraveTimeoutEvent class represents an event that occurs when a grave times out.
- * This event is cancellable, meaning it can be prevented from occurring by event listeners.
+ * Represents an event that occurs when a grave times out.
+ * <p>
+ * This event extends {@link GraveEvent} and is cancellable, allowing event listeners
+ * to prevent the grave timeout from occurring if necessary.
+ * </p>
  */
 public class GraveTimeoutEvent extends GraveEvent {
     private static final HandlerList HANDLERS = new HandlerList();
 
     /**
-     * Constructs a new GraveTimeoutEvent.
+     * Constructs a new {@code GraveTimeoutEvent}.
      *
-     * @param grave The grave that is timing out.
+     * @param grave The grave that is timing out. The location of the grave at the time
+     *              of timeout is automatically set from the grave's death location.
      */
     public GraveTimeoutEvent(Grave grave) {
-        super(grave, null, grave.getLocationDeath(), null, null, null, null, null);
+        super(grave, null, grave.getLocationDeath(), null, null, null, null, null, null);
     }
 
+    /**
+     * Gets the list of handlers for this event.
+     *
+     * @return The handler list for this event.
+     */
     @NotNull
     public static HandlerList getHandlerList() {
         return HANDLERS;
     }
 
+    /**
+     * Gets the list of handlers for this event.
+     *
+     * @return The handler list for this event.
+     */
     @Override
     public @NotNull HandlerList getHandlers() {
         return HANDLERS;

@@ -3,6 +3,7 @@ package com.ranull.graves.manager;
 import com.ranull.graves.Graves;
 import com.ranull.graves.data.EntityData;
 import com.ranull.graves.event.GraveAutoLootEvent;
+import com.ranull.graves.event.GraveTeleportEvent;
 import com.ranull.graves.event.GraveZombieSpawnEvent;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.*;
@@ -583,7 +584,12 @@ public final class EntityManager extends EntityDataManager {
                         && EntityUtil.hasPermission(entity, "graves.teleport.world." + grave.getLocationDeath().getWorld().getName())
                         || EntityUtil.hasPermission(entity, "graves.bypass"))) {
                     if (EntityUtil.hasPermission(entity, "graves.bypass") && grave.getOwnerUUID() != entity.getUniqueId()) {
-                        entity.teleport(plugin.getGraveManager().getGraveLocation(grave.getLocationDeath().add(1, 0, 1), grave));
+                        GraveTeleportEvent graveTeleportEvent = new GraveTeleportEvent(grave, entity);
+
+                        plugin.getServer().getPluginManager().callEvent(graveTeleportEvent);
+                        if (!graveTeleportEvent.isCancelled()) {
+                            entity.teleport(plugin.getGraveManager().getGraveLocation(grave.getLocationDeath().add(1, 0, 1), grave));
+                        }
                     } else {
                         plugin.getEntityManager().teleportEntity(entity, plugin.getGraveManager()
                                 .getGraveLocationList(entity.getLocation(), grave).get(0), grave);

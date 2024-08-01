@@ -1,9 +1,6 @@
 package com.ranull.graves.event;
 
 import com.ranull.graves.type.Grave;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
@@ -19,7 +16,7 @@ public class GraveProtectionExpiredEvent extends GraveEvent {
      * @param grave The grave whose protection is expiring.
      */
     public GraveProtectionExpiredEvent(Grave grave) {
-        super(grave, null, grave.getLocationDeath(), null, null, null, null, null);
+        super(grave, null, grave.getLocationDeath(), null, null, null,null, null, null);
     }
 
     @NotNull

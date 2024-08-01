@@ -28,7 +28,7 @@ import ch.njol.skript.util.Getter;
 public class EvtGraveBreak extends SkriptEvent {
 
     static {
-        Skript.registerEvent("Grave Break", EvtGraveBreak.class, GraveBreakEvent.class, "[grave] break[ing]");
+        Skript.registerEvent("Grave Break", EvtGraveBreak.class, GraveBreakEvent.class, "[grave] br(eak|eaking|oken)");
 
         // Registering event values
         EventValues.registerEventValue(GraveBreakEvent.class, Player.class, new Getter<Player, GraveBreakEvent>() {
@@ -49,18 +49,11 @@ public class EvtGraveBreak extends SkriptEvent {
                 return e.getBlock();
             }
         }, 0);
-        EventValues.registerEventValue(GraveBreakEvent.class, BlockData.BlockType.class, new Getter<BlockData.BlockType, GraveBreakEvent>() {
-            @Override
-            public BlockData.BlockType get(GraveBreakEvent e) {
-                return e.getBlockType();
-            }
-        }, 0);
     }
 
     private Literal<Player> player;
     private Literal<Grave> grave;
     private Literal<Block> block;
-    private Literal<BlockData.BlockType> blockType;
 
     @SuppressWarnings("unchecked")
     @Override
@@ -68,7 +61,6 @@ public class EvtGraveBreak extends SkriptEvent {
         //player = (Literal<Player>) args[0];
         //grave = (Literal<Grave>) args[0];
         //block = (Literal<Block>) args[0];
-        //blockType = (Literal<BlockData.BlockType>) args[0];
         return true;
     }
 
@@ -100,14 +92,6 @@ public class EvtGraveBreak extends SkriptEvent {
             })) {
                 return false;
             }
-            if (blockType != null && !blockType.check(event, new Checker<BlockData.BlockType>() {
-                @Override
-                public boolean check(BlockData.BlockType type) {
-                    return type.equals(event.getBlockType());
-                }
-            })) {
-                return false;
-            }
             return true;
         }
         return false;
@@ -118,7 +102,6 @@ public class EvtGraveBreak extends SkriptEvent {
         return "Grave break event " +
                 (player != null ? " with player " + player.toString(e, debug) : "") +
                 (grave != null ? " with grave " + grave.toString(e, debug) : "") +
-                (block != null ? " with block " + block.toString(e, debug) : "") +
-                (blockType != null ? " with block type " + blockType.toString(e, debug) : "");
+                (block != null ? " with block " + block.toString(e, debug) : "");
     }
 }

@@ -1,51 +1,51 @@
 package com.ranull.graves.event.integration.skript;
 
+import ch.njol.skript.Skript;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
+import ch.njol.skript.lang.Literal;
+import ch.njol.skript.lang.SkriptEvent;
+import ch.njol.skript.lang.SkriptParser;
+import ch.njol.skript.registrations.EventValues;
+import ch.njol.skript.util.Getter;
+import ch.njol.util.Checker;
+import com.ranull.graves.event.GraveTeleportEvent;
+import com.ranull.graves.type.Grave;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.Event;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import com.ranull.graves.event.GraveExplodeEvent;
-import com.ranull.graves.type.Grave;
-import ch.njol.skript.Skript;
-import ch.njol.skript.lang.Literal;
-import ch.njol.skript.lang.SkriptEvent;
-import ch.njol.skript.lang.SkriptParser.ParseResult;
-import ch.njol.skript.registrations.EventValues;
-import ch.njol.util.Checker;
-import ch.njol.skript.util.Getter;
 
-@Name("Grave Explode Event")
-@Description("Triggered when a grave explodes. Provides access to the entity, grave, and location.")
+@Name("Grave Teleport Event")
+@Description("Triggered when an entity teleports to a grave. Provides access to the grave, entity and location.")
 @Examples({
-        "on grave explode:",
-        "\tbroadcast \"Entity %event-entity% caused grave %event-grave% to explode at location %event-location%\""
+        "on grave teleport:",
+        "\tbroadcast \"%event-entity% teleported to grave %event-grave% at location %event-location%\""
 })
-public class EvtGraveExplode extends SkriptEvent {
+public class EvtGraveTeleport extends SkriptEvent {
 
     static {
-        Skript.registerEvent("Grave Explode", EvtGraveExplode.class, GraveExplodeEvent.class, "[grave] explode(ing|ed)");
+        Skript.registerEvent("Grave Teleport", EvtGraveTeleport.class, GraveTeleportEvent.class, "[grave] teleport(ing|ed)");
 
         // Registering event values
-        EventValues.registerEventValue(GraveExplodeEvent.class, Entity.class, new Getter<Entity, GraveExplodeEvent>() {
+        EventValues.registerEventValue(GraveTeleportEvent.class, Entity.class, new Getter<Entity, GraveTeleportEvent>() {
             @Override
-            public Entity get(GraveExplodeEvent e) {
+            public Entity get(GraveTeleportEvent e) {
                 return e.getEntity();
             }
         }, 0);
-        EventValues.registerEventValue(GraveExplodeEvent.class, Grave.class, new Getter<Grave, GraveExplodeEvent>() {
+        EventValues.registerEventValue(GraveTeleportEvent.class, Grave.class, new Getter<Grave, GraveTeleportEvent>() {
             @Override
-            public Grave get(GraveExplodeEvent e) {
+            public Grave get(GraveTeleportEvent e) {
                 return e.getGrave();
             }
         }, 0);
-        EventValues.registerEventValue(GraveExplodeEvent.class, Location.class, new Getter<Location, GraveExplodeEvent>() {
+        EventValues.registerEventValue(GraveTeleportEvent.class, Location.class, new Getter<Location, GraveTeleportEvent>() {
             @Override
-            public Location get(GraveExplodeEvent e) {
-                return e.getLocation();
+            public Location get(GraveTeleportEvent e) {
+                return e.getGrave().getLocationDeath();
             }
         }, 0);
     }
@@ -56,7 +56,7 @@ public class EvtGraveExplode extends SkriptEvent {
 
     @SuppressWarnings("unchecked")
     @Override
-    public boolean init(Literal<?> @NotNull [] args, int matchedPattern, @NotNull ParseResult parseResult) {
+    public boolean init(Literal<?> @NotNull [] args, int matchedPattern, @NotNull SkriptParser.ParseResult parseResult) {
         //entity = (Literal<Entity>) args[0];
         //grave = (Literal<Grave>) args[0];
         //location = (Literal<Location>) args[0];
@@ -65,8 +65,8 @@ public class EvtGraveExplode extends SkriptEvent {
 
     @Override
     public boolean check(Event e) {
-        if (e instanceof GraveExplodeEvent) {
-            GraveExplodeEvent event = (GraveExplodeEvent) e;
+        if (e instanceof GraveTeleportEvent) {
+            GraveTeleportEvent event = (GraveTeleportEvent) e;
             if (entity != null && !entity.check(event, new Checker<Entity>() {
                 @Override
                 public boolean check(Entity ent) {
@@ -86,7 +86,7 @@ public class EvtGraveExplode extends SkriptEvent {
             if (location != null && !location.check(event, new Checker<Location>() {
                 @Override
                 public boolean check(Location loc) {
-                    return loc.equals(event.getLocation());
+                    return loc.equals(event.getGrave().getLocation());
                 }
             })) {
                 return false;
@@ -98,7 +98,7 @@ public class EvtGraveExplode extends SkriptEvent {
 
     @Override
     public String toString(@Nullable Event e, boolean debug) {
-        return "Grave explode event " +
+        return "Grave teleport event " +
                 (entity != null ? " with entity " + entity.toString(e, debug) : "") +
                 (grave != null ? " with grave " + grave.toString(e, debug) : "") +
                 (location != null ? " at location " + location.toString(e, debug) : "");
