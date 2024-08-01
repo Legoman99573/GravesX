@@ -36,9 +36,28 @@ public class BlockPlaceListener implements Listener {
         Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
 
         // If the block is a grave or if the item being used is a token, cancel the event
-        if (grave != null || (plugin.getRecipeManager() != null
-                && plugin.getRecipeManager().isToken(event.getItemInHand()))) {
+        if (isGraveBlock(grave) || isTokenItem(event)) {
             event.setCancelled(true);
         }
+    }
+
+    /**
+     * Checks if the block is a grave block.
+     *
+     * @param grave The grave to check.
+     * @return True if the block is a grave, false otherwise.
+     */
+    private boolean isGraveBlock(Grave grave) {
+        return grave != null;
+    }
+
+    /**
+     * Checks if the item being used to place the block is a token.
+     *
+     * @param event The BlockPlaceEvent.
+     * @return True if the item is a token, false otherwise.
+     */
+    private boolean isTokenItem(BlockPlaceEvent event) {
+        return plugin.getRecipeManager() != null && plugin.getRecipeManager().isToken(event.getItemInHand());
     }
 }

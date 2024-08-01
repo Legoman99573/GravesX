@@ -33,15 +33,26 @@ public class FurnitureInteractListener implements Listener {
      * @param event The FurnitureInteractEvent to handle.
      */
     @EventHandler
-    public void onFurnitureBreak(FurnitureInteractEvent event) {
+    public void onFurnitureInteract(FurnitureInteractEvent event) {
         ItemFrame itemFrame = furnitureEngine.getItemFrame(event.getFurnitureLocation());
 
         if (itemFrame != null) {
-            Grave grave = furnitureEngine.getGrave(itemFrame.getLocation(), itemFrame.getUniqueId());
+            handleFurnitureInteraction(event, itemFrame);
+        }
+    }
 
-            if (grave != null) {
-                event.setCancelled(plugin.getGraveManager().openGrave(event.getPlayer(), itemFrame.getLocation(), grave));
-            }
+    /**
+     * Handles the interaction with the furniture. If the furniture is associated with a grave,
+     * attempts to open the grave and cancels the event if successful.
+     *
+     * @param event     The FurnitureInteractEvent.
+     * @param itemFrame The ItemFrame being interacted with.
+     */
+    private void handleFurnitureInteraction(FurnitureInteractEvent event, ItemFrame itemFrame) {
+        Grave grave = furnitureEngine.getGrave(itemFrame.getLocation(), itemFrame.getUniqueId());
+
+        if (grave != null) {
+            event.setCancelled(plugin.getGraveManager().openGrave(event.getPlayer(), itemFrame.getLocation(), grave));
         }
     }
 }

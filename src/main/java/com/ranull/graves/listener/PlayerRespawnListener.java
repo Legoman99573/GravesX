@@ -46,28 +46,62 @@ public class PlayerRespawnListener implements Listener {
             Grave grave = graveList.get(graveList.size() - 1);
 
             // Schedule a function to run after player respawn
-            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                plugin.getEntityManager().runFunction(player, plugin
-                        .getConfig("respawn.function", player, permissionList)
-                        .getString("respawn.function", "none"), grave);
-            }, 1L);
+            scheduleRespawnFunction(player, permissionList, grave);
 
             // Check if a compass should be given to the player
-            if (plugin.getVersionManager().hasCompassMeta()
-                    && plugin.getConfig("respawn.compass", player, permissionList)
-                    .getBoolean("respawn.compass")
-                    && grave.getLivedTime() <= plugin.getConfig("respawn.compass-time", player, permissionList)
-                    .getInt("respawn.compass-time") * 1000L) {
-                List<Location> locationList = plugin.getGraveManager()
-                        .getGraveLocationList(event.getRespawnLocation(), grave);
+            if (shouldGiveCompass(player, permissionList, grave)) {
+                giveCompassToPlayer(event, player, grave);
+            }
+        }
+    }
 
-                if (!locationList.isEmpty()) {
-                    ItemStack itemStack = plugin.getEntityManager().createGraveCompass(player, locationList.get(0), grave);
+    /**
+     * Schedules a function to run after the player respawns.
+     *
+     * @param player        The player who respawned.
+     * @param permissionList The list of permissions for the player.
+     * @param grave         The grave associated with the player.
+     */
+    private void scheduleRespawnFunction(Player player, List<String> permissionList, Grave grave) {
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            plugin.getEntityManager().runFunction(player, plugin
+                    .getConfig("respawn.function", player, permissionList)
+                    .getString("respawn.function", "none"), grave);
+        }, 1L);
+    }
 
-                    if (itemStack != null) {
-                        player.getInventory().addItem(itemStack);
-                    }
-                }
+    /**
+     * Checks if a compass should be given to the player based on the respawn time and configuration settings.
+     *
+     * @param player        The player who respawned.
+     * @param permissionList The list of permissions for the player.
+     * @param grave         The grave associated with the player.
+     * @return True if a compass should be given, false otherwise.
+     */
+    private boolean shouldGiveCompass(Player player, List<String> permissionList, Grave grave) {
+        return plugin.getVersionManager().hasCompassMeta()
+                && plugin.getConfig("respawn.compass", player, permissionList)
+                .getBoolean("respawn.compass")
+                && grave.getLivedTime() <= plugin.getConfig("respawn.compass-time", player, permissionList)
+                .getInt("respawn.compass-time") * 1000L;
+    }
+
+    /**
+     * Gives a compass to the player that points to the location of their grave.
+     *
+     * @param event  The PlayerRespawnEvent.
+     * @param player The player who respawned.
+     * @param grave  The grave associated with the player.
+     */
+    private void giveCompassToPlayer(PlayerRespawnEvent event, Player player, Grave grave) {
+        List<Location> locationList = plugin.getGraveManager()
+                .getGraveLocationList(event.getRespawnLocation(), grave);
+
+        if (!locationList.isEmpty()) {
+            ItemStack itemStack = plugin.getEntityManager().createGraveCompass(player, locationList.get(0), grave);
+
+            if (itemStack != null) {
+                player.getInventory().addItem(itemStack);
             }
         }
     }

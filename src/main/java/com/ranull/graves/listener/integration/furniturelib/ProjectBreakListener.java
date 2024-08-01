@@ -29,7 +29,19 @@ public class ProjectBreakListener implements Listener {
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onProjectBreak(ProjectBreakEvent event) {
-        event.setCancelled(event.getID().getUUID() != null
-                && furnitureLib.getGrave(event.getLocation(), event.getID().getUUID()) != null);
+        if (isProjectAssociatedWithGrave(event)) {
+            event.setCancelled(true);
+        }
+    }
+
+    /**
+     * Checks if the project being broken is associated with a grave.
+     *
+     * @param event The ProjectBreakEvent.
+     * @return True if the project is associated with a grave, false otherwise.
+     */
+    private boolean isProjectAssociatedWithGrave(ProjectBreakEvent event) {
+        return event.getID().getUUID() != null
+                && furnitureLib.getGrave(event.getLocation(), event.getID().getUUID()) != null;
     }
 }

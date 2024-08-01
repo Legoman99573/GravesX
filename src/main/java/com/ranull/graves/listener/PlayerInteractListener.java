@@ -54,97 +54,141 @@ public class PlayerInteractListener implements Listener {
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
 
-        if ((!plugin.getVersionManager().hasSecondHand() || (event.getHand() != null
-                && event.getHand() == EquipmentSlot.HAND))
-                && (plugin.getVersionManager().is_v1_7() || player.getGameMode() != GameMode.SPECTATOR)) {
-
-            // Grave interaction
-            if (event.getClickedBlock() != null && event.useInteractedBlock() != Event.Result.DENY
-                    && event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-                Block block = event.getClickedBlock();
-                Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
-
-                if (grave == null) {
-                    Block blockRelative = block.getRelative(event.getBlockFace());
-
-                    if (!blockRelative.getType().isSolid()) {
-                        grave = plugin.getBlockManager().getGraveFromBlock(blockRelative);
-                    }
-                }
-
-                if (grave != null) {
-                    event.setCancelled(plugin.getGraveManager().openGrave(player, block.getLocation(), grave));
-                }
+        if (isMainHandInteraction(event) && isNotSpectatorMode(player)) {
+            if (event.getClickedBlock() != null) {
+                handleBlockInteraction(event, player);
             }
-
-            // Graveyard modification
-            if (event.getClickedBlock() != null && event.getItem() != null
-                    && event.getItem().getType() == Material.BONE
-                    && plugin.getGraveyardManager().isModifyingGraveyard(player)) {
-                Graveyard graveyard = plugin.getGraveyardManager().getModifyingGraveyard(player);
-                Block block = event.getClickedBlock();
-                Location location = block.getLocation().clone();
-                Location locationRelative = block.getRelative(event.getBlockFace()).getLocation().clone();
-
-                /*
-                location.setPitch(player.getLocation().getPitch());
-                location.setYaw(player.getLocation().getYaw());
-                locationRelative.setPitch(location.getPitch());
-                locationRelative.setYaw(location.getYaw());
-                 */
-
-                if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-                    if (graveyard.hasGraveLocation(location)) {
-                        plugin.getGraveyardManager().removeLocationInGraveyard(player, location, graveyard);
-                    } else if (graveyard.hasGraveLocation(locationRelative)) {
-                        plugin.getGraveyardManager().removeLocationInGraveyard(player, locationRelative, graveyard);
-                    } else {
-                        if (plugin.getGraveyardManager().isLocationInGraveyard(locationRelative, graveyard)) {
-                            plugin.getGraveyardManager().addLocationInGraveyard(player, locationRelative, graveyard);
-                        } else {
-                            player.sendMessage("outside graveyard " + graveyard.getName());
-                        }
-                    }
-                } else {
-                    player.sendMessage("can't break while modifying a graveyard");
-                }
-
-                event.setCancelled(true);
-            }
-
-            // Compass interaction
             if (event.getItem() != null) {
-                ItemStack itemStack = event.getItem();
-                UUID uuid = plugin.getEntityManager().getGraveUUIDFromItemStack(itemStack);
+                handleCompassInteraction(event, player);
+            }
+        }
+    }
 
-                if (uuid != null) {
-                    if (plugin.getCacheManager().getGraveMap().containsKey(uuid)) {
-                        Grave grave = plugin.getCacheManager().getGraveMap().get(uuid);
-                        List<Location> locationList = plugin.getGraveManager()
-                                .getGraveLocationList(player.getLocation(), grave);
+    /**
+     * Checks if the interaction is performed with the main hand.
+     *
+     * @param event The PlayerInteractEvent.
+     * @return True if the interaction is performed with the main hand, false otherwise.
+     */
+    private boolean isMainHandInteraction(PlayerInteractEvent event) {
+        return !plugin.getVersionManager().hasSecondHand() || (event.getHand() != null && event.getHand() == EquipmentSlot.HAND);
+    }
 
-                        if (!locationList.isEmpty()) {
-                            Location location = locationList.get(0);
-                            if (event.getClickedBlock() != null && plugin.getLocationManager().hasGrave(event.getClickedBlock().getLocation())
-                                    && player.getInventory().getItemInMainHand().getType().toString().toLowerCase().contains("compass")) {
-                                player.getInventory().remove(itemStack);
-                                player.updateInventory();
-                            } else {
-                                player.getInventory().setItem(player.getInventory().getHeldItemSlot(),
-                                        plugin.getEntityManager().createGraveCompass(player, location, grave));
-                                plugin.getEntityManager().runFunction(player, plugin.getConfig("compass.function", grave).getString("compass.function"), grave);
-                            }
-                        } else {
-                            player.getInventory().remove(itemStack);
-                            player.updateInventory();
-                        }
-                    } else {
+    /**
+     * Checks if the player is not in Spectator mode.
+     *
+     * @param player The player to check.
+     * @return True if the player is not in Spectator mode, false otherwise.
+     */
+    private boolean isNotSpectatorMode(Player player) {
+        return plugin.getVersionManager().is_v1_7() || player.getGameMode() != GameMode.SPECTATOR;
+    }
+
+    /**
+     * Handles interactions with blocks, including graves and graveyards.
+     *
+     * @param event  The PlayerInteractEvent.
+     * @param player The player interacting with the block.
+     */
+    private void handleBlockInteraction(PlayerInteractEvent event, Player player) {
+        Block block = event.getClickedBlock();
+        if (event.useInteractedBlock() != Event.Result.DENY && event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+            handleGraveInteraction(event, player, block);
+        }
+        if (event.getItem() != null && event.getItem().getType() == Material.BONE && plugin.getGraveyardManager().isModifyingGraveyard(player)) {
+            handleGraveyardModification(event, player, block);
+        }
+    }
+
+    /**
+     * Handles interactions with graves.
+     *
+     * @param event  The PlayerInteractEvent.
+     * @param player The player interacting with the block.
+     * @param block  The block being interacted with.
+     */
+    private void handleGraveInteraction(PlayerInteractEvent event, Player player, Block block) {
+        Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
+
+        if (grave == null) {
+            Block blockRelative = block.getRelative(event.getBlockFace());
+
+            if (!blockRelative.getType().isSolid()) {
+                grave = plugin.getBlockManager().getGraveFromBlock(blockRelative);
+            }
+        }
+
+        if (grave != null) {
+            event.setCancelled(plugin.getGraveManager().openGrave(player, block.getLocation(), grave));
+        }
+    }
+
+    /**
+     * Handles interactions for modifying graveyards.
+     *
+     * @param event  The PlayerInteractEvent.
+     * @param player The player interacting with the block.
+     * @param block  The block being interacted with.
+     */
+    private void handleGraveyardModification(PlayerInteractEvent event, Player player, Block block) {
+        Graveyard graveyard = plugin.getGraveyardManager().getModifyingGraveyard(player);
+        Location location = block.getLocation().clone();
+        Location locationRelative = block.getRelative(event.getBlockFace()).getLocation().clone();
+
+        if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+            if (graveyard.hasGraveLocation(location)) {
+                plugin.getGraveyardManager().removeLocationInGraveyard(player, location, graveyard);
+            } else if (graveyard.hasGraveLocation(locationRelative)) {
+                plugin.getGraveyardManager().removeLocationInGraveyard(player, locationRelative, graveyard);
+            } else {
+                if (plugin.getGraveyardManager().isLocationInGraveyard(locationRelative, graveyard)) {
+                    plugin.getGraveyardManager().addLocationInGraveyard(player, locationRelative, graveyard);
+                } else {
+                    player.sendMessage("outside graveyard " + graveyard.getName());
+                }
+            }
+        } else {
+            player.sendMessage("can't break while modifying a graveyard");
+        }
+
+        event.setCancelled(true);
+    }
+
+    /**
+     * Handles interactions with compasses to update or remove them based on the graves they are tracking.
+     *
+     * @param event  The PlayerInteractEvent.
+     * @param player The player interacting with the item.
+     */
+    private void handleCompassInteraction(PlayerInteractEvent event, Player player) {
+        ItemStack itemStack = event.getItem();
+        UUID uuid = plugin.getEntityManager().getGraveUUIDFromItemStack(itemStack);
+
+        if (uuid != null) {
+            if (plugin.getCacheManager().getGraveMap().containsKey(uuid)) {
+                Grave grave = plugin.getCacheManager().getGraveMap().get(uuid);
+                List<Location> locationList = plugin.getGraveManager().getGraveLocationList(player.getLocation(), grave);
+
+                if (!locationList.isEmpty()) {
+                    Location location = locationList.get(0);
+                    if (event.getClickedBlock() != null && plugin.getLocationManager().hasGrave(event.getClickedBlock().getLocation())
+                            && player.getInventory().getItemInMainHand().getType().toString().toLowerCase().contains("compass")) {
                         player.getInventory().remove(itemStack);
                         player.updateInventory();
+                    } else {
+                        player.getInventory().setItem(player.getInventory().getHeldItemSlot(),
+                                plugin.getEntityManager().createGraveCompass(player, location, grave));
+                        plugin.getEntityManager().runFunction(player, plugin.getConfig("compass.function", grave).getString("compass.function"), grave);
                     }
-                    event.setCancelled(true);
+                } else {
+                    player.getInventory().remove(itemStack);
+                    player.updateInventory();
                 }
+            } else {
+                player.getInventory().remove(itemStack);
+                player.updateInventory();
             }
+            event.setCancelled(true);
         }
     }
 }

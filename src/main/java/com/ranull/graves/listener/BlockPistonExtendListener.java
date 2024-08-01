@@ -34,15 +34,38 @@ public class BlockPistonExtendListener implements Listener {
         Block block = event.getBlock().getRelative(event.getDirection());
 
         // Check if the block being moved is a grave
-        if (plugin.getBlockManager().getGraveFromBlock(block) != null) {
+        if (isGraveBlock(block)) {
             event.setCancelled(true);
         } else {
             // Check if any nearby entity is a hologram of a grave
-            for (Entity entity : block.getWorld().getNearbyEntities(block.getLocation(), 0.5, 0.5, 0.5)) {
-                if (plugin.getHologramManager().getGrave(entity) != null) {
-                    event.setCancelled(true);
-                }
+            if (isNearGraveHologram(block)) {
+                event.setCancelled(true);
             }
         }
+    }
+
+    /**
+     * Checks if the block is a grave block.
+     *
+     * @param block The block to check.
+     * @return True if the block is a grave block, false otherwise.
+     */
+    private boolean isGraveBlock(Block block) {
+        return plugin.getBlockManager().getGraveFromBlock(block) != null;
+    }
+
+    /**
+     * Checks if the block is near a grave hologram.
+     *
+     * @param block The block to check.
+     * @return True if the block is near a grave hologram, false otherwise.
+     */
+    private boolean isNearGraveHologram(Block block) {
+        for (Entity entity : block.getWorld().getNearbyEntities(block.getLocation(), 0.5, 0.5, 0.5)) {
+            if (plugin.getHologramManager().getGrave(entity) != null) {
+                return true;
+            }
+        }
+        return false;
     }
 }

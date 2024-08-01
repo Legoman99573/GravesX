@@ -30,9 +30,19 @@ public class FurnitureBreakListener implements Listener {
     public void onFurnitureBreak(FurnitureBreakEvent event) {
         ItemFrame itemFrame = furnitureEngine.getItemFrame(event.getFurnitureLocation());
 
-        if (itemFrame != null) {
-            event.setCancelled(furnitureEngine.getGrave(event.getFurnitureLocation(),
-                    itemFrame.getUniqueId()) != null);
+        if (itemFrame != null && isFurnitureAssociatedWithGrave(event, itemFrame)) {
+            event.setCancelled(true);
         }
+    }
+
+    /**
+     * Checks if the furniture being broken is associated with a grave.
+     *
+     * @param event     The FurnitureBreakEvent.
+     * @param itemFrame The ItemFrame being broken.
+     * @return True if the furniture is associated with a grave, false otherwise.
+     */
+    private boolean isFurnitureAssociatedWithGrave(FurnitureBreakEvent event, ItemFrame itemFrame) {
+        return furnitureEngine.getGrave(event.getFurnitureLocation(), itemFrame.getUniqueId()) != null;
     }
 }

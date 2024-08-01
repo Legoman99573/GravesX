@@ -37,25 +37,55 @@ public class NPCInteractListener implements Listener {
      */
     @EventHandler(priority = EventPriority.LOW)
     public void onNPCInteract(NPC.Events.Interact event) {
-        if (event.getClickType() == NPC.Interact.ClickType.RIGHT_CLICK) {
-            NPC.Personal npcPersonal = (NPC.Personal) event.getNPC();
+        if (isRightClick(event)) {
+            handleNPCInteraction(event);
+        }
+    }
 
-            if (npcPersonal.hasGlobal()) {
-                NPC.Global npcGlobal = npcPersonal.getGlobal();
+    /**
+     * Checks if the interaction is a right-click.
+     *
+     * @param event The NPC.Events.Interact event.
+     * @return True if the interaction is a right-click, false otherwise.
+     */
+    private boolean isRightClick(NPC.Events.Interact event) {
+        return event.getClickType() == NPC.Interact.ClickType.RIGHT_CLICK;
+    }
 
-                if (npcGlobal.hasCustomData(plugin, "grave_uuid")) {
-                    UUID uuid = UUIDUtil.getUUID(npcGlobal.getCustomData(plugin, "grave_uuid"));
+    /**
+     * Handles the interaction with the NPC. If the NPC is associated with a grave, the event is cancelled
+     * and the grave is opened for the player.
+     *
+     * @param event The NPC.Events.Interact event.
+     */
+    private void handleNPCInteraction(NPC.Events.Interact event) {
+        NPC.Personal npcPersonal = (NPC.Personal) event.getNPC();
 
-                    if (uuid != null) {
-                        Grave grave = plugin.getCacheManager().getGraveMap().get(uuid);
+        if (npcPersonal.hasGlobal()) {
+            NPC.Global npcGlobal = npcPersonal.getGlobal();
 
-                        if (grave != null) {
-                            event.setCancelled(plugin.getGraveManager().openGrave(event.getPlayer(),
-                                    npcGlobal.getLocation(), grave));
-                        }
-                    }
+            if (npcGlobal.hasCustomData(plugin, "grave_uuid")) {
+                UUID uuid = UUIDUtil.getUUID(npcGlobal.getCustomData(plugin, "grave_uuid"));
+
+                if (uuid != null) {
+                    openGraveIfExists(event, npcGlobal, uuid);
                 }
             }
+        }
+    }
+
+    /**
+     * Opens the grave if it exists in the cache.
+     *
+     * @param event    The NPC.Events.Interact event.
+     * @param npcGlobal The global NPC instance.
+     * @param uuid     The UUID of the grave.
+     */
+    private void openGraveIfExists(NPC.Events.Interact event, NPC.Global npcGlobal, UUID uuid) {
+        Grave grave = plugin.getCacheManager().getGraveMap().get(uuid);
+
+        if (grave != null) {
+            event.setCancelled(plugin.getGraveManager().openGrave(event.getPlayer(), npcGlobal.getLocation(), grave));
         }
     }
 }

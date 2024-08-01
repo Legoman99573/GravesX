@@ -28,11 +28,27 @@ public class CreatureSpawnListener implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onCreatureSpawn(CreatureSpawnEvent event) {
-        // Ensure the entity is not dead
-        if (!event.getEntity().isDead()) {
-            // Store the spawn reason of the entity
-            plugin.getEntityManager().setDataString(event.getEntity(),
-                    "spawnReason", event.getSpawnReason().name());
+        if (shouldStoreSpawnReason(event)) {
+            storeSpawnReason(event);
         }
+    }
+
+    /**
+     * Checks if the spawn reason of the entity should be stored.
+     *
+     * @param event The CreatureSpawnEvent.
+     * @return True if the spawn reason should be stored, false otherwise.
+     */
+    private boolean shouldStoreSpawnReason(CreatureSpawnEvent event) {
+        return !event.getEntity().isDead();
+    }
+
+    /**
+     * Stores the spawn reason of the entity.
+     *
+     * @param event The CreatureSpawnEvent.
+     */
+    private void storeSpawnReason(CreatureSpawnEvent event) {
+        plugin.getEntityManager().setDataString(event.getEntity(), "spawnReason", event.getSpawnReason().name());
     }
 }

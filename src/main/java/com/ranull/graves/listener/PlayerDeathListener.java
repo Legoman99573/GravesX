@@ -1,7 +1,6 @@
 package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
-import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -9,9 +8,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Listener for handling PlayerDeathEvent to manage items dropped upon player death.
@@ -38,28 +35,40 @@ public class PlayerDeathListener implements Listener {
      * @param event The PlayerDeathEvent to handle.
      */
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
-    public void onPlayerDeathEvent(PlayerDeathEvent event) {
+    public void onPlayerDeath(PlayerDeathEvent event) {
         List<ItemStack> itemStackList = event.getDrops();
-        List<ItemStack> itemsToRemove = new ArrayList<>(); // To prevent ConcurrentModificationException from occuring
+        List<ItemStack> itemsToRemove = new ArrayList<>();
 
         for (ItemStack itemStack : itemStackList) {
-            ItemStack first = itemStackList.get(0);
-            if (first != null && first.getType().toString().toLowerCase().contains("compass")) {
-                if (plugin.getEntityManager().getGraveUUIDFromItemStack(first) != null
-                        && plugin.getConfig("compass.destroy", event.getEntity()).getBoolean("compass.destroy")) {
-                    itemsToRemove.add(first);
-                }
-            } else {
-                if (itemStack != null && itemStack.getType().toString().toLowerCase().contains("compass")) {
-                    if (plugin.getEntityManager().getGraveUUIDFromItemStack(itemStack) != null
-                            && plugin.getConfig("compass.destroy", event.getEntity()).getBoolean("compass.destroy")) {
-                        itemsToRemove.add(itemStack);
-                    }
-                }
+            if (isCompassToRemove(event, itemStack)) {
+                itemsToRemove.add(itemStack);
             }
         }
 
         itemStackList.removeAll(itemsToRemove);
+        cacheRemainingItems(event, itemStackList);
+    }
+
+    /**
+     * Checks if the given item stack is a compass that should be removed based on the plugin configuration.
+     *
+     * @param event The PlayerDeathEvent.
+     * @param itemStack The item stack to check.
+     * @return True if the item stack is a compass that should be removed, false otherwise.
+     */
+    private boolean isCompassToRemove(PlayerDeathEvent event, ItemStack itemStack) {
+        return itemStack != null && itemStack.getType().toString().toLowerCase().contains("compass")
+                && plugin.getEntityManager().getGraveUUIDFromItemStack(itemStack) != null
+                && plugin.getConfig("compass.destroy", event.getEntity()).getBoolean("compass.destroy");
+    }
+
+    /**
+     * Caches the remaining items from the drop list for later reference.
+     *
+     * @param event The PlayerDeathEvent.
+     * @param itemStackList The list of remaining item stacks.
+     */
+    private void cacheRemainingItems(PlayerDeathEvent event, List<ItemStack> itemStackList) {
         plugin.getCacheManager().getRemovedItemStackMap()
                 .put(event.getEntity().getUniqueId(), new ArrayList<>(itemStackList));
     }

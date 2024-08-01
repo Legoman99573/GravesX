@@ -38,11 +38,33 @@ public class PlayerInteractEntityListener implements Listener {
     public void onFurnitureInteract(PlayerInteractEntityEvent event) {
         Entity entity = event.getRightClicked();
 
-        if (entity instanceof ItemFrame) {
-            Grave grave = oraxen.getGrave(entity);
+        if (isItemFrame(entity)) {
+            handleFurnitureInteraction(event, entity);
+        }
+    }
 
-            event.setCancelled(grave != null && plugin.getGraveManager()
-                    .openGrave(event.getPlayer(), entity.getLocation(), grave));
+    /**
+     * Checks if the entity is an ItemFrame.
+     *
+     * @param entity The entity to check.
+     * @return True if the entity is an ItemFrame, false otherwise.
+     */
+    private boolean isItemFrame(Entity entity) {
+        return entity instanceof ItemFrame;
+    }
+
+    /**
+     * Handles the interaction with the furniture. If the furniture is associated with a grave,
+     * the event is cancelled and the grave is opened for the player.
+     *
+     * @param event  The PlayerInteractEntityEvent.
+     * @param entity The entity being interacted with.
+     */
+    private void handleFurnitureInteraction(PlayerInteractEntityEvent event, Entity entity) {
+        Grave grave = oraxen.getGrave(entity);
+
+        if (grave != null) {
+            event.setCancelled(plugin.getGraveManager().openGrave(event.getPlayer(), entity.getLocation(), grave));
         }
     }
 }

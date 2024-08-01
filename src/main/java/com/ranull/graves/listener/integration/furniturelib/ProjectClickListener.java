@@ -34,12 +34,32 @@ public class ProjectClickListener implements Listener {
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onProjectClick(ProjectClickEvent event) {
-        if (event.getID().getUUID() != null) {
-            Grave grave = furnitureLib.getGrave(event.getLocation(), event.getID().getUUID());
+        if (hasUUID(event)) {
+            handleProjectClick(event);
+        }
+    }
 
-            if (grave != null) {
-                event.setCancelled(plugin.getGraveManager().openGrave(event.getPlayer(), event.getLocation(), grave));
-            }
+    /**
+     * Checks if the ProjectClickEvent has a UUID associated with it.
+     *
+     * @param event The ProjectClickEvent.
+     * @return True if the event has a UUID, false otherwise.
+     */
+    private boolean hasUUID(ProjectClickEvent event) {
+        return event.getID().getUUID() != null;
+    }
+
+    /**
+     * Handles the ProjectClickEvent. If the project is associated with a grave,
+     * cancels the event and opens the grave for the player.
+     *
+     * @param event The ProjectClickEvent.
+     */
+    private void handleProjectClick(ProjectClickEvent event) {
+        Grave grave = furnitureLib.getGrave(event.getLocation(), event.getID().getUUID());
+
+        if (grave != null) {
+            event.setCancelled(plugin.getGraveManager().openGrave(event.getPlayer(), event.getLocation(), grave));
         }
     }
 }

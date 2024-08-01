@@ -39,43 +39,80 @@ public class InventoryClickListener implements Listener {
 
         if (inventoryHolder != null) {
             if (inventoryHolder instanceof Grave) {
-                Grave grave = (Grave) inventoryHolder;
-
-                // Schedule a task to update the grave's inventory in the data manager
-                plugin.getServer().getScheduler().runTaskLater(plugin, () ->
-                        plugin.getDataManager().updateGrave(grave, "inventory",
-                                InventoryUtil.inventoryToString(grave.getInventory())), 1L);
+                handleGraveInventoryClick(event, (Grave) inventoryHolder);
             } else if (event.getWhoClicked() instanceof Player) {
-                Player player = (Player) event.getWhoClicked();
-
-                if (inventoryHolder instanceof GraveList) {
-                    GraveList graveList = (GraveList) event.getInventory().getHolder();
-                    Grave grave = graveList.getGrave(event.getSlot());
-
-                    if (grave != null) {
-                        // Run function associated with the clicked slot in GraveList
-                        plugin.getEntityManager().runFunction(player, plugin.getConfig("gui.menu.list.function", grave)
-                                .getString("gui.menu.list.function", "menu"), grave);
-                        plugin.getGUIManager().setGraveListItems(graveList.getInventory(), graveList.getUUID());
-                    }
-
-                    event.setCancelled(true);
-                } else if (inventoryHolder instanceof GraveMenu) {
-                    GraveMenu graveMenu = (GraveMenu) event.getInventory().getHolder();
-                    Grave grave = graveMenu.getGrave();
-
-                    if (grave != null) {
-                        // Run function associated with the clicked slot in GraveMenu
-                        plugin.getEntityManager().runFunction(player,
-                                plugin.getConfig("gui.menu.grave.slot." + event.getSlot() + ".function", grave)
-                                        .getString("gui.menu.grave.slot." + event.getSlot()
-                                                + ".function", "none"), grave);
-                        plugin.getGUIManager().setGraveMenuItems(graveMenu.getInventory(), grave);
-                    }
-
-                    event.setCancelled(true);
-                }
+                handlePlayerInventoryClick(event, (Player) event.getWhoClicked(), inventoryHolder);
             }
         }
+    }
+
+    /**
+     * Handles inventory clicks when the inventory holder is a Grave.
+     *
+     * @param event  The InventoryClickEvent.
+     * @param grave  The Grave inventory holder.
+     */
+    private void handleGraveInventoryClick(InventoryClickEvent event, Grave grave) {
+        // Schedule a task to update the grave's inventory in the data manager
+        plugin.getServer().getScheduler().runTaskLater(plugin, () ->
+                plugin.getDataManager().updateGrave(grave, "inventory",
+                        InventoryUtil.inventoryToString(grave.getInventory())), 1L);
+    }
+
+    /**
+     * Handles inventory clicks when the player interacts with GraveList or GraveMenu inventories.
+     *
+     * @param event           The InventoryClickEvent.
+     * @param player          The player interacting with the inventory.
+     * @param inventoryHolder The inventory holder.
+     */
+    private void handlePlayerInventoryClick(InventoryClickEvent event, Player player, InventoryHolder inventoryHolder) {
+        if (inventoryHolder instanceof GraveList) {
+            handleGraveListClick(event, player, (GraveList) inventoryHolder);
+        } else if (inventoryHolder instanceof GraveMenu) {
+            handleGraveMenuClick(event, player, (GraveMenu) inventoryHolder);
+        }
+    }
+
+    /**
+     * Handles inventory clicks for GraveList inventories.
+     *
+     * @param event     The InventoryClickEvent.
+     * @param player    The player interacting with the inventory.
+     * @param graveList The GraveList inventory holder.
+     */
+    private void handleGraveListClick(InventoryClickEvent event, Player player, GraveList graveList) {
+        Grave grave = graveList.getGrave(event.getSlot());
+
+        if (grave != null) {
+            // Run function associated with the clicked slot in GraveList
+            plugin.getEntityManager().runFunction(player, plugin.getConfig("gui.menu.list.function", grave)
+                    .getString("gui.menu.list.function", "menu"), grave);
+            plugin.getGUIManager().setGraveListItems(graveList.getInventory(), graveList.getUUID());
+        }
+
+        event.setCancelled(true);
+    }
+
+    /**
+     * Handles inventory clicks for GraveMenu inventories.
+     *
+     * @param event     The InventoryClickEvent.
+     * @param player    The player interacting with the inventory.
+     * @param graveMenu The GraveMenu inventory holder.
+     */
+    private void handleGraveMenuClick(InventoryClickEvent event, Player player, GraveMenu graveMenu) {
+        Grave grave = graveMenu.getGrave();
+
+        if (grave != null) {
+            // Run function associated with the clicked slot in GraveMenu
+            plugin.getEntityManager().runFunction(player,
+                    plugin.getConfig("gui.menu.grave.slot." + event.getSlot() + ".function", grave)
+                            .getString("gui.menu.grave.slot." + event.getSlot()
+                                    + ".function", "none"), grave);
+            plugin.getGUIManager().setGraveMenuItems(graveMenu.getInventory(), grave);
+        }
+
+        event.setCancelled(true);
     }
 }

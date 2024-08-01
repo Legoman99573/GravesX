@@ -43,9 +43,7 @@ public class PlayerInteractAtEntityListener implements Listener {
     public void onPlayerInteractAtEntity(PlayerInteractAtEntityEvent event) {
         Player player = event.getPlayer();
 
-        if ((!plugin.getVersionManager().hasSecondHand() || event.getHand() == EquipmentSlot.HAND)
-                && event.getRightClicked() instanceof ArmorStand
-                && (plugin.getVersionManager().is_v1_7() || player.getGameMode() != GameMode.SPECTATOR)) {
+        if (isMainHandInteraction(event) && isArmorStand(event.getRightClicked()) && isNotSpectatorMode(player)) {
             Entity entity = event.getRightClicked();
             Grave grave = plugin.getEntityDataManager().getGrave(entity);
 
@@ -53,5 +51,35 @@ public class PlayerInteractAtEntityListener implements Listener {
                 event.setCancelled(plugin.getGraveManager().openGrave(player, entity.getLocation(), grave));
             }
         }
+    }
+
+    /**
+     * Checks if the interaction is performed with the main hand.
+     *
+     * @param event The PlayerInteractAtEntityEvent.
+     * @return True if the interaction is performed with the main hand, false otherwise.
+     */
+    private boolean isMainHandInteraction(PlayerInteractAtEntityEvent event) {
+        return !plugin.getVersionManager().hasSecondHand() || event.getHand() == EquipmentSlot.HAND;
+    }
+
+    /**
+     * Checks if the entity being interacted with is an ArmorStand.
+     *
+     * @param entity The entity being interacted with.
+     * @return True if the entity is an ArmorStand, false otherwise.
+     */
+    private boolean isArmorStand(Entity entity) {
+        return entity instanceof ArmorStand;
+    }
+
+    /**
+     * Checks if the player is not in Spectator mode.
+     *
+     * @param player The player to check.
+     * @return True if the player is not in Spectator mode, false otherwise.
+     */
+    private boolean isNotSpectatorMode(Player player) {
+        return plugin.getVersionManager().is_v1_7() || player.getGameMode() != GameMode.SPECTATOR;
     }
 }

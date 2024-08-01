@@ -38,49 +38,9 @@ public class BlockBreakListener implements Listener {
         Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
 
         if (grave != null) {
-            // Check if breaking the grave is allowed
-            if (plugin.getConfig("grave.break", grave).getBoolean("grave.break")) {
+            if (isGraveBreakAllowed(grave)) {
                 if (plugin.getEntityManager().canOpenGrave(player, grave)) {
-                    GraveBreakEvent graveBreakEvent = new GraveBreakEvent(block, player, grave);
-
-                    // Set whether items should be dropped
-                    graveBreakEvent.setDropItems(plugin.getConfig("drop.break", grave).getBoolean("drop.break"));
-                    plugin.getServer().getPluginManager().callEvent(graveBreakEvent);
-
-                    if (!graveBreakEvent.isCancelled()) {
-                        if (plugin.getConfig("drop.auto-loot.enabled", grave).getBoolean("drop.auto-loot.enabled")) {
-                            player.sendMessage("here");
-                            GraveAutoLootEvent graveAutoLootEvent = new GraveAutoLootEvent(player, block.getLocation(), grave);
-
-                            plugin.getServer().getPluginManager().callEvent(graveAutoLootEvent);
-                            if (!graveAutoLootEvent.isCancelled()) {
-                                plugin.getGraveManager().autoLootGrave(player, block.getLocation(), grave);
-
-                                if (graveBreakEvent.isDropItems() && plugin.getConfig("drop.auto-loot.break", grave)
-                                        .getBoolean("drop.auto-loot.break")) {
-                                    plugin.getGraveManager().breakGrave(block.getLocation(), grave);
-                                } else {
-                                    event.setCancelled(true);
-                                    return;
-                                }
-                            }
-                        } else if (graveBreakEvent.isDropItems()) {
-                            plugin.getGraveManager().breakGrave(block.getLocation(), grave);
-                        } else {
-                            plugin.getGraveManager().removeGrave(grave);
-                        }
-
-                        if (graveBreakEvent.getBlockExp() > 0) {
-                            plugin.getGraveManager().dropGraveExperience(block.getLocation(), grave);
-                        }
-
-                        plugin.getGraveManager().closeGrave(grave);
-                        plugin.getGraveManager().playEffect("effect.loot", block.getLocation(), grave);
-                        plugin.getEntityManager().spawnZombie(block.getLocation(), player, player, grave);
-                        plugin.getEntityManager().runCommands("event.command.break", player, block.getLocation(), grave);
-                    } else {
-                        event.setCancelled(true);
-                    }
+                    handleGraveBreak(event, player, block, grave);
                 } else {
                     plugin.getEntityManager().sendMessage("message.protection", player, player.getLocation(), grave);
                     event.setCancelled(true);
@@ -89,5 +49,86 @@ public class BlockBreakListener implements Listener {
                 event.setCancelled(true);
             }
         }
+    }
+
+    /**
+     * Checks if breaking the grave is allowed based on the configuration.
+     *
+     * @param grave The grave to check.
+     * @return True if breaking the grave is allowed, false otherwise.
+     */
+    private boolean isGraveBreakAllowed(Grave grave) {
+        return plugin.getConfig("grave.break", grave).getBoolean("grave.break");
+    }
+
+    /**
+     * Handles the process of breaking a grave.
+     *
+     * @param event   The BlockBreakEvent.
+     * @param player  The player breaking the block.
+     * @param block   The block being broken.
+     * @param grave   The grave associated with the block.
+     */
+    private void handleGraveBreak(BlockBreakEvent event, Player player, Block block, Grave grave) {
+        GraveBreakEvent graveBreakEvent = new GraveBreakEvent(block, player, grave);
+        graveBreakEvent.setDropItems(plugin.getConfig("drop.break", grave).getBoolean("drop.break"));
+        plugin.getServer().getPluginManager().callEvent(graveBreakEvent);
+
+        if (!graveBreakEvent.isCancelled()) {
+            if (plugin.getConfig("drop.auto-loot.enabled", grave).getBoolean("drop.auto-loot.enabled")) {
+                handleAutoLoot(event, player, block, grave, graveBreakEvent);
+            } else if (graveBreakEvent.isDropItems()) {
+                plugin.getGraveManager().breakGrave(block.getLocation(), grave);
+            } else {
+                plugin.getGraveManager().removeGrave(grave);
+            }
+
+            if (graveBreakEvent.getBlockExp() > 0) {
+                plugin.getGraveManager().dropGraveExperience(block.getLocation(), grave);
+            }
+
+            finalizeGraveBreak(player, block, grave);
+        } else {
+            event.setCancelled(true);
+        }
+    }
+
+    /**
+     * Handles the auto-loot process when breaking a grave.
+     *
+     * @param event           The BlockBreakEvent.
+     * @param player          The player breaking the block.
+     * @param block           The block being broken.
+     * @param grave           The grave associated with the block.
+     * @param graveBreakEvent The GraveBreakEvent.
+     */
+    private void handleAutoLoot(BlockBreakEvent event, Player player, Block block, Grave grave, GraveBreakEvent graveBreakEvent) {
+        player.sendMessage("here");
+        GraveAutoLootEvent graveAutoLootEvent = new GraveAutoLootEvent(player, block.getLocation(), grave);
+        plugin.getServer().getPluginManager().callEvent(graveAutoLootEvent);
+
+        if (!graveAutoLootEvent.isCancelled()) {
+            plugin.getGraveManager().autoLootGrave(player, block.getLocation(), grave);
+
+            if (graveBreakEvent.isDropItems() && plugin.getConfig("drop.auto-loot.break", grave).getBoolean("drop.auto-loot.break")) {
+                plugin.getGraveManager().breakGrave(block.getLocation(), grave);
+            } else {
+                event.setCancelled(true);
+            }
+        }
+    }
+
+    /**
+     * Finalizes the process of breaking a grave by closing the grave, playing effects, and running commands.
+     *
+     * @param player The player breaking the block.
+     * @param block  The block being broken.
+     * @param grave  The grave associated with the block.
+     */
+    private void finalizeGraveBreak(Player player, Block block, Grave grave) {
+        plugin.getGraveManager().closeGrave(grave);
+        plugin.getGraveManager().playEffect("effect.loot", block.getLocation(), grave);
+        plugin.getEntityManager().spawnZombie(block.getLocation(), player, player, grave);
+        plugin.getEntityManager().runCommands("event.command.break", player, block.getLocation(), grave);
     }
 }

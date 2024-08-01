@@ -30,6 +30,18 @@ public class EntityDamageListener implements Listener {
      */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onEntityDamage(EntityDamageEvent event) {
-        event.setCancelled(event.getEntity() instanceof ItemFrame && oraxen.getGrave(event.getEntity()) != null);
+        if (isItemFrameAndHasGrave(event)) {
+            event.setCancelled(true);
+        }
+    }
+
+    /**
+     * Checks if the entity is an ItemFrame and has an associated grave.
+     *
+     * @param event The EntityDamageEvent.
+     * @return True if the entity is an ItemFrame and has an associated grave, false otherwise.
+     */
+    private boolean isItemFrameAndHasGrave(EntityDamageEvent event) {
+        return event.getEntity() instanceof ItemFrame && oraxen.getGrave(event.getEntity()) != null;
     }
 }

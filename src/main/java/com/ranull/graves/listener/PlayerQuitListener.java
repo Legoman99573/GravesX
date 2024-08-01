@@ -34,10 +34,25 @@ public class PlayerQuitListener implements Listener {
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
 
-        // Remove the player's last solid location
-        plugin.getLocationManager().removeLastSolidLocation(player);
+        removeLastSolidLocation(player);
+        stopModifyingGraveyardIfNecessary(player);
+    }
 
-        // Stop modifying graveyard if the player was in the process of modifying one
+    /**
+     * Removes the player's last solid location from the plugin's location manager.
+     *
+     * @param player The player whose last solid location should be removed.
+     */
+    private void removeLastSolidLocation(Player player) {
+        plugin.getLocationManager().removeLastSolidLocation(player);
+    }
+
+    /**
+     * Stops the player from modifying a graveyard if they were in the process of doing so.
+     *
+     * @param player The player to check.
+     */
+    private void stopModifyingGraveyardIfNecessary(Player player) {
         if (plugin.getGraveyardManager().isModifyingGraveyard(player)) {
             plugin.getGraveyardManager().stopModifyingGraveyard(player);
         }

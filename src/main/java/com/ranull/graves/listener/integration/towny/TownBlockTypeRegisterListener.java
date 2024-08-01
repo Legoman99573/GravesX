@@ -24,10 +24,10 @@ public class TownBlockTypeRegisterListener implements Listener {
     /**
      * Handles TownBlockTypeRegisterEvent. Registers the graveyard block type with Towny.
      *
-     * @param ignored The TownBlockTypeRegisterEvent to handle.
+     * @param event The TownBlockTypeRegisterEvent to handle.
      */
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
-    public void onTownBlockTypeRegister(TownBlockTypeRegisterEvent ignored) {
+    public void onTownBlockTypeRegister(TownBlockTypeRegisterEvent event) {
         towny.registerGraveyardBlockType();
     }
 }

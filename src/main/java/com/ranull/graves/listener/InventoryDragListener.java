@@ -37,16 +37,41 @@ public class InventoryDragListener implements Listener {
     public void onInventoryClick(InventoryClickEvent event) {
         InventoryHolder inventoryHolder = event.getInventory().getHolder();
 
-        if (inventoryHolder instanceof Grave) {
-            Grave grave = (Grave) inventoryHolder;
-
-            // Update the grave inventory in the database after a short delay
-            plugin.getServer().getScheduler().runTaskLater(plugin, () ->
-                    plugin.getDataManager().updateGrave(grave, "inventory",
-                            InventoryUtil.inventoryToString(grave.getInventory())), 1L);
-        } else if (inventoryHolder instanceof GraveList) {
-            // Cancel interaction with GraveList inventories
+        if (isGraveInventory(inventoryHolder)) {
+            handleGraveInventoryInteraction((Grave) inventoryHolder);
+        } else if (isGraveListInventory(inventoryHolder)) {
             event.setCancelled(true);
         }
+    }
+
+    /**
+     * Checks if the inventory holder is a Grave.
+     *
+     * @param inventoryHolder The inventory holder to check.
+     * @return True if the inventory holder is a Grave, false otherwise.
+     */
+    private boolean isGraveInventory(InventoryHolder inventoryHolder) {
+        return inventoryHolder instanceof Grave;
+    }
+
+    /**
+     * Checks if the inventory holder is a GraveList.
+     *
+     * @param inventoryHolder The inventory holder to check.
+     * @return True if the inventory holder is a GraveList, false otherwise.
+     */
+    private boolean isGraveListInventory(InventoryHolder inventoryHolder) {
+        return inventoryHolder instanceof GraveList;
+    }
+
+    /**
+     * Handles interactions with Grave inventories by updating the grave inventory in the database.
+     *
+     * @param grave The grave whose inventory was interacted with.
+     */
+    private void handleGraveInventoryInteraction(Grave grave) {
+        plugin.getServer().getScheduler().runTaskLater(plugin, () ->
+                plugin.getDataManager().updateGrave(grave, "inventory",
+                        InventoryUtil.inventoryToString(grave.getInventory())), 1L);
     }
 }

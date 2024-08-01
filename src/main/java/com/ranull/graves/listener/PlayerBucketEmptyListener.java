@@ -32,13 +32,42 @@ public class PlayerBucketEmptyListener implements Listener {
      */
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onPlayerBucketEmpty(PlayerBucketEmptyEvent event) {
-        Block block = event.getBlockClicked().getRelative(event.getBlockFace());
+        Block block = getTargetBlock(event);
 
-        // Check if the block is part of a grave
-        if (plugin.getBlockManager().getGraveFromBlock(block) != null) {
-            block.getState().update();
-            // Cancel the bucket emptying event
-            event.setCancelled(true);
+        if (isGraveBlock(block)) {
+            preventBucketEmpty(event, block);
         }
+    }
+
+    /**
+     * Gets the block that the player is interacting with when emptying the bucket.
+     *
+     * @param event The PlayerBucketEmptyEvent.
+     * @return The block being interacted with.
+     */
+    private Block getTargetBlock(PlayerBucketEmptyEvent event) {
+        return event.getBlockClicked().getRelative(event.getBlockFace());
+    }
+
+    /**
+     * Checks if the block is part of a grave.
+     *
+     * @param block The block to check.
+     * @return True if the block is part of a grave, false otherwise.
+     */
+    private boolean isGraveBlock(Block block) {
+        return plugin.getBlockManager().getGraveFromBlock(block) != null;
+    }
+
+    /**
+     * Prevents the bucket from being emptied on the grave block by cancelling the event
+     * and updating the block's state.
+     *
+     * @param event The PlayerBucketEmptyEvent.
+     * @param block The block being interacted with.
+     */
+    private void preventBucketEmpty(PlayerBucketEmptyEvent event, Block block) {
+        block.getState().update();
+        event.setCancelled(true);
     }
 }

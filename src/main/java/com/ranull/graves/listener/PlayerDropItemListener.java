@@ -34,8 +34,18 @@ public class PlayerDropItemListener implements Listener {
     public void onPlayerDropItem(PlayerDropItemEvent event) {
         ItemStack itemStack = event.getItemDrop().getItemStack();
 
-        if (plugin.getEntityManager().getGraveUUIDFromItemStack(itemStack) != null) {
+        if (isGraveItem(itemStack)) {
             event.getItemDrop().remove();
         }
+    }
+
+    /**
+     * Checks if the item stack is associated with a grave.
+     *
+     * @param itemStack The item stack to check.
+     * @return True if the item stack is associated with a grave, false otherwise.
+     */
+    private boolean isGraveItem(ItemStack itemStack) {
+        return plugin.getEntityManager().getGraveUUIDFromItemStack(itemStack) != null;
     }
 }

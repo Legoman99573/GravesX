@@ -43,36 +43,66 @@ public class BlockExplodeListener implements Listener {
             if (grave != null) {
                 Location location = block.getLocation();
 
-                // Remove newly created graves from explosion impact
-                if ((System.currentTimeMillis() - grave.getTimeCreation()) < 1000) {
+                if (isNewGrave(grave)) {
                     iterator.remove();
-                } else if (plugin.getConfig("explode", grave).getBoolean("explode")) {
-                    GraveExplodeEvent graveExplodeEvent = new GraveExplodeEvent(location, null, grave);
-
-                    plugin.getServer().getPluginManager().callEvent(graveExplodeEvent);
-
-                    if (!graveExplodeEvent.isCancelled()) {
-                        if (plugin.getConfig("drop.explode", grave).getBoolean("drop.explode")) {
-                            plugin.getGraveManager().breakGrave(location, grave);
-                        } else {
-                            plugin.getGraveManager().removeGrave(grave);
-                        }
-
-                        plugin.getGraveManager().closeGrave(grave);
-                        plugin.getGraveManager().playEffect("effect.loot", location, grave);
-                        plugin.getEntityManager().runCommands("event.command.explode",
-                                event.getBlock().getType().name(), location, grave);
-
-                        if (plugin.getConfig("zombie.explode", grave).getBoolean("zombie.explode")) {
-                            plugin.getEntityManager().spawnZombie(location, grave);
-                        }
-                    } else {
-                        iterator.remove();
-                    }
+                } else if (shouldExplode(grave)) {
+                    handleGraveExplosion(event, iterator, block, grave, location);
                 } else {
                     iterator.remove();
                 }
             }
+        }
+    }
+
+    /**
+     * Checks if the grave is newly created.
+     *
+     * @param grave The grave to check.
+     * @return True if the grave is newly created, false otherwise.
+     */
+    private boolean isNewGrave(Grave grave) {
+        return (System.currentTimeMillis() - grave.getTimeCreation()) < 1000;
+    }
+
+    /**
+     * Checks if the grave should explode based on the configuration.
+     *
+     * @param grave The grave to check.
+     * @return True if the grave should explode, false otherwise.
+     */
+    private boolean shouldExplode(Grave grave) {
+        return plugin.getConfig("explode", grave).getBoolean("explode");
+    }
+
+    /**
+     * Handles the explosion of a grave.
+     *
+     * @param event     The BlockExplodeEvent.
+     * @param iterator  The iterator for the blocks in the explosion.
+     * @param block     The block that exploded.
+     * @param grave     The grave associated with the block.
+     * @param location  The location of the grave.
+     */
+    private void handleGraveExplosion(BlockExplodeEvent event, Iterator<Block> iterator, Block block, Grave grave, Location location) {
+        GraveExplodeEvent graveExplodeEvent = new GraveExplodeEvent(location, null, grave);
+        plugin.getServer().getPluginManager().callEvent(graveExplodeEvent);
+
+        if (!graveExplodeEvent.isCancelled()) {
+            if (plugin.getConfig("drop.explode", grave).getBoolean("drop.explode")) {
+                plugin.getGraveManager().breakGrave(location, grave);
+            } else {
+                plugin.getGraveManager().removeGrave(grave);
+            }
+
+            plugin.getGraveManager().closeGrave(grave);
+            plugin.getGraveManager().playEffect("effect.loot", location, grave);
+            plugin.getEntityManager().runCommands("event.command.explode", event.getBlock().getType().name(), location, grave);
+
+            if (plugin.getConfig("zombie.explode", grave).getBoolean("zombie.explode")) {
+                plugin.getEntityManager().spawnZombie(location, grave);
+            }
+        } else {
+            iterator.remove();
         }
     }
 }
