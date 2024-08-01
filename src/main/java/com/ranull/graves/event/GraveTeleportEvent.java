@@ -21,7 +21,6 @@ public class GraveTeleportEvent extends GraveEvent {
      * Constructs a new {@code GraveTeleportEvent}.
      *
      * @param grave    The grave associated with the event.
-     * @param location The location to which the player is teleporting.
      * @param entity   The entity who is teleporting to the grave.
      */
     public GraveTeleportEvent(Grave grave, Entity entity) {

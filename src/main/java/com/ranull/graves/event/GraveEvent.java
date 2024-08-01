@@ -19,7 +19,9 @@ import org.jetbrains.annotations.Nullable;
  * The base class for all grave-related events.
  * <p>
  * This class provides common properties for grave events, such as the grave itself,
- * the location of the event, and the player involved.
+ * the location of the event, the entity involved, and additional information like
+ * inventory views and blocks. This class is cancellable, allowing event listeners
+ * to prevent the event from proceeding.
  * </p>
  */
 public abstract class GraveEvent extends Event implements Cancellable {
@@ -36,6 +38,19 @@ public abstract class GraveEvent extends Event implements Cancellable {
     private boolean isCancelled;
     private boolean dropItems;
 
+    /**
+     * Constructs a new {@code GraveEvent}.
+     *
+     * @param grave           The grave associated with the event.
+     * @param entity          The entity involved in the event, if any.
+     * @param location        The location of the event.
+     * @param inventoryView   The inventory view associated with the event, if any.
+     * @param livingEntity    The living entity associated with the event, if any.
+     * @param blockType       The type of block involved in the event, if any.
+     * @param block           The block involved in the event, if any.
+     * @param targetEntity    The entity targeted by the event, if any.
+     * @param player          The player involved in the event, if any.
+     */
     public GraveEvent(Grave grave, @Nullable Entity entity, @Nullable Location location, @Nullable InventoryView inventoryView, @Nullable LivingEntity livingEntity, @Nullable BlockData.BlockType blockType, @Nullable Block block, @Nullable LivingEntity targetEntity, @Nullable Player player) {
         this.grave = grave;
         this.entity = entity;
@@ -47,58 +62,110 @@ public abstract class GraveEvent extends Event implements Cancellable {
         this.targetEntity = targetEntity;
         this.player = player;
         this.isCancelled = false;
+        this.dropItems = true;
     }
 
+    /**
+     * Gets the grave associated with the event.
+     *
+     * @return The grave associated with the event.
+     */
     public Grave getGrave() {
         return grave;
     }
 
+    /**
+     * Gets the entity involved in the event.
+     *
+     * @return The entity involved in the event, or null if not applicable.
+     */
     public Entity getEntity() {
         return entity;
     }
 
+    /**
+     * Gets the entity targeted by the event.
+     *
+     * @return The target entity, or null if not applicable.
+     */
     public LivingEntity getTargetEntity() {
         return targetEntity;
     }
 
+    /**
+     * Gets the type of the target entity.
+     *
+     * @return The type of the target entity, or null if not applicable.
+     */
     public EntityType getEntityType() {
         return targetEntity != null ? targetEntity.getType() : null;
     }
 
+    /**
+     * Gets the location of the event.
+     *
+     * @return The location of the event.
+     */
     public Location getLocation() {
         return location;
     }
 
+    /**
+     * Sets the location of the event.
+     *
+     * @param location The new location of the event.
+     */
     public void setLocation(Location location) {
         this.location = location;
     }
 
+    /**
+     * Gets the inventory view associated with the event.
+     *
+     * @return The inventory view, or null if not applicable.
+     */
     @Nullable
     public InventoryView getInventoryView() {
         return inventoryView;
     }
 
+    /**
+     * Gets the living entity associated with the event.
+     *
+     * @return The living entity, or null if not applicable.
+     */
     @Nullable
     public LivingEntity getLivingEntity() {
         return livingEntity;
     }
 
+    /**
+     * Gets the type of block involved in the event.
+     *
+     * @return The block type, or null if not applicable.
+     */
     @Nullable
     public BlockData.BlockType getBlockType() {
         return blockType;
     }
 
-    public int getBlockExp() {
-        return grave.getExperience();
+    /**
+     * Gets the block involved in the event.
+     *
+     * @return The block involved in the event, or null if not applicable.
+     */
+    @Nullable
+    public Block getBlock() {
+        return block;
     }
 
     /**
-     * Gets the block being broken.
+     * Gets the experience points associated with the grave.
      *
-     * @return The block being broken.
+     * @return The experience points.
      */
-    public Block getBlock() {
-        return block;
+    public int getBlockExp() {
+        return grave.getExperience();
     }
 
     /**
@@ -119,26 +186,51 @@ public abstract class GraveEvent extends Event implements Cancellable {
         this.dropItems = dropItems;
     }
 
+    /**
+     * Gets the player involved in the event.
+     *
+     * @return The player involved in the event, or null if not applicable.
+     */
     @Nullable
     public Player getPlayer() {
         return player;
     }
 
+    /**
+     * Checks whether the event is cancelled.
+     *
+     * @return True if the event is cancelled, false otherwise.
+     */
     @Override
     public boolean isCancelled() {
         return isCancelled;
     }
 
+    /**
+     * Sets whether the event is cancelled.
+     *
+     * @param cancel True to cancel the event, false otherwise.
+     */
     @Override
     public void setCancelled(boolean cancel) {
         isCancelled = cancel;
     }
 
+    /**
+     * Gets the list of handlers for this event.
+     *
+     * @return The handler list for this event.
+     */
     @Override
     public @NotNull HandlerList getHandlers() {
         return HANDLERS;
     }
 
+    /**
+     * Gets the static list of handlers for this event.
+     *
+     * @return The static handler list for this event.
+     */
     public static @NotNull HandlerList getHandlerList() {
         return HANDLERS;
     }
