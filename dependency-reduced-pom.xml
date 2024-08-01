@@ -42,7 +42,7 @@
       </plugin>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>3.4.1</version>
+        <version>3.6.0</version>
         <executions>
           <execution>
             <phase>package</phase>
@@ -133,6 +133,11 @@
   </build>
   <repositories>
     <repository>
+      <id>ugandavrc-maven-releases</id>
+      <name>UgandaVRC Repository</name>
+      <url>https://mvn.ugandavrc.com/releases</url>
+    </repository>
+    <repository>
       <id>spigotmc-repo</id>
       <url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
     </repository>
@@ -148,30 +153,6 @@
       <id>oraxen</id>
       <name>Oraxen Repository</name>
       <url>https://repo.oraxen.com/releases</url>
-    </repository>
-    <repository>
-      <releases>
-        <updatePolicy>always</updatePolicy>
-        <checksumPolicy>warn</checksumPolicy>
-      </releases>
-      <snapshots>
-        <updatePolicy>daily</updatePolicy>
-        <checksumPolicy>warn</checksumPolicy>
-      </snapshots>
-      <id>ranull-repo</id>
-      <url>https://repo.ranull.com/maven/#/ranull/</url>
-    </repository>
-    <repository>
-      <releases>
-        <updatePolicy>daily</updatePolicy>
-        <checksumPolicy>warn</checksumPolicy>
-      </releases>
-      <snapshots>
-        <updatePolicy>always</updatePolicy>
-        <checksumPolicy>warn</checksumPolicy>
-      </snapshots>
-      <id>ranull-repo-external</id>
-      <url>https://repo.ranull.com/maven/external/</url>
     </repository>
     <repository>
       <id>citizens-repo</id>
@@ -230,20 +211,6 @@
       <url>https://repo.codemc.io/repository/maven-public/</url>
     </repository>
   </repositories>
-  <pluginRepositories>
-    <pluginRepository>
-      <releases />
-      <snapshots />
-      <id>ranull-repo</id>
-      <url>https://repo.ranull.com/maven/#/ranull/</url>
-    </pluginRepository>
-    <pluginRepository>
-      <releases />
-      <snapshots />
-      <id>ranull-repo-external</id>
-      <url>https://repo.ranull.com/maven/external/</url>
-    </pluginRepository>
-  </pluginRepositories>
   <dependencies>
     <dependency>
       <groupId>org.spigotmc</groupId>
@@ -289,7 +256,7 @@
     </dependency>
     <dependency>
       <groupId>dev.sergiferry</groupId>
-      <artifactId>playernpc</artifactId>
+      <artifactId>PlayerNPC</artifactId>
       <version>2023.4</version>
       <scope>provided</scope>
     </dependency>
@@ -300,15 +267,15 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>net.milkbowl</groupId>
-      <artifactId>vault</artifactId>
+      <groupId>com.github.MilkBowl</groupId>
+      <artifactId>Vault</artifactId>
       <version>1.7.3</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>me.lokka30</groupId>
       <artifactId>treasury</artifactId>
-      <version>1.2.1</version>
+      <version>2.0.1-7417830</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -386,7 +353,7 @@
     <dependency>
       <groupId>io.th0rgal</groupId>
       <artifactId>oraxen</artifactId>
-      <version>1.178.0</version>
+      <version>1.179.0</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>
