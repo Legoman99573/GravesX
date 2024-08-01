@@ -155,7 +155,7 @@
         <checksumPolicy>warn</checksumPolicy>
       </releases>
       <snapshots>
-        <updatePolicy>always</updatePolicy>
+        <updatePolicy>daily</updatePolicy>
         <checksumPolicy>warn</checksumPolicy>
       </snapshots>
       <id>ranull-repo</id>
@@ -163,7 +163,7 @@
     </repository>
     <repository>
       <releases>
-        <updatePolicy>always</updatePolicy>
+        <updatePolicy>daily</updatePolicy>
         <checksumPolicy>warn</checksumPolicy>
       </releases>
       <snapshots>

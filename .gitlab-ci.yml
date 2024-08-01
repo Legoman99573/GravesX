@@ -22,13 +22,17 @@ stages:          # List of stages for jobs, and their order of execution
 
 build-job:       # This job runs in the build stage, which runs first.
   stage: build
-  image: maven:3.8.6-jdk-11  # Use a Maven Docker image with Java 11
+  # image: maven:3.8.6-jdk-11  # Use a Maven Docker image with Java 11
   before_script:
+    - apt-get update
+    - apt-get -y install maven
+    - echo "Including custom authlib library."
     - mvn install:install-file -Dfile=libs/authlib-5.0.47-graves.jar -DgroupId=com.mojang -DartifactId=authlib -Dversion=5.0.47-graves -Dpackaging=jar
   script:
     - echo "Compiling the code..."
     - mvn package
-    - mvn site
+    - mvn site:site
+    - echo "Compile complete."
   artifacts:
     paths:
       - target/*.jar
