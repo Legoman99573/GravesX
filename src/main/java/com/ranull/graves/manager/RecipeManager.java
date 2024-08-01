@@ -151,48 +151,54 @@ public final class RecipeManager {
         NamespacedKey namespacedKey = new NamespacedKey(plugin, token + "GraveToken");
 
         if (!namespacedKeyList.contains(namespacedKey)) {
-            ShapedRecipe shapedRecipe = new ShapedRecipe(namespacedKey, itemStack);
+            try {
+                ShapedRecipe shapedRecipe = new ShapedRecipe(namespacedKey, itemStack);
 
-            shapedRecipe.shape("ABC", "DEF", "GHI");
+                shapedRecipe.shape("ABC", "DEF", "GHI");
 
-            List<String> lineList = plugin.getConfig().getStringList("settings.token." + token + ".recipe");
-            int recipeKey = 1;
+                List<String> lineList = plugin.getConfig().getStringList("settings.token." + token + ".recipe");
+                int recipeKey = 1;
 
-            for (String string : lineList.get(0).split(" ")) {
-                Material material = Material.matchMaterial(string);
+                for (String string : lineList.get(0).split(" ")) {
+                    Material material = Material.matchMaterial(string);
 
-                if (material != null && material != Material.AIR) {
-                    shapedRecipe.setIngredient(getChar(recipeKey), material);
+                    if (material != null && material != Material.AIR) {
+                        shapedRecipe.setIngredient(getChar(recipeKey), material);
+                    }
+
+                    recipeKey++;
                 }
 
-                recipeKey++;
-            }
+                for (String string : lineList.get(1).split(" ")) {
+                    Material material = Material.matchMaterial(string);
 
-            for (String string : lineList.get(1).split(" ")) {
-                Material material = Material.matchMaterial(string);
+                    if (material != null && material != Material.AIR) {
+                        shapedRecipe.setIngredient(getChar(recipeKey), material);
+                    }
 
-                if (material != null && material != Material.AIR) {
-                    shapedRecipe.setIngredient(getChar(recipeKey), material);
+                    recipeKey++;
                 }
 
-                recipeKey++;
-            }
+                for (String string : lineList.get(2).split(" ")) {
+                    Material material = Material.matchMaterial(string);
 
-            for (String string : lineList.get(2).split(" ")) {
-                Material material = Material.matchMaterial(string);
+                    if (material != null && material != Material.AIR) {
+                        shapedRecipe.setIngredient(getChar(recipeKey), material);
+                    }
 
-                if (material != null && material != Material.AIR) {
-                    shapedRecipe.setIngredient(getChar(recipeKey), material);
+                    recipeKey++;
                 }
 
-                recipeKey++;
-            }
-
-            if (plugin.getServer().getRecipe(namespacedKey) == null) {
-                plugin.getServer().addRecipe(shapedRecipe);
-                namespacedKeyList.add(namespacedKey);
-            } else {
-                plugin.debugMessage("Unable to add recipe " + namespacedKey.getKey(), 1);
+                if (plugin.getServer().getRecipe(namespacedKey) == null) {
+                    plugin.getServer().addRecipe(shapedRecipe);
+                    namespacedKeyList.add(namespacedKey);
+                } else {
+                    plugin.debugMessage("Unable to add recipe " + namespacedKey.getKey(), 1);
+                }
+            } catch (IllegalArgumentException e) { // Fucking spigot really be trying to break this.
+                plugin.getLogger().severe("Unable to register token recipe for " + token + ". Check your recipe in token.yml");
+                plugin.getLogger().severe("This is likely an invalid Material or a Spigot related bug.");
+                e.printStackTrace();
             }
         }
     }
