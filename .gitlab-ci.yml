@@ -40,6 +40,7 @@ build-job:       # This job runs in the build stage, which runs first.
     paths:
       - target/*.jar
       - /*.jar
+      - target/site/apidocs/**/*
       - site/apidocs/**/*
 
 deploy-job:      # This job runs in the deploy stage.
