@@ -199,17 +199,32 @@ public final class EntityManager extends EntityDataManager {
 
                         if (plugin.getIntegrationManager().getVault().hasBalance(player, teleportCost)
                                 && plugin.getIntegrationManager().getVault().withdrawBalance(player, teleportCost)) {
-                            player.teleport(locationTeleport);
-                            plugin.getEntityManager().sendMessage("message.teleport", player, locationTeleport, grave);
-                            plugin.getEntityManager().playPlayerSound("sound.teleport", player, locationTeleport, grave);
+                            GraveTeleportEvent graveTeleportEvent = new GraveTeleportEvent(grave, entity);
+
+                            plugin.getServer().getPluginManager().callEvent(graveTeleportEvent);
+                            if (!graveTeleportEvent.isCancelled()) {
+                                player.teleport(locationTeleport);
+                                plugin.getEntityManager().sendMessage("message.teleport", player, locationTeleport, grave);
+                                plugin.getEntityManager().playPlayerSound("sound.teleport", player, locationTeleport, grave);
+                            }
                         } else {
                             plugin.getEntityManager().sendMessage("message.no-money", player, player.getLocation(), grave);
                         }
                     } else {
-                        player.teleport(locationTeleport);
+                        GraveTeleportEvent graveTeleportEvent = new GraveTeleportEvent(grave, entity);
+
+                        plugin.getServer().getPluginManager().callEvent(graveTeleportEvent);
+                        if (!graveTeleportEvent.isCancelled()) {
+                            player.teleport(locationTeleport);
+                        }
                     }
                 } else {
-                    entity.teleport(locationTeleport);
+                    GraveTeleportEvent graveTeleportEvent = new GraveTeleportEvent(grave, entity);
+
+                    plugin.getServer().getPluginManager().callEvent(graveTeleportEvent);
+                    if (!graveTeleportEvent.isCancelled()) {
+                        entity.teleport(locationTeleport);
+                    }
                 }
             } else {
                 plugin.getEntityManager().sendMessage("message.teleport-failure", entity, location, grave);
@@ -591,8 +606,13 @@ public final class EntityManager extends EntityDataManager {
                             entity.teleport(plugin.getGraveManager().getGraveLocation(grave.getLocationDeath().add(1, 0, 1), grave));
                         }
                     } else {
-                        plugin.getEntityManager().teleportEntity(entity, plugin.getGraveManager()
-                                .getGraveLocationList(entity.getLocation(), grave).get(0), grave);
+                        GraveTeleportEvent graveTeleportEvent = new GraveTeleportEvent(grave, entity);
+
+                        plugin.getServer().getPluginManager().callEvent(graveTeleportEvent);
+                        if (!graveTeleportEvent.isCancelled()) {
+                            plugin.getEntityManager().teleportEntity(entity, plugin.getGraveManager()
+                                    .getGraveLocationList(entity.getLocation(), grave).get(0), grave);
+                        }
                     }
                 } else {
                     plugin.getEntityManager().sendMessage("message.teleport-disabled", entity,
