@@ -1,6 +1,7 @@
 package com.ranull.graves.event;
 
 import com.ranull.graves.type.Grave;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.InventoryView;
@@ -26,6 +27,18 @@ public class GraveOpenEvent extends GraveEvent {
      */
     public GraveOpenEvent(InventoryView inventoryView, Grave grave, Player player) {
         super(grave, null, null, inventoryView, null, null, null, null, player);
+    }
+
+    /**
+     * @deprecated Use Player instead of Entity
+     * Constructs a new {@code GraveOpenEvent}.
+     *
+     * @param inventoryView The inventory view that is being closed.
+     * @param grave         The grave associated with the inventory view.
+     * @param entity        The entity who is closing the inventory.
+     */
+    public GraveOpenEvent(InventoryView inventoryView, Grave grave, Entity entity) {
+        super(grave, entity, grave.getLocation(), inventoryView, null, null, null, null, null);
     }
 
     /**
