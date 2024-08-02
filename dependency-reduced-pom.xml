@@ -4,7 +4,7 @@
   <groupId>com.ranull</groupId>
   <artifactId>graves</artifactId>
   <name>GravesX</name>
-  <version>4.9.3.1</version>
+  <version>4.9.3.2</version>
   <description>Full featured lightweight death chest plugin.</description>
   <developers>
     <developer>
@@ -219,13 +219,13 @@
     <dependency>
       <groupId>org.spigotmc</groupId>
       <artifactId>spigot-api</artifactId>
-      <version>1.21-R0.1-SNAPSHOT</version>
+      <version>1.20.6-R0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>io.papermc.paper</groupId>
       <artifactId>paper-api</artifactId>
-      <version>1.21-R0.1-SNAPSHOT</version>
+      <version>1.20.6-R0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>

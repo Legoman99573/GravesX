@@ -10,6 +10,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryView;
 
 import java.util.List;
 import java.util.UUID;
@@ -75,15 +76,14 @@ public final class GUIManager {
     public void refreshMenus() {
         if (plugin.isEnabled()) {
             for (Player player : plugin.getServer().getOnlinePlayers()) {
-                if (player.getOpenInventory() != null) { // Mohist, might return null even when Bukkit shouldn't.
-                    Inventory inventory = player.getOpenInventory().getTopInventory();
+                InventoryView openInventory = player.getOpenInventory();
+                if (openInventory != null) { // Mohist might return null even when Bukkit shouldn't.
+                    Inventory topInventory = openInventory.getTopInventory();
 
-                    if (inventory.getHolder() instanceof GraveList) {
-                        plugin.getGUIManager().setGraveListItems(inventory,
-                                ((GraveList) inventory.getHolder()).getUUID());
-                    } else if (inventory.getHolder() instanceof GraveMenu) {
-                        plugin.getGUIManager().setGraveMenuItems(inventory,
-                                ((GraveMenu) inventory.getHolder()).getGrave());
+                    if (topInventory.getHolder() instanceof GraveList) {
+                        setGraveListItems(topInventory, ((GraveList) topInventory.getHolder()).getUUID());
+                    } else if (topInventory.getHolder() instanceof GraveMenu) {
+                        setGraveMenuItems(topInventory, ((GraveMenu) topInventory.getHolder()).getGrave());
                     }
                 }
             }

@@ -176,14 +176,16 @@ public final class GraveManager {
                 plugin.debugMessage("Removing grave: " + grave.getUUID(), 2);
                 removeGrave(grave);
             }
-            entityDataRemoveList.forEach(entityData -> {
+            for (EntityData entityData : entityDataRemoveList) {
                 if (entityData != null) { // Null check before calling removeEntityData
                     removeEntityData(entityData);
                 } else {
                     plugin.debugMessage("Attempted to remove null EntityData", 2);
                 }
-            });
-            blockDataRemoveList.forEach(blockData -> plugin.getBlockManager().removeBlock(blockData));
+            }
+            for (BlockData blockData : blockDataRemoveList) {
+                plugin.getBlockManager().removeBlock(blockData);
+            }
             graveRemoveList.clear();
             entityDataRemoveList.clear();
             blockDataRemoveList.clear();
