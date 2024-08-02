@@ -349,7 +349,7 @@
         <dependency>
             <groupId>com.comphenix.protocol</groupId>
             <artifactId>ProtocolLib</artifactId>
-            <version>4.8.0</version>
+            <version>5.2.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -403,7 +403,7 @@
         <dependency>
             <groupId>com.github.Ste3et</groupId>
             <artifactId>FurnitureLib</artifactId>
-            <version>3.1.0</version>
+            <version>3.2.1</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

@@ -38,7 +38,7 @@ public final class ProtocolLib {
      * @param material The material to set the block to.
      * @param player  The player to whom the update will be sent.
      */
-    public void setBlock(Block block, Material material, Player player) {
+    public void setBlock(Block block, Material material, Player player) throws InvocationTargetException {
         WrappedBlockData wrappedBlockData = WrappedBlockData.createData(material);
         sendServerPacket(player, createBlockChangePacket(block, wrappedBlockData));
     }
@@ -49,7 +49,7 @@ public final class ProtocolLib {
      * @param block   The block to refresh.
      * @param player  The player to whom the update will be sent.
      */
-    public void refreshBlock(Block block, Player player) {
+    public void refreshBlock(Block block, Player player) throws InvocationTargetException {
         sendServerPacket(player, createBlockChangePacket(block, WrappedBlockData.createData(block.getBlockData())));
     }
 
@@ -77,10 +77,7 @@ public final class ProtocolLib {
      * @param player          The player to send the packet to.
      * @param packetContainer The packet to send.
      */
-    private void sendServerPacket(Player player, PacketContainer packetContainer) {
-        try {
-            protocolManager.sendServerPacket(player, packetContainer);
-        } catch (InvocationTargetException ignored) {
-        }
+    private void sendServerPacket(Player player, PacketContainer packetContainer) throws InvocationTargetException {
+        protocolManager.sendServerPacket(player, packetContainer);
     }
 }

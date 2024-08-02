@@ -11,6 +11,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,7 +39,7 @@ public final class GraveyardManager {
     /**
      * Unloads the graveyard manager, stopping any players modifying graveyards.
      */
-    public void unload() {
+    public void unload() throws InvocationTargetException {
         for (Map.Entry<UUID, Graveyard> entry : modifyingGraveyardMap.entrySet()) {
             Player player = plugin.getServer().getPlayer(entry.getKey());
 
@@ -86,7 +87,11 @@ public final class GraveyardManager {
             if (!graveyard.hasGraveLocation(location)) {
                 BlockFace blockFace = BlockFaceUtil.getYawBlockFace(player.getLocation().getYaw()).getOppositeFace();
                 graveyard.addGraveLocation(location, blockFace);
-                previewLocation(player, location, blockFace);
+                try {
+                    previewLocation(player, location, blockFace);
+                } catch (InvocationTargetException e) {
+                    throw new RuntimeException(e);
+                }
                 player.sendMessage("set block in graveyard");
             }
         });
@@ -103,7 +108,11 @@ public final class GraveyardManager {
         plugin.getServer().getScheduler().runTask(plugin, () -> {
             if (graveyard.hasGraveLocation(location)) {
                 graveyard.removeGraveLocation(location);
-                refreshLocation(player, location);
+                try {
+                    refreshLocation(player, location);
+                } catch (InvocationTargetException e) {
+                    throw new RuntimeException(e);
+                }
                 player.sendMessage("remove block in graveyard");
             }
         });
@@ -165,7 +174,7 @@ public final class GraveyardManager {
      * @param player    The player starting to modify the graveyard.
      * @param graveyard The graveyard to modify.
      */
-    public void startModifyingGraveyard(Player player, Graveyard graveyard) {
+    public void startModifyingGraveyard(Player player, Graveyard graveyard) throws InvocationTargetException {
         if (isModifyingGraveyard(player)) {
             stopModifyingGraveyard(player);
         }
@@ -184,7 +193,7 @@ public final class GraveyardManager {
      *
      * @param player The player stopping the modification.
      */
-    public void stopModifyingGraveyard(Player player) {
+    public void stopModifyingGraveyard(Player player) throws InvocationTargetException {
         Graveyard graveyard = getModifyingGraveyard(player);
 
         if (graveyard != null) {
@@ -265,7 +274,7 @@ public final class GraveyardManager {
      * @param location  The location to preview.
      * @param blockFace The block face direction.
      */
-    private void previewLocation(Player player, Location location, BlockFace blockFace) {
+    private void previewLocation(Player player, Location location, BlockFace blockFace) throws InvocationTargetException {
         if (plugin.getIntegrationManager().hasProtocolLib()) {
             plugin.getIntegrationManager().getProtocolLib().setBlock(location.getBlock(), Material.PLAYER_HEAD, player);
         }
@@ -277,7 +286,7 @@ public final class GraveyardManager {
      * @param player   The player to refresh the location for.
      * @param location The location to refresh.
      */
-    private void refreshLocation(Player player, Location location) {
+    private void refreshLocation(Player player, Location location) throws InvocationTargetException {
         if (plugin.getIntegrationManager().hasProtocolLib()) {
             plugin.getIntegrationManager().getProtocolLib().refreshBlock(location.getBlock(), player);
         }

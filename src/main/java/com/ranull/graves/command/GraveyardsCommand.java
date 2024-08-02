@@ -11,6 +11,7 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,10 +49,18 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
             } else {
                 switch (args[0].toLowerCase()) {
                     case "create":
-                        handleCreateCommand(player, args);
+                        try {
+                            handleCreateCommand(player, args);
+                        } catch (InvocationTargetException e) {
+                            throw new RuntimeException(e);
+                        }
                         break;
                     case "modify":
-                        handleModifyCommand(player, args);
+                        try {
+                            handleModifyCommand(player, args);
+                        } catch (InvocationTargetException e) {
+                            throw new RuntimeException(e);
+                        }
                         break;
                     default:
                         player.sendMessage("Unknown command " + args[0]);
@@ -72,7 +81,7 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
         return new ArrayList<>();
     }
 
-    private void handleCreateCommand(Player player, String[] args) {
+    private void handleCreateCommand(Player player, String[] args) throws InvocationTargetException {
         if (args.length < 2) {
             player.sendMessage("/graveyard create (type)");
             return;
@@ -91,7 +100,7 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
         }
     }
 
-    private void handleModifyCommand(Player player, String[] args) {
+    private void handleModifyCommand(Player player, String[] args) throws InvocationTargetException {
         if (plugin.getGraveyardManager().isModifyingGraveyard(player)) {
             plugin.getGraveyardManager().stopModifyingGraveyard(player);
         } else {
@@ -110,7 +119,7 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
         }
     }
 
-    private void handleWorldGuardCreate(Player player, String[] args) {
+    private void handleWorldGuardCreate(Player player, String[] args) throws InvocationTargetException {
         if (plugin.getIntegrationManager().getWorldGuard() == null) {
             player.sendMessage("WorldGuard not detected");
             return;
@@ -146,7 +155,7 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
         plugin.getGraveyardManager().startModifyingGraveyard(player, graveyard);
     }
 
-    private void handleTownyCreate(Player player, String[] args) {
+    private void handleTownyCreate(Player player, String[] args) throws InvocationTargetException {
         if (!plugin.getIntegrationManager().hasTowny()) {
             player.sendMessage("Towny not detected");
             return;
@@ -176,7 +185,7 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
         plugin.getGraveyardManager().startModifyingGraveyard(player, graveyard);
     }
 
-    private void handleWorldGuardModify(Player player, String[] args) {
+    private void handleWorldGuardModify(Player player, String[] args) throws InvocationTargetException {
         if (plugin.getIntegrationManager().getWorldGuard() == null) {
             player.sendMessage("WorldGuard not detected");
             return;

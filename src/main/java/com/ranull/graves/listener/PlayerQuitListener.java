@@ -7,6 +7,8 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
 
+import java.lang.reflect.InvocationTargetException;
+
 /**
  * Listener for handling PlayerQuitEvent to manage player-related data when they leave the game.
  */
@@ -31,7 +33,7 @@ public class PlayerQuitListener implements Listener {
      * @param event The PlayerQuitEvent to handle.
      */
     @EventHandler(priority = EventPriority.MONITOR)
-    public void onPlayerQuit(PlayerQuitEvent event) {
+    public void onPlayerQuit(PlayerQuitEvent event) throws InvocationTargetException {
         Player player = event.getPlayer();
 
         removeLastSolidLocation(player);
@@ -52,7 +54,7 @@ public class PlayerQuitListener implements Listener {
      *
      * @param player The player to check.
      */
-    private void stopModifyingGraveyardIfNecessary(Player player) {
+    private void stopModifyingGraveyardIfNecessary(Player player) throws InvocationTargetException {
         if (plugin.getGraveyardManager().isModifyingGraveyard(player)) {
             plugin.getGraveyardManager().stopModifyingGraveyard(player);
         }

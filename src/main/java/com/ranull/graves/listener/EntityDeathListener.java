@@ -22,6 +22,7 @@ import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.inventory.ItemStack;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 /**
@@ -45,7 +46,7 @@ public class EntityDeathListener implements Listener {
      * @param event The EntityDeathEvent to handle.
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onEntityDeath(EntityDeathEvent event) {
+    public void onEntityDeath(EntityDeathEvent event) throws InvocationTargetException {
         LivingEntity livingEntity = event.getEntity();
         String entityName = plugin.getEntityManager().getEntityName(livingEntity);
         Location location = LocationUtil.roundLocation(livingEntity.getLocation());
@@ -156,7 +157,7 @@ public class EntityDeathListener implements Listener {
      * @param entityName  The name of the player.
      * @return True if a grave should not be created, false otherwise.
      */
-    private boolean handlePlayerDeath(Player player, String entityName) {
+    private boolean handlePlayerDeath(Player player, String entityName) throws InvocationTargetException {
         if (plugin.getGraveyardManager().isModifyingGraveyard(player)) {
             plugin.getGraveyardManager().stopModifyingGraveyard(player);
         }
