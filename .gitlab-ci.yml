@@ -18,8 +18,8 @@
 
 stages:          # List of stages for jobs, and their order of execution
   - build
-  - deploy
   - pages
+  - deploy
 
 build-job:       # This job runs in the build stage, which runs first.
   stage: build
@@ -44,13 +44,7 @@ build-job:       # This job runs in the build stage, which runs first.
       - target/site/apidocs/**/*
       - site/apidocs/**/*
 
-deploy-job:      # This job runs in the deploy stage.
-  stage: deploy  # It only runs when *both* jobs in the test stage complete successfully.
-  environment: production
-  script:
-    - echo "Application successfully deployed."
-
-pages:
+pages-job:
   stage: pages
   before_script:
     - apt-get update
@@ -67,8 +61,14 @@ pages:
   artifacts:
     paths:
       # The folder that contains the files to be exposed at the Page URL
-      - target/site/apidocs
+      - target/site/apidocs/**/*
   rules:
     # This ensures that only pushes to the default branch will trigger
     # a pages deploy
     - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
+
+deploy-job:      # This job runs in the deploy stage.
+  stage: deploy  # It only runs when *both* jobs in the test stage complete successfully.
+  environment: production
+  script:
+    - echo "Application successfully deployed."
