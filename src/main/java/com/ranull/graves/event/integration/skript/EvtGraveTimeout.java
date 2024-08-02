@@ -26,7 +26,7 @@ import ch.njol.skript.util.Getter;
 public class EvtGraveTimeout extends SkriptEvent {
 
     static {
-        Skript.registerEvent("Grave Timeout", EvtGraveTimeout.class, GraveTimeoutEvent.class, "[grave] tim(e|ed)(-)out");
+        Skript.registerEvent("Grave Timeout", EvtGraveTimeout.class, GraveTimeoutEvent.class, "[grave] tim(e|ed)(| |-)out");
 
         // Registering event values
         EventValues.registerEventValue(GraveTimeoutEvent.class, Grave.class, new Getter<Grave, GraveTimeoutEvent>() {
