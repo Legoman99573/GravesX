@@ -27,7 +27,7 @@ import ch.njol.skript.util.Getter;
 public class EvtGraveAutoLoot extends SkriptEvent {
 
     static {
-        Skript.registerEvent("Grave Auto Loot", EvtGraveAutoLoot.class, GraveAutoLootEvent.class, "[grave] auto loot(ing|ed)");
+        Skript.registerEvent("Grave Auto Loot", EvtGraveAutoLoot.class, GraveAutoLootEvent.class, "[grave] auto loo(t|ting|ted)");
 
         // Registering entity values
         EventValues.registerEventValue(GraveAutoLootEvent.class, Entity.class, new Getter<Entity, GraveAutoLootEvent>() {

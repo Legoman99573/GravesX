@@ -27,7 +27,7 @@ import ch.njol.skript.util.Getter;
 public class EvtGraveZombieSpawn extends SkriptEvent {
 
     static {
-        Skript.registerEvent("Grave Zombie Spawn", EvtGraveZombieSpawn.class, GraveZombieSpawnEvent.class, "[grave] zombie(s) spawn(ing|ed)");
+        Skript.registerEvent("Grave Zombie Spawn", EvtGraveZombieSpawn.class, GraveZombieSpawnEvent.class, "[grave] zombi(e|es) spaw(ning|ned)");
 
         // Registering event values
         EventValues.registerEventValue(GraveZombieSpawnEvent.class, LivingEntity.class, new Getter<LivingEntity, GraveZombieSpawnEvent>() {

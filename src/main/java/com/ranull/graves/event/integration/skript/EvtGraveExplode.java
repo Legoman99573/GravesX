@@ -27,7 +27,7 @@ import ch.njol.skript.util.Getter;
 public class EvtGraveExplode extends SkriptEvent {
 
     static {
-        Skript.registerEvent("Grave Explode", EvtGraveExplode.class, GraveExplodeEvent.class, "[grave] explode(ing|ed)");
+        Skript.registerEvent("Grave Explode", EvtGraveExplode.class, GraveExplodeEvent.class, "[grave] explod(e|ing|ed)");
 
         // Registering event values
         EventValues.registerEventValue(GraveExplodeEvent.class, Entity.class, new Getter<Entity, GraveExplodeEvent>() {

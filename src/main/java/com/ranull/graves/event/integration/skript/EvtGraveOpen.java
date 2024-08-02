@@ -27,7 +27,7 @@ import ch.njol.skript.util.Getter;
 public class EvtGraveOpen extends SkriptEvent {
 
     static {
-        Skript.registerEvent("Grave Open", EvtGraveOpen.class, GraveOpenEvent.class, "[grave] open(ing|ed)");
+        Skript.registerEvent("Grave Open", EvtGraveOpen.class, GraveOpenEvent.class, "[grave] ope(n|ning|ned)");
 
         // Registering event values
         EventValues.registerEventValue(GraveOpenEvent.class, Player.class, new Getter<Player, GraveOpenEvent>() {

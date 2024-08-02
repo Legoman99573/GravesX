@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
 public class EvtGraveTeleport extends SkriptEvent {
 
     static {
-        Skript.registerEvent("Grave Teleport", EvtGraveTeleport.class, GraveTeleportEvent.class, "[grave] teleport(ing|ed)");
+        Skript.registerEvent("Grave Teleport", EvtGraveTeleport.class, GraveTeleportEvent.class, "[grave] telepor(t|ting|ted)");
 
         // Registering event values
         EventValues.registerEventValue(GraveTeleportEvent.class, Entity.class, new Getter<Entity, GraveTeleportEvent>() {

@@ -26,7 +26,7 @@ import ch.njol.skript.util.Getter;
 public class EvtGraveProtectionExpired extends SkriptEvent {
 
     static {
-        Skript.registerEvent("Grave Protection Expired", EvtGraveProtectionExpired.class, GraveProtectionExpiredEvent.class, "[grave] protect(ing|ed|ion) expir(ing|ed)");
+        Skript.registerEvent("Grave Protection Expired", EvtGraveProtectionExpired.class, GraveProtectionExpiredEvent.class, "[grave] protec(t|ting|ted|tion) expir(e|ing|ed)");
 
         // Registering event values
         EventValues.registerEventValue(GraveProtectionExpiredEvent.class, Grave.class, new Getter<Grave, GraveProtectionExpiredEvent>() {

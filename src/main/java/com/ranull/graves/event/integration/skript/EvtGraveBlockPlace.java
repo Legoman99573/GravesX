@@ -27,7 +27,7 @@ import ch.njol.skript.util.Getter;
 public class EvtGraveBlockPlace extends SkriptEvent {
 
     static {
-        Skript.registerEvent("Grave Block Place", EvtGraveBlockPlace.class, GraveBlockPlaceEvent.class, "[grave] block(s) place(ing|ed)");
+        Skript.registerEvent("Grave Block Place", EvtGraveBlockPlace.class, GraveBlockPlaceEvent.class, "[grave] bloc(k|ks) plac(e|ing|ed)");
 
         // Registering event values
         EventValues.registerEventValue(GraveBlockPlaceEvent.class, Grave.class, new Getter<Grave, GraveBlockPlaceEvent>() {
