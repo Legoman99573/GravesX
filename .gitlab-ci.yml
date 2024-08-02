@@ -53,6 +53,12 @@ deploy-job:      # This job runs in the deploy stage.
 pages:
   stage: pages
   before_script:
+    - apt-get update
+    - wget https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.deb
+    - dpkg -i jdk-21_linux-x64_bin.deb
+    - java -version
+    - apt-get -y install maven
+    - echo "Including custom authlib library."
     - mvn install:install-file -Dfile=libs/authlib-5.0.47-graves.jar
       -DgroupId=com.mojang -DartifactId=authlib -Dversion=5.0.47-graves
       -Dpackaging=jar
