@@ -277,4 +277,17 @@ public final class WorldGuard {
 
         return regionNameList;
     }
+
+    /**
+     * Retrieves a list of region names.
+     *
+     * @return A list of region names.
+     */
+    public List<String> getRegions() {
+        List<String> regionNames = new ArrayList<>();
+        for (RegionManager regionManager : worldGuard.getPlatform().getRegionContainer().getLoaded()) {
+            regionNames.addAll(regionManager.getRegions().keySet());
+        }
+        return regionNames;
+    }
 }

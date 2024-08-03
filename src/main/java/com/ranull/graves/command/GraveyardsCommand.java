@@ -13,6 +13,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -30,14 +32,23 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
         this.plugin = plugin;
     }
 
+    /**
+     * Executes the given command, returning its success.
+     *
+     * @param commandSender Source of the command.
+     * @param command       Command which was executed.
+     * @param string        Alias of the command which was used.
+     * @param args          Passed command arguments.
+     * @return true if a valid command, otherwise false.
+     */
     @Override
     public boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command,
                              @NotNull String string, String[] args) {
         if (commandSender instanceof Player) {
             Player player = (Player) commandSender;
 
-            // Disable for everyone except JaySmethers, not ready for production.
-            if (!player.getName().contains("JaySmethers")) {
+            // Disable for everyone except JaySmethers, Legoman99573, and Ranull, not ready for production.
+            if (!player.getName().contains("Ranull") && !player.getName().contains("JaySmethers") && !player.getName().contains("Legoman99573")) {
                 commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
                         + "Graveyards not ready for production.");
                 return true;
@@ -46,6 +57,7 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
             if (args.length < 1) {
                 player.sendMessage("/graveyards create");
                 player.sendMessage("/graveyards modify");
+                player.sendMessage("/graveyards delete");
             } else {
                 switch (args[0].toLowerCase()) {
                     case "create":
@@ -62,6 +74,9 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
                             throw new RuntimeException(e);
                         }
                         break;
+                    case "delete":
+                        handleDeleteCommand(player, args);
+                        break;
                     default:
                         player.sendMessage("Unknown command " + args[0]);
                         break;
@@ -74,13 +89,66 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    /**
+     * Requests a list of possible completions for a command argument.
+     *
+     * @param commandSender Source of the command.
+     * @param command       Command which was executed.
+     * @param string        Alias of the command which was used.
+     * @param args          Passed command arguments.
+     * @return A List of possible completions for the final argument, or null to default to the command executor.
+     */
     @Override
     @NotNull
     public List<String> onTabComplete(@NotNull CommandSender commandSender, @NotNull Command command,
                                       @NotNull String string, @NotNull String @NotNull [] args) {
-        return new ArrayList<>();
+        List<String> completions = new ArrayList<>();
+        if (args.length == 1) {
+            completions.addAll(Arrays.asList("create", "modify", "delete"));
+        } else if (args.length == 2) {
+            if (args[0].equalsIgnoreCase("create") || args[0].equalsIgnoreCase("modify")) {
+                if (plugin.getIntegrationManager().getWorldGuard() != null && plugin.getIntegrationManager().getWorldEdit() != null) {
+                    completions.add("worldguard");
+                }
+                if (plugin.getIntegrationManager().hasTowny()) {
+                    completions.add("towny");
+                }
+            } else if (args[0].equalsIgnoreCase("delete")) {
+                completions.addAll(getExistingGraveyardNames());
+            }
+        } else if (args.length == 3) {
+            if (args[0].equalsIgnoreCase("create")) {
+                if (args[1].equalsIgnoreCase("worldguard") && plugin.getIntegrationManager().getWorldGuard() != null) {
+                    completions.addAll(plugin.getIntegrationManager().getWorldGuard().getRegions());
+                } else if (args[1].equalsIgnoreCase("towny") && plugin.getIntegrationManager().hasTowny()) {
+                    completions.addAll(plugin.getIntegrationManager().getTowny().getTownNames());
+                }
+            }
+        }
+        Collections.sort(completions);
+        return completions;
     }
 
+    /**
+     * Retrieves a list of existing graveyard names for tab completion.
+     *
+     * @return A List of existing graveyard names.
+     */
+    private List<String> getExistingGraveyardNames() {
+        List<String> names = new ArrayList<>();
+        for (Graveyard graveyard : plugin.getGraveyardManager().getAllGraveyardArray()) {
+            names.add(graveyard.getName());
+        }
+        return names;
+    }
+
+    /**
+     * Handles the create command.
+     *
+     * @param player The player executing the command.
+     * @param args   The command arguments.
+     * @throws InvocationTargetException If there is an error during command execution.
+     */
     private void handleCreateCommand(Player player, String[] args) throws InvocationTargetException {
         if (args.length < 2) {
             player.sendMessage("/graveyard create (type)");
@@ -100,6 +168,13 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
         }
     }
 
+    /**
+     * Handles the modify command.
+     *
+     * @param player The player executing the command.
+     * @param args   The command arguments.
+     * @throws InvocationTargetException If there is an error during command execution.
+     */
     private void handleModifyCommand(Player player, String[] args) throws InvocationTargetException {
         if (plugin.getGraveyardManager().isModifyingGraveyard(player)) {
             plugin.getGraveyardManager().stopModifyingGraveyard(player);
@@ -111,6 +186,8 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
                     case "worldguard":
                         handleWorldGuardModify(player, args);
                         break;
+                    case "towny":
+                        handleTownyModify(player, args);
                     default:
                         player.sendMessage("Unknown type " + args[1]);
                         break;
@@ -119,6 +196,36 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
         }
     }
 
+    /**
+     * Handles the delete command.
+     *
+     * @param player The player executing the command.
+     * @param args   The command arguments.
+     */
+    private void handleDeleteCommand(Player player, String[] args) {
+        if (args.length < 2) {
+            player.sendMessage("/graveyard delete (name)");
+            return;
+        }
+
+        String graveyardName = args[1];
+        Graveyard graveyard = plugin.getGraveyardManager().getGraveyardByName(graveyardName);
+
+        if (graveyard != null) {
+            plugin.getGraveyardManager().deleteGraveyard(player, graveyard);
+            player.sendMessage("Deleted graveyard " + graveyardName);
+        } else {
+            player.sendMessage("Graveyard not found: " + graveyardName);
+        }
+    }
+
+    /**
+     * Handles the WorldGuard create command.
+     *
+     * @param player The player executing the command.
+     * @param args   The command arguments.
+     * @throws InvocationTargetException If there is an error during command execution.
+     */
     private void handleWorldGuardCreate(Player player, String[] args) throws InvocationTargetException {
         if (plugin.getIntegrationManager().getWorldGuard() == null) {
             player.sendMessage("WorldGuard not detected");
@@ -155,6 +262,13 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
         plugin.getGraveyardManager().startModifyingGraveyard(player, graveyard);
     }
 
+    /**
+     * Handles the Towny create command.
+     *
+     * @param player The player executing the command.
+     * @param args   The command arguments.
+     * @throws InvocationTargetException If there is an error during command execution.
+     */
     private void handleTownyCreate(Player player, String[] args) throws InvocationTargetException {
         if (!plugin.getIntegrationManager().hasTowny()) {
             player.sendMessage("Towny not detected");
@@ -185,6 +299,13 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
         plugin.getGraveyardManager().startModifyingGraveyard(player, graveyard);
     }
 
+    /**
+     * Handles the WorldGuard modify command.
+     *
+     * @param player The player executing the command.
+     * @param args   The command arguments.
+     * @throws InvocationTargetException If there is an error during command execution.
+     */
     private void handleWorldGuardModify(Player player, String[] args) throws InvocationTargetException {
         if (plugin.getIntegrationManager().getWorldGuard() == null) {
             player.sendMessage("WorldGuard not detected");
@@ -213,6 +334,41 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
 
         if (graveyard == null) {
             player.sendMessage("Graveyard " + region + " not found");
+            return;
+        }
+
+        player.sendMessage("Graveyard found");
+        plugin.getGraveyardManager().startModifyingGraveyard(player, graveyard);
+    }
+
+    /**
+     * Handles the Towny modify command.
+     *
+     * @param player The player executing the command.
+     * @param args   The command arguments.
+     * @throws InvocationTargetException If there is an error during command execution.
+     */
+    private void handleTownyModify(Player player, String[] args) throws InvocationTargetException {
+        if (!plugin.getIntegrationManager().hasTowny()) {
+            player.sendMessage("Towny not detected");
+            return;
+        }
+
+        if (!plugin.getConfig().getBoolean("settings.graveyard.towny.enabled")) {
+            player.sendMessage("Towny support disabled");
+            return;
+        }
+
+        if (args.length < 3) {
+            player.sendMessage("/graveyard modify towny (name)");
+            return;
+        }
+
+        String name = args[2].replace("_", " ");
+        Graveyard graveyard = plugin.getGraveyardManager().getGraveyardByKey("towny|" + player.getWorld().getName() + "|" + name);
+
+        if (graveyard == null) {
+            player.sendMessage("Graveyard not found: " + name);
             return;
         }
 

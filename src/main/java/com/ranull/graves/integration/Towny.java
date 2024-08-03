@@ -102,7 +102,7 @@ public final class Towny {
         try {
             TownBlockTypeHandler.registerType(townBlockType);
         } catch (TownyException exception) {
-            exception.printStackTrace();
+            plugin.logStackTrace(exception);
         }
     }
 
@@ -196,14 +196,24 @@ public final class Towny {
     }
 
     /**
-     * Placeholder method for checking if a player is a resident of a specific region.
+     * Checks if a player is a resident of a specific region (town).
      *
-     * @param region The region to check.
+     * @param region The region (town) to check.
      * @param player The player to check.
      * @return {@code true} if the player is a resident, otherwise {@code false}.
      */
     public boolean isResident(String region, Player player) {
-        return true; // TODO: Implement this method.
+        Resident resident = townyAPI.getResident(player);
+
+        if (resident != null && resident.hasTown()) {
+            try {
+                Town town = resident.getTown();
+                return town.getName().equalsIgnoreCase(region);
+            } catch (NotRegisteredException ignored) {
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -230,4 +240,18 @@ public final class Towny {
 
         return townBlock != null && townBlock.getType() == graveyardBlockType;
     }
+
+    /**
+     * Retrieves a list of all town names from Towny.
+     *
+     * @return A List of all town names.
+     */
+    public List<String> getTownNames() {
+        List<String> townNames = new ArrayList<>();
+        for (Town town : townyAPI.getTowns()) {
+            townNames.add(town.getName());
+        }
+        return townNames;
+    }
+
 }

@@ -1,5 +1,6 @@
 package com.ranull.graves.manager;
 
+import com.ranull.graves.type.Graveyard;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import com.ranull.graves.Graves;
@@ -46,24 +47,19 @@ public final class DataManager {
                 load();
                 keepConnectionAlive(); // If we don't enable this, connection will close or time out :/
                 break;
+            case H2: 
             case POSTGRESQL:
             case MYSQL:
             case MARIADB:
                 loadType(this.type);
-                if (testMySQLConnection()) {
+                if (testDatabaseConnection()) {
                     migrate();
                     load();
                     keepConnectionAlive(); // If we don't enable this, connection will close or time out :/
                 } else {
-                    plugin.getLogger().severe("Failed to connect to MySQL database. Disabling plugin...");
+                    plugin.getLogger().severe("Failed to connect to " + this.type +" database. Disabling plugin...");
                     plugin.getServer().getPluginManager().disablePlugin(this.plugin);
                 }
-                break;
-            case H2:
-                plugin.getLogger().warning("H2 is planned for a future release. Falling back to SQLite for now...");
-                loadType(Type.SQLITE);
-                load();
-                keepConnectionAlive(); // If we don't enable this, connection will close or time out :/
                 break;
             default:
                 plugin.getLogger().severe("Database Type is invalid. Only valid options: SQLITE and MYSQL. Disabling plugin...");
@@ -96,6 +92,7 @@ public final class DataManager {
             }
             loadGraveMap();
             loadBlockMap();
+            loadGraveyardsMap();
             loadEntityMap("armorstand", EntityData.Type.ARMOR_STAND);
             loadEntityMap("itemframe", EntityData.Type.ITEM_FRAME);
             loadHologramMap();
@@ -137,6 +134,7 @@ public final class DataManager {
         setupGraveTable();
         setupBlockTable();
         setupHologramTable();
+        setupGraveyardsTable();
         setupEntityTable("armorstand");
         setupEntityTable("itemframe");
 
@@ -179,7 +177,7 @@ public final class DataManager {
      */
     public void reload(Type type) {
         loadType(type);
-        if ((type == Type.MYSQL || type == Type.MARIADB) && !testMySQLConnection()) {
+        if ((type == Type.MYSQL || type == Type.MARIADB) && !testDatabaseConnection()) {
             plugin.getLogger().severe("Failed to connect to MySQL database. Disabling plugin...");
             plugin.getServer().getPluginManager().disablePlugin(this.plugin);
             return;
@@ -248,6 +246,12 @@ public final class DataManager {
             configureSQLite(config);
             dataSource = new HikariDataSource(config);
             checkAndUnlockDatabase(); // Check and unlock the database if needed
+        } else if (type == Type.H2) {
+            migrateRootDataSubData();
+            HikariConfig config = new HikariConfig();
+            configureH2(config);
+            dataSource = new HikariDataSource(config);
+            checkAndUnlockDatabase(); // Check and unlock the database if needed
         } else {
             // MySQL or MariaDB configuration
             String host = plugin.getConfig().getString("settings.storage.mysql.host", "localhost");
@@ -308,7 +312,7 @@ public final class DataManager {
 
             dataSource = new HikariDataSource(config);
 
-            if (testMySQLConnection()) {
+            if (testDatabaseConnection()) {
                 migrate();
             }
         }
@@ -335,6 +339,46 @@ public final class DataManager {
         config.setPoolName("Graves SQLite");
         config.addDataSourceProperty("autoReconnect", "true");
         config.setDriverClassName("org.sqlite.JDBC");
+    }
+
+    /**
+     * Configures the H2 data source.
+     *
+     * @param config the HikariConfig to configure.
+     */
+    private void configureH2(HikariConfig config) {
+        String filePath = plugin.getDataFolder() + File.separator + "data" + File.separator + "graves.data";
+        String username = plugin.getConfig().getString("settings.storage.h2.username", "sa");
+        String password = plugin.getConfig().getString("settings.storage.h2.password", "");
+        long maxLifetime = plugin.getConfig().getLong("settings.storage.h2.maxLifetime", 1800000);
+        int maxConnections = plugin.getConfig().getInt("settings.storage.h2.maxConnections", 50); // Increased pool size
+        long connectionTimeout = plugin.getConfig().getLong("settings.storage.h2.connectionTimeout", 30000);
+
+        config.setJdbcUrl("jdbc:h2:file:" + filePath + ";AUTO_SERVER=TRUE");
+        config.setUsername(username);
+        config.setPassword(password);
+        config.addDataSourceProperty("autoReconnect", "true");
+        config.addDataSourceProperty("cachePrepStmts", "true");
+        config.addDataSourceProperty("prepStmtCacheSize", "250");
+        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+        config.addDataSourceProperty("useServerPrepStmts", "true");
+        config.addDataSourceProperty("useLocalSessionState", "true");
+        config.addDataSourceProperty("cacheResultSetMetadata", "true");
+        config.addDataSourceProperty("cacheServerConfiguration", "true");
+        config.addDataSourceProperty("elideSetAutoCommits", "true");
+        config.addDataSourceProperty("maintainTimeStats", "false");
+        config.addDataSourceProperty("alwaysSendSetIsolation", "false");
+        config.addDataSourceProperty("cacheCallableStmts", "true");
+
+        config.setDriverClassName("org.h2.Driver");
+        config.setMaximumPoolSize(maxConnections);
+        config.setMaxLifetime(maxLifetime);
+        config.setMinimumIdle(2);
+        config.setConnectionTimeout(connectionTimeout);
+        config.setPoolName("Graves H2");
+        config.setIdleTimeout(600000); // 10 minutes
+        config.setConnectionTestQuery("SELECT 1");
+        config.setLeakDetectionThreshold(15000); // Detect connection leaks
     }
 
     /**
@@ -404,15 +448,17 @@ public final class DataManager {
                 : "PRAGMA table_info(" + tableName + ");";
 
         try (Connection connection = getConnection(); // Ensure you get a connection
-             Statement statement = connection.createStatement();
-             ResultSet resultSet = statement.executeQuery(query)) {
+             Statement statement = connection != null ? connection.createStatement() : null;
+             ResultSet resultSet = statement != null ? statement.executeQuery(query) : null) {
 
-            while (resultSet.next()) {
-                String columnName = (type == Type.MYSQL || type == Type.MARIADB) ? resultSet.getString("Field") : resultSet.getString("name");
-                columnList.add(columnName);
+            if (resultSet != null) {
+                while (resultSet.next()) {
+                    String columnName = (type == Type.MYSQL || type == Type.MARIADB) ? resultSet.getString("Field") : resultSet.getString("name");
+                    columnList.add(columnName);
+                }
             }
         } catch (SQLException exception) {
-            exception.printStackTrace();
+            plugin.logStackTrace(exception);
         }
 
         return columnList;
@@ -427,22 +473,26 @@ public final class DataManager {
     public boolean tableExists(String tableName) {
         ResultSet resultSet = null;
         try (Connection connection = getConnection();
-             Statement statement = connection.createStatement()) {
+             Statement statement = connection != null ? connection.createStatement() : null) {
             if (type == Type.MYSQL || type == Type.MARIADB) {
-                resultSet = statement.executeQuery("SHOW TABLES LIKE '" + tableName + "';");
+                if (statement != null) {
+                    resultSet = statement.executeQuery("SHOW TABLES LIKE '" + tableName + "';");
+                }
             } else {
-                resultSet = statement.executeQuery("SELECT name FROM sqlite_master WHERE type='table' AND name='" + tableName + "';");
+                if (statement != null) {
+                    resultSet = statement.executeQuery("SELECT name FROM sqlite_master WHERE type='table' AND name='" + tableName + "';");
+                }
             }
             return resultSet != null && resultSet.next();
-        } catch (SQLException exception) {
-            exception.printStackTrace();
+        } catch (NullPointerException | SQLException exception) {
+            plugin.logStackTrace(exception);
             return false;
         } finally {
             if (resultSet != null) {
                 try {
                     resultSet.close();
                 } catch (SQLException exception) {
-                    exception.printStackTrace();
+                    plugin.logStackTrace(exception);
                 }
             }
         }
@@ -542,6 +592,21 @@ public final class DataManager {
     }
 
     /**
+     * Sets up the graveyards table in the database.
+     *
+     * @throws SQLException if an SQL error occurs.
+     */
+    private void setupGraveyardsTable() throws SQLException {
+        String createTableQuery = "CREATE TABLE IF NOT EXISTS graveyards (" +
+                "name VARCHAR(255) NOT NULL," +
+                "world VARCHAR(255) NOT NULL," +
+                "type VARCHAR(255) NOT NULL," +
+                "PRIMARY KEY (name, world)" +
+                ");";
+        executeUpdate(createTableQuery);
+    }
+
+    /**
      * Sets up the hologram table in the database.
      *
      * @throws SQLException if an SQL error occurs.
@@ -599,8 +664,30 @@ public final class DataManager {
                     plugin.getCacheManager().getGraveMap().put(grave.getUUID(), grave);
                 }
             }
-        } catch (SQLException exception) {
-            exception.printStackTrace();
+        } catch (NullPointerException | SQLException exception) {
+            plugin.logStackTrace(exception);
+        }
+    }
+
+    /**
+     * Loads graveyards from the database into the provided map.
+     */
+    public void loadGraveyardsMap() {
+        String query = "SELECT * FROM graveyards";
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(query);
+             ResultSet resultSet = statement.executeQuery()) {
+
+            while (resultSet.next()) {
+                String name = resultSet.getString("name");
+                String world = resultSet.getString("world");
+                String type = resultSet.getString("type");
+                Graveyard graveyard = new Graveyard(name, plugin.getServer().getWorld(world), Graveyard.Type.valueOf(type.toUpperCase()));
+                plugin.getCacheManager().getGraveyardsMap().put(name, graveyard);
+            }
+        } catch (NullPointerException | SQLException e) {
+            plugin.getLogger().severe("Failed to load graveyards: " + e.getMessage());
         }
     }
 
@@ -622,8 +709,8 @@ public final class DataManager {
 
                 getChunkData(location).addBlockData(new BlockData(location, uuidGrave, replaceMaterial, replaceData));
             }
-        } catch (SQLException exception) {
-            exception.printStackTrace();
+        } catch (NullPointerException | SQLException exception) {
+            plugin.logStackTrace(exception);
         }
     }
 
@@ -656,8 +743,8 @@ public final class DataManager {
                     getChunkData(location).addEntityData(new EntityData(location, uuidEntity, uuidGrave, type));
                 }
             }
-        } catch (SQLException exception) {
-            exception.printStackTrace();
+        } catch (NullPointerException | SQLException exception) {
+            plugin.logStackTrace(exception);
         }
     }
 
@@ -688,8 +775,8 @@ public final class DataManager {
                     getChunkData(location).addEntityData(new HologramData(location, uuidEntity, uuidGrave, line));
                 }
             }
-        } catch (SQLException exception) {
-            exception.printStackTrace();
+        } catch (NullPointerException | SQLException exception) {
+            plugin.logStackTrace(exception);
         }
     }
 
@@ -703,10 +790,10 @@ public final class DataManager {
         String query = "SELECT * FROM " + table + ";";
 
         try (Connection connection = getConnection();
-             Statement statement = connection.createStatement();
-             ResultSet resultSet = statement.executeQuery(query)) {
+             Statement statement = connection != null ? connection.createStatement() : null;
+             ResultSet resultSet = statement != null ? statement.executeQuery(query) : null) {
 
-            while (resultSet.next()) {
+            while (resultSet != null && resultSet.next()) {
                 Location location = null;
 
                 if (resultSet.getString("location") != null) {
@@ -723,7 +810,7 @@ public final class DataManager {
                 }
             }
         } catch (SQLException exception) {
-            exception.printStackTrace();
+            plugin.logStackTrace(exception);
         }
     }
 
@@ -784,15 +871,19 @@ public final class DataManager {
     public void removeHologramData(List<EntityData> entityDataList) {
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             try (Connection connection = getConnection();
-                 Statement statement = connection.createStatement()) {
+                 Statement statement = connection != null ? connection.createStatement() : null) {
                 for (EntityData hologramData : entityDataList) {
                     getChunkData(hologramData.getLocation()).removeEntityData(hologramData);
-                    statement.addBatch("DELETE FROM hologram WHERE uuid_entity = '"
-                            + hologramData.getUUIDEntity() + "';");
+                    if (statement != null) {
+                        statement.addBatch("DELETE FROM hologram WHERE uuid_entity = '"
+                                + hologramData.getUUIDEntity() + "';");
+                    }
                 }
-                executeBatch(statement);
+                if (statement != null) {
+                    executeBatch(statement);
+                }
             } catch (SQLException exception) {
-                exception.printStackTrace();
+                plugin.logStackTrace(exception);
             }
         });
     }
@@ -807,15 +898,13 @@ public final class DataManager {
 
         String table = entityDataTypeTable(entityData.getType());
 
-        if (table != null) {
-            String location = "'" + LocationUtil.locationToString(entityData.getLocation()) + "'";
-            String uuidEntity = "'" + entityData.getUUIDEntity() + "'";
-            String uuidGrave = "'" + entityData.getUUIDGrave() + "'";
+        String location = "'" + LocationUtil.locationToString(entityData.getLocation()) + "'";
+        String uuidEntity = "'" + entityData.getUUIDEntity() + "'";
+        String uuidGrave = "'" + entityData.getUUIDGrave() + "'";
 
-            plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () ->
-                    executeUpdate("INSERT INTO " + table + " (location, uuid_entity, uuid_grave) VALUES ("
-                            + location + ", " + uuidEntity + ", " + uuidGrave + ");"));
-        }
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () ->
+                executeUpdate("INSERT INTO " + table + " (location, uuid_entity, uuid_grave) VALUES ("
+                        + location + ", " + uuidEntity + ", " + uuidGrave + ");"));
     }
 
     /**
@@ -835,22 +924,87 @@ public final class DataManager {
     public void removeEntityData(List<EntityData> entityDataList) {
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             try (Connection connection = getConnection();
-                 Statement statement = connection.createStatement()) {
+                 Statement statement = connection != null ? connection.createStatement() : null) {
                 for (EntityData entityData : entityDataList) {
                     getChunkData(entityData.getLocation()).removeEntityData(entityData);
                     String table = entityDataTypeTable(entityData.getType());
-                    if (table != null) {
+                    if (statement != null) {
                         statement.addBatch("DELETE FROM " + table + " WHERE uuid_entity = '"
                                 + entityData.getUUIDEntity() + "';");
                         plugin.debugMessage("Removing " + table + " for grave "
                                 + entityData.getUUIDGrave(), 1);
                     }
                 }
-                executeBatch(statement);
+                if (statement != null) {
+                    executeBatch(statement);
+                }
             } catch (SQLException exception) {
-                exception.printStackTrace();
+                plugin.logStackTrace(exception);
             }
         });
+    }
+
+    /**
+     * Saves a graveyard to the database.
+     *
+     * @param graveyard The graveyard to save.
+     */
+    public void saveGraveyard(Graveyard graveyard) {
+        String name = "'" + graveyard.getName() + "'";
+        String world = "'" + graveyard.getWorld().getName() + "'";
+        String type = "'" + graveyard.getType().name() + "'";
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () ->
+                executeUpdate("INSERT INTO graveyards (name, world, type) VALUES ("
+                    + name + ", " + world + ", " + type + ");"));
+    }
+
+    /**
+     * Retrieves a graveyard by its name.
+     *
+     * @param graveyardName The name of the graveyard.
+     * @return The Graveyard object if found, otherwise null.
+     */
+    public Graveyard getGraveyardByName(String graveyardName) {
+        String query = "SELECT * FROM graveyards WHERE name = ?";
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection != null ? connection.prepareStatement(query) : null) {
+            if (statement != null) {
+                statement.setString(1, graveyardName);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    if (resultSet.next()) {
+                        String name = resultSet.getString("name");
+                        String world = resultSet.getString("world");
+                        String type = resultSet.getString("type");
+                        // Assume there's a method in your Graves plugin to get a World by its name
+                        return new Graveyard(name, plugin.getServer().getWorld(world), Graveyard.Type.valueOf(type.toUpperCase()));
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Failed to retrieve graveyard: " + e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * Deletes a graveyard from the database.
+     *
+     * @param graveyard The graveyard to delete.
+     */
+    public void deleteGraveyard(Graveyard graveyard) {
+        String query = "DELETE FROM graveyards WHERE name = ? AND world = ?";
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection != null ? connection.prepareStatement(query) : null) {
+            if (statement != null) {
+                statement.setString(1, graveyard.getName());
+                statement.setString(2, graveyard.getWorld().getName());
+                statement.executeUpdate();
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Failed to delete graveyard: " + e.getMessage());
+        }
     }
 
     /**
@@ -1031,7 +1185,7 @@ public final class DataManager {
 
             return grave;
         } catch (SQLException exception) {
-            exception.printStackTrace();
+            plugin.logStackTrace(exception);
         }
         return null;
     }
@@ -1054,8 +1208,8 @@ public final class DataManager {
         try {
             return dataSource.getConnection();
         } catch (SQLException exception) {
-            exception.printStackTrace();
             plugin.getLogger().severe("Error obtaining database connection: " + exception.getMessage());
+            plugin.logStackTrace(exception);
             return null;
         }
     }
@@ -1078,7 +1232,7 @@ public final class DataManager {
         try {
             statement.executeBatch();
         } catch (SQLException exception) {
-            exception.printStackTrace();
+            plugin.logStackTrace(exception);
         }
     }
 
@@ -1097,13 +1251,13 @@ public final class DataManager {
         } catch (SQLException exception) {
             // Log the SQL exception for both MySQL and SQLite
             plugin.getLogger().severe("Error executing SQL update: " + exception.getMessage());
-            exception.printStackTrace();
+            plugin.logStackTrace(exception);
         } finally {
             if (statement != null) {
                 try {
                     statement.close();
                 } catch (SQLException exception) {
-                    exception.printStackTrace();
+                    plugin.logStackTrace(exception);
                 }
             }
         }
@@ -1124,20 +1278,20 @@ public final class DataManager {
                 resultSet = statement.executeQuery(sql);
             }
         } catch (SQLException exception) {
-            exception.printStackTrace();
+            plugin.logStackTrace(exception);
         } finally {
             if (resultSet != null) {
                 try {
                     resultSet.close();
                 } catch (SQLException exception) {
-                    exception.printStackTrace();
+                    plugin.logStackTrace(exception);
                 }
             }
             if (statement != null) {
                 try {
                     statement.close();
                 } catch (SQLException exception) {
-                    exception.printStackTrace();
+                    plugin.logStackTrace(exception);
                 }
             }
         }
@@ -1154,7 +1308,7 @@ public final class DataManager {
             try {
                 connection.close();
             } catch (SQLException e) {
-                e.printStackTrace();
+                plugin.logStackTrace(e);
             }
         }
     }
@@ -1169,7 +1323,7 @@ public final class DataManager {
             try {
                 statement.close();
             } catch (SQLException e) {
-                e.printStackTrace();
+                plugin.logStackTrace(e);
             }
         }
     }
@@ -1184,7 +1338,7 @@ public final class DataManager {
             try {
                 resultSet.close();
             } catch (SQLException exception) {
-                exception.printStackTrace();
+                plugin.logStackTrace(exception);
             }
         }
     }
@@ -1194,7 +1348,7 @@ public final class DataManager {
      *
      * @return true if the connection is successful, false otherwise.
      */
-    private boolean testMySQLConnection() {
+    private boolean testDatabaseConnection() {
         try (Connection testConnection = getConnection()) {
             return testConnection != null && !testConnection.isClosed();
         } catch (SQLException e) {
@@ -1204,7 +1358,7 @@ public final class DataManager {
     }
 
     /**
-     * Migrates data from SQLite to the target database (MySQL or PostgreSQL).
+     * Migrates data from SQLite to the target database (MySQL, MariaDB, PostgreSQL, or H2).
      */
     public void migrate() {
         File dataFolder = new File(plugin.getDataFolder(), "data");
@@ -1255,20 +1409,8 @@ public final class DataManager {
                     executeUpdate(createTableQuery.toString());
 
                     // Modify columns if necessary
-                    if ("grave".equals(tableName) && this.type == Type.MYSQL) {
-                        plugin.getLogger().info("Altering table " + tableName + " to ensure column sizes are correct.");
-                        executeUpdate("ALTER TABLE grave MODIFY owner_texture TEXT");
-                        executeUpdate("ALTER TABLE grave MODIFY owner_texture_signature TEXT");
-                        executeUpdate("ALTER TABLE grave MODIFY time_creation BIGINT");
-                        executeUpdate("ALTER TABLE grave MODIFY time_protection BIGINT");
-                        executeUpdate("ALTER TABLE grave MODIFY time_alive BIGINT");
-                    } else if ("grave".equals(tableName) && this.type == Type.POSTGRESQL) {
-                        plugin.getLogger().info("Altering table " + tableName + " to ensure column sizes are correct.");
-                        executeUpdate("ALTER TABLE grave ALTER COLUMN owner_texture TYPE TEXT");
-                        executeUpdate("ALTER TABLE grave ALTER COLUMN owner_texture_signature TYPE TEXT");
-                        executeUpdate("ALTER TABLE grave ALTER COLUMN time_creation TYPE BIGINT");
-                        executeUpdate("ALTER TABLE grave ALTER COLUMN time_protection TYPE BIGINT");
-                        executeUpdate("ALTER TABLE grave ALTER COLUMN time_alive TYPE BIGINT");
+                    if ("grave".equals(tableName)) {
+                        adjustGraveTableForTargetDB();
                     }
 
                     while (tableData.next()) {
@@ -1278,7 +1420,6 @@ public final class DataManager {
                         for (int i = 1; i <= tableMetaData.getColumnCount(); i++) {
                             if (columns.contains(tableMetaData.getColumnName(i))) {
                                 String data = tableData.getString(i);
-                                String columnName = tableMetaData.getColumnName(i);
                                 if (data != null) {
                                     data = data.replace("'", "''");
                                 }
@@ -1314,67 +1455,158 @@ public final class DataManager {
     }
 
     /**
-     * Maps SQLite data types to target database data types (MySQL/MariaDB or PostgreSQL).
+     * Maps SQLite data types to target database data types (MySQL/MariaDB, PostgreSQL, or H2).
      *
      * @param sqliteType the SQLite data type.
      * @param columnName the column name.
      * @return the target database data type.
      */
     private String mapSQLiteTypeToTargetDB(String sqliteType, String columnName) {
-        if (this.type == Type.MYSQL || this.type == Type.MARIADB) {
-            switch (sqliteType.toUpperCase()) {
-                case "INT":
-                case "BIGINT":
-                case "INTEGER":
-                    if ("protection".equals(columnName))
-                        return "INT(1)";
-                    if ("time_protection".equals(columnName) || "time_creation".equals(columnName) || "time_alive".equals(columnName))
-                        return "BIGINT";
-                    return "INT(16)";
-                case "VARCHAR":
-                    return "VARCHAR(255)";
-                case "FLOAT":
-                    return "FLOAT(16)";
-                case "TEXT":
-                    return "TEXT";
-                case "BLOB":
-                    return "BLOB";
-                case "REAL":
-                    return "DOUBLE";
-                case "NUMERIC":
-                    return "DECIMAL(10, 5)";
-                default:
-                    plugin.getLogger().warning("Unhandled SQLite type: " + sqliteType + " for column: " + columnName);
-                    return null; // Ignore unhandled types
-            }
-        } else if (this.type == Type.POSTGRESQL) {
-            switch (sqliteType.toUpperCase()) {
-                case "INT":
-                case "BIGINT":
-                case "INTEGER":
-                    if ("protection".equals(columnName))
-                        return "BOOLEAN";
-                    if ("time_protection".equals(columnName) || "time_creation".equals(columnName) || "time_alive".equals(columnName))
-                        return "BIGINT";
-                    return "INTEGER";
-                case "VARCHAR":
-                    return "VARCHAR(255)";
-                case "FLOAT":
-                    return "REAL";
-                case "TEXT":
-                    return "TEXT";
-                case "BLOB":
-                    return "BYTEA";
-                case "REAL":
-                    return "DOUBLE PRECISION";
-                case "NUMERIC":
-                    return "NUMERIC(10, 5)";
-                default:
-                    plugin.getLogger().warning("Unhandled SQLite type: " + sqliteType + " for column: " + columnName);
-                    return null; // Ignore unhandled types
-            }
+        switch (this.type) {
+            case MYSQL:
+            case MARIADB:
+                return mapSQLiteTypeToMySQL(sqliteType, columnName);
+            case POSTGRESQL:
+                return mapSQLiteTypeToPostgreSQL(sqliteType, columnName);
+            case H2:
+                return mapSQLiteTypeToH2(sqliteType, columnName);
+            default:
+                plugin.getLogger().warning("Unhandled database type: " + this.type);
+                return null; // Ignore unhandled types
         }
-        return null;
+    }
+
+    /**
+     * Maps SQLite data types to MySQL/MariaDB data types.
+     *
+     * @param sqliteType the SQLite data type.
+     * @param columnName the column name.
+     * @return the MySQL/MariaDB data type.
+     */
+    private String mapSQLiteTypeToMySQL(String sqliteType, String columnName) {
+        switch (sqliteType.toUpperCase()) {
+            case "INT":
+            case "BIGINT":
+            case "INTEGER":
+                if ("protection".equals(columnName))
+                    return "INT(1)";
+                if ("time_protection".equals(columnName) || "time_creation".equals(columnName) || "time_alive".equals(columnName))
+                    return "BIGINT";
+                return "INT(16)";
+            case "VARCHAR":
+                return "VARCHAR(255)";
+            case "FLOAT":
+                return "FLOAT(16)";
+            case "TEXT":
+                return "TEXT";
+            case "BLOB":
+                return "BLOB";
+            case "REAL":
+                return "DOUBLE";
+            case "NUMERIC":
+                return "DECIMAL(10, 5)";
+            default:
+                plugin.getLogger().warning("Unhandled SQLite type: " + sqliteType + " for column: " + columnName);
+                return null; // Ignore unhandled types
+        }
+    }
+
+    /**
+     * Maps SQLite data types to PostgreSQL data types.
+     *
+     * @param sqliteType the SQLite data type.
+     * @param columnName the column name.
+     * @return the PostgreSQL data type.
+     */
+    private String mapSQLiteTypeToPostgreSQL(String sqliteType, String columnName) {
+        switch (sqliteType.toUpperCase()) {
+            case "INT":
+            case "BIGINT":
+            case "INTEGER":
+                if ("protection".equals(columnName))
+                    return "BOOLEAN";
+                if ("time_protection".equals(columnName) || "time_creation".equals(columnName) || "time_alive".equals(columnName))
+                    return "BIGINT";
+                return "INTEGER";
+            case "VARCHAR":
+                return "VARCHAR(255)";
+            case "FLOAT":
+                return "REAL";
+            case "TEXT":
+                return "TEXT";
+            case "BLOB":
+                return "BYTEA";
+            case "REAL":
+                return "DOUBLE PRECISION";
+            case "NUMERIC":
+                return "NUMERIC(10, 5)";
+            default:
+                plugin.getLogger().warning("Unhandled SQLite type: " + sqliteType + " for column: " + columnName);
+                return null; // Ignore unhandled types
+        }
+    }
+
+    /**
+     * Maps SQLite data types to H2 data types.
+     *
+     * @param sqliteType the SQLite data type.
+     * @param columnName the column name.
+     * @return the H2 data type.
+     */
+    private String mapSQLiteTypeToH2(String sqliteType, String columnName) {
+        switch (sqliteType.toUpperCase()) {
+            case "INT":
+            case "BIGINT":
+            case "INTEGER":
+                if ("protection".equals(columnName))
+                    return "BOOLEAN";
+                if ("time_protection".equals(columnName) || "time_creation".equals(columnName) || "time_alive".equals(columnName))
+                    return "BIGINT";
+                return "INTEGER";
+            case "VARCHAR":
+                return "VARCHAR(255)";
+            case "FLOAT":
+                return "FLOAT";
+            case "TEXT":
+                return "TEXT";
+            case "BLOB":
+                return "BLOB";
+            case "REAL":
+                return "DOUBLE";
+            case "NUMERIC":
+                return "NUMERIC(10, 5)";
+            default:
+                plugin.getLogger().warning("Unhandled SQLite type: " + sqliteType + " for column: " + columnName);
+                return null; // Ignore unhandled types
+        }
+    }
+
+    /**
+     * Adjusts the grave table for the target database if necessary.
+     */
+    private void adjustGraveTableForTargetDB() throws SQLException {
+        if (this.type == Type.MYSQL || this.type == Type.MARIADB) {
+            plugin.getLogger().info("Altering table grave to ensure column sizes are correct.");
+            executeUpdate("ALTER TABLE grave MODIFY owner_texture TEXT");
+            executeUpdate("ALTER TABLE grave MODIFY owner_texture_signature TEXT");
+            executeUpdate("ALTER TABLE grave MODIFY time_creation BIGINT");
+            executeUpdate("ALTER TABLE grave MODIFY time_protection BIGINT");
+            executeUpdate("ALTER TABLE grave MODIFY time_alive BIGINT");
+        } else if (this.type == Type.POSTGRESQL) {
+            plugin.getLogger().info("Altering table grave to ensure column sizes are correct.");
+            executeUpdate("ALTER TABLE grave ALTER COLUMN owner_texture TYPE TEXT");
+            executeUpdate("ALTER TABLE grave ALTER COLUMN owner_texture_signature TYPE TEXT");
+            executeUpdate("ALTER TABLE grave ALTER COLUMN time_creation TYPE BIGINT");
+            executeUpdate("ALTER TABLE grave ALTER COLUMN time_protection TYPE BIGINT");
+            executeUpdate("ALTER TABLE grave ALTER COLUMN time_alive TYPE BIGINT");
+        } else if (this.type == Type.H2) {
+            plugin.getLogger().info("Altering table grave to ensure column sizes are correct.");
+            executeUpdate("ALTER TABLE grave ALTER COLUMN owner_texture TEXT");
+            executeUpdate("ALTER TABLE grave ALTER COLUMN owner_texture_signature TEXT");
+            executeUpdate("ALTER TABLE grave ALTER COLUMN time_creation BIGINT");
+            executeUpdate("ALTER TABLE grave ALTER COLUMN time_protection BIGINT");
+            executeUpdate("ALTER TABLE grave ALTER COLUMN time_alive BIGINT");
+        }
     }
 
     /**
@@ -1385,10 +1617,12 @@ public final class DataManager {
             if (isConnected()) {
                 checkAndUnlockDatabase(); // Good to check
                 try (Connection connection = getConnection();
-                     PreparedStatement statement = connection.prepareStatement("SELECT 1")) {
-                    statement.executeQuery();
-                } catch (SQLException exception) {
-                    exception.printStackTrace();
+                     PreparedStatement statement = connection != null ? connection.prepareStatement("SELECT 1") : null) {
+                    if (statement != null) {
+                        statement.executeQuery();
+                    }
+                } catch (NullPointerException | SQLException exception) {
+                    plugin.logStackTrace(exception);
                 }
             }
         }, 0L, 25 * 20L); // 25 seconds interval
@@ -1401,20 +1635,26 @@ public final class DataManager {
         if (type != Type.SQLITE) return;
         String checkQuery = "SELECT 1";
         try (Connection connection = getConnection();
-             Statement statement = connection.createStatement()) {
-            statement.executeQuery(checkQuery);
-        } catch (SQLException e) {
+             Statement statement = connection != null ? connection.createStatement() : null) {
+            if (statement != null) {
+                statement.executeQuery(checkQuery);
+            }
+        } catch (NullPointerException | SQLException e) {
             if (e.getMessage().contains("database is locked")) {
                 plugin.getLogger().severe("Database is locked. Attempting to unlock...");
                 try (Connection connection = getConnection()) {
-                    connection.setAutoCommit(false);
-                    connection.commit();
-                    plugin.getLogger().info("Database unlocked successfully using COMMIT.");
+                    if (connection != null) {
+                        connection.setAutoCommit(false);
+                        connection.commit();
+                        plugin.getLogger().info("Database unlocked successfully using COMMIT.");
+                    }
                 } catch (SQLException commitException) {
                     plugin.getLogger().severe("Failed to unlock database using COMMIT: " + commitException.getMessage());
                     try (Connection connection = getConnection()) {
-                        connection.rollback();
-                        plugin.getLogger().info("Database unlocked successfully using ROLLBACK.");
+                        if (connection != null) {
+                            connection.rollback();
+                            plugin.getLogger().info("Database unlocked successfully using ROLLBACK.");
+                        }
                     } catch (SQLException rollbackException) {
                         plugin.getLogger().severe("Failed to unlock database using ROLLBACK: " + rollbackException.getMessage());
                     }

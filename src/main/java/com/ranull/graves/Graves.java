@@ -448,7 +448,7 @@ public class Graves extends JavaPlugin {
 
                         message = dumpFile.getAbsolutePath();
                     } catch (FileNotFoundException | UnsupportedEncodingException exception) {
-                        exception.printStackTrace();
+                        logStackTrace(exception);
                     }
                 }
 
@@ -661,7 +661,7 @@ public class Graves extends JavaPlugin {
             try {
                 fileConfiguration = YamlConfiguration.loadConfiguration(file);
             } catch (IllegalArgumentException exception) {
-                exception.printStackTrace();
+                logStackTrace(exception);
             }
         }
 
@@ -690,5 +690,11 @@ public class Graves extends JavaPlugin {
 
     public final int getMetricsID() {
         return 12849;
+    }
+
+    public void logStackTrace(Exception e) {
+        for (StackTraceElement element : e.getStackTrace()) {
+            getLogger().severe(element.toString());
+        }
     }
 }

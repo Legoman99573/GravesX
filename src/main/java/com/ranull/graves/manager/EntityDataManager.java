@@ -118,9 +118,9 @@ public class EntityDataManager {
         for (Map.Entry<String, ChunkData> chunkDataEntry : plugin.getCacheManager().getChunkMap().entrySet()) {
             ChunkData chunkData = chunkDataEntry.getValue();
 
-            if (chunkDataEntry.getValue().isLoaded()) {
+            if (chunkData.isLoaded()) {
                 for (EntityData entityData : new ArrayList<>(chunkData.getEntityDataMap().values())) {
-                    if (grave.getUUID().equals(entityData.getUUIDGrave())) {
+                    if (entityData != null && grave.getUUID().equals(entityData.getUUIDGrave())) {
                         entityDataList.add(entityData);
                     }
                 }

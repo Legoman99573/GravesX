@@ -12,10 +12,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * The GraveyardManager class is responsible for managing graveyards.
@@ -203,9 +200,38 @@ public final class GraveyardManager {
                 refreshLocation(player, location);
             }
 
-            player.sendMessage("stop modifying graveyard " + graveyard.getName());
-            // TODO: Save graveyard changes
+            player.sendMessage("Stopped modifying graveyard " + graveyard.getName());
+
+            // Save graveyard changes
+            plugin.getDataManager().saveGraveyard(graveyard);
         }
+    }
+
+    /**
+     * Retrieves a graveyard by its name.
+     *
+     * @param graveyardName The name of the graveyard.
+     * @return The Graveyard object if found, otherwise null.
+     */
+    public Graveyard getGraveyardByName(String graveyardName) {
+        return plugin.getDataManager().getGraveyardByName(graveyardName);
+    }
+
+    /**
+     * Deletes a graveyard.
+     *
+     * @param player The player deleting the graveyard.
+     * @param graveyard The graveyard to delete.
+     */
+    public void deleteGraveyard(Player player, Graveyard graveyard) {
+        // Remove the graveyard from the in-memory map if necessary
+        modifyingGraveyardMap.remove(player.getUniqueId());
+
+        // Notify the player
+        player.sendMessage("Deleted graveyard " + graveyard.getName());
+
+        // Delete the graveyard from the database
+        plugin.getDataManager().deleteGraveyard(graveyard);
     }
 
     /**
@@ -290,5 +316,24 @@ public final class GraveyardManager {
         if (plugin.getIntegrationManager().hasProtocolLib()) {
             plugin.getIntegrationManager().getProtocolLib().refreshBlock(location.getBlock(), player);
         }
+    }
+
+    /**
+     * Retrieves a list of all existing graveyards.
+     *
+     * @return A List of all existing Graveyards.
+     */
+    public List<Graveyard> getAllGraveyardList() {
+        return new ArrayList<>(graveyardMap.values());
+    }
+
+    /**
+     * Retrieves an array of all existing graveyards.
+     *
+     * @return An array of all existing Graveyards.
+     */
+    public Graveyard[] getAllGraveyardArray() {
+        List<Graveyard> graveyardsList = new ArrayList<>(graveyardMap.values());
+        return graveyardsList.toArray(new Graveyard[0]);
     }
 }

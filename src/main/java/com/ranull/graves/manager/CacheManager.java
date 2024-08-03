@@ -2,6 +2,7 @@ package com.ranull.graves.manager;
 
 import com.ranull.graves.data.ChunkData;
 import com.ranull.graves.type.Grave;
+import com.ranull.graves.type.Graveyard;
 import org.bukkit.Location;
 import org.bukkit.inventory.ItemStack;
 
@@ -18,6 +19,7 @@ public final class CacheManager {
     private final Map<String, ChunkData> chunkMap;
     private final Map<UUID, Location> lastLocationMap;
     private final Map<UUID, List<ItemStack>> removedItemStackMap;
+    private final Map<String, Graveyard> graveyardMap;
 
     /**
      * Initializes a new instance of the CacheManager class.
@@ -27,6 +29,7 @@ public final class CacheManager {
         this.chunkMap = new HashMap<>();
         this.lastLocationMap = new HashMap<>();
         this.removedItemStackMap = new HashMap<>();
+        this.graveyardMap = new HashMap<>();
     }
 
     /**
@@ -36,6 +39,15 @@ public final class CacheManager {
      */
     public Map<UUID, Grave> getGraveMap() {
         return graveMap;
+    }
+
+    /**
+     * Gets the map of graves, keyed by their UUIDs.
+     *
+     * @return A map containing UUIDs and their corresponding graves.
+     */
+    public Map<String, Graveyard> getGraveyardsMap() {
+        return graveyardMap;
     }
 
     /**

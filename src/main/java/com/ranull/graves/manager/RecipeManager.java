@@ -198,7 +198,7 @@ public final class RecipeManager {
             } catch (IllegalArgumentException e) { // Fucking spigot really be trying to break this.
                 plugin.getLogger().severe("Unable to register token recipe for " + token + ". Check your recipe in token.yml");
                 plugin.getLogger().severe("This is likely an invalid Material or a Spigot related bug.");
-                e.printStackTrace();
+                plugin.logStackTrace(e);
             }
         }
     }

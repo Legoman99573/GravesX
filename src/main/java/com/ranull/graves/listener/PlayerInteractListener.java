@@ -92,6 +92,10 @@ public class PlayerInteractListener implements Listener {
      */
     private void handleBlockInteraction(PlayerInteractEvent event, Player player) {
         Block block = event.getClickedBlock();
+        if (block == null) {
+            return; // Exit early if block is null
+        }
+
         if (event.useInteractedBlock() != Event.Result.DENY && event.getAction() == Action.RIGHT_CLICK_BLOCK) {
             handleGraveInteraction(event, player, block);
         }
@@ -108,6 +112,10 @@ public class PlayerInteractListener implements Listener {
      * @param block  The block being interacted with.
      */
     private void handleGraveInteraction(PlayerInteractEvent event, Player player, Block block) {
+        if (block == null) {
+            return; // Exit early if block is null
+        }
+
         Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
 
         if (grave == null) {
@@ -119,7 +127,12 @@ public class PlayerInteractListener implements Listener {
         }
 
         if (grave != null) {
-            event.setCancelled(plugin.getGraveManager().openGrave(player, block.getLocation(), grave));
+            try {
+                event.setCancelled(plugin.getGraveManager().openGrave(player, block.getLocation(), grave));
+            } catch (NullPointerException e) {
+                plugin.getLogger().severe("Failed to open grave: " + e.getMessage());
+                plugin.logStackTrace(e);
+            }
         }
     }
 
@@ -162,6 +175,11 @@ public class PlayerInteractListener implements Listener {
      */
     private void handleCompassInteraction(PlayerInteractEvent event, Player player) {
         ItemStack itemStack = event.getItem();
+
+        if (itemStack == null) {
+            return; // Exit early if itemStack is null
+        }
+
         UUID uuid = plugin.getEntityManager().getGraveUUIDFromItemStack(itemStack);
 
         if (uuid != null) {
@@ -174,7 +192,8 @@ public class PlayerInteractListener implements Listener {
                     if (event.getClickedBlock() != null && plugin.getLocationManager().hasGrave(event.getClickedBlock().getLocation())
                             && player.getInventory().getItemInMainHand().getType().toString().toLowerCase().contains("compass")) {
                         player.getInventory().remove(itemStack);
-                        player.updateInventory();
+                        player.closeInventory(); // Close the player's inventory
+                        player.openInventory(player.getInventory()); // Reopen the player's inventory
                     } else {
                         player.getInventory().setItem(player.getInventory().getHeldItemSlot(),
                                 plugin.getEntityManager().createGraveCompass(player, location, grave));
@@ -182,11 +201,13 @@ public class PlayerInteractListener implements Listener {
                     }
                 } else {
                     player.getInventory().remove(itemStack);
-                    player.updateInventory();
+                    player.closeInventory(); // Close the player's inventory
+                    player.openInventory(player.getInventory()); // Reopen the player's inventory
                 }
             } else {
                 player.getInventory().remove(itemStack);
-                player.updateInventory();
+                player.closeInventory(); // Close the player's inventory
+                player.openInventory(player.getInventory()); // Reopen the player's inventory
             }
             event.setCancelled(true);
         }

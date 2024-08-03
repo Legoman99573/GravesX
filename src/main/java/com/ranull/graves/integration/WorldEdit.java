@@ -89,7 +89,7 @@ public final class WorldEdit {
                             stringClipboardMap.put(name, clipboardReader.read());
                             plugin.debugMessage("Loading schematic " + name, 1);
                         } catch (IOException exception) {
-                            exception.printStackTrace();
+                            plugin.logStackTrace(exception);
                         }
                     } else {
                         plugin.warningMessage("Unable to load schematic " + name);
@@ -235,7 +235,7 @@ public final class WorldEdit {
 
                     return clipboardHolder.getClipboard();
                 } catch (WorldEditException exception) {
-                    exception.printStackTrace();
+                    plugin.logStackTrace(exception);
                 }
             } else {
                 plugin.debugMessage("Can't find schematic " + name, 1);
@@ -285,7 +285,7 @@ public final class WorldEdit {
         try {
             Operations.complete(pasteBuilder.build());
         } catch (WorldEditException exception) {
-            exception.printStackTrace();
+            plugin.logStackTrace(exception);
         }
     }
 

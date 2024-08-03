@@ -63,7 +63,7 @@ public class SkriptImpl {
             Skript.registerExpression(ExprEventPlayer.class, Player.class, ExpressionType.SIMPLE, "[the] event[-]player");
             plugin.integrationMessage("Skript integration loaded successfully.");
         } catch (Exception e) {
-            e.printStackTrace();
+            plugin.logStackTrace(e);
         }
     }
 
