@@ -8,35 +8,27 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerInteractEvent;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
-/**
- * The GraveyardManager class is responsible for managing graveyards.
- */
 public final class GraveyardManager {
     private final Graves plugin;
     private final Map<String, Graveyard> graveyardMap;
     private final Map<UUID, Graveyard> modifyingGraveyardMap;
 
-    /**
-     * Initializes a new instance of the GraveyardManager class.
-     *
-     * @param plugin The plugin instance.
-     */
     public GraveyardManager(Graves plugin) {
         this.plugin = plugin;
         this.graveyardMap = new HashMap<>();
         this.modifyingGraveyardMap = new HashMap<>();
     }
 
-    /**
-     * Unloads the graveyard manager, stopping any players modifying graveyards.
-     */
     public void unload() throws InvocationTargetException {
         for (Map.Entry<UUID, Graveyard> entry : modifyingGraveyardMap.entrySet()) {
             Player player = plugin.getServer().getPlayer(entry.getKey());
@@ -47,25 +39,10 @@ public final class GraveyardManager {
         }
     }
 
-    /**
-     * Gets a graveyard by its key.
-     *
-     * @param key The key of the graveyard.
-     * @return The graveyard, or null if not found.
-     */
     public Graveyard getGraveyardByKey(String key) {
         return graveyardMap.get(key);
     }
 
-    /**
-     * Creates a new graveyard.
-     *
-     * @param location The spawn location of the graveyard.
-     * @param name     The name of the graveyard.
-     * @param world    The world the graveyard is in.
-     * @param type     The type of the graveyard.
-     * @return The created graveyard.
-     */
     public Graveyard createGraveyard(Location location, String name, World world, Graveyard.Type type) {
         Graveyard graveyard = new Graveyard(name, world, type);
         graveyard.setSpawnLocation(location);
@@ -73,13 +50,6 @@ public final class GraveyardManager {
         return graveyard;
     }
 
-    /**
-     * Adds a location to a graveyard.
-     *
-     * @param player    The player adding the location.
-     * @param location  The location to add.
-     * @param graveyard The graveyard to add the location to.
-     */
     public void addLocationInGraveyard(Player player, Location location, Graveyard graveyard) {
         plugin.getServer().getScheduler().runTask(plugin, () -> {
             if (!graveyard.hasGraveLocation(location)) {
@@ -92,13 +62,6 @@ public final class GraveyardManager {
         });
     }
 
-    /**
-     * Removes a location from a graveyard.
-     *
-     * @param player    The player removing the location.
-     * @param location  The location to remove.
-     * @param graveyard The graveyard to remove the location from.
-     */
     public void removeLocationInGraveyard(Player player, Location location, Graveyard graveyard) {
         plugin.getServer().getScheduler().runTask(plugin, () -> {
             if (graveyard.hasGraveLocation(location)) {
@@ -110,24 +73,12 @@ public final class GraveyardManager {
         });
     }
 
-    /**
-     * Gets the free spaces in a graveyard.
-     *
-     * @param graveyard The graveyard to get the free spaces for.
-     * @return A map of free locations and their block faces.
-     */
     public Map<Location, BlockFace> getGraveyardFreeSpaces(Graveyard graveyard) {
         Map<Location, BlockFace> locationMap = new HashMap<>(graveyard.getGraveLocationMap());
         locationMap.entrySet().removeAll(getGraveyardUsedSpaces(graveyard).entrySet());
         return locationMap;
     }
 
-    /**
-     * Gets the used spaces in a graveyard.
-     *
-     * @param graveyard The graveyard to get the used spaces for.
-     * @return A map of used locations and their block faces.
-     */
     public Map<Location, BlockFace> getGraveyardUsedSpaces(Graveyard graveyard) {
         Map<Location, BlockFace> locationMap = new HashMap<>();
 
@@ -140,32 +91,14 @@ public final class GraveyardManager {
         return locationMap;
     }
 
-    /**
-     * Checks if a player is modifying a graveyard.
-     *
-     * @param player The player to check.
-     * @return True if the player is modifying a graveyard, otherwise false.
-     */
     public boolean isModifyingGraveyard(Player player) {
         return modifyingGraveyardMap.containsKey(player.getUniqueId());
     }
 
-    /**
-     * Gets the graveyard a player is modifying.
-     *
-     * @param player The player to get the graveyard for.
-     * @return The graveyard the player is modifying, or null if not modifying any graveyard.
-     */
     public Graveyard getModifyingGraveyard(Player player) {
         return modifyingGraveyardMap.get(player.getUniqueId());
     }
 
-    /**
-     * Starts modifying a graveyard for a player.
-     *
-     * @param player    The player starting to modify the graveyard.
-     * @param graveyard The graveyard to modify.
-     */
     public void startModifyingGraveyard(Player player, Graveyard graveyard) throws InvocationTargetException {
         if (isModifyingGraveyard(player)) {
             stopModifyingGraveyard(player);
@@ -180,16 +113,23 @@ public final class GraveyardManager {
         player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Started modifying graveyard " + graveyard.getName());
     }
 
-    /**
-     * Stops modifying a graveyard for a player.
-     *
-     * @param player The player stopping the modification.
-     */
     public void stopModifyingGraveyard(Player player) throws InvocationTargetException {
         Graveyard graveyard = getModifyingGraveyard(player);
 
         if (graveyard != null) {
             modifyingGraveyardMap.remove(player.getUniqueId());
+
+            CacheManager cacheManager = plugin.getCacheManager();
+            Location cachedLocation = cacheManager.getRightClickedBlock(player.getName());
+
+            if (cachedLocation != null) {
+                BlockFace blockFace = BlockFace.SELF; // or determine the correct BlockFace
+
+                graveyard.addGraveLocation(cachedLocation, blockFace);
+                cacheManager.removeRightClickedBlock(player.getName(), cachedLocation);
+
+                player.sendMessage(ChatColor.GREEN + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.GREEN + "Added location to graveyard " + graveyard.getName());
+            }
 
             for (Location location : graveyard.getGraveLocationMap().keySet()) {
                 refreshLocation(player, location);
@@ -197,45 +137,26 @@ public final class GraveyardManager {
 
             player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Stopped modifying graveyard " + graveyard.getName());
 
-            // Save graveyard changes
-            plugin.getDataManager().saveGraveyard(graveyard);
+            // Serialize locations
+            String serializedLocations = Graveyard.serializeLocations(graveyard.getGraveLocationMap());
+            plugin.getLogger().info("Serialized locations before saving: " + serializedLocations);
+
+            plugin.getDataManager().saveGraveyard(graveyard, serializedLocations);
         }
     }
 
-    /**
-     * Retrieves a graveyard by its name.
-     *
-     * @param graveyardName The name of the graveyard.
-     * @return The Graveyard object if found, otherwise null.
-     */
     public Graveyard getGraveyardByName(String graveyardName) {
         return plugin.getDataManager().getGraveyardByName(graveyardName);
     }
 
-    /**
-     * Deletes a graveyard.
-     *
-     * @param player The player deleting the graveyard.
-     * @param graveyard The graveyard to delete.
-     */
     public void deleteGraveyard(Player player, Graveyard graveyard) {
-        // Remove the graveyard from the in-memory map if necessary
         modifyingGraveyardMap.remove(player.getUniqueId());
 
-        // Notify the player
         player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Deleted graveyard " + graveyard.getName());
 
-        // Delete the graveyard from the database
         plugin.getDataManager().deleteGraveyard(graveyard);
     }
 
-    /**
-     * Checks if a location is inside a graveyard.
-     *
-     * @param location  The location to check.
-     * @param graveyard The graveyard to check against.
-     * @return True if the location is inside the graveyard, otherwise false.
-     */
     public boolean isLocationInGraveyard(Location location, Graveyard graveyard) {
         switch (graveyard.getType()) {
             case WORLDGUARD:
@@ -249,13 +170,6 @@ public final class GraveyardManager {
         }
     }
 
-    /**
-     * Gets the closest graveyard to a location for an entity.
-     *
-     * @param location The location to get the closest graveyard for.
-     * @param entity   The entity to check.
-     * @return The closest graveyard, or null if none found.
-     */
     public Graveyard getClosestGraveyard(Location location, Entity entity) {
         Map<Location, Graveyard> locationGraveyardMap = new HashMap<>();
 
@@ -269,7 +183,6 @@ public final class GraveyardManager {
                                 .isMember(graveyard.getName(), (Player) entity)))) {
                             locationGraveyardMap.put(graveyard.getSpawnLocation(), graveyard);
                         }
-
                         break;
                     case TOWNY:
                         if (graveyard.isPublic() || (!(entity instanceof Player)
@@ -278,7 +191,6 @@ public final class GraveyardManager {
                                 .isResident(graveyard.getName(), (Player) entity)))) {
                             locationGraveyardMap.put(graveyard.getSpawnLocation(), graveyard);
                         }
-
                         break;
                 }
             }
@@ -288,13 +200,6 @@ public final class GraveyardManager {
                 .getClosestLocation(location, new ArrayList<>(locationGraveyardMap.keySet()))) : null;
     }
 
-    /**
-     * Previews a location for a player.
-     *
-     * @param player    The player to preview the location for.
-     * @param location  The location to preview.
-     * @param blockFace The block face direction.
-     */
     private void previewLocation(Player player, Location location, BlockFace blockFace) {
         try {
             if (plugin.getIntegrationManager().hasProtocolLib()) {
@@ -306,12 +211,6 @@ public final class GraveyardManager {
         }
     }
 
-    /**
-     * Refreshes a location for a player.
-     *
-     * @param player   The player to refresh the location for.
-     * @param location The location to refresh.
-     */
     private void refreshLocation(Player player, Location location) {
         try {
             if (plugin.getIntegrationManager().hasProtocolLib()) {
@@ -323,20 +222,10 @@ public final class GraveyardManager {
         }
     }
 
-    /**
-     * Retrieves a list of all existing graveyards.
-     *
-     * @return A List of all existing Graveyards.
-     */
     public List<Graveyard> getAllGraveyardList() {
         return new ArrayList<>(graveyardMap.values());
     }
 
-    /**
-     * Retrieves an array of all existing graveyards.
-     *
-     * @return An array of all existing Graveyards.
-     */
     public Graveyard[] getAllGraveyardArray() {
         List<Graveyard> graveyardsList = new ArrayList<>(graveyardMap.values());
         return graveyardsList.toArray(new Graveyard[0]);

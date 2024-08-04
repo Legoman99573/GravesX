@@ -3,6 +3,7 @@ package com.ranull.graves.command;
 import com.ranull.graves.Graves;
 import com.ranull.graves.type.Graveyard;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
