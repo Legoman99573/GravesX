@@ -78,7 +78,7 @@ public class EntityDeathListener implements Listener {
             return;
         }
 
-        if (!canCreateGraveInWorldGuard(location, livingEntity, entityName, permissionList)) return;
+        if (!canCreateGraveInProtectedRegion(location, livingEntity, entityName, permissionList)) return;
 
         if (!isValidDamageCause(livingEntity, permissionList, entityName)) return;
 
@@ -161,10 +161,10 @@ public class EntityDeathListener implements Listener {
         if (plugin.getGraveyardManager().isModifyingGraveyard(player)) {
             plugin.getGraveyardManager().stopModifyingGraveyard(player);
         }
-        if (!player.hasPermission("graves.place") || !player.hasPermission("graves.place") && !player.isOp() || !player.isOp()) {
+        if (!player.hasPermission("graves.place") || !player.hasPermission("graves.place") && !player.isOp()) {
             plugin.debugMessage("Grave not created for " + entityName + " because they don't have permission to place graves", 2);
             return true;
-        } else if (player.hasPermission("essentials.keepinv") || player.hasPermission("essentials.keepinv") && !player.isOp()) {
+        } else if (player.hasPermission("essentials.keepinv") || player.hasPermission("essentials.keepinv")) {
             plugin.debugMessage(entityName + " has essentials.keepinv", 2);
         }
         return false;
@@ -250,13 +250,14 @@ public class EntityDeathListener implements Listener {
      * @param permissionList The list of permissions.
      * @return True if a grave can be created, false otherwise.
      */
-    private boolean canCreateGraveInWorldGuard(Location location, LivingEntity livingEntity, String entityName, List<String> permissionList) {
+    private boolean canCreateGraveInProtectedRegion(Location location, LivingEntity livingEntity, String entityName, List<String> permissionList) {
         if (plugin.getIntegrationManager().hasWorldGuard()) {
             boolean hasCreateGrave = plugin.getIntegrationManager().getWorldGuard().hasCreateGrave(location);
             if (hasCreateGrave) {
                 if (livingEntity instanceof Player) {
-                    if (!plugin.getIntegrationManager().getWorldGuard().canCreateGrave(livingEntity, location)) {
-                        plugin.getEntityManager().sendMessage("message.region-create-deny", livingEntity, location, permissionList);
+                    Player player = (Player) livingEntity;
+                    if (!plugin.getIntegrationManager().getWorldGuard().canCreateGrave(player, location)) {
+                        plugin.getEntityManager().sendMessage("message.region-create-deny", player, location, permissionList);
                         plugin.debugMessage("Grave not created for " + entityName + " because they are in a region with graves-create set to deny", 2);
                         return false;
                     }
@@ -274,8 +275,18 @@ public class EntityDeathListener implements Listener {
             plugin.debugMessage("Grave not created for " + entityName + " because they don't have permission to build where they died", 2);
             return false;
         }
+
+        if (plugin.getIntegrationManager().hasTowny()) {
+            Player player = (livingEntity instanceof Player) ? (Player) livingEntity : null;
+            if (player != null && !plugin.getIntegrationManager().getTowny().isResident(String.valueOf(location), player)) {
+                plugin.getEntityManager().sendMessage("message.region-create-deny", player, location, permissionList);
+                plugin.debugMessage("Grave not created for " + entityName + " because they are not a resident in the town", 2);
+                return false;
+            }
+        }
         return true;
     }
+
 
     /**
      * Checks if the damage cause is valid for creating a grave.
@@ -284,8 +295,7 @@ public class EntityDeathListener implements Listener {
      * @param permissionList The list of permissions.
      * @param entityName    The name of the entity.
      * @return True if the damage cause is valid, false otherwise.
-     */
-    private boolean isValidDamageCause(LivingEntity livingEntity, List<String> permissionList, String entityName) {
+     */private boolean isValidDamageCause(LivingEntity livingEntity, List<String> permissionList, String entityName) {
         if (livingEntity.getLastDamageCause() != null) {
             EntityDamageEvent.DamageCause damageCause = livingEntity.getLastDamageCause().getCause();
             List<String> damageCauseList = plugin.getConfig("death.reason", livingEntity, permissionList).getStringList("death.reason");
@@ -493,47 +503,38 @@ public class EntityDeathListener implements Listener {
         grave.setLocationDeath(safeLocation != null ? safeLocation : location);
         grave.getLocationDeath().setYaw(grave.getYaw());
         grave.getLocationDeath().setPitch(grave.getPitch());
-        setupGraveyard(grave, locationMap, location, livingEntity);
-        setupObituary(grave, graveItemStackList);
-        setupSkull(grave, graveItemStackList);
-        grave.setInventory(plugin.getGraveManager().getGraveInventory(grave, livingEntity, graveItemStackList, removedItemStackList, permissionList));
-        grave.setEquipmentMap(!plugin.getVersionManager().is_v1_7() ? plugin.getEntityManager().getEquipmentMap(livingEntity, grave) : new HashMap<>());
-        if (!locationMap.isEmpty()) {
-            notifyGraveCreation(event, grave, locationMap, livingEntity, permissionList);
-        } else {
-            handleFailedGravePlacement(event, grave, location, livingEntity);
-        }
-    }
 
-    /**
-     * Sets up the graveyard details for the grave.
-     *
-     * @param grave        The grave to set up.
-     * @param locationMap  The map of locations for the grave.
-     * @param location     The location of the grave.
-     * @param livingEntity The entity that died.
-     */
-    private void setupGraveyard(Grave grave, Map<Location, BlockData.BlockType> locationMap, Location location, LivingEntity livingEntity) {
         if (plugin.getConfig("graveyard.enabled", grave).getBoolean("graveyard.enabled")) {
             Graveyard graveyard = plugin.getGraveyardManager().getClosestGraveyard(grave.getLocationDeath(), livingEntity);
             if (graveyard != null) {
                 Map<Location, BlockFace> graveyardFreeSpaces = plugin.getGraveyardManager().getGraveyardFreeSpaces(graveyard);
                 if (!graveyardFreeSpaces.isEmpty()) {
-                    if (plugin.getConfig("graveyard.death", grave).getBoolean("graveyard.death")) {
-                        locationMap.put(grave.getLocationDeath(), BlockData.BlockType.DEATH);
+                    for (Map.Entry<Location, BlockFace> entry : graveyardFreeSpaces.entrySet()) {
+                        Location graveyardLocation = entry.getKey();
+                        if (!plugin.getDataManager().hasGraveAtLocation(graveyardLocation)) {
+                            graveyardLocation.setYaw(plugin.getConfig().getBoolean("settings.graveyard.facing") ? BlockFaceUtil.getBlockFaceYaw(entry.getValue()) : grave.getYaw());
+                            graveyardLocation.setPitch(grave.getPitch());
+                            locationMap.put(graveyardLocation, BlockData.BlockType.GRAVEYARD);
+                            break;
+                        }
                     }
-                    Map.Entry<Location, BlockFace> entry = graveyardFreeSpaces.entrySet().iterator().next();
-                    entry.getKey().setYaw(plugin.getConfig().getBoolean("settings.graveyard.facing") ? BlockFaceUtil.getBlockFaceYaw(entry.getValue()) : grave.getYaw());
-                    entry.getKey().setPitch(grave.getPitch());
-                    locationMap.put(entry.getKey(), BlockData.BlockType.GRAVEYARD);
-                } else {
-                    locationMap.put(grave.getLocationDeath(), BlockData.BlockType.DEATH);
                 }
-            } else {
-                locationMap.put(grave.getLocationDeath(), BlockData.BlockType.DEATH);
             }
-        } else {
+        }
+
+        if (locationMap.isEmpty()) {
             locationMap.put(grave.getLocationDeath(), BlockData.BlockType.DEATH);
+        }
+
+        setupObituary(grave, graveItemStackList);
+        setupSkull(grave, graveItemStackList);
+        grave.setInventory(plugin.getGraveManager().getGraveInventory(grave, livingEntity, graveItemStackList, removedItemStackList, permissionList));
+        grave.setEquipmentMap(!plugin.getVersionManager().is_v1_7() ? plugin.getEntityManager().getEquipmentMap(livingEntity, grave) : new HashMap<>());
+
+        if (!locationMap.isEmpty()) {
+            notifyGraveCreation(event, grave, locationMap, livingEntity, permissionList);
+        } else {
+            handleFailedGravePlacement(event, grave, location, livingEntity);
         }
     }
 
@@ -641,5 +642,23 @@ public class EntityDeathListener implements Listener {
             event.setDroppedExp(event.getDroppedExp());
             plugin.getEntityManager().sendMessage("message.failure", livingEntity, location, grave);
         }
+    }
+
+    private Location findGraveLocation(Grave grave, LivingEntity livingEntity, Location location) {
+        if (plugin.getConfig("graveyard.enabled", grave).getBoolean("graveyard.enabled")) {
+            Graveyard graveyard = plugin.getGraveyardManager().getClosestGraveyard(location, livingEntity);
+            if (graveyard != null) {
+                Map<Location, BlockFace> graveyardFreeSpaces = plugin.getGraveyardManager().getGraveyardFreeSpaces(graveyard);
+                for (Map.Entry<Location, BlockFace> entry : graveyardFreeSpaces.entrySet()) {
+                    Location graveyardLocation = entry.getKey();
+                    if (!plugin.getDataManager().hasGraveAtLocation(graveyardLocation)) {
+                        graveyardLocation.setYaw(plugin.getConfig().getBoolean("settings.graveyard.facing") ? BlockFaceUtil.getBlockFaceYaw(entry.getValue()) : livingEntity.getLocation().getYaw());
+                        graveyardLocation.setPitch(livingEntity.getLocation().getPitch());
+                        return graveyardLocation;
+                    }
+                }
+            }
+        }
+        return plugin.getLocationManager().getSafeGraveLocation(livingEntity, location, grave);
     }
 }

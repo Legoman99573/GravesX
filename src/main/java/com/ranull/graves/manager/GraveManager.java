@@ -1215,6 +1215,34 @@ public final class GraveManager {
     }
 
     /**
+     * Checks if there is a grave at the specified location.
+     *
+     * @param location The location to check.
+     * @return True if there is a grave at the location, false otherwise.
+     */
+    public boolean hasGraveAtLocation(Location location) {
+        List<Grave> graves = getAllGraves();
+        if (graves != null) {
+            for (Grave grave : graves) {
+                if (grave.getLocationDeath().equals(location)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Gets a list of all graves.
+     *
+     * @return A list of all graves.
+     */
+    public List<Grave> getAllGraves() {
+        // Implement logic to retrieve all graves from your storage system (e.g., database, in-memory cache)
+        return null;
+    }
+
+    /**
      * @deprecated This method is deprecated.
      * Use {@link #shouldIgnoreBlock(Block, Entity, List<String>)} instead.
      */

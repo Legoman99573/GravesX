@@ -8,12 +8,9 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
-import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.player.PlayerInteractEvent;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
@@ -83,7 +80,7 @@ public final class GraveyardManager {
         Map<Location, BlockFace> locationMap = new HashMap<>();
 
         for (Map.Entry<Location, BlockFace> entry : graveyard.getGraveLocationMap().entrySet()) {
-            if (plugin.getBlockManager().getGraveFromBlock(entry.getKey().getBlock()) != null) {
+            if (plugin.getBlockManager().getGraveFromBlock(entry.getKey().getBlock()) != null || plugin.getDataManager().hasGraveAtLocation(entry.getKey())) {
                 locationMap.put(entry.getKey(), entry.getValue());
             }
         }

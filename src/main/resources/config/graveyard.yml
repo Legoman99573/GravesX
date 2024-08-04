@@ -15,3 +15,5 @@ settings:
       x: 0 # Grave offset X.
       y: 0 # Grave offset Y.
       z: 0 # Grave offset Z.
+    max-locations: 5
+    create-grave-if-no-graveyard-space:

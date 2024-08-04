@@ -1111,6 +1111,22 @@ public final class DataManager {
         }
     }
 
+    public boolean hasGraveAtLocation(Location location) {
+        String query = "SELECT COUNT(*) FROM grave WHERE location_death = ?";
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, LocationUtil.locationToString(location));
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return resultSet.getInt(1) > 0;
+                }
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Failed to check if grave exists at location: " + e.getMessage());
+        }
+        return false;
+    }
+
     /**
      * Returns the table name for the specified entity data type.
      *
