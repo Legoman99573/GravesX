@@ -3,6 +3,7 @@ package com.ranull.graves.listener;
 import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.type.Graveyard;
+import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -18,6 +19,7 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -147,21 +149,25 @@ public class PlayerInteractListener implements Listener {
         Graveyard graveyard = plugin.getGraveyardManager().getModifyingGraveyard(player);
         Location location = block.getLocation().clone();
         Location locationRelative = block.getRelative(event.getBlockFace()).getLocation().clone();
+        Location clickedLocation = Objects.requireNonNull(event.getClickedBlock()).getLocation();
 
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
             if (graveyard.hasGraveLocation(location)) {
                 plugin.getGraveyardManager().removeLocationInGraveyard(player, location, graveyard);
+                plugin.getCacheManager().removeRightClickedBlock(player.getName(), clickedLocation);
             } else if (graveyard.hasGraveLocation(locationRelative)) {
                 plugin.getGraveyardManager().removeLocationInGraveyard(player, locationRelative, graveyard);
+                plugin.getCacheManager().removeRightClickedBlock(player.getName(), clickedLocation);
             } else {
                 if (plugin.getGraveyardManager().isLocationInGraveyard(locationRelative, graveyard)) {
                     plugin.getGraveyardManager().addLocationInGraveyard(player, locationRelative, graveyard);
+                    plugin.getCacheManager().addRightClickedBlock(player.getName(), clickedLocation);
                 } else {
-                    player.sendMessage("outside graveyard " + graveyard.getName());
+                    player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Can't set location outside graveyard " + graveyard.getName());
                 }
             }
         } else {
-            player.sendMessage("can't break while modifying a graveyard");
+            player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Can't break while modifying graveyard " + graveyard.getName());
         }
 
         event.setCancelled(true);

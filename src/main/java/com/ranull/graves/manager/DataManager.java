@@ -47,7 +47,7 @@ public final class DataManager {
                 load();
                 keepConnectionAlive(); // If we don't enable this, connection will close or time out :/
                 break;
-            case H2: 
+            case H2:
             case POSTGRESQL:
             case MYSQL:
             case MARIADB:
@@ -57,7 +57,7 @@ public final class DataManager {
                     load();
                     keepConnectionAlive(); // If we don't enable this, connection will close or time out :/
                 } else {
-                    plugin.getLogger().severe("Failed to connect to " + this.type +" database. Disabling plugin...");
+                    plugin.getLogger().severe("Failed to connect to " + this.type + " database. Disabling plugin...");
                     plugin.getServer().getPluginManager().disablePlugin(this.plugin);
                 }
                 break;
@@ -601,6 +601,7 @@ public final class DataManager {
                 "name VARCHAR(255) NOT NULL," +
                 "world VARCHAR(255) NOT NULL," +
                 "type VARCHAR(255) NOT NULL," +
+                "serializedLocation TEXT," +
                 "PRIMARY KEY (name, world)" +
                 ");";
         executeUpdate(createTableQuery);
@@ -676,19 +677,55 @@ public final class DataManager {
         String query = "SELECT * FROM graveyards";
 
         try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(query);
-             ResultSet resultSet = statement.executeQuery()) {
+             PreparedStatement statement = connection != null ? connection.prepareStatement(query) : null;
+             ResultSet resultSet = statement != null ? statement.executeQuery() : null) {
 
-            while (resultSet.next()) {
-                String name = resultSet.getString("name");
-                String world = resultSet.getString("world");
-                String type = resultSet.getString("type");
-                Graveyard graveyard = new Graveyard(name, plugin.getServer().getWorld(world), Graveyard.Type.valueOf(type.toUpperCase()));
-                plugin.getCacheManager().getGraveyardsMap().put(name, graveyard);
+            if (resultSet != null) {
+                while (resultSet.next()) {
+                    String name = resultSet.getString("name");
+                    String world = resultSet.getString("world");
+                    String type = resultSet.getString("type");
+                    String serializedLocation = resultSet.getString("serializedLocation");
+
+                    plugin.getLogger().info("Loading graveyard: " + name);
+                    plugin.getLogger().info("World: " + world + ", Type: " + type + ", Location: " + serializedLocation);
+
+                    Graveyard graveyard = new Graveyard(name, plugin.getServer().getWorld(world), Graveyard.Type.valueOf(type.toUpperCase()));
+                    Location location = Graveyard.deserializeLocation(serializedLocation);
+                    graveyard.setLocation(location);
+                    plugin.getCacheManager().getGraveyardsMap().put(name, graveyard);
+
+                    plugin.getLogger().info("Loaded graveyard: " + name + " at location: " + location);
+                }
             }
-        } catch (NullPointerException | SQLException e) {
+        } catch (SQLException e) {
             plugin.getLogger().severe("Failed to load graveyards: " + e.getMessage());
+            plugin.logStackTrace(e);
         }
+    }
+
+    /**
+     * Updates the graveyard location data in the database.
+     *
+     * @param graveyard The graveyard to update.
+     */
+    public void updateGraveyardLocationData(Graveyard graveyard) {
+        String serializedLocation = Base64Util.objectToBase64(graveyard.getGraveLocationMap());
+        String query = "UPDATE graveyards SET serializedLocation = ? WHERE name = ? AND world = ?";
+
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try (Connection connection = getConnection();
+                 PreparedStatement statement = connection != null ? connection.prepareStatement(query) : null) {
+                if (statement != null) {
+                    statement.setString(1, serializedLocation);
+                    statement.setString(2, graveyard.getName());
+                    statement.setString(3, graveyard.getWorld().getName());
+                    statement.executeUpdate();
+                }
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Failed to update graveyard location data: " + e.getMessage());
+            }
+        });
     }
 
     /**
@@ -698,18 +735,20 @@ public final class DataManager {
         String query = "SELECT * FROM block;";
 
         try (Connection connection = getConnection();
-             Statement statement = connection.createStatement();
-             ResultSet resultSet = statement.executeQuery(query)) {
+             Statement statement = connection != null ? connection.createStatement() : null;
+             ResultSet resultSet = statement != null ? statement.executeQuery(query) : null) {
 
-            while (resultSet.next()) {
-                Location location = LocationUtil.stringToLocation(resultSet.getString("location"));
-                UUID uuidGrave = UUID.fromString(resultSet.getString("uuid_grave"));
-                String replaceMaterial = resultSet.getString("replace_material");
-                String replaceData = resultSet.getString("replace_data");
+            if (resultSet != null) {
+                while (resultSet.next()) {
+                    Location location = LocationUtil.stringToLocation(resultSet.getString("location"));
+                    UUID uuidGrave = UUID.fromString(resultSet.getString("uuid_grave"));
+                    String replaceMaterial = resultSet.getString("replace_material");
+                    String replaceData = resultSet.getString("replace_data");
 
-                getChunkData(location).addBlockData(new BlockData(location, uuidGrave, replaceMaterial, replaceData));
+                    getChunkData(location).addBlockData(new BlockData(location, uuidGrave, replaceMaterial, replaceData));
+                }
             }
-        } catch (NullPointerException | SQLException exception) {
+        } catch (SQLException exception) {
             plugin.logStackTrace(exception);
         }
     }
@@ -950,12 +989,57 @@ public final class DataManager {
      * @param graveyard The graveyard to save.
      */
     public void saveGraveyard(Graveyard graveyard) {
-        String name = "'" + graveyard.getName() + "'";
-        String world = "'" + graveyard.getWorld().getName() + "'";
-        String type = "'" + graveyard.getType().name() + "'";
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () ->
-                executeUpdate("INSERT INTO graveyards (name, world, type) VALUES ("
-                    + name + ", " + world + ", " + type + ");"));
+        String query = "UPDATE graveyards SET serializedLocation = ?, world = ?, type = ? WHERE name = ?";
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection != null ? connection.prepareStatement(query) : null) {
+            String serializedLocation = Graveyard.serializeLocation(graveyard.getLocation());
+            if (statement != null) {
+                statement.setString(1, serializedLocation);
+                statement.setString(2, graveyard.getWorld().getName());
+                statement.setString(3, graveyard.getType().toString());
+                statement.setString(4, graveyard.getName());
+                int rowsAffected = statement.executeUpdate();
+                if (rowsAffected == 0) {
+                    // plugin.getLogger().severe("No rows updated for graveyard: " + graveyard.getName());
+                    throw new SQLException();
+                } else {
+                    plugin.getLogger().info("Successfully saved graveyard: " + graveyard.getName());
+                }
+            }
+        } catch (SQLException e) {
+            insertGraveyard(graveyard);
+        }
+    }
+
+    /**
+     * Inserts a graveyard to the database.
+     *
+     * @param graveyard The graveyard to save.
+     */
+    private void insertGraveyard(Graveyard graveyard) {
+        String query = "INSERT INTO graveyards (name, world, type, serializedLocation) VALUES (?, ?, ?, ?)";
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection != null ? connection.prepareStatement(query) : null) {
+            if (statement != null) {
+                statement.setString(1, graveyard.getName());
+                statement.setString(2, graveyard.getWorld().getName());
+                statement.setString(3, graveyard.getType().toString());
+                String serializedLocation = Graveyard.serializeLocation(graveyard.getLocation());
+                statement.setString(4, serializedLocation);
+
+                int rowsAffected = statement.executeUpdate();
+                if (rowsAffected == 0) {
+                    plugin.getLogger().severe("Failed to insert graveyard: " + graveyard.getName());
+                } else {
+                    plugin.getLogger().info("Successfully inserted graveyard: " + graveyard.getName());
+                }
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Failed to insert/update graveyard: " + e.getMessage());
+            plugin.logStackTrace(e);
+        }
     }
 
     /**
@@ -976,6 +1060,7 @@ public final class DataManager {
                         String name = resultSet.getString("name");
                         String world = resultSet.getString("world");
                         String type = resultSet.getString("type");
+                        String serializedLocation = resultSet.getString("serializedLocation");
                         // Assume there's a method in your Graves plugin to get a World by its name
                         return new Graveyard(name, plugin.getServer().getWorld(world), Graveyard.Type.valueOf(type.toUpperCase()));
                     }

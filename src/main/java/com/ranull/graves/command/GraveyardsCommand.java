@@ -55,9 +55,9 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
             }
 
             if (args.length < 1) {
-                player.sendMessage("/graveyards create");
-                player.sendMessage("/graveyards modify");
-                player.sendMessage("/graveyards delete");
+                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "/graveyards create");
+                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "/graveyards modify");
+                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "/graveyards delete");
             } else {
                 switch (args[0].toLowerCase()) {
                     case "create":
@@ -151,7 +151,7 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
      */
     private void handleCreateCommand(Player player, String[] args) throws InvocationTargetException {
         if (args.length < 2) {
-            player.sendMessage("/graveyard create (type)");
+            player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "/graveyard create (type)");
             return;
         }
 
@@ -163,7 +163,7 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
                 handleTownyCreate(player, args);
                 break;
             default:
-                player.sendMessage("Unknown type " + args[1]);
+                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Unknown type " + args[1]);
                 break;
         }
     }
@@ -180,7 +180,7 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
             plugin.getGraveyardManager().stopModifyingGraveyard(player);
         } else {
             if (args.length < 2) {
-                player.sendMessage("/graveyard modify (type)");
+                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "/graveyard modify (type)");
             } else {
                 switch (args[1].toLowerCase()) {
                     case "worldguard":
@@ -189,7 +189,7 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
                     case "towny":
                         handleTownyModify(player, args);
                     default:
-                        player.sendMessage("Unknown type " + args[1]);
+                        player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Unknown type " + args[1]);
                         break;
                 }
             }
@@ -203,8 +203,9 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
      * @param args   The command arguments.
      */
     private void handleDeleteCommand(Player player, String[] args) {
+        // Check if enough arguments are provided
         if (args.length < 2) {
-            player.sendMessage("/graveyard delete (name)");
+            player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "/graveyard delete (name)");
             return;
         }
 
@@ -213,9 +214,8 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
 
         if (graveyard != null) {
             plugin.getGraveyardManager().deleteGraveyard(player, graveyard);
-            player.sendMessage("Deleted graveyard " + graveyardName);
         } else {
-            player.sendMessage("Graveyard not found: " + graveyardName);
+            player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Graveyard not found: " + graveyardName);
         }
     }
 
@@ -228,17 +228,17 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
      */
     private void handleWorldGuardCreate(Player player, String[] args) throws InvocationTargetException {
         if (plugin.getIntegrationManager().getWorldGuard() == null) {
-            player.sendMessage("WorldGuard not detected");
+            player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "WorldGuard not detected");
             return;
         }
 
         if (!plugin.getConfig().getBoolean("settings.graveyard.worldguard.enabled")) {
-            player.sendMessage("WorldGuard support disabled");
+            player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "WorldGuard support disabled");
             return;
         }
 
         if (args.length < 3) {
-            player.sendMessage("/graveyard create worldguard (region)");
+            player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "/graveyard create worldguard (region)");
             return;
         }
 
@@ -246,19 +246,19 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
         World world = plugin.getIntegrationManager().getWorldGuard().getRegionWorld(region);
 
         if (world == null) {
-            player.sendMessage("Region not found " + region);
+            player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Region not found " + region);
             return;
         }
 
         if (!plugin.getIntegrationManager().getWorldGuard().isMember(region, player) && !player.isOp()) {
-            player.sendMessage("You are not a member of this region");
+            player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "You are not a member of this region");
             return;
         }
 
         Graveyard graveyard = plugin.getGraveyardManager()
                 .createGraveyard(player.getLocation(), region, world, Graveyard.Type.WORLDGUARD);
 
-        player.sendMessage("Creating graveyard " + region);
+        player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Creating graveyard " + region);
         plugin.getGraveyardManager().startModifyingGraveyard(player, graveyard);
     }
 
@@ -271,31 +271,31 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
      */
     private void handleTownyCreate(Player player, String[] args) throws InvocationTargetException {
         if (!plugin.getIntegrationManager().hasTowny()) {
-            player.sendMessage("Towny not detected");
+            player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Towny not detected");
             return;
         }
 
         if (!plugin.getConfig().getBoolean("settings.graveyard.towny.enabled")) {
-            player.sendMessage("Towny support disabled");
+            player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Towny support disabled");
             return;
         }
 
         if (args.length < 3) {
-            player.sendMessage("/graveyard create towny (name)");
+            player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "/graveyard create towny (name)");
             return;
         }
 
         String name = args[2].replace("_", " ");
 
         if (!plugin.getIntegrationManager().getTowny().hasTownPlot(player, name)) {
-            player.sendMessage("Plot not found " + name);
+            player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Plot not found " + name);
             return;
         }
 
         Graveyard graveyard = plugin.getGraveyardManager()
                 .createGraveyard(player.getLocation(), name, player.getWorld(), Graveyard.Type.TOWNY);
 
-        player.sendMessage("Creating graveyard " + name);
+        player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Creating graveyard " + name);
         plugin.getGraveyardManager().startModifyingGraveyard(player, graveyard);
     }
 
@@ -308,17 +308,17 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
      */
     private void handleWorldGuardModify(Player player, String[] args) throws InvocationTargetException {
         if (plugin.getIntegrationManager().getWorldGuard() == null) {
-            player.sendMessage("WorldGuard not detected");
+            player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "WorldGuard not detected");
             return;
         }
 
         if (!plugin.getConfig().getBoolean("settings.graveyard.worldguard.enabled")) {
-            player.sendMessage("WorldGuard support disabled");
+            player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "WorldGuard support disabled");
             return;
         }
 
         if (args.length < 3) {
-            player.sendMessage("/graveyard modify worldguard (region)");
+            player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "/graveyard modify worldguard (region)");
             return;
         }
 
@@ -326,14 +326,14 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
         World world = plugin.getIntegrationManager().getWorldGuard().getRegionWorld(region);
 
         if (world == null) {
-            player.sendMessage("Region not found " + region);
+            player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Region not found " + region);
             return;
         }
 
         Graveyard graveyard = plugin.getGraveyardManager().getGraveyardByKey("worldguard|" + world.getName() + "|" + region);
 
         if (graveyard == null) {
-            player.sendMessage("Graveyard " + region + " not found");
+            player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Graveyard " + region + " not found");
             return;
         }
 
@@ -350,17 +350,17 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
      */
     private void handleTownyModify(Player player, String[] args) throws InvocationTargetException {
         if (!plugin.getIntegrationManager().hasTowny()) {
-            player.sendMessage("Towny not detected");
+            player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Towny not detected");
             return;
         }
 
         if (!plugin.getConfig().getBoolean("settings.graveyard.towny.enabled")) {
-            player.sendMessage("Towny support disabled");
+            player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Towny support disabled");
             return;
         }
 
         if (args.length < 3) {
-            player.sendMessage("/graveyard modify towny (name)");
+            player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "/graveyard modify towny (name)");
             return;
         }
 
@@ -368,11 +368,11 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
         Graveyard graveyard = plugin.getGraveyardManager().getGraveyardByKey("towny|" + player.getWorld().getName() + "|" + name);
 
         if (graveyard == null) {
-            player.sendMessage("Graveyard not found: " + name);
+            player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Graveyard not found: " + name);
             return;
         }
 
-        player.sendMessage("Graveyard found");
+        player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Graveyard found");
         plugin.getGraveyardManager().startModifyingGraveyard(player, graveyard);
     }
 }

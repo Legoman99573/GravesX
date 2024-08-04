@@ -13,9 +13,11 @@ website: https://www.spigotmc.org/resources/gravesx.118271/
 libraries:
   - org.xerial:sqlite-jdbc:3.46.0.0
   - org.json:json:20240303
+  - com.google.code.gson:gson:2.10.1
   - org.postgresql:postgresql:42.7.3
   - org.mariadb.jdbc:mariadb-java-client:3.0.3
   - com.mysql:mysql-connector-j:9.0.0
+  - com.h2database:h2:2.3.230
 
 loadbefore:
   - GriefPrevention

@@ -1,5 +1,8 @@
 package com.ranull.graves.type;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.BlockFace;
@@ -20,6 +23,8 @@ public class Graveyard {
     private String title;
     private String description;
     private boolean isPublic;
+    private Location location;
+    private static final Gson gson = new Gson();
 
     /**
      * Constructs a new Graveyard with the specified name, world, and type.
@@ -179,6 +184,68 @@ public class Graveyard {
      */
     public void setPublic(boolean isPublic) {
         this.isPublic = isPublic;
+    }
+
+    /**
+     * Gets the location associated with the graveyard location.
+     *
+     * @return the location.
+     */
+    public Location getLocation() {
+        return location;
+    }
+
+    /**
+     * Sets the location associated with the graveyard location.
+     *
+     * @param location the location to set.
+     */
+    public void setLocation(Location location) {
+        this.location = location;
+    }
+
+    /**
+     * Sets the location by deserializing a string representation of the location.
+     *
+     * @param serializedLocation the serialized string representing the location.
+     */
+    public void setLocation(String serializedLocation) {
+        this.location = deserializeLocation(serializedLocation);
+    }
+
+    /**
+     * Deserializes a string representation of a location.
+     *
+     * @param serializedLocation the serialized string representing the location.
+     * @return the deserialized location graveyard.
+     */
+    public static Location deserializeLocation(String serializedLocation) {
+        try {
+            JsonObject json = gson.fromJson(serializedLocation, JsonObject.class);
+            World world = Bukkit.getWorld(json.get("world").getAsString());
+            int x = json.get("x").getAsInt();
+            int y = json.get("y").getAsInt();
+            int z = json.get("z").getAsInt();
+            float yaw = json.has("yaw") ? json.get("yaw").getAsFloat() : 0.0f;
+            float pitch = json.has("pitch") ? json.get("pitch").getAsFloat() : 0.0f;
+            return new Location(world, x, y, z, yaw, pitch);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid serialized location: " + serializedLocation, e);
+        }
+    }
+
+    public static String serializeLocation(Location location) {
+        if (location == null) {
+            return "{}";
+        }
+        JsonObject json = new JsonObject();
+        json.addProperty("world", location.getWorld().getName());
+        json.addProperty("x", location.getBlockX());
+        json.addProperty("y", location.getBlockY());
+        json.addProperty("z", location.getBlockZ());
+        json.addProperty("yaw", location.getYaw());
+        json.addProperty("pitch", location.getPitch());
+        return gson.toJson(json);
     }
 
     /**

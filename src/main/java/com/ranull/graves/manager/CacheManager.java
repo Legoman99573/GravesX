@@ -20,6 +20,7 @@ public final class CacheManager {
     private final Map<UUID, Location> lastLocationMap;
     private final Map<UUID, List<ItemStack>> removedItemStackMap;
     private final Map<String, Graveyard> graveyardMap;
+    private final Map<String, Location> rightClickedBlocks = new HashMap<>();
 
     /**
      * Initializes a new instance of the CacheManager class.
@@ -48,6 +49,22 @@ public final class CacheManager {
      */
     public Map<String, Graveyard> getGraveyardsMap() {
         return graveyardMap;
+    }
+
+    public void addRightClickedBlock(String playerName, Location location) {
+        rightClickedBlocks.put(playerName, location);
+    }
+
+    public Location getRightClickedBlock(String playerName) {
+        return rightClickedBlocks.get(playerName);
+    }
+
+    public void removeRightClickedBlock(String playerName, Location location) {
+        rightClickedBlocks.remove(playerName, location);
+    }
+
+    public boolean hasRightClickedBlock(String playerName) {
+        return rightClickedBlocks.containsKey(playerName);
     }
 
     /**

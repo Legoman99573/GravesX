@@ -4,6 +4,7 @@ import com.ranull.graves.Graves;
 import com.ranull.graves.type.Graveyard;
 import com.ranull.graves.util.BlockFaceUtil;
 import com.ranull.graves.util.LocationUtil;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -84,12 +85,9 @@ public final class GraveyardManager {
             if (!graveyard.hasGraveLocation(location)) {
                 BlockFace blockFace = BlockFaceUtil.getYawBlockFace(player.getLocation().getYaw()).getOppositeFace();
                 graveyard.addGraveLocation(location, blockFace);
-                try {
-                    previewLocation(player, location, blockFace);
-                } catch (InvocationTargetException e) {
-                    throw new RuntimeException(e);
-                }
-                player.sendMessage("set block in graveyard");
+                plugin.getDataManager().updateGraveyardLocationData(graveyard);
+                previewLocation(player, location, blockFace);
+                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "set block " + location.getBlockX() + ", " + location.getBlockY() + ", " + location.getBlockZ() + " in " + graveyard.getName());
             }
         });
     }
@@ -105,12 +103,9 @@ public final class GraveyardManager {
         plugin.getServer().getScheduler().runTask(plugin, () -> {
             if (graveyard.hasGraveLocation(location)) {
                 graveyard.removeGraveLocation(location);
-                try {
-                    refreshLocation(player, location);
-                } catch (InvocationTargetException e) {
-                    throw new RuntimeException(e);
-                }
-                player.sendMessage("remove block in graveyard");
+                plugin.getDataManager().updateGraveyardLocationData(graveyard);
+                refreshLocation(player, location);
+                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "remove block " + location.getBlockX() + ", " + location.getBlockY() + ", " + location.getBlockZ() + " in "+ graveyard.getName());
             }
         });
     }
@@ -182,7 +177,7 @@ public final class GraveyardManager {
             previewLocation(player, entry.getKey(), entry.getValue());
         }
 
-        player.sendMessage("starting modifying graveyard " + graveyard.getName());
+        player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Started modifying graveyard " + graveyard.getName());
     }
 
     /**
@@ -200,7 +195,7 @@ public final class GraveyardManager {
                 refreshLocation(player, location);
             }
 
-            player.sendMessage("Stopped modifying graveyard " + graveyard.getName());
+            player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Stopped modifying graveyard " + graveyard.getName());
 
             // Save graveyard changes
             plugin.getDataManager().saveGraveyard(graveyard);
@@ -228,7 +223,7 @@ public final class GraveyardManager {
         modifyingGraveyardMap.remove(player.getUniqueId());
 
         // Notify the player
-        player.sendMessage("Deleted graveyard " + graveyard.getName());
+        player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Deleted graveyard " + graveyard.getName());
 
         // Delete the graveyard from the database
         plugin.getDataManager().deleteGraveyard(graveyard);
@@ -300,9 +295,14 @@ public final class GraveyardManager {
      * @param location  The location to preview.
      * @param blockFace The block face direction.
      */
-    private void previewLocation(Player player, Location location, BlockFace blockFace) throws InvocationTargetException {
-        if (plugin.getIntegrationManager().hasProtocolLib()) {
-            plugin.getIntegrationManager().getProtocolLib().setBlock(location.getBlock(), Material.PLAYER_HEAD, player);
+    private void previewLocation(Player player, Location location, BlockFace blockFace) {
+        try {
+            if (plugin.getIntegrationManager().hasProtocolLib()) {
+                plugin.getIntegrationManager().getProtocolLib().setBlock(location.getBlock(), Material.PLAYER_HEAD, player);
+            }
+        } catch (InvocationTargetException e) {
+            plugin.getLogger().severe("Failed to preview location: " + e.getMessage());
+            plugin.logStackTrace(e);
         }
     }
 
@@ -312,9 +312,14 @@ public final class GraveyardManager {
      * @param player   The player to refresh the location for.
      * @param location The location to refresh.
      */
-    private void refreshLocation(Player player, Location location) throws InvocationTargetException {
-        if (plugin.getIntegrationManager().hasProtocolLib()) {
-            plugin.getIntegrationManager().getProtocolLib().refreshBlock(location.getBlock(), player);
+    private void refreshLocation(Player player, Location location) {
+        try {
+            if (plugin.getIntegrationManager().hasProtocolLib()) {
+                plugin.getIntegrationManager().getProtocolLib().refreshBlock(location.getBlock(), player);
+            }
+        } catch (InvocationTargetException e) {
+            plugin.getLogger().severe("Failed to refresh location: " + e.getMessage());
+            plugin.logStackTrace(e);
         }
     }
 

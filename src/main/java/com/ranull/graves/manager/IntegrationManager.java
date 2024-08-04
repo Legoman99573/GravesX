@@ -5,9 +5,15 @@ import ch.njol.skript.SkriptAddon;
 import com.ranull.graves.Graves;
 import com.ranull.graves.integration.*;
 import net.milkbowl.vault.economy.Economy;
+import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.StringJoiner;
 
 /**
  * The IntegrationManager class manages the integration of various plugins with the Graves plugin.
@@ -636,11 +642,41 @@ public final class IntegrationManager {
                         deluxeCombatPlugin.getName() + "'s data.yml file.");
             }
 
+            checkForPluginManagers(); // Plugin Manager Jumpscare
+
             similarPluginWarning("DeadChest");
             similarPluginWarning("DeathChest");
             similarPluginWarning("DeathChestPro");
             similarPluginWarning("SavageDeathChest");
             similarPluginWarning("AngelChest");
+        }
+    }
+
+    public void checkForPluginManagers() {
+        List<String> knownPluginManagers = Arrays.asList(
+                "PluginManager",
+                "PlugMan",
+                "PlugManX",
+                "WorldPluginManager",
+                "AnthoPlugManager",
+                "GlobalPlugins",
+                "ProManager",
+                "RestartManager",
+                "UltimatePluginManager"
+        );
+
+        StringJoiner detectedPlugins = new StringJoiner(", ");
+
+        for (String pluginManagerName : knownPluginManagers) {
+            Plugin plugins = plugin.getServer().getPluginManager().getPlugin(pluginManagerName);
+            if (plugins != null && plugins.isEnabled()) {
+                detectedPlugins.add(plugins.getName() + " v." + plugins.getDescription().getVersion());
+            }
+        }
+
+        if (detectedPlugins.length() > 0) {
+            // Let owner know they are running a plugin manager
+            plugin.getLogger().warning("Detected server is running a Plugin Manager based plugin: " + detectedPlugins);
         }
     }
 
