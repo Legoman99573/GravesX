@@ -420,6 +420,12 @@ settings:
           teleport:
             - ""
             #- "say %interact_name% teleported to %owner_name%'s grave."
+          autoloot:
+            - ""
+            #- "say %interact_name% auto looted %owner_name%'s grave."
+          zombiespawn:
+            - ""
+            #- "say %interact_name% made zombies spawn at %owner_name%'s grave."
 
       ##########
       # Ignore #
