@@ -7,8 +7,6 @@ import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.permission.Permission;
 import org.bukkit.World;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.RegisteredServiceProvider;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.StringJoiner;
@@ -293,27 +291,37 @@ public final class IntegrationManager {
             Plugin vaultPlugin = plugin.getServer().getPluginManager().getPlugin("Vault");
 
             if (vaultPlugin != null && vaultPlugin.isEnabled()) {
-                RegisteredServiceProvider<Economy> economyProvider = plugin.getServer().getServicesManager().getRegistration(Economy.class);
-                RegisteredServiceProvider<Permission> permissionProvider = plugin.getServer().getServicesManager().getRegistration(Permission.class);
 
-                if (economyProvider != null && permissionProvider != null) {
-                    Economy economy = economyProvider.getProvider();
-                    Permission permission = permissionProvider.getProvider();
-
+                Economy economy = plugin.getIntegrationManager().getVault().getEconomyProvider();
+                Permission permission = plugin.getIntegrationManager().getVault().getPermissionProvider();
+                if (economy != null && permission != null) {
                     vault = new Vault(economy, permission);
 
-                    plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + ".");
+                    plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + ". Economy is enabled.");
                     plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions priovider.");
-                } else if (economyProvider != null) {
-                    Economy economy = economyProvider.getProvider();
+                }
 
+                if (economy != null && permission == null) {
                     vault = new Vault(economy);
-                } else {
-                    vault = null;
 
-                    plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + ".");
+                    plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + ". Economy is enabled.");
                     plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions priovider. Using bukkit's permissions provider.");
                 }
+
+                if (economy == null && permission != null) {
+                    vault = new Vault(permission);
+
+                    plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s economy. This is likely because you are missing an economy plugin. Economy will be disabled.");
+                    plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions priovider.");
+                }
+
+                if (economy == null && permission == null) {
+                    vault = null;
+
+                    plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s economy. This is likely because you are missing an economy plugin. Economy will be disabled.");
+                    plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions priovider. Using bukkit's permissions provider.");
+                }
+                vault = null; // just incase
             }
         } else {
             vault = null;

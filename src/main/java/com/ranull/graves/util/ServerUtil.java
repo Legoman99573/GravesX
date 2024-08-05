@@ -1,6 +1,7 @@
 package com.ranull.graves.util;
 
 import com.ranull.graves.Graves;
+import net.milkbowl.vault.permission.Permission;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -102,14 +103,18 @@ public final class ServerUtil {
                     + plugin.getDescription().getAPIVersion());
         }
         stringList.add(plugin.getDescription().getName() + " Database Type: " + plugin.getConfig().getString("settings.storage.type", "SQLITE").toUpperCase());
-
-        stringList.add(plugin.getDescription().getName() + " Config Version: "
-                + plugin.getConfig().getInt("config-version"));
         if (plugin.getIntegrationManager().hasVault()) {
-            stringList.add(plugin.getDescription().getName() + " Permissions Provider: Vault");
+            Permission permissionProvider = plugin.getIntegrationManager().getVault().getPermissionProvider();
+            if (permissionProvider != null) {
+                stringList.add(plugin.getDescription().getName() + " Permissions Provider: Vault");
+            } else {
+                stringList.add(plugin.getDescription().getName() + " Permissions Provider: Bukkit");
+            }
         } else {
             stringList.add(plugin.getDescription().getName() + " Permissions Provider: Bukkit");
         }
+        stringList.add(plugin.getDescription().getName() + " Config Version: "
+                + plugin.getConfig().getInt("config-version"));
         // Replace the password in the config string and encode it back to Base64
         FileConfiguration config = plugin.getConfig();
         String configString = config.saveToString();

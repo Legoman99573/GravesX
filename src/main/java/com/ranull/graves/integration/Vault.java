@@ -2,8 +2,10 @@ package com.ranull.graves.integration;
 
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.permission.Permission;
+import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
+import org.bukkit.plugin.RegisteredServiceProvider;
 
 /**
  * Provides an integration with Vault's economy system to manage player balances.
@@ -23,11 +25,24 @@ public final class Vault {
         this.permission = permission;
     }
 
+    /**
+     * Constructs a new Vault integration instance with the specified Economy instance.
+     *
+     * @param economy The Economy instance provided by Vault.
+     * @deprecated
+     */
     @Deprecated
     public Vault(Economy economy) {
         this.economy = economy;
     }
 
+    /**
+     * Constructs a new Vault integration instance with the specified Economy instance.
+     *
+     * @param permission The Permission instance provided by Vault.
+     * @deprecated
+     */
+    @Deprecated
     public Vault(Permission permission) {
         this.permission = permission;
     }
@@ -73,5 +88,15 @@ public final class Vault {
      */
     public boolean hasPermission(OfflinePlayer player, String permissionNode) {
         return permission.has((CommandSender) player, permissionNode);
+    }
+    
+    public Economy getEconomyProvider() {
+        RegisteredServiceProvider<Economy> economyProvider = Bukkit.getServer().getServicesManager().getRegistration(Economy.class);
+        return economyProvider != null ? economyProvider.getProvider() : null;
+    }
+
+    public Permission getPermissionProvider() {
+        RegisteredServiceProvider<Permission> permissionProvider = Bukkit.getServer().getServicesManager().getRegistration(Permission.class);
+        return permissionProvider != null ? permissionProvider.getProvider() : null;
     }
 }

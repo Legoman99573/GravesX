@@ -355,7 +355,7 @@ public final class DataManager {
         int maxConnections = plugin.getConfig().getInt("settings.storage.h2.maxConnections", 50); // Increased pool size
         long connectionTimeout = plugin.getConfig().getLong("settings.storage.h2.connectionTimeout", 30000);
 
-        config.setJdbcUrl("jdbc:h2:file:" + filePath + ";AUTO_SERVER=TRUE");
+        config.setJdbcUrl("jdbc:h2:file:./" + filePath + ";AUTO_SERVER=TRUE");
         config.setUsername(username);
         config.setPassword(password);
         config.addDataSourceProperty("autoReconnect", "true");
@@ -522,29 +522,79 @@ public final class DataManager {
     public void setupGraveTable() throws SQLException {
         String name = "grave";
         if (!tableExists(name)) {
-            executeUpdate("CREATE TABLE IF NOT EXISTS " + name + " (" +
-                    "uuid VARCHAR(255) UNIQUE,\n" +
-                    "owner_type VARCHAR(255),\n" +
-                    "owner_name VARCHAR(255),\n" +
-                    "owner_name_display VARCHAR(255),\n" +
-                    "owner_uuid VARCHAR(255),\n" +
-                    "owner_texture TEXT,\n" +
-                    "owner_texture_signature TEXT,\n" +
-                    "killer_type VARCHAR(255),\n" +
-                    "killer_name VARCHAR(255),\n" +
-                    "killer_name_display VARCHAR(255),\n" +
-                    "killer_uuid VARCHAR(255),\n" +
-                    "location_death VARCHAR(255),\n" +
-                    "yaw FLOAT(16),\n" +
-                    "pitch FLOAT(16),\n" +
-                    "inventory TEXT,\n" +
-                    "equipment TEXT,\n" +
-                    "experience INT(16),\n" +
-                    "protection INT(1),\n" +
-                    "time_alive BIGINT,\n" +
-                    "time_protection BIGINT,\n" +
-                    "time_creation BIGINT,\n" +
-                    "permissions TEXT);");
+            if (type == Type.H2) {
+                executeUpdate("CREATE TABLE IF NOT EXISTS " + name + " (" +
+                        "uuid VARCHAR(255) UNIQUE,\n" +
+                        "owner_type VARCHAR(255),\n" +
+                        "owner_name VARCHAR(255),\n" +
+                        "owner_name_display VARCHAR(255),\n" +
+                        "owner_uuid VARCHAR(255),\n" +
+                        "owner_texture TEXT,\n" +
+                        "owner_texture_signature TEXT,\n" +
+                        "killer_type VARCHAR(255),\n" +
+                        "killer_name VARCHAR(255),\n" +
+                        "killer_name_display VARCHAR(255),\n" +
+                        "killer_uuid VARCHAR(255),\n" +
+                        "location_death VARCHAR(255),\n" +
+                        "yaw FLOAT,\n" +
+                        "pitch FLOAT,\n" +
+                        "inventory TEXT,\n" +
+                        "equipment TEXT,\n" +
+                        "experience INT,\n" +
+                        "protection INT,\n" +
+                        "time_alive BIGINT,\n" +
+                        "time_protection BIGINT,\n" +
+                        "time_creation BIGINT,\n" +
+                        "permissions TEXT);");
+            } else if (type == Type.POSTGRESQL) {
+                executeUpdate("CREATE TABLE IF NOT EXISTS " + name + " (" +
+                        "uuid VARCHAR(255) UNIQUE,\n" +
+                        "owner_type VARCHAR(255),\n" +
+                        "owner_name VARCHAR(255),\n" +
+                        "owner_name_display VARCHAR(255),\n" +
+                        "owner_uuid VARCHAR(255),\n" +
+                        "owner_texture TEXT,\n" +
+                        "owner_texture_signature TEXT,\n" +
+                        "killer_type VARCHAR(255),\n" +
+                        "killer_name VARCHAR(255),\n" +
+                        "killer_name_display VARCHAR(255),\n" +
+                        "killer_uuid VARCHAR(255),\n" +
+                        "location_death VARCHAR(255),\n" +
+                        "yaw REAL,\n" +
+                        "pitch REAL,\n" +
+                        "inventory TEXT,\n" +
+                        "equipment TEXT,\n" +
+                        "experience INT,\n" +
+                        "protection INT,\n" +
+                        "time_alive BIGINT,\n" +
+                        "time_protection BIGINT,\n" +
+                        "time_creation BIGINT,\n" +
+                        "permissions TEXT);");
+            } else {
+                executeUpdate("CREATE TABLE IF NOT EXISTS " + name + " (" +
+                        "uuid VARCHAR(255) UNIQUE,\n" +
+                        "owner_type VARCHAR(255),\n" +
+                        "owner_name VARCHAR(255),\n" +
+                        "owner_name_display VARCHAR(255),\n" +
+                        "owner_uuid VARCHAR(255),\n" +
+                        "owner_texture TEXT,\n" +
+                        "owner_texture_signature TEXT,\n" +
+                        "killer_type VARCHAR(255),\n" +
+                        "killer_name VARCHAR(255),\n" +
+                        "killer_name_display VARCHAR(255),\n" +
+                        "killer_uuid VARCHAR(255),\n" +
+                        "location_death VARCHAR(255),\n" +
+                        "yaw FLOAT(16),\n" +
+                        "pitch FLOAT(16),\n" +
+                        "inventory TEXT,\n" +
+                        "equipment TEXT,\n" +
+                        "experience INT(16),\n" +
+                        "protection INT(1),\n" +
+                        "time_alive BIGINT,\n" +
+                        "time_protection BIGINT,\n" +
+                        "time_creation BIGINT,\n" +
+                        "permissions TEXT);");
+            }
         }
 
         addColumnIfNotExists(name, "uuid", "VARCHAR(255) UNIQUE");
@@ -616,11 +666,19 @@ public final class DataManager {
     public void setupHologramTable() throws SQLException {
         String name = "hologram";
         if (!tableExists(name)) {
-            executeUpdate("CREATE TABLE IF NOT EXISTS " + name + " (" +
-                    "uuid_entity VARCHAR(255),\n" +
-                    "uuid_grave VARCHAR(255),\n" +
-                    "line INT(16),\n" +
-                    "location VARCHAR(255));");
+            if (type == Type.H2) {
+                executeUpdate("CREATE TABLE IF NOT EXISTS " + name + " (" +
+                        "uuid_entity VARCHAR(255),\n" +
+                        "uuid_grave VARCHAR(255),\n" +
+                        "line INT,\n" +
+                        "location VARCHAR(255));");
+            } else {
+                executeUpdate("CREATE TABLE IF NOT EXISTS " + name + " (" +
+                        "uuid_entity VARCHAR(255),\n" +
+                        "uuid_grave VARCHAR(255),\n" +
+                        "line INT(16),\n" +
+                        "location VARCHAR(255));");
+            }
         }
 
         addColumnIfNotExists(name, "uuid_entity", "VARCHAR(255)");
@@ -1363,19 +1421,30 @@ public final class DataManager {
      */
     private void executeUpdate(String sql) {
         Statement statement = null;
-        try (Connection connection = getConnection()) {
+        Connection connection = null;
+        try {
+            connection = getConnection();
             if (connection != null) {
                 statement = connection.createStatement();
                 statement.executeUpdate(sql);
             }
         } catch (SQLException exception) {
-            // Log the SQL exception for both MySQL and SQLite
+            // Log the SQL statement and exception message
             plugin.getLogger().severe("Error executing SQL update: " + exception.getMessage());
+            plugin.getLogger().severe("Failed SQL statement: " + sql);
             plugin.logStackTrace(exception);
         } finally {
+            // Ensure statement and connection are closed properly
             if (statement != null) {
                 try {
                     statement.close();
+                } catch (SQLException exception) {
+                    plugin.logStackTrace(exception);
+                }
+            }
+            if (connection != null) {
+                try {
+                    connection.close();
                 } catch (SQLException exception) {
                     plugin.logStackTrace(exception);
                 }
