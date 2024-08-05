@@ -741,7 +741,7 @@ public class Graves extends JavaPlugin {
      */
     @Deprecated
     public boolean hasGrantedPermission(String permission, OfflinePlayer offlinePlayer) {
-        if (getIntegrationManager().hasVault()) {
+        if (getIntegrationManager().hasVaultPermProvider()) {
             if (getIntegrationManager().getVault().hasPermission(offlinePlayer, permission)) {
                 debugMessage(offlinePlayer.getName() + " has vault permission " + permission, 1);
                 return true;

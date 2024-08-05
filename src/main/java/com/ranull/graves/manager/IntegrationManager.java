@@ -36,6 +36,7 @@ public final class IntegrationManager {
     private CitizensNPC citizensNPC;
     private PlaceholderAPI placeholderAPI;
     private SkriptImpl skriptImpl;
+    private boolean hasVaultPermissions;
 
     /**
      * Initializes a new instance of the IntegrationManager class.
@@ -203,6 +204,10 @@ public final class IntegrationManager {
         return vault != null;
     }
 
+    public boolean hasVaultPermProvider() {
+        return hasVaultPermissions;
+    }
+
     public boolean hasProtocolLib() {
         return protocolLib != null;
     }
@@ -296,6 +301,7 @@ public final class IntegrationManager {
                 Permission permission = plugin.getIntegrationManager().getVault().getPermissionProvider();
                 if (economy != null && permission != null) {
                     vault = new Vault(economy, permission);
+                    hasVaultPermissions = true;
 
                     plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + ". Economy is enabled.");
                     plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions priovider.");
@@ -303,6 +309,7 @@ public final class IntegrationManager {
 
                 if (economy != null && permission == null) {
                     vault = new Vault(economy);
+                    hasVaultPermissions = false;
 
                     plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + ". Economy is enabled.");
                     plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions priovider. Using bukkit's permissions provider.");
@@ -310,6 +317,7 @@ public final class IntegrationManager {
 
                 if (economy == null && permission != null) {
                     vault = new Vault(permission);
+                    hasVaultPermissions = true;
 
                     plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s economy. This is likely because you are missing an economy plugin. Economy will be disabled.");
                     plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions priovider.");
@@ -317,14 +325,18 @@ public final class IntegrationManager {
 
                 if (economy == null && permission == null) {
                     vault = null;
+                    hasVaultPermissions = false;
 
                     plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s economy. This is likely because you are missing an economy plugin. Economy will be disabled.");
                     plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions priovider. Using bukkit's permissions provider.");
                 }
+            } else {
                 vault = null; // just incase
+                hasVaultPermissions = false;
             }
         } else {
             vault = null;
+            hasVaultPermissions = false;
         }
     }
 
