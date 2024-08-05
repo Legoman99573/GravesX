@@ -59,7 +59,7 @@ public class PlayerJoinListener implements Listener {
      * @return True if updates should be checked, false otherwise.
      */
     private boolean shouldCheckForUpdates(Player player) {
-        return plugin.getConfig().getBoolean("settings.update.check") && plugin.hasGrantedPermission("graves.update.notify", player);
+        return plugin.getConfig().getBoolean("settings.update.check") && plugin.hasGrantedPermission("graves.update.notify", player.getPlayer());
     }
 
     /**

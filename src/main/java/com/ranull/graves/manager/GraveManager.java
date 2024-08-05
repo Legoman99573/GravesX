@@ -918,13 +918,13 @@ public final class GraveManager {
             if (plugin.getEntityManager().canOpenGrave(player, grave)) {
                 cleanupCompasses(player, grave);
 
-                if (player.isSneaking() && plugin.hasGrantedPermission("graves.autoloot", player)) {
+                if (player.isSneaking() && plugin.hasGrantedPermission("graves.autoloot", player.getPlayer())) {
                     GraveAutoLootEvent graveAutoLootEvent = new GraveAutoLootEvent(player, location, grave);
 
                     plugin.getServer().getPluginManager().callEvent(graveAutoLootEvent);
                     if (!graveAutoLootEvent.isCancelled())
                         autoLootGrave(player, location, grave);
-                } else if (plugin.hasGrantedPermission("graves.open", player)) {
+                } else if (plugin.hasGrantedPermission("graves.open", player.getPlayer())) {
                     player.openInventory(grave.getInventory());
                     plugin.getEntityManager().runCommands("event.command.open", player, location, grave);
                     plugin.getEntityManager().playWorldSound("sound.open", location, grave);

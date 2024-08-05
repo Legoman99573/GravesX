@@ -162,10 +162,10 @@ public class EntityDeathListener implements Listener {
         if (plugin.getGraveyardManager().isModifyingGraveyard(player)) {
             plugin.getGraveyardManager().stopModifyingGraveyard(player);
         }
-        if (!plugin.hasGrantedPermission("graves.place", player)) {
+        if (!plugin.hasGrantedPermission("graves.place", player.getPlayer())) {
             plugin.debugMessage("Grave not created for " + entityName + " because they don't have permission to place graves", 2);
             return true;
-        } else if (plugin.hasGrantedPermission("essentials.keepinv", player)) {
+        } else if (plugin.hasGrantedPermission("essentials.keepinv", player.getPlayer())) {
             plugin.debugMessage(entityName + " has essentials.keepinv", 2);
         }
         return false;
@@ -427,7 +427,7 @@ public class EntityDeathListener implements Listener {
         if (experiencePercent >= 0) {
             if (livingEntity instanceof Player) {
                 Player player = (Player) livingEntity;
-                if (plugin.hasGrantedPermission("graves.experience", player)) {
+                if (plugin.hasGrantedPermission("graves.experience", player.getPlayer())) {
                     grave.setExperience(ExperienceUtil.getDropPercent(ExperienceUtil.getPlayerExperience(player), experiencePercent));
                 } else {
                     grave.setExperience(event.getDroppedExp());

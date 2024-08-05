@@ -40,10 +40,10 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
         if (args.length < 1) {
             if (commandSender instanceof Player) {
                 Player player = (Player) commandSender;
-                if (plugin.hasGrantedPermission("graves.gui", player)) {
+                if (plugin.hasGrantedPermission("graves.gui", player.getPlayer())) {
                     plugin.getGUIManager().openGraveList(player);
                 } else {
-                    plugin.getEntityManager().sendMessage("message.permission-denied", player);
+                    plugin.getEntityManager().sendMessage("message.permission-denied", player.getPlayer());
                 }
             } else {
                 sendHelpMenu(commandSender);
@@ -95,12 +95,12 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
 
         if (sender instanceof Player) {
             Player player = (Player) sender;
-            if (plugin.hasGrantedPermission("graves.gui", player)) {
+            if (plugin.hasGrantedPermission("graves.gui", player.getPlayer())) {
                 sender.sendMessage(ChatColor.RED + "/graves " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Graves GUI");
             }
 
-            if (plugin.hasGrantedPermission("graves.gui", player)) {
-                if (plugin.hasGrantedPermission("graves.gui.other", player)) {
+            if (plugin.hasGrantedPermission("graves.gui", player.getPlayer())) {
+                if (plugin.hasGrantedPermission("graves.gui.other", player.getPlayer())) {
                     sender.sendMessage(ChatColor.RED + "/graves list {player} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET +
                             " View player graves");
                 } else {
@@ -109,24 +109,24 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
                 }
             }
 
-            if (plugin.hasGrantedPermission("graves.givetoken", player)) {
+            if (plugin.hasGrantedPermission("graves.givetoken", player.getPlayer())) {
                 if (plugin.getConfig().getBoolean("settings.token")) {
                     sender.sendMessage(ChatColor.RED + "/graves givetoken {player} {amount} " + ChatColor.DARK_GRAY + "-"
                             + ChatColor.RESET + " Give grave token");
                 }
             }
 
-            if (plugin.hasGrantedPermission("graves.reload", player)) {
+            if (plugin.hasGrantedPermission("graves.reload", player.getPlayer())) {
                 sender.sendMessage(ChatColor.RED + "/graves reload " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET
                         + " Reload plugin");
             }
 
-            if (plugin.hasGrantedPermission("graves.dump", player)) {
+            if (plugin.hasGrantedPermission("graves.dump", player.getPlayer())) {
                 sender.sendMessage(ChatColor.RED + "/graves dump " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET
                         + " Dump server information");
             }
 
-            if (plugin.hasGrantedPermission("graves.debug", player)) {
+            if (plugin.hasGrantedPermission("graves.debug", player.getPlayer())) {
                 sender.sendMessage(ChatColor.RED + "/graves debug {level} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET
                         + " Change debug level");
             }
@@ -154,49 +154,49 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
         if (args.length == 1) {
             stringList.add("help");
 
-            if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.gui", (Player) commandSender)) {
+            if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.gui", ((Player) commandSender).getPlayer())) {
                 stringList.add("list");
                 stringList.add("gui");
             }
 
-            if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.reload", (Player) commandSender)) {
+            if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.reload", ((Player) commandSender).getPlayer())) {
                 stringList.add("reload");
             }
 
-            if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.dump", (Player) commandSender)) {
+            if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.dump", ((Player) commandSender).getPlayer())) {
                 stringList.add("dump");
             }
 
-            if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.debug", (Player) commandSender)) {
+            if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.debug", ((Player) commandSender).getPlayer())) {
                 stringList.add("debug");
             }
 
-            if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.cleanup", (Player) commandSender)) {
+            if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.cleanup", ((Player) commandSender).getPlayer())) {
                 stringList.add("cleanup");
             }
 
-            if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.purge", (Player) commandSender)) {
+            if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.purge", ((Player) commandSender).getPlayer())) {
                 stringList.add("purge");
             }
 
-            if (plugin.getRecipeManager() != null && (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.givetoken", (Player) commandSender))) {
+            if (plugin.getRecipeManager() != null && (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.givetoken", ((Player) commandSender).getPlayer()))) {
                 stringList.add("givetoken");
             }
         } else if (args.length > 1) {
             if ((args[0].equalsIgnoreCase("list") || args[0].equalsIgnoreCase("gui"))
                     && (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.gui.other", (Player) commandSender))) {
                 plugin.getServer().getOnlinePlayers().forEach((player -> stringList.add(player.getName())));
-            } else if (args[0].equals("debug") && (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.debug", (Player) commandSender))) {
+            } else if (args[0].equals("debug") && (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.debug", ((Player) commandSender).getPlayer()))) {
                 stringList.add("0");
                 stringList.add("1");
                 stringList.add("2");
-            } else if (args[0].equals("purge") && (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.debug", (Player) commandSender))) {
+            } else if (args[0].equals("purge") && (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.debug", ((Player) commandSender).getPlayer()))) {
                 if (args.length == 2) {
                     stringList.add("graves");
                     stringList.add("holograms");
                 }
             } else if (plugin.getRecipeManager() != null && args[0].equalsIgnoreCase("givetoken")
-                    && (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.givetoken", (Player) commandSender))) {
+                    && (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.givetoken", ((Player) commandSender).getPlayer()))) {
                 if (args.length == 2) {
                     plugin.getServer().getOnlinePlayers().forEach((player -> stringList.add(player.getName())));
                 } else if (args.length == 3) {
@@ -213,13 +213,13 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
             Player player = (Player) commandSender;
 
             if (args.length == 1) {
-                if (plugin.hasGrantedPermission("graves.gui", player)) {
+                if (plugin.hasGrantedPermission("graves.gui", player.getPlayer())) {
                     plugin.getGUIManager().openGraveList(player);
                 } else {
-                    plugin.getEntityManager().sendMessage("message.permission-denied", player);
+                    plugin.getEntityManager().sendMessage("message.permission-denied", player.getPlayer());
                 }
             } else if (args.length == 2) {
-                if (plugin.hasGrantedPermission("graves.gui.other", player)) {
+                if (plugin.hasGrantedPermission("graves.gui.other", player.getPlayer())) {
                     OfflinePlayer otherPlayer = plugin.getServer().getOfflinePlayer(args[1]);
 
                     if (!plugin.getGraveManager().getGraveList(otherPlayer).isEmpty()) {
@@ -238,7 +238,7 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
     }
 
     private void handleGiveTokenCommand(CommandSender commandSender, String[] args) {
-        if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.gui", (Player) commandSender)) {
+        if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.gui", ((Player) commandSender).getPlayer())) {
             if (args.length == 1) {
                 commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
                         + ChatColor.RESET + "/graves givetoken {player} {token}");
@@ -310,7 +310,7 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
     }
 
     private void handleReloadCommand(CommandSender commandSender) {
-        if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.reload", (Player) commandSender)) {
+        if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.reload", ((Player) commandSender).getPlayer())) {
             Plugin skriptPlugin = plugin.getServer().getPluginManager().getPlugin("Skript");
             if (skriptPlugin != null && skriptPlugin.isEnabled()) {
                 plugin.getLogger().warning("Skript v." + skriptPlugin.getDescription().getVersion() + " detected. Skript Integration option will only take effect on restart.");
@@ -324,7 +324,7 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
     }
 
     private void handleDumpCommand(CommandSender commandSender) {
-        if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.dump", (Player) commandSender)) {
+        if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.dump", ((Player) commandSender).getPlayer())) {
             commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
                     + "Running dump functions...");
             plugin.dumpServerInfo(commandSender);
@@ -334,7 +334,7 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
     }
 
     private void handleDebugCommand(CommandSender commandSender, String[] args) {
-        if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.debug", (Player) commandSender)) {
+        if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.debug", ((Player) commandSender).getPlayer())) {
             if (args.length > 1) {
                 try {
                     plugin.getConfig().set("settings.debug.level", Integer.parseInt(args[1]));
@@ -366,7 +366,7 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
     }
 
     private void handleCleanupCommand(CommandSender commandSender) {
-        if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.cleanup", (Player) commandSender)) {
+        if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.cleanup", ((Player) commandSender).getPlayer())) {
             List<Grave> graveList = new ArrayList<>(plugin.getCacheManager().getGraveMap().values());
 
             for (Grave grave : graveList) {
@@ -381,7 +381,7 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
     }
 
     private void handlePurgeCommand(CommandSender commandSender, String[] args) {
-        if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.purge", (Player) commandSender)) {
+        if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.purge", ((Player) commandSender).getPlayer())) {
             if (args.length > 1 && !args[1].equalsIgnoreCase("graves") && !args[1].equalsIgnoreCase("grave")) {
                 if (args[1].equalsIgnoreCase("holograms") || args[1].equalsIgnoreCase("hologram")) {
                     int count = 0;
@@ -414,7 +414,7 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
     }
 
     private void handleImportCommand(CommandSender commandSender) {
-        if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.import", (Player) commandSender)) {
+        if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.import", ((Player) commandSender).getPlayer())) {
             // Disable for everyone except Ranull, not ready for production.
             if (!commandSender.getName().equals("Ranull") && !commandSender.getName().equals("JaySmethers") && !commandSender.getName().equals("Legoman99573")) {
                 commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET

@@ -594,11 +594,11 @@ public final class EntityManager extends EntityDataManager {
             case "teleport":
             case "teleportation": {
                 if (plugin.getConfig("teleport.enabled", grave).getBoolean("teleport.enabled")
-                        && (plugin.hasGrantedPermission("graves.teleport", (Player) entity))
+                        && (plugin.hasGrantedPermission("graves.teleport", ((Player) entity).getPlayer())
                         || plugin.getConfig("teleport.enabled", grave).getBoolean("teleport.enabled")
-                        && plugin.hasGrantedPermission("graves.teleport.world." + grave.getLocationDeath().getWorld().getName(), (Player) entity)
-                        || plugin.hasGrantedPermission("graves.bypass", (Player) entity)) {
-                    if (plugin.hasGrantedPermission("graves.bypass", (Player) entity) && grave.getOwnerUUID() != entity.getUniqueId()) {
+                        && plugin.hasGrantedPermission("graves.teleport.world." + grave.getLocationDeath().getWorld().getName(), ((Player) entity).getPlayer())
+                        || plugin.hasGrantedPermission("graves.bypass", ((Player) entity).getPlayer()))) {
+                    if (plugin.hasGrantedPermission("graves.bypass", ((Player) entity).getPlayer()) && grave.getOwnerUUID() != entity.getUniqueId()) {
                         GraveTeleportEvent graveTeleportEvent = new GraveTeleportEvent(grave, entity);
 
                         plugin.getServer().getPluginManager().callEvent(graveTeleportEvent);
@@ -684,7 +684,7 @@ public final class EntityManager extends EntityDataManager {
      * @return true if the player can open the grave, false otherwise.
      */
     public boolean canOpenGrave(Player player, Grave grave) {
-        if (grave.getTimeProtectionRemaining() == 0 || plugin.hasGrantedPermission("graves.bypass", player)) {
+        if (grave.getTimeProtectionRemaining() == 0 || plugin.hasGrantedPermission("graves.bypass", player.getPlayer())) {
             return true;
         } else if (grave.getProtection() && grave.getOwnerUUID() != null) {
             if (grave.getOwnerUUID().equals(player.getUniqueId())

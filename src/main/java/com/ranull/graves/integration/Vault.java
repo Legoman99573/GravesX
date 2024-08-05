@@ -9,16 +9,26 @@ import org.bukkit.command.CommandSender;
  * Provides an integration with Vault's economy system to manage player balances.
  */
 public final class Vault {
-    private final Economy economy;
-    private final Permission permission;
+    private Economy economy;
+    private Permission permission;
 
     /**
      * Constructs a new Vault integration instance with the specified Economy instance.
      *
      * @param economy The Economy instance provided by Vault.
+     * @param permission The Permission instance provided by Vault.
      */
     public Vault(Economy economy, Permission permission) {
         this.economy = economy;
+        this.permission = permission;
+    }
+
+    @Deprecated
+    public Vault(Economy economy) {
+        this.economy = economy;
+    }
+
+    public Vault(Permission permission) {
         this.permission = permission;
     }
 

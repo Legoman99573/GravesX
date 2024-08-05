@@ -304,14 +304,18 @@ public final class IntegrationManager {
 
                     plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + ".");
                     plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions priovider.");
+                } else if (economyProvider != null) {
+                    Economy economy = economyProvider.getProvider();
+
+                    vault = new Vault(economy);
                 } else {
+                    vault = null;
+
                     plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + ".");
                     plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions priovider. Using bukkit's permissions provider.");
-                    vault = null;
                 }
             }
         } else {
-            plugin.getLogger().warning("Vault is not installed on this server. Defaulting to bukkit's permissions provider.");
             vault = null;
         }
     }
