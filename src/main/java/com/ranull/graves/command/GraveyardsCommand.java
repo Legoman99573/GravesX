@@ -215,6 +215,11 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
 
         if (graveyard != null) {
             plugin.getGraveyardManager().deleteGraveyard(player, graveyard);
+            if (plugin.getIntegrationManager().getWorldGuard() != null) {
+                String region = args[1];
+                World world = plugin.getIntegrationManager().getWorldGuard().getRegionWorld(region);
+                plugin.getIntegrationManager().getWorldGuard().setRegionFlag(world != null ? world.getName() : null, region, "graves-graveyard", "allow");
+            }
         } else {
             player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Graveyard not found: " + graveyardName);
         }
@@ -256,11 +261,15 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
+        // Set the graves-graveyard flag
+        plugin.getIntegrationManager().getWorldGuard().setRegionFlag(world.getName(), region, "graves-graveyard", "allow");
+
         Graveyard graveyard = plugin.getGraveyardManager()
                 .createGraveyard(player.getLocation(), region, world, Graveyard.Type.WORLDGUARD);
 
         player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Creating graveyard " + region);
         plugin.getGraveyardManager().startModifyingGraveyard(player, graveyard);
+        plugin.debugMessage("Set graves-graveyard flag for region " + region, 2);
     }
 
     /**
@@ -287,9 +296,11 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
         }
 
         String name = args[2].replace("_", " ");
+        plugin.debugMessage("Attempting to create Towny graveyard for plot: " + name, 2);
 
         if (!plugin.getIntegrationManager().getTowny().hasTownPlot(player, name)) {
             player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Plot not found " + name);
+            plugin.debugMessage("Plot not found: " + name,2);
             return;
         }
 
@@ -297,6 +308,7 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
                 .createGraveyard(player.getLocation(), name, player.getWorld(), Graveyard.Type.TOWNY);
 
         player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Creating graveyard " + name);
+        plugin.debugMessage("Creating graveyard: " + name, 2);
         plugin.getGraveyardManager().startModifyingGraveyard(player, graveyard);
     }
 
@@ -324,10 +336,12 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
         }
 
         String region = args[2];
+        plugin.debugMessage("Attempting to modify WorldGuard graveyard for region: " + region, 2);
         World world = plugin.getIntegrationManager().getWorldGuard().getRegionWorld(region);
 
         if (world == null) {
             player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Region not found " + region);
+            plugin.debugMessage("Region not found: " + region, 2);
             return;
         }
 
@@ -335,10 +349,12 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
 
         if (graveyard == null) {
             player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Graveyard " + region + " not found");
+            plugin.debugMessage("Graveyard not found for region: " + region, 2);
             return;
         }
 
         player.sendMessage("Graveyard found");
+        plugin.debugMessage("Graveyard found for region: " + region, 2);
         plugin.getGraveyardManager().startModifyingGraveyard(player, graveyard);
     }
 
@@ -366,14 +382,17 @@ public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
         }
 
         String name = args[2].replace("_", " ");
+        plugin.debugMessage("Attempting to modify Towny graveyard for plot: " + name, 2);
         Graveyard graveyard = plugin.getGraveyardManager().getGraveyardByKey("towny|" + player.getWorld().getName() + "|" + name);
 
         if (graveyard == null) {
             player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Graveyard not found: " + name);
+            plugin.debugMessage("Graveyard not found for plot: " + name, 2);
             return;
         }
 
         player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Graveyard found");
+        plugin.debugMessage("Graveyard found for plot: " + name, 2);
         plugin.getGraveyardManager().startModifyingGraveyard(player, graveyard);
     }
 }

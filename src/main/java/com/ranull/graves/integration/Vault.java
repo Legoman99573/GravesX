@@ -1,21 +1,25 @@
 package com.ranull.graves.integration;
 
 import net.milkbowl.vault.economy.Economy;
+import net.milkbowl.vault.permission.Permission;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.command.CommandSender;
 
 /**
  * Provides an integration with Vault's economy system to manage player balances.
  */
 public final class Vault {
     private final Economy economy;
+    private final Permission permission;
 
     /**
      * Constructs a new Vault integration instance with the specified Economy instance.
      *
      * @param economy The Economy instance provided by Vault.
      */
-    public Vault(Economy economy) {
+    public Vault(Economy economy, Permission permission) {
         this.economy = economy;
+        this.permission = permission;
     }
 
     /**
@@ -48,5 +52,16 @@ public final class Vault {
      */
     public boolean withdrawBalance(OfflinePlayer player, double balance) {
         return balance <= 0 || economy.withdrawPlayer(player, balance).transactionSuccess();
+    }
+
+    /**
+     * Checks if a player has the specified permission.
+     *
+     * @param player The player whose permission to check.
+     * @param permissionNode The permission node to check.
+     * @return {@code true} if the player has the specified permission, otherwise {@code false}.
+     */
+    public boolean hasPermission(OfflinePlayer player, String permissionNode) {
+        return permission.has((CommandSender) player, permissionNode);
     }
 }

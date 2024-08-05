@@ -13,6 +13,7 @@ import com.ranull.graves.util.*;
 import org.bstats.bukkit.Metrics;
 import org.bstats.charts.SingleLineChart;
 import org.bukkit.ChatColor;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.ConfigurationSection;
@@ -696,5 +697,64 @@ public class Graves extends JavaPlugin {
         for (StackTraceElement element : e.getStackTrace()) {
             getLogger().severe(element.toString());
         }
+    }
+
+    /**
+     * Checks if the specified player has been granted the specified permission.
+     * This method first checks if the Vault integration is available and uses it to check permissions.
+     * If Vault is not available, it falls back to the default Bukkit permission check.
+     * Additionally, this method logs debug messages based on the permission check results.
+     *
+     * @param permission the permission to check for
+     * @param player the player whose permissions are being checked
+     * @return {@code true} if the player has the specified permission, {@code false} otherwise
+     */
+    public boolean hasGrantedPermission (String permission, Player player) {
+        if (getIntegrationManager().hasVault()) {
+            if (getIntegrationManager().getVault().hasPermission(player, permission)) {
+                debugMessage(player.getName() + " has vault permission " + permission, 2);
+                return true;
+            }
+            debugMessage(player.getName() + " doesn't have vault permission " + permission, 2);
+            return false;
+        }
+
+        if (player.hasPermission(permission)) {
+            debugMessage(player.getName() + " has bukkit permission " + permission, 2);
+            return true;
+        }
+        debugMessage(player.getName() + " doesn't have bukkit permission " + permission, 2);
+        return false;
+    }
+
+    /**
+     * Checks if the specified offline player has been granted the specified permission.
+     * This method first checks if the Vault integration is available and uses it to check permissions.
+     * If Vault is not available, it falls back to the default Bukkit permission check.
+     * Additionally, this method logs debug messages based on the permission check results.
+     *
+     * @param permission the permission to check for
+     * @param offlinePlayer the offline player whose permissions are being checked
+     * @return {@code true} if the offline player has the specified permission, {@code false} otherwise
+     * @deprecated This method is deprecated because it is less efficient to check permissions for offline players.
+     *             Use {@link #hasGrantedPermission(String, Player)} for online players instead.
+     */
+    @Deprecated
+    public boolean hasGrantedPermission(String permission, OfflinePlayer offlinePlayer) {
+        if (getIntegrationManager().hasVault()) {
+            if (getIntegrationManager().getVault().hasPermission(offlinePlayer, permission)) {
+                debugMessage(offlinePlayer.getName() + " has vault permission " + permission, 2);
+                return true;
+            }
+            debugMessage(offlinePlayer.getName() + " doesn't have vault permission " + permission, 2);
+            return false;
+        }
+
+        if (offlinePlayer.isOnline() && offlinePlayer.getPlayer().hasPermission(permission)) {
+            debugMessage(offlinePlayer.getName() + " has bukkit permission " + permission, 2);
+            return true;
+        }
+        debugMessage(offlinePlayer.getName() + " doesn't have bukkit permission " + permission, 2);
+        return false;
     }
 }

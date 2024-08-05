@@ -9,8 +9,11 @@ import com.sk89q.worldguard.protection.association.RegionAssociable;
 import com.sk89q.worldguard.protection.flags.Flag;
 import com.sk89q.worldguard.protection.flags.StateFlag;
 import com.sk89q.worldguard.protection.flags.registry.FlagConflictException;
+import com.sk89q.worldguard.protection.flags.registry.FlagRegistry;
 import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
+import com.sk89q.worldguard.protection.regions.RegionContainer;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
@@ -28,6 +31,7 @@ public final class WorldGuard {
     private final com.sk89q.worldguard.WorldGuard worldGuard;
     private final StateFlag createFlag;
     private final StateFlag teleportFlag;
+    private final StateFlag graveyardFlag;
 
     /**
      * Constructs a new WorldGuard integration instance with the specified plugin.
@@ -39,6 +43,7 @@ public final class WorldGuard {
         this.worldGuard = com.sk89q.worldguard.WorldGuard.getInstance();
         this.createFlag = getFlag("graves-create");
         this.teleportFlag = getFlag("graves-teleport");
+        this.graveyardFlag = getFlag("graves-graveyard");
     }
 
     /**
@@ -68,6 +73,51 @@ public final class WorldGuard {
         }
 
         return null;
+    }
+
+    public void setRegionFlag(String worldName, String regionName, String flagName, String value) {
+        World world = Bukkit.getWorld(worldName);
+        if (world == null) {
+            return;
+        }
+
+        RegionContainer container = worldGuard.getPlatform().getRegionContainer();
+        RegionManager regionManager = container.get(BukkitAdapter.adapt(world));
+        if (regionManager != null) {
+            ProtectedRegion region = regionManager.getRegion(regionName);
+            if (region != null) {
+                FlagRegistry registry = worldGuard.getFlagRegistry();
+                StateFlag stateFlag = (StateFlag) registry.get(flagName);
+                if (stateFlag != null) {
+                    StateFlag.State state = StateFlag.State.valueOf(value.toUpperCase());
+                    region.setFlag(stateFlag, state);
+                    try {
+                        regionManager.save();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+    }
+
+    public boolean isInGraveyardRegion(Player player) {
+        RegionContainer container = worldGuard.getPlatform().getRegionContainer();
+        RegionManager regionManager = container.get(BukkitAdapter.adapt(player.getWorld()));
+        if (regionManager != null) {
+            ApplicableRegionSet regionSet = regionManager.getApplicableRegions(BukkitAdapter.asBlockVector(player.getLocation()));
+            StateFlag gravesGraveyardFlag = (StateFlag) worldGuard.getFlagRegistry().get("graves-graveyard");
+
+            if (gravesGraveyardFlag != null) {
+                for (ProtectedRegion region : regionSet) {
+                    StateFlag.State flagState = region.getFlag(gravesGraveyardFlag);
+                    if (flagState == StateFlag.State.ALLOW) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     /**

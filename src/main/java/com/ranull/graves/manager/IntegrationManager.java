@@ -1,14 +1,12 @@
 package com.ranull.graves.manager;
 
-import ch.njol.skript.Skript;
 import ch.njol.skript.SkriptAddon;
 import com.ranull.graves.Graves;
 import com.ranull.graves.integration.*;
 import net.milkbowl.vault.economy.Economy;
-import org.bukkit.Bukkit;
+import net.milkbowl.vault.permission.Permission;
 import org.bukkit.World;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
 
 import java.util.Arrays;
@@ -295,17 +293,25 @@ public final class IntegrationManager {
             Plugin vaultPlugin = plugin.getServer().getPluginManager().getPlugin("Vault");
 
             if (vaultPlugin != null && vaultPlugin.isEnabled()) {
-                RegisteredServiceProvider<Economy> registeredServiceProvider = plugin.getServer().getServicesManager()
-                        .getRegistration(Economy.class);
+                RegisteredServiceProvider<Economy> economyProvider = plugin.getServer().getServicesManager().getRegistration(Economy.class);
+                RegisteredServiceProvider<Permission> permissionProvider = plugin.getServer().getServicesManager().getRegistration(Permission.class);
 
-                if (registeredServiceProvider != null) {
-                    vault = new Vault(registeredServiceProvider.getProvider());
+                if (economyProvider != null && permissionProvider != null) {
+                    Economy economy = economyProvider.getProvider();
+                    Permission permission = permissionProvider.getProvider();
 
-                    plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " "
-                            + vaultPlugin.getDescription().getVersion() + ".");
+                    vault = new Vault(economy, permission);
+
+                    plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + ".");
+                    plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions priovider.");
+                } else {
+                    plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + ".");
+                    plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions priovider. Using bukkit's permissions provider.");
+                    vault = null;
                 }
             }
         } else {
+            plugin.getLogger().warning("Vault is not installed on this server. Defaulting to bukkit's permissions provider.");
             vault = null;
         }
     }
