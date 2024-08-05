@@ -5,8 +5,11 @@ import com.ranull.graves.Graves;
 import com.ranull.graves.integration.*;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.permission.Permission;
+import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.RegisteredServiceProvider;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.StringJoiner;
@@ -296,10 +299,13 @@ public final class IntegrationManager {
             Plugin vaultPlugin = plugin.getServer().getPluginManager().getPlugin("Vault");
 
             if (vaultPlugin != null && vaultPlugin.isEnabled()) {
+                RegisteredServiceProvider<Permission> permissionProvider = Bukkit.getServer().getServicesManager().getRegistration(Permission.class);
+                RegisteredServiceProvider<Economy> economyProvider = Bukkit.getServer().getServicesManager().getRegistration(Economy.class);
 
-                Economy economy = plugin.getIntegrationManager().getVault().getEconomyProvider();
-                Permission permission = plugin.getIntegrationManager().getVault().getPermissionProvider();
-                if (economy != null && permission != null) {
+                if (economyProvider != null && permissionProvider != null) {
+                    Economy economy = economyProvider.getProvider();
+
+                    Permission permission = permissionProvider.getProvider();
                     vault = new Vault(economy, permission);
                     hasVaultPermissions = true;
 
@@ -307,7 +313,9 @@ public final class IntegrationManager {
                     plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions priovider.");
                 }
 
-                if (economy != null && permission == null) {
+                if (economyProvider != null && permissionProvider == null) {
+                    Economy economy = economyProvider.getProvider();
+
                     vault = new Vault(economy);
                     hasVaultPermissions = false;
 
@@ -315,7 +323,9 @@ public final class IntegrationManager {
                     plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions priovider. Using bukkit's permissions provider.");
                 }
 
-                if (economy == null && permission != null) {
+                if (economyProvider == null && permissionProvider != null) {
+                    Permission permission = permissionProvider.getProvider();
+
                     vault = new Vault(permission);
                     hasVaultPermissions = true;
 
@@ -323,7 +333,7 @@ public final class IntegrationManager {
                     plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions priovider.");
                 }
 
-                if (economy == null && permission == null) {
+                if (economyProvider == null && permissionProvider == null) {
                     vault = null;
                     hasVaultPermissions = false;
 

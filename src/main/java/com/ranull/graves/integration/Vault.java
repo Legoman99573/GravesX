@@ -89,14 +89,4 @@ public final class Vault {
     public boolean hasPermission(OfflinePlayer player, String permissionNode) {
         return permission.has((CommandSender) player, permissionNode);
     }
-    
-    public Economy getEconomyProvider() {
-        RegisteredServiceProvider<Economy> economyProvider = Bukkit.getServer().getServicesManager().getRegistration(Economy.class);
-        return economyProvider != null ? economyProvider.getProvider() : null;
-    }
-
-    public Permission getPermissionProvider() {
-        RegisteredServiceProvider<Permission> permissionProvider = Bukkit.getServer().getServicesManager().getRegistration(Permission.class);
-        return permissionProvider != null ? permissionProvider.getProvider() : null;
-    }
 }

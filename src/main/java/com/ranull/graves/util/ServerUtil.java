@@ -1,7 +1,6 @@
 package com.ranull.graves.util;
 
 import com.ranull.graves.Graves;
-import net.milkbowl.vault.permission.Permission;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
