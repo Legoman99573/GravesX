@@ -743,18 +743,18 @@ public class Graves extends JavaPlugin {
     public boolean hasGrantedPermission(String permission, OfflinePlayer offlinePlayer) {
         if (getIntegrationManager().hasVault()) {
             if (getIntegrationManager().getVault().hasPermission(offlinePlayer, permission)) {
-                debugMessage(offlinePlayer.getName() + " has vault permission " + permission, 2);
+                debugMessage(offlinePlayer.getName() + " has vault permission " + permission, 1);
                 return true;
             }
-            debugMessage(offlinePlayer.getName() + " doesn't have vault permission " + permission, 2);
+            debugMessage(offlinePlayer.getName() + " doesn't have vault permission " + permission, 1);
             return false;
         }
 
         if (offlinePlayer.isOnline() && offlinePlayer.getPlayer().hasPermission(permission)) {
-            debugMessage(offlinePlayer.getName() + " has bukkit permission " + permission, 2);
+            debugMessage(offlinePlayer.getName() + " has bukkit permission " + permission, 1);
             return true;
         }
-        debugMessage(offlinePlayer.getName() + " doesn't have bukkit permission " + permission, 2);
+        debugMessage(offlinePlayer.getName() + " doesn't have bukkit permission " + permission, 1);
         return false;
     }
 }

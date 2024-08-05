@@ -105,7 +105,11 @@ public final class ServerUtil {
 
         stringList.add(plugin.getDescription().getName() + " Config Version: "
                 + plugin.getConfig().getInt("config-version"));
-
+        if (plugin.getIntegrationManager().hasVault()) {
+            stringList.add(plugin.getDescription().getName() + " Permissions Provider: Vault");
+        } else {
+            stringList.add(plugin.getDescription().getName() + " Permissions Provider: Bukkit");
+        }
         // Replace the password in the config string and encode it back to Base64
         FileConfiguration config = plugin.getConfig();
         String configString = config.saveToString();
@@ -113,6 +117,16 @@ public final class ServerUtil {
         if (!password.isEmpty()) {
             String maskedPassword = password.replaceAll(".", "*");
             configString = configString.replace(password, maskedPassword);
+        }
+        String password2 = config.getString("settings.storage.postgresql.password", "");
+        if (!password.isEmpty()) {
+            String maskedPassword = password2.replaceAll(".", "*");
+            configString = configString.replace(password2, maskedPassword);
+        }
+        String password3 = config.getString("settings.storage.h2.password", "");
+        if (!password.isEmpty()) {
+            String maskedPassword = password3.replaceAll(".", "*");
+            configString = configString.replace(password3, maskedPassword);
         }
         String configBase64 = Base64.getEncoder().encodeToString(configString.getBytes());
         stringList.add(plugin.getDescription().getName() + " Config Base64: " + configBase64);

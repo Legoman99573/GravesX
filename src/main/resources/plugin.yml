@@ -22,7 +22,6 @@ libraries:
 loadbefore:
   - GriefPrevention
   - GriefDefender
-  - Towny
 
 softdepend:
   - Vault
@@ -44,6 +43,7 @@ softdepend:
   - PlayerNPC
   - Skript
   - Citizens
+  - Towny
 
 commands:
   graves:

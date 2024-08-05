@@ -148,8 +148,8 @@ settings:
     minedown: # https://github.com/Phoenix616/MineDownPlugin/
       enabled: true # Should MineDown integration be enabled.
     playernpc: # https://www.spigotmc.org/resources/playernpc.93625/
-      enabled: true # Should PlayerNPC integration be enabled.
+      enabled: false # Should PlayerNPC integration be enabled.
     citizensnpc: # https://www.spigotmc.org/resources/citizens.13811/
-      enabled: true # Should Citizens integration be enabled.
+      enabled: false # Should Citizens integration be enabled.
     itembridge: # https://www.spigotmc.org/resources/itembridge.77080/
       enabled: true # Should ItemBridge integration be enabled.

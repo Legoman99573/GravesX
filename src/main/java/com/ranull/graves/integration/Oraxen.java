@@ -7,7 +7,6 @@ import com.ranull.graves.listener.integration.oraxen.HangingBreakListener;
 import com.ranull.graves.listener.integration.oraxen.PlayerInteractEntityListener;
 import com.ranull.graves.manager.EntityDataManager;
 import com.ranull.graves.type.Grave;
-import com.ranull.graves.util.BlockFaceUtil;
 import com.ranull.graves.util.ResourceUtil;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
 import io.th0rgal.oraxen.mechanics.MechanicsManager;
@@ -19,7 +18,6 @@ import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.type.NoteBlock;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.ItemFrame;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.Plugin;
 
