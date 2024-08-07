@@ -9,11 +9,9 @@ import com.ranull.graves.type.Grave;
 import com.ranull.graves.type.Graveyard;
 import com.ranull.graves.util.*;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
-import org.bukkit.entity.Creature;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -22,6 +20,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.metadata.MetadataValue;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
@@ -61,6 +60,14 @@ public class EntityDeathListener implements Listener {
             if (handlePlayerDeath((Player) livingEntity, entityName)) return;
         }
 
+        if (livingEntity instanceof Zombie) {
+            Zombie zombie = (Zombie) livingEntity;
+
+            if (isConfiguredZombieType(zombie) && hasGravesXMetadata(zombie)) {
+                removePlayerSkullFromDrops(zombie, event);
+            }
+        }
+
         if (!isEnabledGrave(livingEntity, permissionList, entityName)) return;
 
         if (isKeepInventory((PlayerDeathEvent) event, entityName)) return;
@@ -98,6 +105,46 @@ public class EntityDeathListener implements Listener {
         } else {
             plugin.debugMessage("Grave not created for " + entityName + " because they had no drops", 2);
         }
+    }
+
+    /**
+     * Checks if the zombie is of the type configured in config.yml.
+     *
+     * @param zombie the zombie entity to check
+     * @return true if the zombie is of the configured type, false otherwise
+     */
+    private boolean isConfiguredZombieType(Zombie zombie) {
+        String configuredZombieType = plugin.getConfig().getString("zombie.type", "ZOMBIE").toUpperCase();
+        EntityType configuredEntityType = EntityType.valueOf(configuredZombieType);
+        return zombie.getType() == configuredEntityType;
+    }
+
+    /**
+     * Removes player skull from the drops of the entity if it is wearing one.
+     *
+     * @param entity the entity whose drops are to be modified
+     * @param event the EntityDeathEvent containing the drops
+     */
+    private void removePlayerSkullFromDrops(LivingEntity entity, EntityDeathEvent event) {
+        ItemStack helmet = entity.getEquipment().getHelmet();
+        if (helmet != null && helmet.getType() == Material.PLAYER_HEAD) {
+            event.getDrops().removeIf(item -> item.getType() == Material.PLAYER_HEAD);
+        }
+    }
+
+    /**
+     * Checks if the given entity has the GravesX metadata.
+     *
+     * @param zombie the zombie entity to check
+     * @return true if the entity has the GravesX metadata, false otherwise
+     */
+    private boolean hasGravesXMetadata(Zombie zombie) {
+        for (MetadataValue value : zombie.getMetadata("GravesX")) {
+            if (value.asBoolean()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

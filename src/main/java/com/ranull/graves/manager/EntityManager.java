@@ -779,6 +779,8 @@ public final class EntityManager extends EntityDataManager {
                     livingEntity.getEquipment().setBoots(null);
                 }
 
+                livingEntity.setMetadata("GravesX", new FixedMetadataValue(plugin, true)); // So we don't break other plugins
+
                 double zombieHealth = plugin.getConfig("zombie.health", grave).getDouble("zombie.health");
 
                 if (zombieHealth >= 0.5) {
