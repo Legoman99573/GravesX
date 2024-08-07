@@ -7,7 +7,9 @@ import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.LocationUtil;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -184,30 +186,36 @@ public final class BlockManager {
      */
     public void removeBlock(BlockData blockData) {
         Location location = blockData.getLocation();
+        World world = location.getWorld();
 
-        if (plugin.getIntegrationManager().hasItemsAdder() && plugin.getIntegrationManager().getItemsAdder()
-                .isCustomBlock(location)) {
-            plugin.getIntegrationManager().getItemsAdder().removeBlock(location);
-        }
+        if (world != null) {
+            Block centerBlock = location.getBlock();
+            Block lowerBlock = location.clone().add(0, -1, 0).getBlock();
 
-        if (plugin.getIntegrationManager().hasOraxen() && plugin.getIntegrationManager().getOraxen()
-                .isCustomBlock(location)) {
-            plugin.getIntegrationManager().getOraxen().removeBlock(location);
-        }
+            Material originalMaterial = centerBlock.getType(); // Store the original material
 
-        if (location.getWorld() != null) {
+            if (plugin.getIntegrationManager().hasItemsAdder() && plugin.getIntegrationManager().getItemsAdder()
+                    .isCustomBlock(location)) {
+                plugin.getIntegrationManager().getItemsAdder().removeBlock(location);
+            }
+
+            if (plugin.getIntegrationManager().hasOraxen() && plugin.getIntegrationManager().getOraxen()
+                    .isCustomBlock(location)) {
+                plugin.getIntegrationManager().getOraxen().removeBlock(location);
+            }
+
             if (blockData.getReplaceMaterial() != null) {
                 Material material = Material.matchMaterial(blockData.getReplaceMaterial());
 
                 if (material != null) {
-                    blockData.getLocation().getBlock().setType(material);
+                    centerBlock.setType(material);
                 }
             } else {
-                blockData.getLocation().getBlock().setType(Material.AIR);
+                centerBlock.setType(Material.AIR);
             }
 
             if (blockData.getReplaceData() != null) {
-                blockData.getLocation().getBlock().setBlockData(plugin.getServer()
+                centerBlock.setBlockData(plugin.getServer()
                         .createBlockData(blockData.getReplaceData()));
             }
 
@@ -215,6 +223,15 @@ public final class BlockManager {
             plugin.debugMessage("Replacing grave block for " + blockData.getGraveUUID() + " at "
                     + location.getWorld().getName() + ", " + (location.getBlockX() + 0.5) + "x, "
                     + (location.getBlockY() + 0.5) + "y, " + (location.getBlockZ() + 0.5) + "z", 1);
+
+            // Check if the block needs to drop an item
+            if (lowerBlock.getType() == Material.AIR || !lowerBlock.getType().isSolid()) {
+                ItemStack dropItem = new ItemStack(originalMaterial); // Use the original material
+                world.dropItemNaturally(location.add(0.5, 0.5, 0.5), dropItem);
+                plugin.debugMessage("Dropped non-solid item " + dropItem.getType() + " at "
+                        + location.getWorld().getName() + ", " + (location.getBlockX() + 0.5) + "x, "
+                        + (location.getBlockY() + 0.5) + "y, " + (location.getBlockZ() + 0.5) + "z", 1);
+            }
         }
     }
 }
