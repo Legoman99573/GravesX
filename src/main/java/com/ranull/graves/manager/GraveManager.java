@@ -24,6 +24,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
 
@@ -122,8 +123,33 @@ public final class GraveManager {
             plugin.debugMessage("GraveTimeoutEvent not cancelled for grave: " + grave.getUUID(), 2);
 
             if (graveTimeoutEvent.getLocation() != null && plugin.getConfig("drop.timeout", grave).getBoolean("drop.timeout")) {
-                dropGraveItems(graveTimeoutEvent.getLocation(), grave);
-                dropGraveExperience(graveTimeoutEvent.getLocation(), grave);
+                Location location = graveTimeoutEvent.getLocation();
+                Chunk chunk = location.getChunk();
+                if (!chunk.isLoaded()) {
+                    chunk.load();
+                }
+
+                // Schedule dropping the grave items and experience after 2 seconds
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        dropGraveItems(location, grave);
+                        dropGraveExperience(location, grave);
+
+                        // Schedule unloading the chunk after 5 seconds
+                        new BukkitRunnable() {
+                            @Override
+                            public void run() {
+                                if (chunk.isLoaded() && arePlayersInChunk(chunk)) {
+                                    // Reschedule unloading if players are still in the chunk
+                                    this.runTaskLater(plugin, 100L); // Check again after 5 seconds
+                                } else if (chunk.isLoaded()) {
+                                    chunk.unload();
+                                }
+                            }
+                        }.runTaskLater(plugin, 60L); // 60 ticks = 3 seconds after items dropped
+                    }
+                }.runTaskLater(plugin, 40L); // 40 ticks = 2 seconds
             }
 
             if (grave.getOwnerType() == EntityType.PLAYER && grave.getOwnerUUID() != null) {
@@ -139,6 +165,16 @@ public final class GraveManager {
             plugin.debugMessage("GraveTimeoutEvent cancelled for grave: " + grave.getUUID() + ", setting time alive to forever.", 2);
             grave.setTimeAliveRemaining(-1);
         }
+    }
+
+    /**
+     * Checks if there are any players in the given chunk.
+     *
+     * @param chunk the chunk to check.
+     * @return true if there are players in the chunk, false otherwise.
+     */
+    private boolean arePlayersInChunk(Chunk chunk) {
+        return Arrays.stream(chunk.getEntities()).anyMatch(entity -> entity instanceof Player);
     }
 
     /**
