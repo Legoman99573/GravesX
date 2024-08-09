@@ -255,8 +255,17 @@ public final class RecipeManager {
                 return string != null && string.equals(token);
             }
         } else {
-            // TODO
-            return false;
+            ItemMeta meta = itemStack.getItemMeta();
+            if (meta != null && meta.hasLore()) {
+                List<String> lore = meta.getLore();
+                if (lore != null) {
+                    for (String loreEntry : lore) {
+                        if (loreEntry.equals(token)) {
+                            return true;
+                        }
+                    }
+                }
+            }
         }
 
         return false;

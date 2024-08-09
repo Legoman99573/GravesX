@@ -2,10 +2,8 @@ package com.ranull.graves.integration;
 
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.permission.Permission;
-import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
-import org.bukkit.plugin.RegisteredServiceProvider;
 
 /**
  * Provides an integration with Vault's economy system to manage player balances.

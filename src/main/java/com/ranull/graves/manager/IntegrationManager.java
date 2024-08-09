@@ -15,9 +15,11 @@ import java.util.List;
 import java.util.StringJoiner;
 
 /**
- * The IntegrationManager class manages the integration of various plugins with the Graves plugin.
+ * The {@code IntegrationManager} class is responsible for managing the integration of various external plugins with the Graves plugin.
+ * This class handles loading, unloading, and checking the availability of these integrations, allowing the Graves plugin to interact with other plugins.
  */
 public final class IntegrationManager {
+
     private final Graves plugin;
     private MultiPaper multiPaper;
     private Vault vault;
@@ -40,18 +42,19 @@ public final class IntegrationManager {
     private PlaceholderAPI placeholderAPI;
     private SkriptImpl skriptImpl;
     private boolean hasVaultPermissions;
+    private LuckPermsHandler luckPermsHandler;
 
     /**
-     * Initializes a new instance of the IntegrationManager class.
+     * Initializes a new instance of the {@code IntegrationManager} class.
      *
-     * @param plugin The plugin instance.
+     * @param plugin The plugin instance of Graves.
      */
     public IntegrationManager(Graves plugin) {
         this.plugin = plugin;
     }
 
     /**
-     * Reloads the integrations by unloading and then loading them.
+     * Reloads all integrations by first unloading them and then loading them again.
      */
     public void reload() {
         unload();
@@ -59,7 +62,7 @@ public final class IntegrationManager {
     }
 
     /**
-     * Loads all integrations.
+     * Loads all integrations for the Graves plugin.
      */
     public void load() {
         loadMultiPaper();
@@ -68,7 +71,7 @@ public final class IntegrationManager {
         loadWorldEdit();
         loadWorldGuard();
         loadTowny();
-        //loadGriefDefender(); // TODO
+        loadGriefDefender(); // TODO: Integration enabled, test for possible issues.
         loadFurnitureLib();
         loadFurnitureEngine();
         loadProtectionLib();
@@ -82,12 +85,19 @@ public final class IntegrationManager {
         loadItemBridge();
         loadPlaceholderAPI();
         loadCompatibilityWarnings();
+        loadLuckPerms();
     }
 
+    /**
+     * Loads Skript integration without reloading other integrations.
+     */
     public void loadNoReload() {
         loadSkript();
     }
 
+    /**
+     * Unloads Skript integration without unloading other integrations.
+     */
     public void unloadNoReload() {
         if (skriptImpl != null) {
             skriptImpl = null;
@@ -95,7 +105,7 @@ public final class IntegrationManager {
     }
 
     /**
-     * Unloads all integrations.
+     * Unloads all integrations associated with the Graves plugin.
      */
     public void unload() {
         if (furnitureLib != null) {
@@ -127,158 +137,369 @@ public final class IntegrationManager {
         }
     }
 
+    /**
+     * Returns the instance of the MultiPaper integration, if it is loaded.
+     *
+     * @return The {@code MultiPaper} integration instance, or null if not loaded.
+     */
     public MultiPaper getMultiPaper() {
         return multiPaper;
     }
 
+    /**
+     * Returns the instance of the Vault integration, if it is loaded.
+     *
+     * @return The {@code Vault} integration instance, or null if not loaded.
+     */
     public Vault getVault() {
         return vault;
     }
 
+    /**
+     * Returns the instance of the ProtocolLib integration, if it is loaded.
+     *
+     * @return The {@code ProtocolLib} integration instance, or null if not loaded.
+     */
     public ProtocolLib getProtocolLib() {
         return protocolLib;
     }
 
+    /**
+     * Returns the instance of the WorldEdit integration, if it is loaded.
+     *
+     * @return The {@code WorldEdit} integration instance, or null if not loaded.
+     */
     public WorldEdit getWorldEdit() {
         return worldEdit;
     }
 
+    /**
+     * Returns the instance of the WorldGuard integration, if it is loaded.
+     *
+     * @return The {@code WorldGuard} integration instance, or null if not loaded.
+     */
     public WorldGuard getWorldGuard() {
         return worldGuard;
     }
 
+    /**
+     * Returns the instance of the Towny integration, if it is loaded.
+     *
+     * @return The {@code Towny} integration instance, or null if not loaded.
+     */
     public Towny getTowny() {
         return towny;
     }
 
+    /**
+     * Returns the instance of the GriefDefender integration, if it is loaded.
+     *
+     * @return The {@code GriefDefender} integration instance, or null if not loaded.
+     */
     public GriefDefender getGriefDefender() {
         return griefDefender;
     }
 
+    /**
+     * Returns the instance of the FurnitureLib integration, if it is loaded.
+     *
+     * @return The {@code FurnitureLib} integration instance, or null if not loaded.
+     */
     public FurnitureLib getFurnitureLib() {
         return furnitureLib;
     }
 
+    /**
+     * Returns the instance of the FurnitureEngine integration, if it is loaded.
+     *
+     * @return The {@code FurnitureEngine} integration instance, or null if not loaded.
+     */
     public FurnitureEngine getFurnitureEngine() {
         return furnitureEngine;
     }
 
+    /**
+     * Returns the instance of the ProtectionLib integration, if it is loaded.
+     *
+     * @return The {@code ProtectionLib} integration instance, or null if not loaded.
+     */
     public ProtectionLib getProtectionLib() {
         return protectionLib;
     }
 
+    /**
+     * Returns the instance of the ItemsAdder integration, if it is loaded.
+     *
+     * @return The {@code ItemsAdder} integration instance, or null if not loaded.
+     */
     public ItemsAdder getItemsAdder() {
         return itemsAdder;
     }
 
+    /**
+     * Returns the instance of the Oraxen integration, if it is loaded.
+     *
+     * @return The {@code Oraxen} integration instance, or null if not loaded.
+     */
     public Oraxen getOraxen() {
         return oraxen;
     }
 
+    /**
+     * Returns the instance of the MiniMessage integration, if it is loaded.
+     *
+     * @return The {@code MiniMessage} integration instance, or null if not loaded.
+     */
     public MiniMessage getMiniMessage() {
         return miniMessage;
     }
 
+    /**
+     * Returns the instance of the MineDown integration, if it is loaded.
+     *
+     * @return The {@code MineDown} integration instance, or null if not loaded.
+     */
     public MineDown getMineDown() {
         return mineDown;
     }
 
+    /**
+     * Returns the instance of the ChestSort integration, if it is loaded.
+     *
+     * @return The {@code ChestSort} integration instance, or null if not loaded.
+     */
     public ChestSort getChestSort() {
         return chestSort;
     }
 
+    /**
+     * Returns the instance of the PlayerNPC integration, if it is loaded.
+     *
+     * @return The {@code PlayerNPC} integration instance, or null if not loaded.
+     */
     public PlayerNPC getPlayerNPC() {
         return playerNPC;
     }
 
+    /**
+     * Returns the SkriptAddon instance if Skript integration is loaded.
+     *
+     * @return The {@code SkriptAddon} instance, or null if Skript is not loaded.
+     */
     public SkriptAddon getSkript() {
-        return skriptImpl.getSkriptAddon();
+        return skriptImpl != null ? skriptImpl.getSkriptAddon() : null;
     }
 
+    /**
+     * Returns the instance of the CitizensNPC integration, if it is loaded.
+     *
+     * @return The {@code CitizensNPC} integration instance, or null if not loaded.
+     */
     public CitizensNPC getCitizensNPC() {
         return citizensNPC;
     }
 
+    /**
+     * Returns the instance of the LuckPermsHandler, if it is loaded.
+     *
+     * @return The {@code LuckPermsHandler} instance, or null if not loaded.
+     */
+    public LuckPermsHandler getLuckPermsHandler() {
+        return luckPermsHandler;
+    }
+
+    /**
+     * Checks if MultiPaper integration is loaded.
+     *
+     * @return {@code true} if MultiPaper integration is loaded, {@code false} otherwise.
+     */
     public boolean hasMultiPaper() {
         return multiPaper != null;
     }
 
+    /**
+     * Checks if Vault integration is loaded.
+     *
+     * @return {@code true} if Vault integration is loaded, {@code false} otherwise.
+     */
     public boolean hasVault() {
         return vault != null;
     }
 
+    /**
+     * Checks if Vault permissions provider is available.
+     *
+     * @return {@code true} if Vault permissions provider is available, {@code false} otherwise.
+     */
     public boolean hasVaultPermProvider() {
         return hasVaultPermissions;
     }
 
+    /**
+     * Checks if ProtocolLib integration is loaded.
+     *
+     * @return {@code true} if ProtocolLib integration is loaded, {@code false} otherwise.
+     */
     public boolean hasProtocolLib() {
         return protocolLib != null;
     }
 
+    /**
+     * Checks if WorldEdit integration is loaded.
+     *
+     * @return {@code true} if WorldEdit integration is loaded, {@code false} otherwise.
+     */
     public boolean hasWorldEdit() {
         return worldEdit != null;
     }
 
+    /**
+     * Checks if WorldGuard integration is loaded.
+     *
+     * @return {@code true} if WorldGuard integration is loaded, {@code false} otherwise.
+     */
     public boolean hasWorldGuard() {
         return worldGuard != null;
     }
 
+    /**
+     * Checks if Towny integration is loaded.
+     *
+     * @return {@code true} if Towny integration is loaded, {@code false} otherwise.
+     */
     public boolean hasTowny() {
         return towny != null;
     }
 
+    /**
+     * Checks if GriefDefender integration is loaded.
+     *
+     * @return {@code true} if GriefDefender integration is loaded, {@code false} otherwise.
+     */
     public boolean hasGriefDefender() {
         return griefDefender != null;
     }
 
+    /**
+     * Checks if FurnitureLib integration is loaded.
+     *
+     * @return {@code true} if FurnitureLib integration is loaded, {@code false} otherwise.
+     */
     public boolean hasFurnitureLib() {
         return furnitureLib != null;
     }
 
+    /**
+     * Checks if FurnitureEngine integration is loaded.
+     *
+     * @return {@code true} if FurnitureEngine integration is loaded, {@code false} otherwise.
+     */
     public boolean hasFurnitureEngine() {
         return furnitureEngine != null;
     }
 
+    /**
+     * Checks if ProtectionLib integration is loaded.
+     *
+     * @return {@code true} if ProtectionLib integration is loaded, {@code false} otherwise.
+     */
     public boolean hasProtectionLib() {
         return protectionLib != null;
     }
 
+    /**
+     * Checks if ItemsAdder integration is loaded.
+     *
+     * @return {@code true} if ItemsAdder integration is loaded, {@code false} otherwise.
+     */
     public boolean hasItemsAdder() {
         return itemsAdder != null;
     }
 
+    /**
+     * Checks if Oraxen integration is loaded.
+     *
+     * @return {@code true} if Oraxen integration is loaded, {@code false} otherwise.
+     */
     public boolean hasOraxen() {
         return oraxen != null;
     }
 
+    /**
+     * Checks if MiniMessage integration is loaded.
+     *
+     * @return {@code true} if MiniMessage integration is loaded, {@code false} otherwise.
+     */
     public boolean hasMiniMessage() {
         return miniMessage != null;
     }
 
+    /**
+     * Checks if MineDown integration is loaded.
+     *
+     * @return {@code true} if MineDown integration is loaded, {@code false} otherwise.
+     */
     public boolean hasMineDown() {
         return mineDown != null;
     }
 
+    /**
+     * Checks if ChestSort integration is loaded.
+     *
+     * @return {@code true} if ChestSort integration is loaded, {@code false} otherwise.
+     */
     public boolean hasChestSort() {
         return chestSort != null;
     }
 
+    /**
+     * Checks if PlayerNPC integration is loaded.
+     *
+     * @return {@code true} if PlayerNPC integration is loaded, {@code false} otherwise.
+     */
     public boolean hasPlayerNPC() {
         return playerNPC != null;
     }
 
+    /**
+     * Checks if CitizensNPC integration is loaded.
+     *
+     * @return {@code true} if CitizensNPC integration is loaded, {@code false} otherwise.
+     */
     public boolean hasCitizensNPC() {
         return citizensNPC != null;
     }
 
+    /**
+     * Checks if PlaceholderAPI integration is loaded.
+     *
+     * @return {@code true} if PlaceholderAPI integration is loaded, {@code false} otherwise.
+     */
     public boolean hasPlaceholderAPI() {
         return placeholderAPI != null;
     }
 
+    /**
+     * Checks if Skript integration is loaded.
+     *
+     * @return {@code true} if Skript integration is loaded, {@code false} otherwise.
+     */
     public boolean hasSkript() {
         return skriptImpl != null;
     }
 
+    /**
+     * Checks if LuckPermsHandler is loaded.
+     *
+     * @return {@code true} if LuckPermsHandler is loaded, {@code false} otherwise.
+     */
+    public boolean hasLuckPermsHandler() {
+        return luckPermsHandler != null;
+    }
+
+    /**
+     * Loads the MultiPaper integration if enabled in the configuration.
+     */
     private void loadMultiPaper() {
         if (plugin.getConfig().getBoolean("settings.integration.multipaper.enabled", true)) {
             try {
@@ -294,62 +515,114 @@ public final class IntegrationManager {
         }
     }
 
+    /**
+     * Loads the Vault integration if enabled in the configuration.
+     */
     private void loadVault() {
         if (plugin.getConfig().getBoolean("settings.integration.vault.enabled", true)) {
             Plugin vaultPlugin = plugin.getServer().getPluginManager().getPlugin("Vault");
 
             if (vaultPlugin != null && vaultPlugin.isEnabled()) {
-                RegisteredServiceProvider<Permission> permissionProvider = Bukkit.getServer().getServicesManager().getRegistration(Permission.class);
-                RegisteredServiceProvider<Economy> economyProvider = Bukkit.getServer().getServicesManager().getRegistration(Economy.class);
-
-                if (economyProvider != null && permissionProvider != null) {
-                    Economy economy = economyProvider.getProvider();
-
-                    Permission permission = permissionProvider.getProvider();
-                    vault = new Vault(economy, permission);
-                    hasVaultPermissions = true;
-
-                    plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + ". Economy is enabled.");
-                    plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions priovider.");
-                }
-
-                if (economyProvider != null && permissionProvider == null) {
-                    Economy economy = economyProvider.getProvider();
-
-                    vault = new Vault(economy);
-                    hasVaultPermissions = false;
-
-                    plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + ". Economy is enabled.");
-                    plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions priovider. Using bukkit's permissions provider.");
-                }
-
-                if (economyProvider == null && permissionProvider != null) {
-                    Permission permission = permissionProvider.getProvider();
-
-                    vault = new Vault(permission);
-                    hasVaultPermissions = true;
-
-                    plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s economy. This is likely because you are missing an economy plugin. Economy will be disabled.");
-                    plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions priovider.");
-                }
-
-                if (economyProvider == null && permissionProvider == null) {
-                    vault = null;
-                    hasVaultPermissions = false;
-
-                    plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s economy. This is likely because you are missing an economy plugin. Economy will be disabled.");
-                    plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions priovider. Using bukkit's permissions provider.");
-                }
+                handleVaultIntegration(vaultPlugin);
             } else {
-                vault = null; // just incase
-                hasVaultPermissions = false;
+                resetVaultIntegration();
             }
         } else {
-            vault = null;
-            hasVaultPermissions = false;
+            resetVaultIntegration();
         }
     }
 
+    /**
+     * Handles the integration of the Vault plugin.
+     *
+     * @param vaultPlugin The Vault plugin instance.
+     */
+    private void handleVaultIntegration(Plugin vaultPlugin) {
+        RegisteredServiceProvider<Permission> permissionProvider = Bukkit.getServer().getServicesManager().getRegistration(Permission.class);
+        RegisteredServiceProvider<Economy> economyProvider = Bukkit.getServer().getServicesManager().getRegistration(Economy.class);
+
+        if (economyProvider != null && permissionProvider != null) {
+            enableFullVaultIntegration(vaultPlugin, economyProvider, permissionProvider);
+        } else if (economyProvider != null) {
+            enableEconomyOnlyVaultIntegration(vaultPlugin, economyProvider);
+        } else if (permissionProvider != null) {
+            enablePermissionsOnlyVaultIntegration(vaultPlugin, permissionProvider);
+        } else {
+            disableVaultIntegration(vaultPlugin);
+        }
+    }
+
+    /**
+     * Enables full Vault integration with both economy and permissions.
+     *
+     * @param vaultPlugin      The Vault plugin instance.
+     * @param economyProvider  The economy service provider.
+     * @param permissionProvider The permissions service provider.
+     */
+    private void enableFullVaultIntegration(Plugin vaultPlugin, RegisteredServiceProvider<Economy> economyProvider, RegisteredServiceProvider<Permission> permissionProvider) {
+        Economy economy = economyProvider.getProvider();
+        Permission permission = permissionProvider.getProvider();
+        vault = new Vault(economy, permission);
+        hasVaultPermissions = true;
+
+        plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + ". Economy is enabled.");
+        plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions provider.");
+    }
+
+    /**
+     * Enables Vault integration with only economy support.
+     *
+     * @param vaultPlugin     The Vault plugin instance.
+     * @param economyProvider The economy service provider.
+     */
+    private void enableEconomyOnlyVaultIntegration(Plugin vaultPlugin, RegisteredServiceProvider<Economy> economyProvider) {
+        Economy economy = economyProvider.getProvider();
+        vault = new Vault(economy);
+        hasVaultPermissions = false;
+
+        plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + ". Economy is enabled.");
+        plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions provider. Vault will not be used as a Permissions Provider.");
+    }
+
+    /**
+     * Enables Vault integration with only permissions support.
+     *
+     * @param vaultPlugin       The Vault plugin instance.
+     * @param permissionProvider The permissions service provider.
+     */
+    private void enablePermissionsOnlyVaultIntegration(Plugin vaultPlugin, RegisteredServiceProvider<Permission> permissionProvider) {
+        Permission permission = permissionProvider.getProvider();
+        vault = new Vault(permission);
+        hasVaultPermissions = true;
+
+        plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s economy. This is likely because you are missing an economy plugin. Economy will be disabled.");
+        plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions provider.");
+    }
+
+    /**
+     * Disables the Vault integration if both economy and permissions are unavailable.
+     *
+     * @param vaultPlugin The Vault plugin instance.
+     */
+    private void disableVaultIntegration(Plugin vaultPlugin) {
+        vault = null;
+        hasVaultPermissions = false;
+
+        plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s economy. This is likely because you are missing an economy plugin. Economy will be disabled.");
+        plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions provider. Vault will not be used as a Permissions Provider.");
+    }
+
+    /**
+     * Resets the Vault integration by setting the vault and permissions to null.
+     */
+    private void resetVaultIntegration() {
+        vault = null;
+        hasVaultPermissions = false;
+    }
+
+    /**
+     * Loads the ProtocolLib integration if enabled in the configuration.
+     */
     private void loadProtocolLib() {
         if (plugin.getConfig().getBoolean("settings.integration.protocollib.enabled", true)) {
             Plugin protocolLibPlugin = plugin.getServer().getPluginManager().getPlugin("ProtocolLib");
@@ -357,14 +630,16 @@ public final class IntegrationManager {
             if (protocolLibPlugin != null && protocolLibPlugin.isEnabled()) {
                 protocolLib = new ProtocolLib(plugin);
 
-                plugin.integrationMessage("Hooked into " + protocolLibPlugin.getName() + " "
-                        + protocolLibPlugin.getDescription().getVersion() + ".");
+                plugin.integrationMessage("Hooked into " + protocolLibPlugin.getName() + " " + protocolLibPlugin.getDescription().getVersion() + ".");
             }
         } else {
             protocolLib = null;
         }
     }
 
+    /**
+     * Loads the WorldGuard integration if enabled in the configuration.
+     */
     public void loadWorldGuard() {
         if (plugin.getConfig().getBoolean("settings.integration.worldguard.enabled", true)) {
             Plugin worldGuardPlugin = plugin.getServer().getPluginManager().getPlugin("WorldGuard");
@@ -372,17 +647,13 @@ public final class IntegrationManager {
             if (worldGuardPlugin != null) {
                 try {
                     Class.forName("com.sk89q.worldguard.WorldGuard", false, getClass().getClassLoader());
-                    Class.forName("com.sk89q.worldguard.protection.flags.registry.FlagConflictException",
-                            false, getClass().getClassLoader());
+                    Class.forName("com.sk89q.worldguard.protection.flags.registry.FlagConflictException", false, getClass().getClassLoader());
 
                     worldGuard = new WorldGuard(plugin);
 
-                    plugin.integrationMessage("Hooked into " + worldGuardPlugin.getName() + " "
-                            + worldGuardPlugin.getDescription().getVersion() + ".");
+                    plugin.integrationMessage("Hooked into " + worldGuardPlugin.getName() + " " + worldGuardPlugin.getDescription().getVersion() + ".");
                 } catch (ClassNotFoundException ignored) {
-                    plugin.integrationMessage(worldGuardPlugin.getName() + " "
-                            + worldGuardPlugin.getDescription().getVersion()
-                            + " detected, Only WorldGuard 6.2+ is supported. Disabling WorldGuard support.");
+                    plugin.integrationMessage(worldGuardPlugin.getName() + " " + worldGuardPlugin.getDescription().getVersion() + " detected, Only WorldGuard 6.2+ is supported. Disabling WorldGuard support.");
                 }
             }
         } else {
@@ -390,6 +661,9 @@ public final class IntegrationManager {
         }
     }
 
+    /**
+     * Loads the Towny integration if enabled in the configuration.
+     */
     public void loadTowny() {
         if (plugin.getConfig().getBoolean("settings.integration.towny.enabled", true)) {
             Plugin townyPlugin = plugin.getServer().getPluginManager().getPlugin("Towny");
@@ -397,31 +671,29 @@ public final class IntegrationManager {
             if (townyPlugin != null) {
                 towny = new Towny(plugin, townyPlugin);
 
-                plugin.integrationMessage("Hooked into " + townyPlugin.getName() + " "
-                        + townyPlugin.getDescription().getVersion() + ".");
+                plugin.integrationMessage("Hooked into " + townyPlugin.getName() + " " + townyPlugin.getDescription().getVersion() + ".");
             }
         } else {
             towny = null;
         }
     }
 
+    /**
+     * Loads the WorldEdit integration if enabled in the configuration.
+     */
     private void loadWorldEdit() {
         if (plugin.getConfig().getBoolean("settings.integration.worldedit.enabled", true)) {
             Plugin worldEditPlugin = plugin.getServer().getPluginManager().getPlugin("WorldEdit");
 
             if (worldEditPlugin != null && worldEditPlugin.isEnabled()) {
                 try {
-                    Class.forName("com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats", false, getClass()
-                            .getClassLoader());
+                    Class.forName("com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats", false, getClass().getClassLoader());
 
                     worldEdit = new WorldEdit(plugin, worldEditPlugin);
 
-                    plugin.integrationMessage("Hooked into " + worldEditPlugin.getName() + " "
-                            + worldEditPlugin.getDescription().getVersion() + ".");
+                    plugin.integrationMessage("Hooked into " + worldEditPlugin.getName() + " " + worldEditPlugin.getDescription().getVersion() + ".");
                 } catch (ClassNotFoundException ignored) {
-                    plugin.integrationMessage(worldEditPlugin.getName() + " "
-                            + worldEditPlugin.getDescription().getVersion()
-                            + " detected, Only WorldEdit 7+ is supported.Disabling WorldEdit support.");
+                    plugin.integrationMessage(worldEditPlugin.getName() + " " + worldEditPlugin.getDescription().getVersion() + " detected, Only WorldEdit 7+ is supported. Disabling WorldEdit support.");
                 }
             }
         } else {
@@ -429,6 +701,9 @@ public final class IntegrationManager {
         }
     }
 
+    /**
+     * Loads the GriefDefender integration if enabled in the configuration.
+     */
     private void loadGriefDefender() {
         if (plugin.getConfig().getBoolean("settings.integration.griefdefender.enabled", true)) {
             Plugin griefDefenderPlugin = plugin.getServer().getPluginManager().getPlugin("GriefDefender");
@@ -436,16 +711,16 @@ public final class IntegrationManager {
             if (griefDefenderPlugin != null && griefDefenderPlugin.isEnabled()) {
                 griefDefender = new GriefDefender();
 
-                //griefDefender.registerFlag();
-
-                plugin.integrationMessage("Hooked into " + griefDefenderPlugin.getName() + " "
-                        + griefDefenderPlugin.getDescription().getVersion() + ".");
+                plugin.integrationMessage("Hooked into " + griefDefenderPlugin.getName() + " " + griefDefenderPlugin.getDescription().getVersion() + ".");
             }
         } else {
             griefDefender = null;
         }
     }
 
+    /**
+     * Loads the FurnitureLib integration if enabled in the configuration.
+     */
     private void loadFurnitureLib() {
         if (plugin.getConfig().getBoolean("settings.integration.furniturelib.enabled", true)) {
             Plugin furnitureLibPlugin = plugin.getServer().getPluginManager().getPlugin("FurnitureLib");
@@ -453,14 +728,16 @@ public final class IntegrationManager {
             if (furnitureLibPlugin != null && furnitureLibPlugin.isEnabled()) {
                 furnitureLib = new FurnitureLib(plugin);
 
-                plugin.integrationMessage("Hooked into " + furnitureLibPlugin.getName() + " "
-                        + furnitureLibPlugin.getDescription().getVersion() + ".");
+                plugin.integrationMessage("Hooked into " + furnitureLibPlugin.getName() + " " + furnitureLibPlugin.getDescription().getVersion() + ".");
             }
         } else {
             furnitureLib = null;
         }
     }
 
+    /**
+     * Loads the FurnitureEngine integration if enabled in the configuration.
+     */
     private void loadFurnitureEngine() {
         if (plugin.getConfig().getBoolean("settings.integration.furnitureengine.enabled", true)) {
             Plugin furnitureEnginePlugin = plugin.getServer().getPluginManager().getPlugin("FurnitureEngine");
@@ -471,12 +748,9 @@ public final class IntegrationManager {
 
                     furnitureEngine = new FurnitureEngine(plugin);
 
-                    plugin.integrationMessage("Hooked into " + furnitureEnginePlugin.getName() + " "
-                            + furnitureEnginePlugin.getDescription().getVersion() + ".");
+                    plugin.integrationMessage("Hooked into " + furnitureEnginePlugin.getName() + " " + furnitureEnginePlugin.getDescription().getVersion() + ".");
                 } catch (ClassNotFoundException ignored) {
-                    plugin.integrationMessage(furnitureEnginePlugin.getName() + " "
-                            + furnitureEnginePlugin.getDescription().getVersion() + " detected, but FurnitureManager " +
-                            "class not found, disabling integration.");
+                    plugin.integrationMessage(furnitureEnginePlugin.getName() + " " + furnitureEnginePlugin.getDescription().getVersion() + " detected, but FurnitureManager class not found, disabling integration.");
                 }
             }
         } else {
@@ -484,6 +758,9 @@ public final class IntegrationManager {
         }
     }
 
+    /**
+     * Loads the ProtectionLib integration if enabled in the configuration.
+     */
     private void loadProtectionLib() {
         if (plugin.getConfig().getBoolean("settings.integration.protectionlib.enabled", true)) {
             Plugin protectionLibPlugin = plugin.getServer().getPluginManager().getPlugin("ProtectionLib");
@@ -491,14 +768,16 @@ public final class IntegrationManager {
             if (protectionLibPlugin != null && protectionLibPlugin.isEnabled()) {
                 protectionLib = new ProtectionLib(plugin, protectionLibPlugin);
 
-                plugin.integrationMessage("Hooked into " + protectionLibPlugin.getName() + " "
-                        + protectionLibPlugin.getDescription().getVersion() + ".");
+                plugin.integrationMessage("Hooked into " + protectionLibPlugin.getName() + " " + protectionLibPlugin.getDescription().getVersion() + ".");
             }
         } else {
             protectionLib = null;
         }
     }
 
+    /**
+     * Loads the ItemsAdder integration if enabled in the configuration.
+     */
     private void loadItemsAdder() {
         if (plugin.getConfig().getBoolean("settings.integration.itemsadder.enabled", true)) {
             Plugin itemsAdderPlugin = plugin.getServer().getPluginManager().getPlugin("ItemsAdder");
@@ -506,14 +785,16 @@ public final class IntegrationManager {
             if (itemsAdderPlugin != null && itemsAdderPlugin.isEnabled()) {
                 itemsAdder = new ItemsAdder(plugin, itemsAdderPlugin);
 
-                plugin.integrationMessage("Hooked into " + itemsAdderPlugin.getName() + " "
-                        + itemsAdderPlugin.getDescription().getVersion() + ".");
+                plugin.integrationMessage("Hooked into " + itemsAdderPlugin.getName() + " " + itemsAdderPlugin.getDescription().getVersion() + ".");
             }
         } else {
             itemsAdder = null;
         }
     }
 
+    /**
+     * Loads the Oraxen integration if enabled in the configuration.
+     */
     private void loadOraxen() {
         if (plugin.getConfig().getBoolean("settings.integration.oraxen.enabled", true)) {
             Plugin oraxenPlugin = plugin.getServer().getPluginManager().getPlugin("Oraxen");
@@ -521,21 +802,21 @@ public final class IntegrationManager {
             if (oraxenPlugin != null && oraxenPlugin.isEnabled()) {
                 oraxen = new Oraxen(plugin, oraxenPlugin);
 
-                plugin.integrationMessage("Hooked into " + oraxenPlugin.getName() + " "
-                        + oraxenPlugin.getDescription().getVersion() + ".");
+                plugin.integrationMessage("Hooked into " + oraxenPlugin.getName() + " " + oraxenPlugin.getDescription().getVersion() + ".");
             }
         } else {
             oraxen = null;
         }
     }
 
+    /**
+     * Loads the MiniMessage integration if enabled in the configuration.
+     */
     private void loadMiniMessage() {
         if (plugin.getConfig().getBoolean("settings.integration.minimessage.enabled", true)) {
             try {
-                Class.forName("net.kyori.adventure.text.minimessage.MiniMessage", false,
-                        getClass().getClassLoader());
-                Class.forName("net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer", false,
-                        getClass().getClassLoader());
+                Class.forName("net.kyori.adventure.text.minimessage.MiniMessage", false, getClass().getClassLoader());
+                Class.forName("net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer", false, getClass().getClassLoader());
 
                 miniMessage = new MiniMessage();
 
@@ -547,6 +828,9 @@ public final class IntegrationManager {
         }
     }
 
+    /**
+     * Loads the MineDown integration if enabled in the configuration.
+     */
     private void loadMineDown() {
         if (plugin.getConfig().getBoolean("settings.integration.minedown.enabled", true)) {
             Plugin mineDownPlugin = plugin.getServer().getPluginManager().getPlugin("MineDownPlugin");
@@ -554,14 +838,16 @@ public final class IntegrationManager {
             if (mineDownPlugin != null && mineDownPlugin.isEnabled()) {
                 mineDown = new MineDown();
 
-                plugin.integrationMessage("Hooked into " + mineDownPlugin.getName() + " "
-                        + mineDownPlugin.getDescription().getVersion() + ".");
+                plugin.integrationMessage("Hooked into " + mineDownPlugin.getName() + " " + mineDownPlugin.getDescription().getVersion() + ".");
             }
         } else {
             mineDown = null;
         }
     }
 
+    /**
+     * Loads the ChestSort integration if enabled in the configuration.
+     */
     private void loadChestSort() {
         if (plugin.getConfig().getBoolean("settings.integration.chestsort.enabled", true)) {
             Plugin chestSortPlugin = plugin.getServer().getPluginManager().getPlugin("ChestSort");
@@ -569,14 +855,16 @@ public final class IntegrationManager {
             if (chestSortPlugin != null && chestSortPlugin.isEnabled()) {
                 chestSort = new ChestSort();
 
-                plugin.integrationMessage("Hooked into " + chestSortPlugin.getName() + " "
-                        + chestSortPlugin.getDescription().getVersion() + ".");
+                plugin.integrationMessage("Hooked into " + chestSortPlugin.getName() + " " + chestSortPlugin.getDescription().getVersion() + ".");
             }
         } else {
             chestSort = null;
         }
     }
 
+    /**
+     * Loads the PlayerNPC integration if enabled in the configuration.
+     */
     private void loadPlayerNPC() {
         if (plugin.getConfig().getBoolean("settings.integration.playernpc.enabled", true)) {
             Plugin playerNPCPlugin = plugin.getServer().getPluginManager().getPlugin("PlayerNPC");
@@ -584,14 +872,16 @@ public final class IntegrationManager {
             if (playerNPCPlugin != null && playerNPCPlugin.isEnabled()) {
                 playerNPC = new PlayerNPC(plugin);
 
-                plugin.integrationMessage("Hooked into " + playerNPCPlugin.getName() + " "
-                        + playerNPCPlugin.getDescription().getVersion() + ".");
+                plugin.integrationMessage("Hooked into " + playerNPCPlugin.getName() + " " + playerNPCPlugin.getDescription().getVersion() + ".");
             }
         } else {
             playerNPC = null;
         }
     }
 
+    /**
+     * Loads the CitizensNPC integration if enabled in the configuration.
+     */
     private void loadCitizensNPC() {
         if (plugin.getConfig().getBoolean("settings.integration.citizens.enabled", true)) {
             Plugin citizensPlugin = plugin.getServer().getPluginManager().getPlugin("Citizens");
@@ -599,14 +889,16 @@ public final class IntegrationManager {
             if (citizensPlugin != null && citizensPlugin.isEnabled()) {
                 citizensNPC = new CitizensNPC(plugin);
 
-                plugin.integrationMessage("Hooked into " + citizensPlugin.getName() + " "
-                        + citizensPlugin.getDescription().getVersion() + ".");
+                plugin.integrationMessage("Hooked into " + citizensPlugin.getName() + " " + citizensPlugin.getDescription().getVersion() + ".");
             }
         } else {
             citizensNPC = null;
         }
     }
 
+    /**
+     * Loads the ItemBridge integration if enabled in the configuration.
+     */
     private void loadItemBridge() {
         if (plugin.getConfig().getBoolean("settings.integration.itembridge.enabled", true)) {
             Plugin itemBridgePlugin = plugin.getServer().getPluginManager().getPlugin("ItemBridge");
@@ -616,20 +908,22 @@ public final class IntegrationManager {
                     itemBridge = new ItemBridge(plugin);
                 }
 
-                plugin.integrationMessage("Hooked into " + itemBridgePlugin.getName() + " "
-                        + itemBridgePlugin.getDescription().getVersion() + ".");
+                plugin.integrationMessage("Hooked into " + itemBridgePlugin.getName() + " " + itemBridgePlugin.getDescription().getVersion() + ".");
             }
         } else {
             itemBridge = null;
         }
     }
 
+    /**
+     * Loads the PlaceholderAPI integration if enabled in the configuration.
+     */
     private void loadPlaceholderAPI() {
         if (placeholderAPI != null) {
             placeholderAPI.unregister();
         }
 
-        if (plugin.getConfig().getBoolean("settings.integration.placeholderapi.enabled")) {
+        if (plugin.getConfig().getBoolean("settings.integration.placeholderapi.enabled", true)) {
             Plugin placeholderAPIPlugin = plugin.getServer().getPluginManager().getPlugin("PlaceholderAPI");
 
             if (placeholderAPIPlugin != null && placeholderAPIPlugin.isEnabled()) {
@@ -637,16 +931,18 @@ public final class IntegrationManager {
 
                 placeholderAPI.register();
 
-                plugin.integrationMessage("Hooked into " + placeholderAPIPlugin.getName() + " "
-                        + placeholderAPIPlugin.getDescription().getVersion() + ".");
+                plugin.integrationMessage("Hooked into " + placeholderAPIPlugin.getName() + " " + placeholderAPIPlugin.getDescription().getVersion() + ".");
             }
         } else {
             placeholderAPI = null;
         }
     }
 
+    /**
+     * Loads the Skript integration if enabled in the configuration.
+     */
     private void loadSkript() {
-        if (plugin.getConfig().getBoolean("settings.integration.skript.enabled")) {
+        if (plugin.getConfig().getBoolean("settings.integration.skript.enabled", true)) {
             Plugin skriptPlugin = plugin.getServer().getPluginManager().getPlugin("Skript");
             if (skriptPlugin != null && skriptPlugin.isEnabled()) {
                 skriptImpl = new SkriptImpl(plugin);
@@ -657,29 +953,48 @@ public final class IntegrationManager {
         }
     }
 
+    /**
+     * Loads the LuckPerms integration if enabled in the configuration.
+     */
+    private void loadLuckPerms() {
+        if (plugin.getConfig().getBoolean("settings.integration.luckperms.enabled", true)) {
+            Plugin luckPermsPlugin = plugin.getServer().getPluginManager().getPlugin("LuckPerms");
+            try {
+                if (luckPermsPlugin != null && luckPermsPlugin.isEnabled()) {
+                    luckPermsHandler = new LuckPermsHandler();
+                    plugin.integrationMessage("Hooked into " + luckPermsPlugin.getName() + " " + luckPermsPlugin.getDescription().getVersion() + ".");
+                }
+            } catch (IllegalArgumentException exception) {
+                plugin.integrationMessage("Failed to Hook into " + luckPermsPlugin.getName() + " " + luckPermsPlugin.getDescription().getVersion() + ". LuckPerms will not be used as a Permissions Provider.");
+                luckPermsHandler = null;
+            }
+        } else {
+            luckPermsHandler = null;
+        }
+    }
+
+    /**
+     * Loads and displays warnings for compatibility issues with other plugins.
+     */
     @SuppressWarnings("deprecation")
     private void loadCompatibilityWarnings() {
         if (plugin.getConfig().getBoolean("settings.compatibility.warning")) {
             for (World world : plugin.getServer().getWorlds()) {
                 if (world.getGameRuleValue("keepInventory").equals("true")) {
-                    plugin.compatibilityMessage("World \"" + world.getName()
-                            + "\" has keepInventory set to true, Graves will not be created here.");
+                    plugin.compatibilityMessage("World \"" + world.getName() + "\" has keepInventory set to true, Graves will not be created here.");
                 }
             }
 
             Plugin essentialsPlugin = plugin.getServer().getPluginManager().getPlugin("Essentials");
 
             if (essentialsPlugin != null && essentialsPlugin.isEnabled()) {
-                plugin.compatibilityMessage(essentialsPlugin.getName()
-                        + " Detected, make sure you don't have the essentials.keepinv or essentials.keepxp permissions.");
+                plugin.compatibilityMessage(essentialsPlugin.getName() + " Detected, make sure you don't have the essentials.keepinv or essentials.keepxp permissions.");
             }
 
             Plugin deluxeCombatPlugin = plugin.getServer().getPluginManager().getPlugin("DeluxeCombat");
 
             if (deluxeCombatPlugin != null && deluxeCombatPlugin.isEnabled()) {
-                plugin.compatibilityMessage(deluxeCombatPlugin.getName()
-                        + " Detected, in order to work with graves you need to set disable-drop-handling to true in " +
-                        deluxeCombatPlugin.getName() + "'s data.yml file.");
+                plugin.compatibilityMessage(deluxeCombatPlugin.getName() + " Detected, in order to work with graves you need to set disable-drop-handling to true in " + deluxeCombatPlugin.getName() + "'s data.yml file.");
             }
 
             checkForPluginManagers(); // Plugin Manager Jumpscare
@@ -692,6 +1007,9 @@ public final class IntegrationManager {
         }
     }
 
+    /**
+     * Checks for known plugin managers that could cause compatibility issues.
+     */
     public void checkForPluginManagers() {
         List<String> knownPluginManagers = Arrays.asList(
                 "PluginManager",
@@ -720,13 +1038,16 @@ public final class IntegrationManager {
         }
     }
 
+    /**
+     * Displays a warning message if a plugin with similar functionality to Graves is detected.
+     *
+     * @param string The name of the plugin to check for.
+     */
     private void similarPluginWarning(String string) {
         Plugin similarPlugin = plugin.getServer().getPluginManager().getPlugin(string);
 
         if (similarPlugin != null && similarPlugin.isEnabled()) {
-            plugin.compatibilityMessage(string + " Detected, Graves listens to the death event after " + string +
-                    ", and " + string + " clears the drop list. This means Graves will never be created for players " +
-                    "if " + string + " is enabled, only non-player entities will create Graves if configured to do so.");
+            plugin.compatibilityMessage(string + " Detected, Graves listens to the death event after " + string + ", and " + string + " clears the drop list. This means Graves will never be created for players if " + string + " is enabled, only non-player entities will create Graves if configured to do so.");
         }
     }
 }

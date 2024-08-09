@@ -180,11 +180,6 @@
 
     <repositories>
         <repository>
-            <id>ugandavrc-maven-releases</id>
-            <name>UgandaVRC Repository</name>
-            <url>https://mvn.ugandavrc.com/releases</url>
-        </repository>
-        <repository>
             <id>spigotmc-repo</id>
             <url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
         </repository>
@@ -257,6 +252,15 @@
             <id>codemc-repo</id>
             <url>https://repo.codemc.io/repository/maven-public/</url>
             <layout>default</layout>
+        </repository>
+        <repository>
+            <id>techscode</id>
+            <url>https://repo.techscode.com/repository/techscode-apis/</url>
+        </repository>
+        <repository>
+            <id>ugandavrc-maven-releases</id>
+            <name>UgandaVRC Repository</name>
+            <url>https://mvn.ugandavrc.com/releases</url>
         </repository>
     </repositories>
 
@@ -492,6 +496,12 @@
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
             <version>20240303</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.luckperms</groupId>
+            <artifactId>api</artifactId>
+            <version>5.4</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

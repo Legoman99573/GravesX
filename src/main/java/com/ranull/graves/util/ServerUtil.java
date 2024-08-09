@@ -102,7 +102,9 @@ public final class ServerUtil {
                     + plugin.getDescription().getAPIVersion());
         }
         stringList.add(plugin.getDescription().getName() + " Database Type: " + plugin.getConfig().getString("settings.storage.type", "SQLITE").toUpperCase());
-        if (plugin.getIntegrationManager().hasVaultPermProvider()) {
+        if (plugin.getIntegrationManager().hasLuckPermsHandler()) {
+            stringList.add(plugin.getDescription().getName() + " Permissions Provider: LuckPerms");
+        } else if (plugin.getIntegrationManager().hasVaultPermProvider()) {
             stringList.add(plugin.getDescription().getName() + " Permissions Provider: Vault");
         } else {
             stringList.add(plugin.getDescription().getName() + " Permissions Provider: Bukkit");

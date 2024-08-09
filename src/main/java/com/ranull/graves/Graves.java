@@ -709,22 +709,21 @@ public class Graves extends JavaPlugin {
      * @param player the player whose permissions are being checked
      * @return {@code true} if the player has the specified permission, {@code false} otherwise
      */
-    public boolean hasGrantedPermission (String permission, Player player) {
-        if (getIntegrationManager().hasVault()) {
-            if (getIntegrationManager().getVault().hasPermission(player, permission)) {
-                debugMessage(player.getName() + " has vault permission " + permission, 2);
-                return true;
-            }
-            debugMessage(player.getName() + " doesn't have vault permission " + permission, 2);
-            return false;
+    public boolean hasGrantedPermission(String permission, Player player) {
+        boolean hasPermission = false;
+
+        if (getIntegrationManager().hasLuckPermsHandler()) {
+            hasPermission = getIntegrationManager().getLuckPermsHandler().hasPermission(player, permission);
+            debugMessage("[LuckPerms] Player: " + player.getName() + " | Permission: " + permission + " | Has Permission: " + hasPermission, 3);
+        } else if (getIntegrationManager().hasVault()) {
+            hasPermission = getIntegrationManager().getVault().hasPermission(player, permission);
+            debugMessage("[Vault] Player: " + player.getName() + " | Permission: " + permission + " | Has Permission: " + hasPermission, 3);
+        } else {
+            hasPermission = player.hasPermission(permission);
+            debugMessage("[Bukkit] Player: " + player.getName() + " | Permission: " + permission + " | Has Permission: " + hasPermission, 3);
         }
 
-        if (player.hasPermission(permission)) {
-            debugMessage(player.getName() + " has bukkit permission " + permission, 2);
-            return true;
-        }
-        debugMessage(player.getName() + " doesn't have bukkit permission " + permission, 2);
-        return false;
+        return hasPermission;
     }
 
     /**
@@ -741,20 +740,19 @@ public class Graves extends JavaPlugin {
      */
     @Deprecated
     public boolean hasGrantedPermission(String permission, OfflinePlayer offlinePlayer) {
-        if (getIntegrationManager().hasVaultPermProvider()) {
-            if (getIntegrationManager().getVault().hasPermission(offlinePlayer, permission)) {
-                debugMessage(offlinePlayer.getName() + " has vault permission " + permission, 1);
-                return true;
-            }
-            debugMessage(offlinePlayer.getName() + " doesn't have vault permission " + permission, 1);
-            return false;
+        boolean hasPermission = false;
+
+        if (getIntegrationManager().hasLuckPermsHandler()) {
+            hasPermission = getIntegrationManager().getLuckPermsHandler().hasPermission(offlinePlayer, permission);
+            debugMessage("[LuckPerms] Player: " + offlinePlayer.getName() + " | Permission: " + permission + " | Has Permission: " + hasPermission, 3);
+        } else if (getIntegrationManager().hasVaultPermProvider()) {
+            hasPermission = getIntegrationManager().getVault().hasPermission(offlinePlayer, permission);
+            debugMessage("[Vault] Offline Player: " + offlinePlayer.getName() + " | Permission: " + permission + " | Has Permission: " + hasPermission, 3);
+        } else if (offlinePlayer.isOnline()) {
+            hasPermission = offlinePlayer.getPlayer().hasPermission(permission);
+            debugMessage("[Bukkit] Offline Player: " + offlinePlayer.getName() + " | Permission: " + permission + " | Has Permission: " + hasPermission, 3);
         }
 
-        if (offlinePlayer.isOnline() && offlinePlayer.getPlayer().hasPermission(permission)) {
-            debugMessage(offlinePlayer.getName() + " has bukkit permission " + permission, 1);
-            return true;
-        }
-        debugMessage(offlinePlayer.getName() + " doesn't have bukkit permission " + permission, 1);
-        return false;
+        return hasPermission;
     }
 }

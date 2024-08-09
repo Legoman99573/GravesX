@@ -153,3 +153,5 @@ settings:
       enabled: false # Should Citizens integration be enabled.
     itembridge: # https://www.spigotmc.org/resources/itembridge.77080/
       enabled: true # Should ItemBridge integration be enabled.
+    luckperms: # https://luckperms.net/download
+      enabled: true # Should LuckPerms integration be enabled.
