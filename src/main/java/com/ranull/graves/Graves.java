@@ -11,6 +11,7 @@ import com.ranull.graves.manager.*;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.*;
 import org.bstats.bukkit.Metrics;
+import org.bstats.charts.SimplePie;
 import org.bstats.charts.SingleLineChart;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
@@ -91,9 +92,6 @@ public class Graves extends JavaPlugin {
         graveManager = new GraveManager(this);
         graveyardManager = new GraveyardManager(this);
 
-        if (getConfig().getBoolean("settings.metrics.enabled", true)) {
-            registerMetrics();
-        }
         registerCommands();
         registerListeners();
         registerRecipes();
@@ -104,6 +102,10 @@ public class Graves extends JavaPlugin {
             updateConfig();
             updateChecker();
         });
+
+        if (getConfig().getBoolean("settings.metrics.enabled", true)) {
+            registerMetrics();
+        }
     }
 
     @Override
@@ -196,6 +198,27 @@ public class Graves extends JavaPlugin {
                 return cacheManager.getGraveMap().size();
             }
         }));
+
+        metrics.addCustomChart(new SimplePie("permission_handler", new Callable<String>() {
+            @Override
+            public String call() throws Exception {
+                if (getIntegrationManager().hasLuckPermsHandler()) {
+                    return "LuckPerms";
+                } else if (getIntegrationManager().hasVaultPermProvider()) {
+                    return "Vault";
+                } else {
+                    return "Bukkit";
+                }
+            }
+        }));
+
+        metrics.addCustomChart(new SimplePie("database", new Callable<String>() {
+            @Override
+            public String call() throws Exception {
+                return getDataManager().getType();
+            }
+        }));
+
     }
 
     public void registerListeners() {

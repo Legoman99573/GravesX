@@ -63,9 +63,26 @@ public final class DataManager {
                 }
                 break;
             default:
-                plugin.getLogger().severe("Database Type is invalid. Only valid options: SQLITE and MYSQL. Disabling plugin...");
+                plugin.getLogger().severe("Database Type is invalid. Only valid options: SQLITE, H2, POSTGRESQL, MARIADB, and MYSQL. Disabling plugin...");
                 plugin.getServer().getPluginManager().disablePlugin(this.plugin);
-                return;
+        }
+    }
+
+    public String getType() {
+        switch (type) {
+            case H2:
+                return "H2";
+            case MYSQL:
+                return "MySQL";
+            case SQLITE:
+                return "SQLite";
+            case MARIADB:
+                return "MariaDB";
+            case POSTGRESQL:
+                return "PostgreSQL";
+            case INVALID:
+            default:
+                return null;
         }
     }
 
