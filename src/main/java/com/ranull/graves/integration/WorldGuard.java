@@ -41,18 +41,19 @@ public final class WorldGuard {
     public WorldGuard(JavaPlugin plugin) {
         this.plugin = plugin;
         this.worldGuard = com.sk89q.worldguard.WorldGuard.getInstance();
-        this.createFlag = getFlag("graves-create");
-        this.teleportFlag = getFlag("graves-teleport");
-        this.graveyardFlag = getFlag("graves-graveyard");
+        this.createFlag = getFlag("graves-create", true);
+        this.teleportFlag = getFlag("graves-teleport", true);
+        this.graveyardFlag = getFlag("graves-graveyard", false);
     }
 
     /**
-     * Retrieves or registers a StateFlag with the specified name.
+     * Retrieves or registers a StateFlag with the specified name and default value.
      *
      * @param string The name of the flag.
+     * @param defaultValue The default value of the flag (ALLOW by default).
      * @return The StateFlag if found or created, otherwise {@code null}.
      */
-    private StateFlag getFlag(String string) {
+    private StateFlag getFlag(String string, boolean defaultValue) {
         if (plugin.getServer().getPluginManager().isPluginEnabled("WorldGuard")) {
             Flag<?> flag = worldGuard.getFlagRegistry().get(string);
 
@@ -61,7 +62,7 @@ public final class WorldGuard {
             }
         } else {
             try {
-                StateFlag flag = new StateFlag(string, true);
+                StateFlag flag = new StateFlag(string, defaultValue);
                 worldGuard.getFlagRegistry().register(flag);
                 return flag;
             } catch (FlagConflictException exception) {
@@ -111,13 +112,13 @@ public final class WorldGuard {
             if (gravesGraveyardFlag != null) {
                 for (ProtectedRegion region : regionSet) {
                     StateFlag.State flagState = region.getFlag(gravesGraveyardFlag);
-                    if (flagState == StateFlag.State.ALLOW) {
-                        return true;
+                    if (flagState == StateFlag.State.DENY) {
+                        return false;
                     }
                 }
             }
         }
-        return false;
+        return true; // Allow by default if no region denies it
     }
 
     /**
@@ -136,14 +137,15 @@ public final class WorldGuard {
                         .at(location.getBlockX(), location.getBlockY(), location.getBlockZ()));
 
                 for (ProtectedRegion protectedRegion : applicableRegions.getRegions()) {
-                    if (protectedRegion.getFlag(createFlag) != null) {
-                        return true;
+                    StateFlag.State flagState = protectedRegion.getFlag(createFlag);
+                    if (flagState == StateFlag.State.DENY) {
+                        return false;
                     }
                 }
             }
         }
 
-        return false;
+        return true; // Allow by default
     }
 
     /**
