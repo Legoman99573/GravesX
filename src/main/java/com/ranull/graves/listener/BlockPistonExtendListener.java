@@ -30,42 +30,20 @@ public class BlockPistonExtendListener implements Listener {
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockPistonExtend(BlockPistonExtendEvent event) {
-        // Get the block that will be moved by the piston
         Block block = event.getBlock().getRelative(event.getDirection());
 
-        // Check if the block being moved is a grave
-        if (isGraveBlock(block)) {
+        // Check if the block being moved is part of a grave
+        if (plugin.getBlockManager().getGraveFromBlock(block) != null) {
             event.setCancelled(true);
         } else {
-            // Check if any nearby entity is a hologram of a grave
-            if (isNearGraveHologram(block)) {
-                event.setCancelled(true);
+            // Check for entities within a 12-block radius around the block
+            double radius = 12.0;
+            for (Entity entity : block.getWorld().getNearbyEntities(block.getLocation(), radius, radius, radius)) {
+                if (plugin.getHologramManager().getGrave(entity) != null) {
+                    event.setCancelled(true);
+                    break; // No need to continue checking if we've found a grave hologram
+                }
             }
         }
-    }
-
-    /**
-     * Checks if the block is a grave block.
-     *
-     * @param block The block to check.
-     * @return True if the block is a grave block, false otherwise.
-     */
-    private boolean isGraveBlock(Block block) {
-        return plugin.getBlockManager().getGraveFromBlock(block) != null;
-    }
-
-    /**
-     * Checks if the block is near a grave hologram.
-     *
-     * @param block The block to check.
-     * @return True if the block is near a grave hologram, false otherwise.
-     */
-    private boolean isNearGraveHologram(Block block) {
-        for (Entity entity : block.getWorld().getNearbyEntities(block.getLocation(), 0.5, 0.5, 0.5)) {
-            if (plugin.getHologramManager().getGrave(entity) != null) {
-                return true;
-            }
-        }
-        return false;
     }
 }
