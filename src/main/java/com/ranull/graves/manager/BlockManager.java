@@ -12,6 +12,7 @@ import org.bukkit.block.Block;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -192,46 +193,76 @@ public final class BlockManager {
             Block centerBlock = location.getBlock();
             Block lowerBlock = location.clone().add(0, -1, 0).getBlock();
 
-            Material originalMaterial = centerBlock.getType(); // Store the original material
+            Material originalMaterial = centerBlock.getType();
 
-            if (plugin.getIntegrationManager().hasItemsAdder() && plugin.getIntegrationManager().getItemsAdder()
-                    .isCustomBlock(location)) {
-                plugin.getIntegrationManager().getItemsAdder().removeBlock(location);
-            }
-
-            if (plugin.getIntegrationManager().hasOraxen() && plugin.getIntegrationManager().getOraxen()
-                    .isCustomBlock(location)) {
-                plugin.getIntegrationManager().getOraxen().removeBlock(location);
-            }
-
-            if (blockData.getReplaceMaterial() != null) {
-                Material material = Material.matchMaterial(blockData.getReplaceMaterial());
-
-                if (material != null) {
-                    centerBlock.setType(material);
-                }
-            } else {
-                centerBlock.setType(Material.AIR);
-            }
-
-            if (blockData.getReplaceData() != null) {
-                centerBlock.setBlockData(plugin.getServer()
-                        .createBlockData(blockData.getReplaceData()));
-            }
-
-            plugin.getDataManager().removeBlockData(location);
-            plugin.debugMessage("Replacing grave block for " + blockData.getGraveUUID() + " at "
-                    + location.getWorld().getName() + ", " + (location.getBlockX() + 0.5) + "x, "
-                    + (location.getBlockY() + 0.5) + "y, " + (location.getBlockZ() + 0.5) + "z", 1);
-
-            // Check if the block needs to drop an item
-            if (lowerBlock.getType() == Material.AIR || !lowerBlock.getType().isSolid()) {
-                ItemStack dropItem = new ItemStack(originalMaterial); // Use the original material
-                world.dropItemNaturally(location.add(0.5, 0.5, 0.5), dropItem);
-                plugin.debugMessage("Dropped non-solid item " + dropItem.getType() + " at "
-                        + location.getWorld().getName() + ", " + (location.getBlockX() + 0.5) + "x, "
-                        + (location.getBlockY() + 0.5) + "y, " + (location.getBlockZ() + 0.5) + "z", 1);
+            if (originalMaterial != Material.AIR) {
+                handleBlockRemoval(centerBlock, lowerBlock, blockData, location);
             }
         }
+    }
+
+    /**
+     * Handles the block removal process, including setting the center block to air
+     * and managing the block below.
+     *
+     * @param centerBlock  The block to be removed.
+     * @param lowerBlock   The block below the center block.
+     * @param blockData    The BlockData representing the block to remove.
+     * @param location     The location of the block.
+     */
+    private void handleBlockRemoval(Block centerBlock, Block lowerBlock, BlockData blockData, Location location) {
+        centerBlock.setType(Material.AIR);
+        ensureSolidBlockBelow(lowerBlock);
+        handleCustomBlocksOrReplacement(centerBlock, blockData, location);
+    }
+
+    /**
+     * Ensures that the block below the removed block is solid, setting it to a farm block
+     * if necessary.
+     *
+     * @param lowerBlock The block below the removed block.
+     */
+    private void ensureSolidBlockBelow(Block lowerBlock) {
+        if (!lowerBlock.getType().isSolid()) {
+            Material farmBlockMaterial = plugin.getVersionManager().getBlockForVersion("SOIL");
+            lowerBlock.setType(farmBlockMaterial);
+        }
+    }
+
+    /**
+     * Handles custom blocks from integrations or applies the replacement data if no custom blocks are found.
+     *
+     * @param centerBlock The block to be replaced.
+     * @param blockData   The BlockData representing the block to remove.
+     * @param location    The location of the block.
+     */
+    private void handleCustomBlocksOrReplacement(Block centerBlock, BlockData blockData, Location location) {
+        if (plugin.getIntegrationManager().hasItemsAdder() && plugin.getIntegrationManager().getItemsAdder()
+                .isCustomBlock(location)) {
+            plugin.getIntegrationManager().getItemsAdder().removeBlock(location);
+        } else if (plugin.getIntegrationManager().hasOraxen() && plugin.getIntegrationManager().getOraxen()
+                .isCustomBlock(location)) {
+            plugin.getIntegrationManager().getOraxen().removeBlock(location);
+        } else {
+            applyReplacementData(centerBlock, blockData, location);
+        }
+    }
+
+    /**
+     * Applies the replacement data to the center block if it exists, and removes block data from the data manager.
+     *
+     * @param centerBlock The block to be replaced.
+     * @param blockData   The BlockData representing the block to remove.
+     * @param location    The location of the block.
+     */
+    private void applyReplacementData(Block centerBlock, BlockData blockData, Location location) {
+        if (blockData.getReplaceData() != null) {
+            centerBlock.setBlockData(plugin.getServer().createBlockData(blockData.getReplaceData()));
+        }
+
+        plugin.getDataManager().removeBlockData(location);
+        plugin.debugMessage("Replacing grave block for " + blockData.getGraveUUID() + " at "
+                + location.getWorld().getName() + ", " + (location.getBlockX() + 0.5) + "x, "
+                + (location.getBlockY() + 0.5) + "y, " + (location.getBlockZ() + 0.5) + "z", 1);
     }
 }

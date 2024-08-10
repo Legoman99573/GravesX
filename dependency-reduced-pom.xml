@@ -137,11 +137,6 @@
   </build>
   <repositories>
     <repository>
-      <id>ugandavrc-maven-releases</id>
-      <name>UgandaVRC Repository</name>
-      <url>https://mvn.ugandavrc.com/releases</url>
-    </repository>
-    <repository>
       <id>spigotmc-repo</id>
       <url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
     </repository>
@@ -213,6 +208,20 @@
     <repository>
       <id>codemc-repo</id>
       <url>https://repo.codemc.io/repository/maven-public/</url>
+    </repository>
+    <repository>
+      <id>techscode</id>
+      <url>https://repo.techscode.com/repository/techscode-apis/</url>
+    </repository>
+    <repository>
+      <id>essentialsx-releases</id>
+      <name>EssentialsX API Repository</name>
+      <url>https://repo.essentialsx.net/releases</url>
+    </repository>
+    <repository>
+      <id>ugandavrc-maven-releases</id>
+      <name>UgandaVRC Repository</name>
+      <url>https://mvn.ugandavrc.com/releases</url>
     </repository>
   </repositories>
   <dependencies>
@@ -395,6 +404,18 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>net.kyori</groupId>
+      <artifactId>adventure-text-minimessage</artifactId>
+      <version>4.17.0</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.kyori</groupId>
+      <artifactId>adventure-platform-bukkit</artifactId>
+      <version>4.3.3</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>de.themoep</groupId>
       <artifactId>minedown</artifactId>
       <version>1.7.1-SNAPSHOT</version>
@@ -416,6 +437,18 @@
       <groupId>org.json</groupId>
       <artifactId>json</artifactId>
       <version>20240303</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.luckperms</groupId>
+      <artifactId>api</artifactId>
+      <version>5.4</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.essentialsx</groupId>
+      <artifactId>EssentialsX</artifactId>
+      <version>2.20.1</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
