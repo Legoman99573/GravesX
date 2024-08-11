@@ -4,6 +4,7 @@ import com.ranull.graves.data.BlockData;
 import com.ranull.graves.type.Grave;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
@@ -22,9 +23,23 @@ public class GraveBlockPlaceEvent extends GraveEvent {
      * @param location  The location where the block is being placed.
      * @param blockType The type of the block being placed.
      * @param block     The block being placed.
+     * @param livingEntity The Killer
      */
-    public GraveBlockPlaceEvent(Grave grave, Location location, BlockData.BlockType blockType, Block block) {
-        super(grave, null, location, null, null, blockType, block, null, null);
+    public GraveBlockPlaceEvent(Grave grave, Location location, BlockData.BlockType blockType, Block block, LivingEntity livingEntity) {
+        super(grave, null, location, null, livingEntity, blockType, block, livingEntity.getKiller(), null);
+    }
+
+    /**
+     * @deprecated      Use {@link GraveBlockPlaceEvent#GraveBlockPlaceEvent(Grave, Location, BlockData.BlockType, Block, LivingEntity)} instead to log LivingEntity and Block
+     * Constructs a new GraveBlockPlaceEvent.
+     *
+     * @param grave     The grave associated with the event.
+     * @param location  The location where the block is being placed.
+     * @param blockType The type of the block being placed.
+     */
+    @Deprecated
+    public GraveBlockPlaceEvent(Grave grave, Location location, BlockData.BlockType blockType) {
+        super(grave, null, location, null, null, blockType, null, null, null);
     }
 
     @Override

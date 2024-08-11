@@ -1,7 +1,11 @@
 package com.ranull.graves.event;
 
+import com.ranull.graves.data.BlockData;
 import com.ranull.graves.type.Grave;
+import org.bukkit.Location;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.InventoryView;
@@ -30,7 +34,7 @@ public class GraveOpenEvent extends GraveEvent {
     }
 
     /**
-     * @deprecated Use Player instead of Entity
+     * @deprecated          Use {@link GraveOpenEvent#GraveOpenEvent(InventoryView, Grave, Player)} instead for better player logging
      * Constructs a new {@code GraveOpenEvent}.
      *
      * @param inventoryView The inventory view that is being closed.
