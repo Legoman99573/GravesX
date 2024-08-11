@@ -21,16 +21,13 @@ libraries:
   - net.kyori:adventure-text-minimessage:4.17.0
   - net.kyori:adventure-platform-bukkit:4.3.4
 
-loadbefore:
-  - GriefPrevention
-  - GriefDefender
-
 softdepend:
   - Vault
   - ProtocolLib
   - WorldEdit
   - WorldGuard
   - GriefDefender
+  - GriefPrevention
   - PlaceholderAPI
   - FurnitureLib
   - FurnitureEngine
@@ -47,6 +44,7 @@ softdepend:
   - Citizens
   - Towny
   - LuckPerms
+  - CoreProtect
 
 commands:
   graves:

@@ -3,6 +3,7 @@ package com.ranull.graves.event;
 import com.ranull.graves.data.BlockData;
 import com.ranull.graves.type.Grave;
 import org.bukkit.Location;
+import org.bukkit.block.Block;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
@@ -20,9 +21,10 @@ public class GraveBlockPlaceEvent extends GraveEvent {
      * @param grave     The grave associated with the event.
      * @param location  The location where the block is being placed.
      * @param blockType The type of the block being placed.
+     * @param block     The block being placed.
      */
-    public GraveBlockPlaceEvent(Grave grave, Location location, BlockData.BlockType blockType) {
-        super(grave, null, location, null, null, blockType, null, null, null);
+    public GraveBlockPlaceEvent(Grave grave, Location location, BlockData.BlockType blockType, Block block) {
+        super(grave, null, location, null, null, blockType, block, null, null);
     }
 
     @Override

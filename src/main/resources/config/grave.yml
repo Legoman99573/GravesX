@@ -352,7 +352,7 @@ settings:
       citizens:
         corpse:
           enabled: false # Should we create a corpse?
-          pose: "SLEEPING" # What pose should the entity use? https://sergiferry.github.io/PlayerNPC/dev/sergiferry/playernpc/api/NPC.Pose.html
+          pose: "SLEEP" # What pose should the entity use? https://jd.citizensnpcs.co/net/citizensnpcs/util/PlayerAnimation.html
           offset:
             x: 0 # Corpse offset X.
             y: 0 # Corpse offset Y.

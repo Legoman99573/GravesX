@@ -3,6 +3,7 @@ package com.ranull.graves.manager;
 import ch.njol.skript.SkriptAddon;
 import com.ranull.graves.Graves;
 import com.ranull.graves.integration.*;
+import com.ranull.graves.listener.integration.coreprotect.CoreProtectListener;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.permission.Permission;
 import org.bukkit.Bukkit;
@@ -43,6 +44,7 @@ public final class IntegrationManager {
     private SkriptImpl skriptImpl;
     private boolean hasVaultPermissions;
     private LuckPermsHandler luckPermsHandler;
+    private CoreProtectIntegration coreProtectIntegration;
 
     /**
      * Initializes a new instance of the {@code IntegrationManager} class.
@@ -86,6 +88,7 @@ public final class IntegrationManager {
         loadPlaceholderAPI();
         loadCompatibilityWarnings();
         loadLuckPerms();
+        loadCoreProtect();
     }
 
     /**
@@ -198,6 +201,15 @@ public final class IntegrationManager {
      */
     public GriefDefender getGriefDefender() {
         return griefDefender;
+    }
+
+    /**
+     * Returns the instance of the CoreProtect integration, if it is loaded.
+     *
+     * @return The {@code CoreProtect} integration instance, or null if not loaded.
+     */
+    public CoreProtectIntegration getCoreProtect(){
+        return coreProtectIntegration;
     }
 
     /**
@@ -342,6 +354,15 @@ public final class IntegrationManager {
      */
     public boolean hasProtocolLib() {
         return protocolLib != null;
+    }
+
+    /**
+     * Checks if CoreProtect integration is loaded.
+     *
+     * @return {@code true} if CoreProtect integration is loaded, {@code false} otherwise.
+     */
+    public boolean hasCoreProtect() {
+        return coreProtectIntegration != null;
     }
 
     /**
@@ -698,6 +719,29 @@ public final class IntegrationManager {
             }
         } else {
             worldEdit = null;
+        }
+    }
+
+    /**
+     * Loads CoreProtect integration if enabled in the configuration and CoreProtect is installed.
+     */
+    private void loadCoreProtect() {
+        if (plugin.getConfig().getBoolean("settings.integration.coreprotect.enabled", true)) {
+            Plugin coreProtectPlugin = plugin.getServer().getPluginManager().getPlugin("CoreProtect");
+
+            if (coreProtectPlugin != null && coreProtectPlugin.isEnabled()) {
+                try {
+                    coreProtectIntegration = new CoreProtectIntegration(plugin);
+                    plugin.getServer().getPluginManager().registerEvents(new CoreProtectListener(plugin), plugin);
+                    plugin.integrationMessage("Hooked into " + coreProtectPlugin.getName() + " " + coreProtectPlugin.getDescription().getVersion() + ".");
+                } catch (Exception e) {
+                    coreProtectIntegration = null;
+                    plugin.integrationMessage("Failed to hook into " + coreProtectPlugin.getName() + " " + coreProtectPlugin.getDescription().getVersion() + ". Is CoreProtect installed and enabled?");
+                    plugin.logStackTrace(e);
+                }
+            }
+        } else {
+            coreProtectIntegration = null;
         }
     }
 

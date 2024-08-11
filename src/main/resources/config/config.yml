@@ -155,3 +155,5 @@ settings:
       enabled: true # Should ItemBridge integration be enabled.
     luckperms: # https://luckperms.net/download
       enabled: true # Should LuckPerms integration be enabled.
+    coreprotect: # https://www.spigotmc.org/resources/coreprotect.8631/
+      enabled: true # Should CoreProtect integration be enabled.

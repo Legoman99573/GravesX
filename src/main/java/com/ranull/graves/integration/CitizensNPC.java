@@ -19,6 +19,7 @@ import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
@@ -114,6 +115,16 @@ public final class CitizensNPC extends EntityDataManager {
                     String npcName = getNPCNameFromLocation(npcLocation);
                     NPC npc = CitizensAPI.getNPCRegistry().createNPC(EntityType.PLAYER, npcName);
                     npc.spawn(npcLocation);
+                    npc.data().setPersistent(NPC.Metadata.DEFAULT_PROTECTED, true);
+                    npc.data().setPersistent(NPC.Metadata.FLYABLE, true);
+                    npc.data().setPersistent(NPC.Metadata.NAMEPLATE_VISIBLE, false);
+                    npc.data().setPersistent(NPC.Metadata.KNOCKBACK, false);
+                    npc.data().setPersistent(NPC.Metadata.TARGETABLE, false);
+                    npc.data().setPersistent(NPC.Metadata.FLUID_PUSHABLE, false);
+                    npc.data().setPersistent(NPC.Metadata.SWIM, false);
+                    npc.data().setPersistent(NPC.Metadata.REMOVE_FROM_TABLIST, true);
+                    npc.data().setPersistent(NPC.Metadata.REMOVE_FROM_PLAYERLIST, true);
+                    npc.data().setPersistent(NPC.Metadata.SHOULD_SAVE, false);
 
                     npc.getOrAddTrait(SkinTrait.class).setSkinPersistent(
                             grave.getOwnerName(),
@@ -130,6 +141,7 @@ public final class CitizensNPC extends EntityDataManager {
                     team.addEntry(npc.getName());
                     NMS.setTeamNameTagVisible(team, false); // doesnt work
 
+                    Location npcTeleportLocation = npc.getStoredLocation();
                     try {
                         double x = plugin.getConfig("citizens.corpse.offset.x", grave)
                                 .getDouble("citizens.corpse.offset.x");
@@ -137,12 +149,12 @@ public final class CitizensNPC extends EntityDataManager {
                                 .getDouble("citizens.corpse.offset.y");
                         double z = plugin.getConfig("citizens.corpse.offset.z", grave)
                                 .getDouble("citizens.corpse.offset.z");
-                        npcLocation.add(x, y, z);
+                        npcTeleportLocation.add( x + 20.0, y, z);
                     } catch (IllegalArgumentException handled) {
-                        npcLocation.add(-2.0, -0.2, 0.0);
+                        npcTeleportLocation.add(20.0, 0.0, 0);
                     }
 
-                    npc.setProtected(plugin.getConfig("citizens.corpse.collide", grave).getBoolean("citizens.corpse.collide"));
+                    npc.data().setPersistent(NPC.Metadata.COLLIDABLE, plugin.getConfig("citizens.corpse.collide", grave).getBoolean("citizens.corpse.collide"));
 
                     // Set NPC equipment
                     setNPCEquipment(npc, grave, Equipment.EquipmentSlot.HELMET, "citizens.corpse.armor");
@@ -165,6 +177,7 @@ public final class CitizensNPC extends EntityDataManager {
                     if (plugin.getConfig("citizens.corpse.glow.enabled", grave)
                             .getBoolean("citizens.corpse.glow.enabled")) {
                         try {
+                            npc.data().setPersistent(NPC.Metadata.GLOWING, true);
                             npc.data().setPersistent(NPC.Metadata.valueOf("GLOWING_COLOR"), ChatColor.valueOf(plugin
                                     .getConfig("citizens.corpse.glow.color", grave)
                                     .getString("citizens.corpse.glow.color")).toString());
@@ -175,6 +188,7 @@ public final class CitizensNPC extends EntityDataManager {
 
                     npc.data().setPersistent("grave_uuid", grave.getUUID().toString());
 
+                    npc.teleport(npcTeleportLocation, PlayerTeleportEvent.TeleportCause.PLUGIN);
                     plugin.debugMessage("Spawning Citizens NPC for " + grave.getUUID() + " at "
                             + npcLocation.getWorld().getName() + ", " + (npcLocation.getBlockX() + 0.5) + "x, "
                             + (npcLocation.getBlockY() + 0.5) + "y, " + (npcLocation.getBlockZ() + 0.5) + "z", 1);
