@@ -19,7 +19,22 @@ import java.util.List;
  * Manages custom recipes for the Graves plugin.
  */
 public final class RecipeManager {
+    /**
+     * The main plugin instance associated with Graves.
+     * <p>
+     * This {@link Graves} instance represents the core plugin that Graves is part of. It provides access
+     * to the plugin's functionality, configuration, and other services.
+     * </p>
+     */
     private final Graves plugin;
+
+    /**
+     * A list of {@link NamespacedKey} objects used for managing and accessing custom data.
+     * <p>
+     * This {@link List} holds {@link NamespacedKey} instances which are used to uniquely identify and manage custom data
+     * keys within Graves. Namespaced keys are crucial for avoiding key collisions in persistent data containers.
+     * </p>
+     */
     private final List<NamespacedKey> namespacedKeyList;
 
     /**

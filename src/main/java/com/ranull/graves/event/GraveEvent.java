@@ -25,17 +25,101 @@ import org.jetbrains.annotations.Nullable;
  * </p>
  */
 public abstract class GraveEvent extends Event implements Cancellable {
+    /**
+     * A static final instance of {@link HandlerList} used to manage event handlers.
+     * <p>
+     * This {@link HandlerList} is used to register and manage the handlers for events of this type.
+     * It provides the mechanism for adding, removing, and invoking event handlers.
+     * </p>
+     */
     private static final HandlerList HANDLERS = new HandlerList();
+
+    /**
+     * The grave associated with the event.
+     * <p>
+     * This {@link Grave} represents the specific grave entity involved in the event.
+     * </p>
+     */
     private final Grave grave;
+
+    /**
+     * The entity associated with the event.
+     * <p>
+     * This {@link Entity} represents the entity that is involved in the event.
+     * </p>
+     */
     private final Entity entity;
+
+    /**
+     * The location related to the event.
+     * <p>
+     * This {@link Location} represents the position in the world where the event is taking place or is relevant.
+     * </p>
+     */
     private Location location;
+
+    /**
+     * The inventory view associated with the event.
+     * <p>
+     * This {@link InventoryView} represents the view of the inventory related to the event, such as a player's inventory or a chest.
+     * </p>
+     */
     private final InventoryView inventoryView;
+
+    /**
+     * The living entity involved in the event.
+     * <p>
+     * This {@link LivingEntity} represents the living entity that is part of the event.
+     * </p>
+     */
     private final LivingEntity livingEntity;
+
+    /**
+     * The target living entity of the event.
+     * <p>
+     * This {@link LivingEntity} represents the living entity that is the target or affected by the event.
+     * </p>
+     */
     private final LivingEntity targetEntity;
+
+    /**
+     * The type of block data associated with the event.
+     * <p>
+     * This {@link BlockData.BlockType} represents the type of block data relevant to the event.
+     * </p>
+     */
     private final BlockData.BlockType blockType;
+
+    /**
+     * The block associated with the event.
+     * <p>
+     * This {@link Block} represents the specific block involved in the event.
+     * </p>
+     */
     private final Block block;
+
+    /**
+     * The player associated with the event.
+     * <p>
+     * This {@link Player} represents the player involved in or affected by the event.
+     * </p>
+     */
     private final Player player;
+
+    /**
+     * Indicates whether the event has been cancelled.
+     * <p>
+     * This {@code boolean} flag is used to determine if the event should be cancelled or not.
+     * </p>
+     */
     private boolean isCancelled;
+
+    /**
+     * Indicates whether items should be dropped during the event.
+     * <p>
+     * This {@code boolean} flag determines if items should be dropped as a result of the event.
+     * </p>
+     */
     private boolean dropItems;
 
     /**

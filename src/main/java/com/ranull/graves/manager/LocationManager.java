@@ -17,6 +17,13 @@ import java.util.List;
  * Manages location-related operations for graves.
  */
 public final class LocationManager {
+    /**
+     * The main plugin instance associated with Graves.
+     * <p>
+     * This {@link Graves} instance represents the core plugin that this Graves is part of. It provides access
+     * to the plugin's functionality, configuration, and other services.
+     * </p>
+     */
     private final Graves plugin;
 
     /**

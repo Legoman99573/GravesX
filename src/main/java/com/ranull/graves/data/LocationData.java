@@ -10,12 +10,54 @@ import java.util.UUID;
  * Represents serialized location data including world UUID, coordinates, and orientation.
  */
 public class LocationData implements Serializable {
-    UUID uuid;
-    float yaw;
-    float pitch;
-    double x;
-    double y;
-    double z;
+    /**
+     * The unique identifier for the entity.
+     * <p>
+     * This {@link UUID} uniquely identifies the entity within the application.
+     * </p>
+     */
+    private final UUID uuid;
+
+    /**
+     * The yaw (rotation around the vertical axis) of the entity.
+     * <p>
+     * This {@code float} value represents the yaw of the entity, which controls its horizontal orientation.
+     * </p>
+     */
+    private final float yaw;
+
+    /**
+     * The pitch (rotation around the horizontal axis) of the entity.
+     * <p>
+     * This {@code float} value represents the pitch of the entity, which controls its vertical orientation.
+     * </p>
+     */
+    private final float pitch;
+
+    /**
+     * The x-coordinate of the entity's position.
+     * <p>
+     * This {@code double} value represents the entity's location on the x-axis in the world.
+     * </p>
+     */
+    private final double x;
+
+    /**
+     * The y-coordinate of the entity's position.
+     * <p>
+     * This {@code double} value represents the entity's location on the y-axis in the world.
+     * </p>
+     */
+    private final double y;
+
+    /**
+     * The z-coordinate of the entity's position.
+     * <p>
+     * This {@code double} value represents the entity's location on the z-axis in the world.
+     * </p>
+     */
+    private final double z;
+
 
     /**
      * Constructs a new LocationData instance from a given Location.

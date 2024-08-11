@@ -19,6 +19,13 @@ import java.util.Map;
  * The HologramManager class is responsible for managing holograms associated with graves.
  */
 public final class HologramManager extends EntityDataManager {
+    /**
+     * The main plugin instance associated with Graves.
+     * <p>
+     * This {@link Graves} instance represents the core plugin that this Graves is part of. It provides access
+     * to the plugin's functionality, configuration, and other services.
+     * </p>
+     */
     private final Graves plugin;
 
     /**

@@ -9,9 +9,36 @@ import java.util.UUID;
  * Represents block data associated with a grave.
  */
 public class BlockData implements Serializable {
+    /**
+     * The location of the grave in the world.
+     * <p>
+     * This {@link Location} represents the coordinates where the grave is situated.
+     * </p>
+     */
     private final Location location;
+
+    /**
+     * The unique identifier for the grave.
+     * <p>
+     * This {@link UUID} uniquely identifies the grave entity.
+     * </p>
+     */
     private final UUID graveUUID;
+
+    /**
+     * The material used to replace the grave block.
+     * <p>
+     * This {@link String} specifies the material to replace the block at the grave's location.
+     * </p>
+     */
     private final String replaceMaterial;
+
+    /**
+     * The data associated with the replacement material.
+     * <p>
+     * This {@link String} provides additional data or properties for the replacement material, if applicable.
+     * </p>
+     */
     private final String replaceData;
 
     /**

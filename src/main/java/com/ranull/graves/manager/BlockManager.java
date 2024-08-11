@@ -10,6 +10,7 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -20,6 +21,13 @@ import java.util.Map;
  * The BlockManager class is responsible for managing block data and operations related to graves.
  */
 public final class BlockManager {
+    /**
+     * The main plugin instance associated with Graves.
+     * <p>
+     * This {@link Graves} instance represents the core plugin that this Graves is part of. It provides access
+     * to the plugin's functionality, configuration, and other services.
+     * </p>
+     */
     private final Graves plugin;
 
     /**
@@ -226,6 +234,14 @@ public final class BlockManager {
         if (!lowerBlock.getType().isSolid()) {
             Material farmBlockMaterial = plugin.getVersionManager().getBlockForVersion("SOIL");
             lowerBlock.setType(farmBlockMaterial);
+
+            // Schedule a task to break the block below after 10 ticks
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    lowerBlock.breakNaturally(); // Break the block
+                }
+            }.runTaskLater(plugin, 5L); // 5L for 5 ticks
         }
     }
 

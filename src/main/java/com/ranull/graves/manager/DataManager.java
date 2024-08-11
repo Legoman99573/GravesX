@@ -23,8 +23,29 @@ import java.util.stream.Collectors;
  * Manages data storage and retrieval for the Graves plugin.
  */
 public final class DataManager {
+    /**
+     * The main plugin instance associated with Graves.
+     * <p>
+     * This {@link Graves} instance represents the core plugin that this Graves is part of. It provides access
+     * to the plugin's functionality, configuration, and other services.
+     * </p>
+     */
     private final Graves plugin;
+
+    /**
+     * The type of the component or event.
+     * <p>
+     * This {@link Type} represents the specific type or category of this component or event.
+     * </p>
+     */
     private Type type;
+
+    /**
+     * The data source used for database connections.
+     * <p>
+     * This {@link HikariDataSource} provides the connection pool for interacting with the database.
+     * </p>
+     */
     private HikariDataSource dataSource;
 
     /**
@@ -90,11 +111,53 @@ public final class DataManager {
      * Enum representing the types of databases supported.
      */
     public enum Type {
+
+        /**
+         * SQLite database system.
+         * <p>
+         * This type represents an SQLite database, a self-contained, serverless SQL database engine.
+         * </p>
+         */
         SQLITE,
+
+        /**
+         * MySQL database system.
+         * <p>
+         * This type represents a MySQL database, a widely-used open-source relational database management system.
+         * </p>
+         */
         MYSQL,
+
+        /**
+         * MariaDB database system.
+         * <p>
+         * This type represents a MariaDB database, a community-developed fork of MySQL.
+         * </p>
+         */
         MARIADB,
+
+        /**
+         * PostgreSQL database system.
+         * <p>
+         * This type represents a PostgreSQL database, an open-source relational database known for its advanced features and extensibility.
+         * </p>
+         */
         POSTGRESQL,
+
+        /**
+         * H2 database system.
+         * <p>
+         * This type represents an H2 database, a Java SQL database that is fast and lightweight, often used for development and testing.
+         * </p>
+         */
         H2,
+
+        /**
+         * Invalid or unsupported database type.
+         * <p>
+         * This type represents an invalid or unsupported database system, used to indicate errors or unsupported configurations.
+         * </p>
+         */
         INVALID
     }
 

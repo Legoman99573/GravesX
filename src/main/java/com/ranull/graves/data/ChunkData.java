@@ -12,10 +12,46 @@ import java.util.UUID;
  * Represents data for a specific chunk in the game world, including block and entity data.
  */
 public class ChunkData implements Serializable {
+    /**
+     * The world in which the grave is located.
+     * <p>
+     * This {@link World} object represents the Minecraft world where the grave is situated.
+     * </p>
+     */
     private final World world;
+
+    /**
+     * The x-coordinate of the grave's location.
+     * <p>
+     * This integer represents the horizontal position of the grave in the Minecraft world.
+     * </p>
+     */
     private final int x;
+
+    /**
+     * The z-coordinate of the grave's location.
+     * <p>
+     * This integer represents the horizontal position of the grave in the Minecraft world.
+     * </p>
+     */
     private final int z;
+
+    /**
+     * A map of block locations and their corresponding block data.
+     * <p>
+     * This {@link Map} contains {@link Location} keys representing the locations of blocks and {@link BlockData} values
+     * representing the data of those blocks at those locations.
+     * </p>
+     */
     private final Map<Location, BlockData> blockDataMap;
+
+    /**
+     * A map of entity UUIDs and their corresponding entity data.
+     * <p>
+     * This {@link Map} contains {@link UUID} keys representing unique identifiers for entities and {@link EntityData} values
+     * representing the data associated with those entities.
+     * </p>
+     */
     private final Map<UUID, EntityData> entityDataMap;
 
     /**

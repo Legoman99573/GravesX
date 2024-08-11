@@ -8,6 +8,13 @@ import java.util.UUID;
  * Represents data for a hologram entity associated with a grave, including its line number.
  */
 public class HologramData extends EntityData {
+    /**
+     * Represents the line number or index associated with a specific context.
+     * <p>
+     * This integer value denotes a line number or index, which might be used for positioning, tracking, or organizing purposes
+     * within the application.
+     * </p>
+     */
     private final int line;
 
     /**

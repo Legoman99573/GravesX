@@ -17,28 +17,119 @@ import java.util.*;
  * that the grave belongs to, including inventory, location, and various other attributes.
  */
 public class Grave implements InventoryHolder, Serializable {
+    /**
+     * Unique identifier for this instance.
+     */
     private final UUID uuid;
+
+    /**
+     * Inventory associated with this instance. This field is marked as transient, meaning it will not be serialized.
+     */
     private transient Inventory inventory;
+
+    /**
+     * Map of equipment items, keyed by their respective equipment slots.
+     */
     private Map<EquipmentSlot, ItemStack> equipmentMap;
+
+    /**
+     * List of permissions associated with this instance.
+     */
     private List<String> permissionList;
+
+    /**
+     * Data representing the location of death.
+     */
     private LocationData locationDeath;
+
+    /**
+     * The yaw rotation of the instance, in degrees.
+     */
     private float yaw;
+
+    /**
+     * The pitch rotation of the instance, in degrees.
+     */
     private float pitch;
+
+    /**
+     * The type of entity that owns this instance.
+     */
     private EntityType ownerType;
+
+    /**
+     * The name of the owner.
+     */
     private String ownerName;
+
+    /**
+     * The display name of the owner.
+     */
     private String ownerNameDisplay;
+
+    /**
+     * Unique identifier for the owner.
+     */
     private UUID ownerUUID;
+
+    /**
+     * The texture of the owner's avatar.
+     */
     private String ownerTexture;
+
+    /**
+     * The signature of the owner's texture.
+     */
     private String ownerTextureSignature;
+
+    /**
+     * The type of entity that is the killer.
+     */
     private EntityType killerType;
+
+    /**
+     * The name of the killer.
+     */
     private String killerName;
+
+    /**
+     * The display name of the killer.
+     */
     private String killerNameDisplay;
+
+    /**
+     * Unique identifier for the killer.
+     */
     private UUID killerUUID;
+
+    /**
+     * The amount of experience associated with this instance.
+     */
     private int experience;
+
+    /**
+     * Indicates whether protection is enabled.
+     */
     private boolean protection;
+
+    /**
+     * The amount of time the instance has been alive, in milliseconds.
+     */
     private long timeAlive;
+
+    /**
+     * The creation time of the instance, in milliseconds since the epoch.
+     */
     private long timeCreation;
+
+    /**
+     * The duration of protection, in milliseconds.
+     */
     private long timeProtection;
+
+    /**
+     * The location associated with this instance.
+     */
     private Location location;
 
     /**
@@ -520,19 +611,51 @@ public class Grave implements InventoryHolder, Serializable {
         return counter;
     }
 
+    /**
+     * Retrieves the display name of the owner.
+     * <p>
+     * This method returns the display name of the owner as a {@link String}.
+     * </p>
+     *
+     * @return The display name of the owner.
+     */
     public String getOwnerDisplayName() {
         return ownerNameDisplay;
     }
 
-    public void getOwnerDisplayName(String ownerNameDisplay) {
+    /**
+     * Sets the display name of the owner.
+     * <p>
+     * This method sets the display name of the owner to the specified {@link String}.
+     * </p>
+     *
+     * @param ownerNameDisplay The display name to set for the owner.
+     */
+    public void setOwnerDisplayName(String ownerNameDisplay) {
         this.ownerNameDisplay = ownerNameDisplay;
     }
 
+    /**
+     * Retrieves the location associated with this instance.
+     * <p>
+     * This method returns the location as a {@link Location} object.
+     * </p>
+     *
+     * @return The location associated with this instance.
+     */
     public Location getLocation() {
         return location;
     }
 
-    public void getLocation(Location location) {
+    /**
+     * Sets the location associated with this instance.
+     * <p>
+     * This method sets the location to the specified {@link Location}.
+     * </p>
+     *
+     * @param location The location to set.
+     */
+    public void setLocation(Location location) {
         this.location = location;
     }
 
@@ -540,8 +663,30 @@ public class Grave implements InventoryHolder, Serializable {
      * Enum for defining different storage modes for the grave.
      */
     public enum StorageMode {
+        /**
+         * Storage mode that requires an exact match.
+         * <p>
+         * In this mode, the storage or inventory system will look for an exact match of items or data.
+         * </p>
+         */
         EXACT,
+
+        /**
+         * Storage mode that uses a compact representation.
+         * <p>
+         * In this mode, the storage or inventory system will use a more compact representation for items or data,
+         * possibly combining or optimizing how items are stored.
+         * </p>
+         */
         COMPACT,
+
+        /**
+         * Storage mode designed for sorting chests.
+         * <p>
+         * In this mode, the storage or inventory system will utilize features specific to sorting chests and
+         * organizing items within them in a sorted manner. Requires the plugin ChestSort.
+         * </p>
+         */
         CHESTSORT
     }
 }

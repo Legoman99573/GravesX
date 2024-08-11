@@ -30,6 +30,13 @@ import java.util.*;
  * Manages the operations and lifecycle of entities within the Graves plugin.
  */
 public final class EntityManager extends EntityDataManager {
+    /**
+     * The main plugin instance associated with Graves.
+     * <p>
+     * This {@link Graves} instance represents the core plugin that this Graves is part of. It provides access
+     * to the plugin's functionality, configuration, and other services.
+     * </p>
+     */
     private final Graves plugin;
 
     /**
@@ -1051,6 +1058,15 @@ public final class EntityManager extends EntityDataManager {
         return equipmentSlotItemStackMap;
     }
 
+    /**
+     * Returns the name of the specified entity.
+     * <p>
+     * This method handles different types of entities, including players and other entities, with legacy support for older versions of Minecraft.
+     * </p>
+     *
+     * @param entity the {@link Entity} whose name is to be retrieved
+     * @return the name of the entity, or "null" if the entity is null
+     */
     @SuppressWarnings("redundant")
     public String getEntityName(Entity entity) {
         if (entity != null) {
@@ -1066,16 +1082,46 @@ public final class EntityManager extends EntityDataManager {
         return "null";
     }
 
+    /**
+     * Checks if the specified entity has a persistent data string with the given key.
+     * <p>
+     * The method checks for persistent data if supported; otherwise, it checks for metadata.
+     * </p>
+     *
+     * @param entity the {@link Entity} to check
+     * @param string the key of the persistent data or metadata
+     * @return {@code true} if the entity has the specified data string; {@code false} otherwise
+     */
     public boolean hasDataString(Entity entity, String string) {
         return plugin.getVersionManager().hasPersistentData() ? entity.getPersistentDataContainer()
                 .has(new NamespacedKey(plugin, string), PersistentDataType.STRING) : entity.hasMetadata(string);
     }
 
+    /**
+     * Checks if the specified entity has a persistent data byte with the given key.
+     * <p>
+     * The method checks for persistent data if supported; otherwise, it checks for metadata.
+     * </p>
+     *
+     * @param entity the {@link Entity} to check
+     * @param string the key of the persistent data or metadata
+     * @return {@code true} if the entity has the specified data byte; {@code false} otherwise
+     */
     public boolean hasDataByte(Entity entity, String string) {
         return plugin.getVersionManager().hasPersistentData() ? entity.getPersistentDataContainer()
                 .has(new NamespacedKey(plugin, string), PersistentDataType.BYTE) : entity.hasMetadata(string);
     }
 
+    /**
+     * Retrieves the persistent data string associated with the given key from the specified entity.
+     * <p>
+     * If persistent data is supported, it retrieves the string from the persistent data container; otherwise, it retrieves it from metadata.
+     * </p>
+     *
+     * @param entity the {@link Entity} to retrieve data from
+     * @param key the key of the persistent data or metadata
+     * @return the data string associated with the key, or {@code null} if not found
+     */
     public String getDataString(Entity entity, String key) {
         if (plugin.getVersionManager().hasPersistentData() && entity.getPersistentDataContainer()
                 .has(new NamespacedKey(plugin, key), PersistentDataType.STRING)) {
@@ -1085,6 +1131,16 @@ public final class EntityManager extends EntityDataManager {
         }
     }
 
+    /**
+     * Sets a persistent data string for the specified entity with the given key.
+     * <p>
+     * If persistent data is supported, it sets the string in the persistent data container; otherwise, it sets it in metadata.
+     * </p>
+     *
+     * @param entity the {@link Entity} to set data for
+     * @param key the key of the persistent data or metadata
+     * @param string the data string to set
+     */
     public void setDataString(Entity entity, String key, String string) {
         if (plugin.getVersionManager().hasPersistentData()) {
             entity.getPersistentDataContainer().set(new NamespacedKey(plugin, key), PersistentDataType.STRING, string);
@@ -1093,6 +1149,15 @@ public final class EntityManager extends EntityDataManager {
         }
     }
 
+    /**
+     * Sets a persistent data byte for the specified entity with the given key.
+     * <p>
+     * If persistent data is supported, it sets the byte in the persistent data container; otherwise, it sets it in metadata.
+     * </p>
+     *
+     * @param entity the {@link Entity} to set data for
+     * @param key the key of the persistent data or metadata
+     */
     public void setDataByte(Entity entity, String key) {
         if (plugin.getVersionManager().hasPersistentData()) {
             entity.getPersistentDataContainer().set(new NamespacedKey(plugin, key), PersistentDataType.BYTE, (byte) 1);
@@ -1101,6 +1166,15 @@ public final class EntityManager extends EntityDataManager {
         }
     }
 
+    /**
+     * Retrieves a {@link Grave} object from the persistent data or metadata of the specified entity.
+     * <p>
+     * The method checks if persistent data is supported and looks for a "graveUUID" key. If not found, it checks for metadata.
+     * </p>
+     *
+     * @param entity the {@link Entity} from which to retrieve the grave
+     * @return the {@link Grave} associated with the entity, or {@code null} if not found
+     */
     public Grave getGraveFromEntityData(Entity entity) {
         if (plugin.getVersionManager().hasPersistentData() && entity.getPersistentDataContainer()
                 .has(new NamespacedKey(plugin, "graveUUID"), PersistentDataType.STRING)) {

@@ -9,20 +9,124 @@ import org.bukkit.enchantments.Enchantment;
  * Manages version-specific functionality for the Graves plugin.
  */
 public final class VersionManager {
+    /**
+     * The version of the server or plugin.
+     * <p>
+     * This {@link String} holds the version information, which is used to check compatibility and feature availability.
+     * </p>
+     */
     private final String version;
+
+    /**
+     * Indicates whether the configuration contains specific settings or features.
+     * <p>
+     * This {@code boolean} flag shows if certain configuration settings or features are present in the plugin's configuration.
+     * </p>
+     */
     private final boolean hasConfigContains;
+
+    /**
+     * Indicates whether the API version is present or supported.
+     * <p>
+     * This {@code boolean} flag indicates if the API version information is available and supported by the server or plugin.
+     * </p>
+     */
     private final boolean hasAPIVersion;
+
+    /**
+     * Indicates whether block data is supported.
+     * <p>
+     * This {@code boolean} flag indicates if the server or plugin supports block data manipulation or retrieval.
+     * </p>
+     */
     private final boolean hasBlockData;
+
+    /**
+     * Indicates whether persistent data is supported.
+     * <p>
+     * This {@code boolean} flag shows if the server or plugin supports the use of persistent data containers.
+     * </p>
+     */
     private final boolean hasPersistentData;
+
+    /**
+     * Indicates whether scoreboard tags are supported.
+     * <p>
+     * This {@code boolean} flag indicates if the server or plugin supports scoreboard tags for entities.
+     * </p>
+     */
     private final boolean hasScoreboardTags;
+
+    /**
+     * Indicates whether hex color codes are supported.
+     * <p>
+     * This {@code boolean} flag shows if the server or plugin supports hexadecimal color codes for text or other elements.
+     * </p>
+     */
     private final boolean hasHexColors;
+
+    /**
+     * Indicates whether compass meta data is supported.
+     * <p>
+     * This {@code boolean} flag indicates if the server or plugin supports compass meta data functionality.
+     * </p>
+     */
     private final boolean hasCompassMeta;
+
+    /**
+     * Indicates whether hand swing actions are supported.
+     * <p>
+     * This {@code boolean} flag shows if the server or plugin supports actions related to hand swings.
+     * </p>
+     */
     private final boolean hasSwingHand;
+
+    /**
+     * Indicates whether world height data is supported.
+     * <p>
+     * This {@code boolean} flag indicates if the server or plugin supports retrieving or managing world height information.
+     * </p>
+     */
     private final boolean hasWorldHeight;
+
+    /**
+     * Indicates whether a second hand item is supported.
+     * <p>
+     * This {@code boolean} flag shows if the server or plugin supports having items in a second hand slot.
+     * </p>
+     */
     private final boolean hasSecondHand;
+
+    /**
+     * Indicates whether curse enchantments are supported.
+     * <p>
+     * This {@code boolean} flag indicates if the server or plugin supports curse enchantments on items.
+     * </p>
+     */
     private final boolean hasEnchantmentCurse;
+
+    /**
+     * Indicates whether particle effects are supported.
+     * <p>
+     * This {@code boolean} flag shows if the server or plugin supports particle effects for visual effects or gameplay.
+     * </p>
+     */
     private final boolean hasParticle;
+
+    /**
+     * Indicates whether the server or plugin is based on the Bukkit API.
+     * <p>
+     * This {@code boolean} flag shows if the server or plugin is using the Bukkit API.
+     * </p>
+     */
     private boolean isBukkit;
+
+    /**
+     * Indicates whether the server or plugin is based on Mohist.
+     * <p>
+     * This {@code boolean} flag shows if the server or plugin is using Mohist, a server software that combines Bukkit and Forge.
+     * </p>
+     */
     private boolean isMohist;
 
     /**

@@ -8,6 +8,13 @@ import org.jetbrains.annotations.NotNull;
  * The GraveProtectionExpiredEvent class represents an event that occurs when the protection of a grave expires.
  */
 public class GraveProtectionExpiredEvent extends GraveEvent {
+    /**
+     * A static final instance of {@link HandlerList} used to manage event handlers.
+     * <p>
+     * This {@link HandlerList} is used to register and manage the handlers for events of this type.
+     * It provides the mechanism for adding, removing, and invoking event handlers.
+     * </p>
+     */
     private static final HandlerList HANDLERS = new HandlerList();
 
     /**

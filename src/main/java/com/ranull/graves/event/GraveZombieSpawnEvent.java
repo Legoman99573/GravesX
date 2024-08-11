@@ -14,6 +14,13 @@ import org.jetbrains.annotations.NotNull;
  * </p>
  */
 public class GraveZombieSpawnEvent extends GraveEvent {
+    /**
+     * A static final instance of {@link HandlerList} used to manage event handlers.
+     * <p>
+     * This {@link HandlerList} is used to register and manage the handlers for events of this type.
+     * It provides the mechanism for adding, removing, and invoking event handlers.
+     * </p>
+     */
     private static final HandlerList HANDLERS = new HandlerList();
 
     /**

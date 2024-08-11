@@ -20,30 +20,197 @@ import java.util.StringJoiner;
  * This class handles loading, unloading, and checking the availability of these integrations, allowing the Graves plugin to interact with other plugins.
  */
 public final class IntegrationManager {
-
+    /**
+     * The main plugin instance associated with Graves.
+     * <p>
+     * This {@link Graves} instance represents the core plugin that this Graves is part of. It provides access
+     * to the plugin's functionality, configuration, and other services.
+     * </p>
+     */
     private final Graves plugin;
+
+    /**
+     * Integration with MultiPaper, a server software or library.
+     * <p>
+     * This {@link MultiPaper} instance represents the integration with the MultiPaper server software or library.
+     * </p>
+     */
     private MultiPaper multiPaper;
+
+    /**
+     * Integration with Vault, a permissions and economy API.
+     * <p>
+     * This {@link Vault} instance represents the integration with the Vault API, used for permissions and economy functionalities.
+     * </p>
+     */
     private Vault vault;
+
+    /**
+     * Integration with ProtocolLib, a library for handling protocol-related tasks.
+     * <p>
+     * This {@link ProtocolLib} instance represents the integration with the ProtocolLib library, which is used for manipulating network protocols.
+     * </p>
+     */
     private ProtocolLib protocolLib;
+
+    /**
+     * Integration with WorldEdit, a tool for editing worlds.
+     * <p>
+     * This {@link WorldEdit} instance represents the integration with the WorldEdit plugin, used for large-scale world editing.
+     * </p>
+     */
     private WorldEdit worldEdit;
+
+    /**
+     * Integration with WorldGuard, a plugin for managing regions and protection.
+     * <p>
+     * This {@link WorldGuard} instance represents the integration with the WorldGuard plugin, used for managing region protection.
+     * </p>
+     */
     private WorldGuard worldGuard;
+
+    /**
+     * Integration with Towny, a plugin for managing towns and nations.
+     * <p>
+     * This {@link Towny} instance represents the integration with the Towny plugin, used for managing town and nation systems.
+     * </p>
+     */
     private Towny towny;
+
+    /**
+     * Integration with GriefDefender, a plugin for land protection and grief prevention.
+     * <p>
+     * This {@link GriefDefender} instance represents the integration with the GriefDefender plugin, used for land protection and grief prevention.
+     * </p>
+     */
     private GriefDefender griefDefender;
+
+    /**
+     * Integration with FurnitureLib, a plugin for furniture management.
+     * <p>
+     * This {@link FurnitureLib} instance represents the integration with the FurnitureLib plugin, used for managing furniture.
+     * </p>
+     */
     private FurnitureLib furnitureLib;
+
+    /**
+     * Integration with FurnitureEngine, another plugin for furniture management.
+     * <p>
+     * This {@link FurnitureEngine} instance represents the integration with the FurnitureEngine plugin, used for managing furniture.
+     * </p>
+     */
     private FurnitureEngine furnitureEngine;
+
+    /**
+     * Integration with ProtectionLib, a library for protection management.
+     * <p>
+     * This {@link ProtectionLib} instance represents the integration with the ProtectionLib library, used for protection-related functionalities.
+     * </p>
+     */
     private ProtectionLib protectionLib;
+
+    /**
+     * Integration with ItemsAdder, a plugin for adding custom items.
+     * <p>
+     * This {@link ItemsAdder} instance represents the integration with the ItemsAdder plugin, used for adding custom items to the game.
+     * </p>
+     */
     private ItemsAdder itemsAdder;
+
+    /**
+     * Integration with Oraxen, a plugin for custom items and resource packs.
+     * <p>
+     * This {@link Oraxen} instance represents the integration with the Oraxen plugin, used for managing custom items and resource packs.
+     * </p>
+     */
     private Oraxen oraxen;
+
+    /**
+     * Integration with ChestSort, a plugin for sorting chests and inventories.
+     * <p>
+     * This {@link ChestSort} instance represents the integration with the ChestSort plugin, used for sorting chests and other inventories.
+     * </p>
+     */
     private ChestSort chestSort;
+
+    /**
+     * Integration with MiniMessage, a library for advanced message formatting.
+     * <p>
+     * This {@link MiniMessage} instance represents the integration with the MiniMessage library, used for advanced message formatting.
+     * </p>
+     */
     private MiniMessage miniMessage;
+
+    /**
+     * Integration with MineDown, a library for Markdown-like text formatting.
+     * <p>
+     * This {@link MineDown} instance represents the integration with the MineDown library, used for text formatting similar to Markdown.
+     * </p>
+     */
     private MineDown mineDown;
+
+    /**
+     * Integration with ItemBridge, a plugin or library for item management.
+     * <p>
+     * This {@link ItemBridge} instance represents the integration with the ItemBridge plugin or library, used for managing items.
+     * </p>
+     */
     private ItemBridge itemBridge;
+
+    /**
+     * Integration with PlayerNPC, a plugin for managing player-like NPCs.
+     * <p>
+     * This {@link PlayerNPC} instance represents the integration with the PlayerNPC plugin, used for creating and managing NPCs that mimic players.
+     * </p>
+     */
     private PlayerNPC playerNPC;
+
+    /**
+     * Integration with CitizensNPC, a plugin for creating NPCs.
+     * <p>
+     * This {@link CitizensNPC} instance represents the integration with the Citizens plugin, used for creating and managing NPCs in the game.
+     * </p>
+     */
     private CitizensNPC citizensNPC;
+
+    /**
+     * Integration with PlaceholderAPI, a plugin for managing placeholders.
+     * <p>
+     * This {@link PlaceholderAPI} instance represents the integration with the PlaceholderAPI plugin, used for managing and resolving placeholders.
+     * </p>
+     */
     private PlaceholderAPI placeholderAPI;
+
+    /**
+     * Integration with Skript, a plugin for scripting.
+     * <p>
+     * This {@link SkriptImpl} instance represents the integration with the Skript plugin, used for scripting and creating custom scripts.
+     * </p>
+     */
     private SkriptImpl skriptImpl;
+
+    /**
+     * Indicates whether Vault permissions are available.
+     * <p>
+     * This {@code boolean} flag indicates if Vault permissions are present and can be used within the plugin.
+     * </p>
+     */
     private boolean hasVaultPermissions;
+
+    /**
+     * Handles integration with LuckPerms, a permissions management plugin.
+     * <p>
+     * This {@link LuckPermsHandler} instance represents the handler for integrating with the LuckPerms plugin, which manages permissions.
+     * </p>
+     */
     private LuckPermsHandler luckPermsHandler;
+
+    /**
+     * Manages integration with CoreProtect, a plugin for block logging and protection.
+     * <p>
+     * This {@link CoreProtectIntegration} instance represents the integration with the CoreProtect plugin, used for logging and block protection.
+     * </p>
+     */
     private CoreProtectIntegration coreProtectIntegration;
 
     /**
