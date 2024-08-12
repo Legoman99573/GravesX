@@ -52,6 +52,7 @@ public class Graves extends JavaPlugin {
     private GraveyardManager graveyardManager;
     private Compatibility compatibility;
     private FileConfiguration fileConfiguration;
+    private boolean wasReloaded = false;
 
     @Override
     public void onLoad() {
@@ -75,6 +76,9 @@ public class Graves extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        if (wasReloaded()) {
+            compatibilityMessage("Server was reloaded with the /reload command. No support will be given if something breaks.");
+        }
         integrationManager.load();
         integrationManager.loadNoReload();
 
@@ -110,6 +114,7 @@ public class Graves extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        wasReloaded = true;
         dataManager.closeConnection();
         graveManager.unload();
         try {
@@ -219,6 +224,10 @@ public class Graves extends JavaPlugin {
             }
         }));
 
+    }
+
+    public boolean wasReloaded() {
+        return wasReloaded;
     }
 
     public void registerListeners() {

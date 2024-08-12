@@ -6,18 +6,19 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.configuration.file.FileConfiguration;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
 
 /**
  * Utility class for gathering server information and generating server dumps.
+ * This class includes methods for retrieving various system and server-related information.
  */
 public final class ServerUtil {
 
@@ -50,6 +51,12 @@ public final class ServerUtil {
         stringList.add("User Name: " + getSystemProperty("user.name"));
         stringList.add("User Home: " + getSystemProperty("user.home"));
         stringList.add("User Directory: " + getSystemProperty("user.dir"));
+        stringList.add("Docker Container: " + isRunningInDocker());
+        if (isRunningInDocker()) {
+            stringList.add("Rootless Container: " + isRootlessDocker());
+            stringList.add("Running with Panel: " + isRunningWithPanel());
+        }
+
         // Check for top-level access
         if (isRunningAsRoot()) {
             stringList.add("WARNING: This " + plugin.getServer().getName() + " server is running with top-level access (root/administrator)");
@@ -66,10 +73,10 @@ public final class ServerUtil {
         stringList.add("");
 
         stringList.add("System Disk Space Information:");
-        File root = new File("/");
-        stringList.add("Total Space: " + formatBytes(root.getTotalSpace()));
-        stringList.add("Free Space: " + formatBytes(root.getFreeSpace()));
-        stringList.add("Usable Space: " + formatBytes(root.getUsableSpace()));
+        File serverRoot = new File(plugin.getServer().getWorldContainer(), "/");
+        stringList.add("Total Space: " + formatBytes(serverRoot.getTotalSpace()));
+        stringList.add("Free Space: " + formatBytes(serverRoot.getFreeSpace()));
+        stringList.add("Usable Space: " + formatBytes(serverRoot.getUsableSpace()));
         stringList.add("");
 
         stringList.add("Minecraft Server Information:");
@@ -77,29 +84,23 @@ public final class ServerUtil {
         stringList.add("Implementation Version: " + plugin.getServer().getVersion());
         stringList.add("Bukkit Version: " + plugin.getServer().getBukkitVersion());
         try {
-            stringList.add("NMS Version: " + plugin.getServer().getClass().getPackage().getName().split("\\.")[3]);
-
+            stringList.add("NMS Version: " + getNmsVersion(plugin.getServer()));
         } catch (Exception e) {
             stringList.add("NMS Version: " + Bukkit.getServer().getVersion());
         }
         stringList.add("Player Count: " + plugin.getServer().getOnlinePlayers().size());
-        stringList.add("Player List: " + plugin.getServer().getOnlinePlayers().stream()
-                .map(Player::getName)
-                .collect(Collectors.joining(", ")));
+        stringList.add("Player List: " + getPlayerList());
         stringList.add("Plugin Count: " + plugin.getServer().getPluginManager().getPlugins().length);
-        stringList.add("Plugin List: " + Arrays.stream(plugin.getServer().getPluginManager().getPlugins())
-                .map(Plugin::getName)
-                .collect(Collectors.joining(", ")));
+        stringList.add("Plugin List: " + getPluginList());
+        stringList.add("Server used /reload: " + plugin.wasReloaded());
         stringList.add("");
 
         stringList.add("Graves Information:");
         // Add plugin-specific information
-        stringList.add(plugin.getDescription().getName() + " Version: "
-                + plugin.getDescription().getVersion());
+        stringList.add(plugin.getDescription().getName() + " Version: " + plugin.getDescription().getVersion());
 
         if (plugin.getVersionManager().hasAPIVersion()) {
-            stringList.add(plugin.getDescription().getName() + " API Version: "
-                    + plugin.getDescription().getAPIVersion());
+            stringList.add(plugin.getDescription().getName() + " API Version: " + plugin.getDescription().getAPIVersion());
         }
         stringList.add(plugin.getDescription().getName() + " Database Type: " + plugin.getConfig().getString("settings.storage.type", "SQLITE").toUpperCase());
         if (plugin.getIntegrationManager().hasLuckPermsHandler()) {
@@ -109,31 +110,58 @@ public final class ServerUtil {
         } else {
             stringList.add(plugin.getDescription().getName() + " Permissions Provider: Bukkit");
         }
-        stringList.add(plugin.getDescription().getName() + " Config Version: "
-                + plugin.getConfig().getInt("config-version"));
-        // Replace the password in the config string and encode it back to Base64
-        FileConfiguration config = plugin.getConfig();
-        String configString = config.saveToString();
-        String password = config.getString("settings.storage.mysql.password", "");
-        if (!password.isEmpty()) {
-            String maskedPassword = password.replaceAll(".", "*");
-            configString = configString.replace(password, maskedPassword);
+        stringList.add(plugin.getDescription().getName() + " Config Version: " + plugin.getConfig().getInt("config-version"));
+
+        File configDir = new File("plugins/GravesX/config");
+        if (configDir.exists() && configDir.isDirectory()) {
+            File[] files = configDir.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.isFile() && file.getName().endsWith(".yml")) {
+                        try {
+                            String configContent = readFileToString(file);
+                            String maskedConfigContent = maskPasswords(configContent, plugin.getConfig());
+                            String configBase64 = Base64.getEncoder().encodeToString(maskedConfigContent.getBytes());
+                            stringList.add("Config " + file.getName() + " Base64: " + configBase64);
+                        } catch (IOException e) {
+                            stringList.add("Config " + file.getName() + " could not be read.");
+                        }
+                    }
+                }
+            }
         }
-        String password2 = config.getString("settings.storage.postgresql.password", "");
-        if (!password.isEmpty()) {
-            String maskedPassword = password2.replaceAll(".", "*");
-            configString = configString.replace(password2, maskedPassword);
-        }
-        String password3 = config.getString("settings.storage.h2.password", "");
-        if (!password.isEmpty()) {
-            String maskedPassword = password3.replaceAll(".", "*");
-            configString = configString.replace(password3, maskedPassword);
-        }
-        String configBase64 = Base64.getEncoder().encodeToString(configString.getBytes());
-        stringList.add(plugin.getDescription().getName() + " Config Base64: " + configBase64);
 
         // Join all information into a single string separated by new lines
-        return String.join("\n", stringList);
+        return joinLines(stringList);
+    }
+
+    /**
+     * Reads a file into a string.
+     *
+     * @param file The file to read.
+     * @return The content of the file as a string.
+     * @throws IOException If an I/O error occurs.
+     */
+    private static String readFileToString(File file) throws IOException {
+        try (FileInputStream fis = new FileInputStream(file)) {
+            byte[] data = new byte[(int) file.length()];
+            fis.read(data);
+            return new String(data);
+        }
+    }
+
+
+    /**
+     * Retrieves the NMS version using reflection to ensure compatibility.
+     *
+     * @param server The Bukkit server instance.
+     * @return The NMS version string.
+     * @throws Exception if the method to retrieve NMS version is not found.
+     */
+    private static String getNmsVersion(Object server) throws Exception {
+        Class<?> serverClass = server.getClass();
+        Method method = serverClass.getMethod("getVersion"); // Replace with actual method name if different
+        return (String) method.invoke(server);
     }
 
     /**
@@ -149,37 +177,19 @@ public final class ServerUtil {
         return String.format("%.1f %sB", bytes / Math.pow(1024, exp), pre);
     }
 
+    /**
+     * Gets the value of a system property or returns "Unknown" if the property is not set.
+     *
+     * @param key The name of the system property.
+     * @return The value of the system property or "Unknown" if not set.
+     */
     private static String getSystemProperty(String key) {
         String value = System.getProperty(key);
         return value != null ? value : "Unknown";
     }
 
-    private static boolean isRunningAsRoot() {
-        String osName = System.getProperty("os.name").toLowerCase();
-        if (osName.contains("win")) {
-            return isRunningAsWindowsAdmin();
-        } else {
-            return isRunningAsUnixRoot();
-        }
-    }
-
-    private static boolean isRunningAsWindowsAdmin() {
-        try {
-            Process process = Runtime.getRuntime().exec("net session");
-            process.getOutputStream().close();
-            int exitCode = process.waitFor();
-            return exitCode == 0;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    private static boolean isRunningAsUnixRoot() {
-        return "0".equals(System.getProperty("user.name"));
-    }
-
     /**
-     * Gets the detailed OS name from the system files.
+     * Gets the detailed OS name from the system properties or files.
      *
      * @return A string with the OS name.
      */
@@ -202,12 +212,145 @@ public final class ServerUtil {
             String line;
             while ((line = reader.readLine()) != null) {
                 if (line.startsWith("PRETTY_NAME=")) {
-                    return line.split("=")[1].replaceAll("\"", "");
+                    return line.substring("PRETTY_NAME=".length()).replace("\"", "");
                 }
             }
-        } catch (IOException meh) {
-            // Just return as Linux. No need to error out.
+        } catch (IOException e) {
+            return "Linux (Unknown)";
         }
-        return "Linux";
+        return "Linux (Unknown)";
+    }
+
+    /**
+     * Checks if the server is running in a Docker container.
+     *
+     * @return True if running in Docker, otherwise false.
+     */
+    private static boolean isRunningInDocker() {
+        File cgroupFile = new File("/proc/self/cgroup");
+        try (BufferedReader reader = new BufferedReader(new FileReader(cgroupFile))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.contains("/docker/")) {
+                    return true;
+                }
+            }
+        } catch (IOException e) {
+            // Ignored
+        }
+        return false;
+    }
+
+    /**
+     * Checks if the server is running in a rootless Docker container.
+     *
+     * @return True if running in a rootless Docker container, otherwise false.
+     */
+    private static boolean isRootlessDocker() {
+        File uidFile = new File("/proc/self/uid_map");
+        return uidFile.exists();
+    }
+
+    /**
+     * Checks if the server is running with a panel (e.g., hosting panel).
+     *
+     * @return True if running with a panel, otherwise false.
+     */
+    private static boolean isRunningWithPanel() {
+        // Example: check for known panel files or environment variables
+        return new File("/.panel").exists();
+    }
+
+    /**
+     * Checks if the server is running with root-level access.
+     *
+     * @return True if running as root, otherwise false.
+     */
+    private static boolean isRunningAsRoot() {
+        return System.getProperty("user.name").equals("root");
+    }
+
+    /**
+     * Masks passwords in the configuration string with asterisks while retaining the character count.
+     *
+     * @param configString The configuration string.
+     * @param config       The FileConfiguration object.
+     * @return The modified configuration string with passwords masked.
+     */
+    private static String maskPasswords(String configString, FileConfiguration config) {
+        // Replace passwords with '*' characters while retaining original character count
+        String maskedConfigString = configString;
+        Set<String> keys = new HashSet<>(config.getKeys(true));
+        for (String path : keys) {
+            Object value = config.get(path);
+            if (value instanceof String && isPasswordField(path)) {
+                String password = (String) value;
+                maskedConfigString = maskedConfigString.replace(password, repeat('*', password.length()));
+            }
+        }
+        return maskedConfigString;
+    }
+
+    /**
+     * Determines if the given configuration path corresponds to a password field.
+     *
+     * @param path The configuration path.
+     * @return True if the path is a password field, otherwise false.
+     */
+    private static boolean isPasswordField(String path) {
+        return path.toLowerCase().contains("password") || path.toLowerCase().contains("secret");
+    }
+
+    /**
+     * Joins a list of strings into a single string, separated by new lines.
+     *
+     * @param lines The list of lines to join.
+     * @return A single string with lines joined by new lines.
+     */
+    private static String joinLines(List<String> lines) {
+        StringBuilder sb = new StringBuilder();
+        for (String line : lines) {
+            sb.append(line).append("\n");
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Repeats a character a specified number of times.
+     *
+     * @param ch   The character to repeat.
+     * @param times The number of times to repeat the character.
+     * @return A string with the character repeated.
+     */
+    private static String repeat(char ch, int times) {
+        char[] chars = new char[times];
+        Arrays.fill(chars, ch);
+        return new String(chars);
+    }
+
+    /**
+     * Gets a list of online players' names.
+     *
+     * @return A comma-separated string of online player names.
+     */
+    private static String getPlayerList() {
+        StringBuilder sb = new StringBuilder();
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            sb.append(player.getName()).append(", ");
+        }
+        return sb.length() > 0 ? sb.substring(0, sb.length() - 2) : "";
+    }
+
+    /**
+     * Gets a list of plugins with their names and versions.
+     *
+     * @return A comma-separated string of plugin names and versions.
+     */
+    private static String getPluginList() {
+        StringBuilder sb = new StringBuilder();
+        for (Plugin plugin : Bukkit.getPluginManager().getPlugins()) {
+            sb.append(plugin.getName()).append(" v").append(plugin.getDescription().getVersion()).append(", ");
+        }
+        return sb.length() > 0 ? sb.substring(0, sb.length() - 2) : "";
     }
 }
