@@ -193,7 +193,7 @@ settings:
     # https://www.spigotmc.org/resources/towny-advanced.72694/
     towny:
       # Should Towny integration be enabled.
-      enabled: true
+      enabled: false
     # https://www.spigotmc.org/resources/griefdefender.68900/
     griefdefender:
       # Should GriefDefender integration be enabled.
