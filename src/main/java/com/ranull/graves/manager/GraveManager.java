@@ -390,6 +390,7 @@ public final class GraveManager {
 
             if (location.getWorld() != null) {
                 switch (particle.name()) {
+                    case "DUST":
                     case "REDSTONE":
                         int sizeInt = plugin.getConfig("particle.dust-size", grave).getInt("particle.dust-size");
                         float size = (float) sizeInt; // Convert to float
@@ -399,9 +400,12 @@ public final class GraveManager {
                         if (color == null) {
                             color = Color.RED;
                         }
-
-                        location.getWorld().spawnParticle(particle, location, count,
-                                new Particle.DustOptions(color, size));
+                        try {
+                            location.getWorld().spawnParticle(particle, location, count,
+                                    new Particle.DustOptions(color, size));
+                        } catch (IllegalArgumentException e) {
+                            location.getWorld().spawnParticle(particle, location, count, 1);
+                        }
                         break;
                     case "SHRIEK":
                         location.getWorld().spawnParticle(particle, location, count, 1);
