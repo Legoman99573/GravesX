@@ -1,20 +1,33 @@
 ###############
 # Token Setup #
 ###############
-# Here is where you define your tokens that you can use for a grave. Supported only on 1.12+
+# Define your tokens that can be used for a grave. Supported only on 1.12+.
+
+# Token name; you can define multiple tokens.
+#     material: The item type used for the token (e.g., SUNFLOWER).
+#     name: The display name of the grave token.
+#     craft: Whether players can craft this grave token.
+#     glow: Whether the grave token should have a glowing effect.
+#     model-data: Custom model data for the token item; -1 means none.
+#     lore: Description or additional text to display with the token.
+#     recipe: The crafting recipe for the token. Use AIR for empty slots and ensure the recipe is unique.
+
 settings:
   token:
-    basic: # Token name, you can define multiple tokens.
-      material: SUNFLOWER # https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Material.html
-      name: "Grave Token" # Grave token name.
-      craft: true # Can players craft this grave token.
-      glow: true # Should the grave token glow.
-      model-data: -1 # Custom model data for the token item, -1 is none.
-      lore: # Grave token lore.
+    basic:
+      # Token name
+      material: SUNFLOWER # Item type used for the token (e.g., SUNFLOWER)
+      name: "Grave Token" # Display name of the grave token
+      craft: true # Can players craft this grave token
+      glow: true # Should the grave token glow
+      model-data: -1 # Custom model data for the token item; -1 means none
+      # Grave token lore
+      lore:
         - "&7Keep this in your inventory and"
         - "&7when you die a grave will be"
         - "&7created."
-      recipe: # Grave token recipe, use AIR for an empty square, make sure it is unique.
+      # Grave token recipe; use AIR for an empty square
+      recipe:
         - "GOLD_INGOT GOLD_INGOT GOLD_INGOT"
         - "GOLD_INGOT EMERALD GOLD_INGOT"
         - "GOLD_INGOT GOLD_INGOT GOLD_INGOT"

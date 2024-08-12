@@ -3,17 +3,33 @@
 ###################
 settings:
   graveyard:
-    facing: true # Should graveyards override the direction graves are facing.
+    # Should the graveyards override the direction graves are facing?
+    facing: true
+
+    # Should Graveyards integrate with WorldGuard?
     worldguard:
-      enabled: true # Should Graveyards hook into WorldGuard.
+      enabled: true
+
+    # Should Graveyards integrate with Towny?
+    # Additional tax for using a graveyard.
     towny:
-      enabled: true # Should Graveyards hook into Towny.
-      tax: 5 # Extra tax for graveyard
+      enabled: true
+      tax: 5
+
+    # Should Graveyards integrate with Factions?
     factions:
-      enabled: true # Should Graveyards hook into Factions.
+      enabled: true
+
+    # X-axis offset for graves.
+    # Y-axis offset for graves.
+    # Z-axis offset for graves.
     offset:
-      x: 0 # Grave offset X.
-      y: 0 # Grave offset Y.
-      z: 0 # Grave offset Z.
+      x: 0
+      y: 0
+      z: 0
+
+    # Maximum number of graveyard locations.
     max-locations: 5
-    create-grave-if-no-graveyard-space:
+
+    # Should a grave be created even if there's no available space in the graveyard?
+    create-grave-if-no-graveyard-space: true

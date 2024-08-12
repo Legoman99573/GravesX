@@ -1,21 +1,24 @@
 #######################
 # Permission Override #
 #######################
-# Override config options for players who have these permissions, "graves.permission.{name}".
-# If a player has multiple permissions, by group inheritance or manually given, options will be chosen from the top down.
-# Meaning for example, since admin is at the top and if the player has this permission among others.
-# The admin permission will always override permissions below it, therefor you should put your highest permission groups at the top,
-# so they correctly override in a hierarchy, this prevents you having to define the same thing for each permission group.
+# Override config options for players with these permissions, "graves.permission.{name}".
+# If a player has multiple permissions, options are selected from the top down.
+# For example, if a player has both admin and vip permissions, the admin settings will override the vip settings
+# because admin is listed first. Place the highest permission groups at the top to ensure correct hierarchy and avoid
+# redundancy in defining settings for each group.
 # Remember you can copy options from the default section.
+
 settings:
   permission:
-    admin: # graves.permission.admin
+    # graves.permission.admin
+    admin:
       grave:
         time: -1
       block:
         material: BEDROCK
 
-    vip: # graves.permission.vip
+    # graves.permission.vip
+    vip:
       grave:
         time: 21600
         explode: false
@@ -25,7 +28,8 @@ settings:
         grave:
           title: "VIP %owner_name%'s Grave"
 
-    schem: # graves.permission.schem
+    # graves.permission.schem
+    schem:
       placement:
         offset:
           y: 1
@@ -37,7 +41,8 @@ settings:
         enabled: true
         name: "grave_default"
 
-    holo: # graves.permission.holo
+    # graves.permission.holo
+    holo:
       block:
         enabled: false
         walk-over: true
@@ -48,12 +53,14 @@ settings:
           - "Killed by &7%killer_name%"
           - "%time_alive_remaining_formatted%"
 
-    dirt: # graves.permission.dirt
+    # graves.permission.dirt
+    dirt:
       grave:
         time: 30
       block:
         material: DIRT
 
-    disabled: # graves.permission.disabled
+    # graves.permission.disabled
+    disabled:
       grave:
         enabled: false
