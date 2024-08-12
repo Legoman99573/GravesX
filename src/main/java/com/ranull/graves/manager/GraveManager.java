@@ -25,8 +25,10 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Manages the operations and lifecycle of graves within the Graves plugin.
@@ -40,6 +42,21 @@ public final class GraveManager {
      * </p>
      */
     private final Graves plugin;
+
+    /**
+     * A thread-safe map that holds references to scheduled {@link BukkitTask} instances.
+     * <p>
+     * The key is a unique identifier for the task, typically based on the specific action or entity associated with the task.
+     * This map allows for efficient tracking and management of scheduled tasks, including the ability to cancel or reschedule tasks
+     * if necessary.
+     * </p>
+     * <p>
+     * Example use case: If you have a task related to a specific grave, you might use a unique identifier for that grave as the key
+     * to manage the task associated with it.
+     * </p>
+     */
+    private final ConcurrentHashMap<String, BukkitTask> tasks = new ConcurrentHashMap<>();
+
 
     /**
      * Initializes the GraveManager with the specified plugin instance.
@@ -117,7 +134,6 @@ public final class GraveManager {
         long remainingTime = grave.getTimeAliveRemaining();
         plugin.debugMessage("Handling timeout for grave: " + grave.getUUID() + " with remaining time: " + remainingTime, 1);
 
-        // If the remaining time is -1, do not activate the event
         if (remainingTime == -1) {
             plugin.debugMessage("Grave " + grave.getUUID() + " has infinite time remaining, skipping timeout handling.", 2);
             return;
@@ -136,15 +152,16 @@ public final class GraveManager {
                     chunk.load();
                 }
 
-                // Schedule dropping the grave items and experience after 2 seconds
-                new BukkitRunnable() {
+                // Cancel existing tasks for this grave if they exist
+                tasks.values().forEach(BukkitTask::cancel);
+
+                BukkitTask dropItemsTask = new BukkitRunnable() {
                     @Override
                     public void run() {
                         dropGraveItems(location, grave);
                         dropGraveExperience(location, grave);
 
-                        // Schedule unloading the chunk after 5 seconds
-                        new BukkitRunnable() {
+                        BukkitTask unloadChunkTask = new BukkitRunnable() {
                             @Override
                             public void run() {
                                 if (chunk.isLoaded() && arePlayersInChunk(chunk)) {
@@ -155,8 +172,14 @@ public final class GraveManager {
                                 }
                             }
                         }.runTaskLater(plugin, 60L); // 60 ticks = 3 seconds after items dropped
+
+                        // Store task reference
+                        tasks.put("unloadChunk_" + grave.getUUID(), unloadChunkTask);
                     }
                 }.runTaskLater(plugin, 40L); // 40 ticks = 2 seconds
+
+                // Store task reference
+                tasks.put("dropItems_" + grave.getUUID(), dropItemsTask);
             }
 
             if (grave.getOwnerType() == EntityType.PLAYER && grave.getOwnerUUID() != null) {
