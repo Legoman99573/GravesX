@@ -36,21 +36,25 @@ public class BlockExplodeListener implements Listener {
     public void onBlockExplode(BlockExplodeEvent event) {
         Iterator<Block> iterator = event.blockList().iterator();
 
-        while (iterator.hasNext()) {
-            Block block = iterator.next();
-            Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
+        try {
+            while (iterator.hasNext()) {
+                Block block = iterator.next();
+                Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
 
-            if (grave != null) {
-                Location location = block.getLocation();
+                if (grave != null) {
+                    Location location = block.getLocation();
 
-                if (isNewGrave(grave)) {
-                    iterator.remove();
-                } else if (shouldExplode(grave)) {
-                    handleGraveExplosion(event, iterator, block, grave, location);
-                } else {
-                    iterator.remove();
+                    if (isNewGrave(grave)) {
+                        iterator.remove();
+                    } else if (shouldExplode(grave)) {
+                        handleGraveExplosion(event, iterator, block, grave, location);
+                    } else {
+                        iterator.remove();
+                    }
                 }
             }
+        } catch (ArrayIndexOutOfBoundsException ignored) {
+            // Effectively ends the loop
         }
     }
 
@@ -102,7 +106,9 @@ public class BlockExplodeListener implements Listener {
                 plugin.getEntityManager().spawnZombie(location, grave);
             }
         } else {
-            iterator.remove();
+            if (iterator != null && iterator.hasNext()) {
+                iterator.remove();
+            }
         }
     }
 }

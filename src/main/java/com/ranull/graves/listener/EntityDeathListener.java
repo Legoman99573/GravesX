@@ -394,24 +394,30 @@ public class EntityDeathListener implements Listener {
         List<ItemStack> eventItemStackList = new ArrayList<>(event.getDrops());
         List<ItemStack> dropItemStackList = new ArrayList<>(eventItemStackList);
         Iterator<ItemStack> dropItemStackListIterator = dropItemStackList.iterator();
-        while (dropItemStackListIterator.hasNext()) {
-            ItemStack itemStack = dropItemStackListIterator.next();
-            if (itemStack != null) {
-                if (plugin.getEntityManager().getGraveUUIDFromItemStack(itemStack) != null) {
-                    if (plugin.getConfig("compass.destroy", livingEntity, permissionList).getBoolean("compass.destroy")) {
+
+        try {
+            while (dropItemStackListIterator.hasNext()) {
+                ItemStack itemStack = dropItemStackListIterator.next();
+                if (itemStack != null) {
+                    if (plugin.getEntityManager().getGraveUUIDFromItemStack(itemStack) != null) {
+                        if (plugin.getConfig("compass.destroy", livingEntity, permissionList).getBoolean("compass.destroy")) {
+                            dropItemStackListIterator.remove();
+                            event.getDrops().remove(itemStack);
+                            continue;
+                        } else if (plugin.getConfig("compass.ignore", livingEntity, permissionList).getBoolean("compass.ignore")) {
+                            continue;
+                        }
+                    }
+                    if (!plugin.getGraveManager().shouldIgnoreItemStack(itemStack, livingEntity, permissionList)) {
+                        graveItemStackList.add(itemStack);
                         dropItemStackListIterator.remove();
-                        event.getDrops().remove(itemStack);
-                        continue;
-                    } else if (plugin.getConfig("compass.ignore", livingEntity, permissionList).getBoolean("compass.ignore")) {
-                        continue;
                     }
                 }
-                if (!plugin.getGraveManager().shouldIgnoreItemStack(itemStack, livingEntity, permissionList)) {
-                    graveItemStackList.add(itemStack);
-                    dropItemStackListIterator.remove();
-                }
             }
+        } catch (ArrayIndexOutOfBoundsException ignored) {
+            // End the loop if the exception occurs
         }
+
         return graveItemStackList;
     }
 

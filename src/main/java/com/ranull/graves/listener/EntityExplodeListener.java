@@ -36,21 +36,25 @@ public class EntityExplodeListener implements Listener {
     public void onEntityExplode(EntityExplodeEvent event) {
         Iterator<Block> iterator = event.blockList().iterator();
 
-        while (iterator.hasNext()) {
-            Block block = iterator.next();
-            Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
+        try {
+            while (iterator.hasNext()) {
+                Block block = iterator.next();
+                Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
 
-            if (grave != null) {
-                Location location = block.getLocation().clone();
+                if (grave != null) {
+                    Location location = block.getLocation().clone();
 
-                if (isNewGrave(grave)) {
-                    iterator.remove();
-                } else if (shouldExplode(grave)) {
-                    handleGraveExplosion(event, iterator, block, grave, location);
-                } else {
-                    iterator.remove();
+                    if (isNewGrave(grave)) {
+                        iterator.remove();
+                    } else if (shouldExplode(grave)) {
+                        handleGraveExplosion(event, iterator, block, grave, location);
+                    } else {
+                        iterator.remove();
+                    }
                 }
             }
+        } catch (ArrayIndexOutOfBoundsException ignored) {
+            // End the loop if the exception occurs
         }
     }
 

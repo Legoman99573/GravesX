@@ -78,16 +78,20 @@ public final class RecipeManager {
     public void unload() {
         Iterator<Recipe> iterator = Bukkit.recipeIterator();
 
-        while (iterator.hasNext()) {
-            Recipe recipe = iterator.next();
+        try {
+            while (iterator.hasNext()) {
+                Recipe recipe = iterator.next();
 
-            if (recipe != null) {
-                ItemStack itemStack = recipe.getResult();
+                if (recipe != null) {
+                    ItemStack itemStack = recipe.getResult();
 
-                if (itemStack.hasItemMeta() && isToken(itemStack)) {
-                    iterator.remove();
+                    if (itemStack.hasItemMeta() && isToken(itemStack)) {
+                        iterator.remove();
+                    }
                 }
             }
+        } catch (ArrayIndexOutOfBoundsException ignored) {
+            // End the loop if the exception occurs
         }
     }
 
