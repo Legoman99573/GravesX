@@ -349,7 +349,7 @@ public final class ServerUtil {
     private static String getPluginList() {
         StringBuilder sb = new StringBuilder();
         for (Plugin plugin : Bukkit.getPluginManager().getPlugins()) {
-            sb.append(plugin.getName()).append(" v").append(plugin.getDescription().getVersion()).append(", ");
+            sb.append(plugin.getName()).append(" v.").append(plugin.getDescription().getVersion()).append(", ");
         }
         return sb.length() > 0 ? sb.substring(0, sb.length() - 2) : "";
     }
