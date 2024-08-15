@@ -11,6 +11,8 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.Material;
 
 /**
  * Listener for handling InventoryClickEvent to manage grave-related inventory interactions.
@@ -36,6 +38,31 @@ public class InventoryClickListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onInventoryClick(InventoryClickEvent event) {
         InventoryHolder inventoryHolder = event.getInventory().getHolder();
+        Player player = (Player) event.getWhoClicked();
+
+        // Check if player is holding a compass in either hand
+        ItemStack mainHandItem = player.getInventory().getItemInMainHand();
+        ItemStack offHandItem = null;
+        if (plugin.getVersionManager().hasSecondHand() ) {
+            offHandItem = player.getInventory().getItemInOffHand();
+        }
+        try {
+            boolean holdingRecoveryCompass = mainHandItem.getType() == Material.valueOf("RECOVERY_COMPASS") || offHandItem != null && offHandItem.getType() == Material.valueOf("RECOVERY_COMPASS");
+
+            if (holdingRecoveryCompass) {
+                // Cancel inventory interaction if holding a compass
+                event.setCancelled(true);
+                return;
+            }
+        } catch (IllegalArgumentException e) {
+            boolean holdingCompass = mainHandItem.getType() == Material.valueOf("COMPASS") || offHandItem != null && offHandItem.getType() == Material.valueOf("COMPASS");
+
+            if (holdingCompass) {
+                // Cancel inventory interaction if holding a compass
+                event.setCancelled(true);
+                return;
+            }
+        }
 
         if (inventoryHolder != null) {
             if (inventoryHolder instanceof Grave) {

@@ -6,7 +6,9 @@ import com.ranull.graves.data.ChunkData;
 import com.ranull.graves.event.GraveAutoLootEvent;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.LocationUtil;
+import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
+import org.bukkit.Material;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
@@ -14,6 +16,13 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.NamespacedKey;
+
+import java.util.UUID;
 
 /**
  * Listener for handling PlayerMoveEvent to manage interactions with graves and related mechanics.
@@ -57,6 +66,9 @@ public class PlayerMoveListener implements Listener {
                 if (isLocationContainingGrave(location)) {
                     handleGraveAutoLoot(event, player, location);
                 }
+
+                // Remove the specific type of compass if within 10 blocks of a grave
+                removeSpecificCompassNearGrave(player, location);
             }
         }
     }
@@ -130,6 +142,62 @@ public class PlayerMoveListener implements Listener {
                 }
             }
         }
+    }
+
+    /**
+     * Removes a specific type of compass (e.g., RECOVERY_COMPASS) from the player's inventory if within a 10-block radius of a grave.
+     *
+     * @param player   The player to check.
+     * @param location The player's current location.
+     */
+    private void removeSpecificCompassNearGrave(Player player, Location location) {
+        PlayerInventory inventory = player.getInventory();
+        ItemStack[] items = inventory.getContents();
+
+        // Retrieve the item name from the config or hardcoded
+        String compassName = ChatColor.WHITE +  player.getDisplayName() + "'s Grave";
+
+        for (ItemStack item : items) {
+            if (item != null && item.hasItemMeta()) {
+                ItemMeta itemMeta = item.getItemMeta();
+                if (itemMeta != null) {
+                    // Check if the item is a compass with the specific name
+                    if ((item.getType() == Material.valueOf("COMPASS")|| item.getType() == Material.valueOf("RECOVERY_COMPASS"))
+                            && itemMeta.hasDisplayName()
+                            && itemMeta.getDisplayName().equals(compassName)) {
+
+                        UUID graveUUID = getGraveUUIDFromItemStack(item);
+
+                        if (graveUUID != null) {
+                            Grave grave = plugin.getCacheManager().getGraveMap().get(graveUUID);
+                            if (grave != null && location.getWorld() != null) {
+                                Location graveLocation = plugin.getGraveManager().getGraveLocation(player.getLocation(), grave);
+                                if (graveLocation != null && location.distance(graveLocation) <= 15) {
+                                    // Remove the specific item from the inventory
+                                    inventory.remove(item);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Retrieves the Grave UUID from the item stack.
+     *
+     * @param itemStack The item stack to check.
+     * @return The UUID of the grave associated with the item stack, or null if not found.
+     */
+    private UUID getGraveUUIDFromItemStack(ItemStack itemStack) {
+        if (itemStack.hasItemMeta()) {
+            if (itemStack.getItemMeta() == null) return null;
+            String uuidString = itemStack.getItemMeta().getPersistentDataContainer()
+                    .get(new NamespacedKey(plugin, "graveUUID"), PersistentDataType.STRING);
+            return uuidString != null ? UUID.fromString(uuidString) : null;
+        }
+        return null;
     }
 
     /**
