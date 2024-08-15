@@ -17,6 +17,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.List;
 import java.util.Objects;
@@ -188,32 +189,52 @@ public class PlayerInteractListener implements Listener {
 
         UUID uuid = plugin.getEntityManager().getGraveUUIDFromItemStack(itemStack);
 
+        // Check if the player is holding a compass in either hand
+        boolean isHoldingCompass = player.getInventory().getItemInMainHand().getType().toString().toLowerCase().contains("compass")
+                || player.getInventory().getItemInOffHand().getType().toString().toLowerCase().contains("compass");
+
         if (uuid != null) {
             if (plugin.getCacheManager().getGraveMap().containsKey(uuid)) {
                 Grave grave = plugin.getCacheManager().getGraveMap().get(uuid);
                 List<Location> locationList = plugin.getGraveManager().getGraveLocationList(player.getLocation(), grave);
 
-                if (!locationList.isEmpty()) {
-                    Location location = locationList.get(0);
-                    if (event.getClickedBlock() != null && plugin.getLocationManager().hasGrave(event.getClickedBlock().getLocation())
-                            && player.getInventory().getItemInMainHand().getType().toString().toLowerCase().contains("compass")) {
+
+
+                if (!isHoldingCompass) {
+                    // If player is not holding a compass
+                    if (!locationList.isEmpty()) {
+                        Location location = locationList.get(0);
+                        if (event.getClickedBlock() != null && plugin.getLocationManager().hasGrave(event.getClickedBlock().getLocation())) {
+                            // Handle compass interaction logic
+                            player.getInventory().setItem(player.getInventory().getHeldItemSlot(),
+                                    plugin.getEntityManager().createGraveCompass(player, location, grave));
+                            plugin.getEntityManager().runFunction(player, plugin.getConfig("compass.function", grave).getString("compass.function"), grave);
+                        } else {
+                            // Handle case where no grave is found or clicked block does not contain a grave
+                            player.getInventory().remove(itemStack);
+                            player.closeInventory(); // Close the player's inventory
+                            player.openInventory(player.getInventory()); // Reopen the player's inventory
+                        }
+                    } else {
+                        // Handle case where no grave locations are found
                         player.getInventory().remove(itemStack);
                         player.closeInventory(); // Close the player's inventory
                         player.openInventory(player.getInventory()); // Reopen the player's inventory
-                    } else {
-                        player.getInventory().setItem(player.getInventory().getHeldItemSlot(),
-                                plugin.getEntityManager().createGraveCompass(player, location, grave));
-                        plugin.getEntityManager().runFunction(player, plugin.getConfig("compass.function", grave).getString("compass.function"), grave);
                     }
                 } else {
+                    // If player is holding a compass, do nothing
+                    event.setCancelled(true);
+                }
+            } else {
+                if (!isHoldingCompass) {
+                    // Handle case where the grave UUID is not in the cache map
                     player.getInventory().remove(itemStack);
                     player.closeInventory(); // Close the player's inventory
                     player.openInventory(player.getInventory()); // Reopen the player's inventory
+                } else {
+                    // still remove the compass anyways. Likely no longer exists.
+                    player.getInventory().remove(itemStack);
                 }
-            } else {
-                player.getInventory().remove(itemStack);
-                player.closeInventory(); // Close the player's inventory
-                player.openInventory(player.getInventory()); // Reopen the player's inventory
             }
             event.setCancelled(true);
         }

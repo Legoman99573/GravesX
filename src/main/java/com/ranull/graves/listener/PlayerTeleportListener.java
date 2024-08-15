@@ -47,9 +47,8 @@ public class PlayerTeleportListener implements Listener {
         Player player = event.getPlayer();
         Location newLocation = event.getTo();
 
-        // Check if the new location is within 15 blocks of any grave
-        if (isNearGrave(newLocation)) {
-            // Remove specific compass items from the player's inventory
+        // Check if the teleport destination is a grave location
+        if (isNearGrave(newLocation, player)) {
             removeSpecificCompassNearGrave(player, newLocation);
         }
     }
@@ -60,24 +59,21 @@ public class PlayerTeleportListener implements Listener {
      * @param location The location to check.
      * @return True if the location is within 15 blocks of any grave, false otherwise.
      */
-    private boolean isNearGrave(Location location) {
+    private boolean isNearGrave(Location location, Player player) {
         for (Grave grave : plugin.getCacheManager().getGraveMap().values()) {
-            Location graveLocation = grave.getLocation();
-            try {
-                if (graveLocation != null && location.getWorld().equals(graveLocation.getWorld())) {
-                    if (graveLocation.distance(location) <= 15) {
-                        return true;
-                    }
+            Location graveLocation = plugin.getGraveManager().getGraveLocation(player.getLocation(), grave);
+            if (graveLocation != null) {
+                double distance = location.distance(graveLocation);
+                if (distance <= 15) {
+                    return true;
                 }
-            } catch (NullPointerException ignored) {
-                // ignored
             }
         }
         return false;
     }
 
     /**
-     * Removes a specific type of compass (e.g., RECOVERY_COMPASS) from the player's inventory if within a 15-block radius of a grave.
+     * Removes a specific type of compass (e.g., RECOVERY_COMPASS) from the player's inventory if within a 10-block radius of a grave.
      *
      * @param player   The player to check.
      * @param location The player's current location.
@@ -87,14 +83,14 @@ public class PlayerTeleportListener implements Listener {
         ItemStack[] items = inventory.getContents();
 
         // Retrieve the item name from the config or hardcoded
-        String compassName = ChatColor.WHITE + player.getDisplayName() + "'s Grave";
+        String compassName = ChatColor.WHITE +  player.getDisplayName() + "'s Grave";
 
         for (ItemStack item : items) {
             if (item != null && item.hasItemMeta()) {
                 ItemMeta itemMeta = item.getItemMeta();
                 if (itemMeta != null) {
                     // Check if the item is a compass with the specific name
-                    if ((item.getType() == Material.COMPASS || item.getType() == Material.RECOVERY_COMPASS)
+                    if ((item.getType() == Material.valueOf("COMPASS")|| item.getType() == Material.valueOf("RECOVERY_COMPASS"))
                             && itemMeta.hasDisplayName()
                             && itemMeta.getDisplayName().equals(compassName)) {
 
@@ -104,12 +100,9 @@ public class PlayerTeleportListener implements Listener {
                             Grave grave = plugin.getCacheManager().getGraveMap().get(graveUUID);
                             if (grave != null && location.getWorld() != null) {
                                 Location graveLocation = plugin.getGraveManager().getGraveLocation(player.getLocation(), grave);
-                                if (graveLocation != null) {
-                                    double distance = location.distance(graveLocation);
-                                    if (distance <= 15) {
-                                        // Remove the specific item from the inventory
-                                        inventory.remove(item);
-                                    }
+                                if (graveLocation != null && location.distance(graveLocation) <= 15) {
+                                    // Remove the specific item from the inventory
+                                    inventory.remove(item);
                                 }
                             }
                         }

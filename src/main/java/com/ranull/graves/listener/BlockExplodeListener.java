@@ -5,7 +5,6 @@ import com.ranull.graves.event.GraveExplodeEvent;
 import com.ranull.graves.type.Grave;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -34,37 +33,38 @@ public class BlockExplodeListener implements Listener {
      *
      * @param event The BlockExplodeEvent to handle.
      */
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockExplode(BlockExplodeEvent event) {
         List<Block> affectedBlocks = event.blockList();
         Iterator<Block> iterator = affectedBlocks.iterator();
+        boolean cancelEvent = false;
 
         while (iterator.hasNext()) {
             Block block = iterator.next();
             Location blockLocation = block.getLocation();
 
-
             Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
             if (grave != null) {
                 if (isNewGrave(grave)) {
                     if (isNearGrave(blockLocation, block)) {
-                        event.setCancelled(true);
-                        event.blockList().clear();
+                        cancelEvent = true;
                         iterator.remove();
                     }
                 } else if (shouldExplode(grave)) {
                     handleGraveExplosion(event, iterator, block, grave, blockLocation);
                 } else if (isNearGrave(blockLocation, block)) {
-                    // Prevent blocks within the radius from being affected by the explosion
-                    event.setCancelled(true);
-                    event.blockList().clear();
+                    cancelEvent = true;
                     iterator.remove();
                 } else {
-                    event.setCancelled(true);
-                    event.blockList().clear();
+                    cancelEvent = true;
                     iterator.remove();
                 }
             }
+        }
+
+        if (cancelEvent) {
+            event.setCancelled(true);
+            event.blockList().clear();
         }
     }
 

@@ -11,15 +11,16 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityExplodeEvent;
 
 import java.util.Iterator;
+import java.util.List;
 
 /**
- * Listener for handling entity explosion events and managing graves affected by explosions.
+ * Listens for EntityExplodeEvent to handle interactions with grave blocks when they are affected by entity explosions.
  */
 public class EntityExplodeListener implements Listener {
     private final Graves plugin;
 
     /**
-     * Constructs an EntityExplodeListener with the specified Graves plugin.
+     * Constructs a new EntityExplodeListener with the specified Graves plugin.
      *
      * @param plugin The Graves plugin instance.
      */
@@ -28,33 +29,42 @@ public class EntityExplodeListener implements Listener {
     }
 
     /**
-     * Handles the EntityExplodeEvent to manage graves affected by the explosion.
+     * Handles EntityExplodeEvent to manage grave interactions when blocks are exploded by entities.
      *
      * @param event The EntityExplodeEvent to handle.
      */
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityExplode(EntityExplodeEvent event) {
-        Iterator<Block> iterator = event.blockList().iterator();
+        List<Block> affectedBlocks = event.blockList();
+        Iterator<Block> iterator = affectedBlocks.iterator();
+        boolean cancelEvent = false;
 
-        try {
-            while (iterator.hasNext()) {
-                Block block = iterator.next();
-                Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
+        while (iterator.hasNext()) {
+            Block block = iterator.next();
+            Location blockLocation = block.getLocation();
 
-                if (grave != null) {
-                    Location location = block.getLocation().clone();
-
-                    if (isNewGrave(grave)) {
-                        iterator.remove();
-                    } else if (shouldExplode(grave)) {
-                        handleGraveExplosion(event, iterator, block, grave, location);
-                    } else {
+            Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
+            if (grave != null) {
+                if (isNewGrave(grave)) {
+                    if (isNearGrave(blockLocation, block)) {
+                        cancelEvent = true;
                         iterator.remove();
                     }
+                } else if (shouldExplode(grave)) {
+                    handleGraveExplosion(event, iterator, block, grave, blockLocation);
+                } else if (isNearGrave(blockLocation, block)) {
+                    cancelEvent = true;
+                    iterator.remove();
+                } else {
+                    cancelEvent = true;
+                    iterator.remove();
                 }
             }
-        } catch (ArrayIndexOutOfBoundsException ignored) {
-            // End the loop if the exception occurs
+        }
+
+        if (cancelEvent) {
+            event.setCancelled(true);
+            event.blockList().clear();
         }
     }
 
@@ -75,7 +85,7 @@ public class EntityExplodeListener implements Listener {
      * @return True if the grave should explode, false otherwise.
      */
     private boolean shouldExplode(Grave grave) {
-        return plugin.getConfig("grave.explode", grave).getBoolean("grave.explode");
+        return plugin.getConfig("explode", grave).getBoolean("explode");
     }
 
     /**
@@ -88,7 +98,7 @@ public class EntityExplodeListener implements Listener {
      * @param location  The location of the grave.
      */
     private void handleGraveExplosion(EntityExplodeEvent event, Iterator<Block> iterator, Block block, Grave grave, Location location) {
-        GraveExplodeEvent graveExplodeEvent = new GraveExplodeEvent(location, event.getEntity(), grave);
+        GraveExplodeEvent graveExplodeEvent = new GraveExplodeEvent(location, null, grave);
         plugin.getServer().getPluginManager().callEvent(graveExplodeEvent);
 
         if (!graveExplodeEvent.isCancelled()) {
@@ -100,7 +110,7 @@ public class EntityExplodeListener implements Listener {
 
             plugin.getGraveManager().closeGrave(grave);
             plugin.getGraveManager().playEffect("effect.loot", location, grave);
-            plugin.getEntityManager().runCommands("event.command.explode", event.getEntity(), location, grave);
+            plugin.getEntityManager().runCommands("event.command.explode", block.getType().name(), location, grave);
 
             if (plugin.getConfig("zombie.explode", grave).getBoolean("zombie.explode")) {
                 plugin.getEntityManager().spawnZombie(location, grave);
@@ -108,5 +118,24 @@ public class EntityExplodeListener implements Listener {
         } else {
             iterator.remove();
         }
+    }
+
+    /**
+     * Checks if the given location is within 15 blocks of any grave.
+     *
+     * @param location The location to check.
+     * @return True if the location is within 15 blocks of any grave, false otherwise.
+     */
+    private boolean isNearGrave(Location location, Block block) {
+        for (Grave grave : plugin.getCacheManager().getGraveMap().values()) {
+            Location graveLocation = plugin.getGraveManager().getGraveLocation(block.getLocation(), grave);
+            if (graveLocation != null) {
+                double distance = location.distance(graveLocation);
+                if (distance <= 15) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
