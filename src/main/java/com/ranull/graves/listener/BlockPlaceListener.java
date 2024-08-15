@@ -2,7 +2,10 @@ package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
+import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -32,12 +35,16 @@ public class BlockPlaceListener implements Listener {
     public void onBlockPlace(BlockPlaceEvent event) {
         // Get the block being placed
         Block block = event.getBlock();
+        Player player = event.getPlayer();
         // Check if the block being placed is a grave
         Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
 
         // If the block is a grave or if the item being used is a token, cancel the event
         if (isGraveBlock(grave) || isTokenItem(event)) {
             event.setCancelled(true);
+        } else if (isNearGrave(block.getLocation())) {
+            event.setCancelled(true);
+            player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET + "You can't place blocks near a grave site.");
         }
     }
 
@@ -59,5 +66,24 @@ public class BlockPlaceListener implements Listener {
      */
     private boolean isTokenItem(BlockPlaceEvent event) {
         return plugin.getRecipeManager() != null && plugin.getRecipeManager().isToken(event.getItemInHand());
+    }
+
+    /**
+     * Checks if the given location is within 15 blocks of any grave.
+     *
+     * @param location The location to check.
+     * @return True if the location is within 15 blocks of any grave, false otherwise.
+     */
+    private boolean isNearGrave(Location location) {
+        for (Grave grave : plugin.getCacheManager().getGraveMap().values()) {
+            Location graveLocation = plugin.getGraveManager().getGraveLocation(location, grave);
+            if (graveLocation != null) {
+                double distance = location.distance(graveLocation);
+                if (distance <= 15) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

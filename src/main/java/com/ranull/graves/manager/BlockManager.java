@@ -7,13 +7,9 @@ import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.LocationUtil;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -21,13 +17,6 @@ import java.util.Map;
  * The BlockManager class is responsible for managing block data and operations related to graves.
  */
 public final class BlockManager {
-    /**
-     * The main plugin instance associated with Graves.
-     * <p>
-     * This {@link Graves} instance represents the core plugin that this Graves is part of. It provides access
-     * to the plugin's functionality, configuration, and other services.
-     * </p>
-     */
     private final Graves plugin;
 
     /**
@@ -195,90 +184,37 @@ public final class BlockManager {
      */
     public void removeBlock(BlockData blockData) {
         Location location = blockData.getLocation();
-        World world = location.getWorld();
 
-        if (world != null) {
-            Block centerBlock = location.getBlock();
-            Block lowerBlock = location.clone().add(0, -1, 0).getBlock();
-
-            Material originalMaterial = centerBlock.getType();
-
-            if (originalMaterial != Material.AIR) {
-                handleBlockRemoval(centerBlock, lowerBlock, blockData, location);
-            }
-        }
-    }
-
-    /**
-     * Handles the block removal process, including setting the center block to air
-     * and managing the block below.
-     *
-     * @param centerBlock  The block to be removed.
-     * @param lowerBlock   The block below the center block.
-     * @param blockData    The BlockData representing the block to remove.
-     * @param location     The location of the block.
-     */
-    private void handleBlockRemoval(Block centerBlock, Block lowerBlock, BlockData blockData, Location location) {
-        centerBlock.setType(Material.AIR);
-        ensureSolidBlockBelow(lowerBlock);
-        handleCustomBlocksOrReplacement(centerBlock, blockData, location);
-    }
-
-    /**
-     * Ensures that the block below the removed block is solid, setting it to a farm block
-     * if necessary.
-     *
-     * @param lowerBlock The block below the removed block.
-     */
-    private void ensureSolidBlockBelow(Block lowerBlock) {
-        if (!lowerBlock.getType().isSolid()) {
-            Material farmBlockMaterial = plugin.getVersionManager().getBlockForVersion("SOIL");
-            lowerBlock.setType(farmBlockMaterial);
-
-            // Schedule a task to break the block below after 10 ticks
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    lowerBlock.breakNaturally(); // Break the block
-                }
-            }.runTaskLater(plugin, 5L); // 5L for 5 ticks
-        }
-    }
-
-    /**
-     * Handles custom blocks from integrations or applies the replacement data if no custom blocks are found.
-     *
-     * @param centerBlock The block to be replaced.
-     * @param blockData   The BlockData representing the block to remove.
-     * @param location    The location of the block.
-     */
-    private void handleCustomBlocksOrReplacement(Block centerBlock, BlockData blockData, Location location) {
         if (plugin.getIntegrationManager().hasItemsAdder() && plugin.getIntegrationManager().getItemsAdder()
                 .isCustomBlock(location)) {
             plugin.getIntegrationManager().getItemsAdder().removeBlock(location);
-        } else if (plugin.getIntegrationManager().hasOraxen() && plugin.getIntegrationManager().getOraxen()
+        }
+
+        if (plugin.getIntegrationManager().hasOraxen() && plugin.getIntegrationManager().getOraxen()
                 .isCustomBlock(location)) {
             plugin.getIntegrationManager().getOraxen().removeBlock(location);
-        } else {
-            applyReplacementData(centerBlock, blockData, location);
-        }
-    }
-
-    /**
-     * Applies the replacement data to the center block if it exists, and removes block data from the data manager.
-     *
-     * @param centerBlock The block to be replaced.
-     * @param blockData   The BlockData representing the block to remove.
-     * @param location    The location of the block.
-     */
-    private void applyReplacementData(Block centerBlock, BlockData blockData, Location location) {
-        if (blockData.getReplaceData() != null) {
-            centerBlock.setBlockData(plugin.getServer().createBlockData(blockData.getReplaceData()));
         }
 
-        plugin.getDataManager().removeBlockData(location);
-        plugin.debugMessage("Replacing grave block for " + blockData.getGraveUUID() + " at "
-                + location.getWorld().getName() + ", " + (location.getBlockX() + 0.5) + "x, "
-                + (location.getBlockY() + 0.5) + "y, " + (location.getBlockZ() + 0.5) + "z", 1);
+        if (location.getWorld() != null) {
+            if (blockData.getReplaceMaterial() != null) {
+                Material material = Material.matchMaterial(blockData.getReplaceMaterial());
+
+                if (material != null) {
+                    blockData.getLocation().getBlock().setType(material);
+                }
+            } else {
+                blockData.getLocation().getBlock().setType(Material.AIR);
+            }
+
+            if (blockData.getReplaceData() != null) {
+                blockData.getLocation().getBlock().setBlockData(plugin.getServer()
+                        .createBlockData(blockData.getReplaceData()));
+            }
+
+            plugin.getDataManager().removeBlockData(location);
+            plugin.debugMessage("Replacing grave block for " + blockData.getGraveUUID() + " at "
+                    + location.getWorld().getName() + ", " + (location.getBlockX() + 0.5) + "x, "
+                    + (location.getBlockY() + 0.5) + "y, " + (location.getBlockZ() + 0.5) + "z", 1);
+        }
     }
 }

@@ -4,15 +4,20 @@ import com.ranull.graves.Graves;
 import com.ranull.graves.event.GraveAutoLootEvent;
 import com.ranull.graves.event.GraveBreakEvent;
 import com.ranull.graves.type.Grave;
+import org.bukkit.ChatColor;
+import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 
 /**
- * Listens for BlockBreakEvent to handle interactions with grave blocks.
+ * Listens for BlockBreakEvent to handle interactions with grave blocks and
+ * prevent block breaking within a specified radius of a grave.
  */
 public class BlockBreakListener implements Listener {
     private final Graves plugin;
@@ -27,7 +32,11 @@ public class BlockBreakListener implements Listener {
     }
 
     /**
-     * Handles BlockBreakEvent to manage grave interactions when a block is broken.
+     * Handles BlockBreakEvent to manage interactions with grave blocks when a block is broken.
+     *
+     * Checks if the broken block is associated with a grave. If so, verifies if breaking the grave
+     * is allowed and if the player has permission to do so. If not a grave block, it checks if
+     * the block is within a 15-block radius of any grave and cancels the event if so.
      *
      * @param event The BlockBreakEvent to handle.
      */
@@ -48,6 +57,9 @@ public class BlockBreakListener implements Listener {
             } else {
                 event.setCancelled(true);
             }
+        } else if (isNearGrave(block.getLocation(), player)) {
+            event.setCancelled(true);
+            player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET + "You can't break blocks near a grave site.");
         }
     }
 
@@ -103,7 +115,6 @@ public class BlockBreakListener implements Listener {
      * @param graveBreakEvent The GraveBreakEvent.
      */
     private void handleAutoLoot(BlockBreakEvent event, Player player, Block block, Grave grave, GraveBreakEvent graveBreakEvent) {
-        player.sendMessage("here");
         GraveAutoLootEvent graveAutoLootEvent = new GraveAutoLootEvent(player, block.getLocation(), grave);
         plugin.getServer().getPluginManager().callEvent(graveAutoLootEvent);
 
@@ -130,5 +141,24 @@ public class BlockBreakListener implements Listener {
         plugin.getGraveManager().playEffect("effect.loot", block.getLocation(), grave);
         plugin.getEntityManager().spawnZombie(block.getLocation(), player, player, grave);
         plugin.getEntityManager().runCommands("event.command.break", player, block.getLocation(), grave);
+    }
+
+    /**
+     * Checks if the given location is within 15 blocks of any grave.
+     *
+     * @param location The location to check.
+     * @return True if the location is within 15 blocks of any grave, false otherwise.
+     */
+    private boolean isNearGrave(Location location, Player player) {
+        for (Grave grave : plugin.getCacheManager().getGraveMap().values()) {
+            Location graveLocation = plugin.getGraveManager().getGraveLocation(player.getLocation(), grave);
+            if (graveLocation != null) {
+                double distance = location.distance(graveLocation);
+                if (distance <= 15) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

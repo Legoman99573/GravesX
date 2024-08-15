@@ -238,6 +238,7 @@ public class Graves extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerQuitListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerRespawnListener(this), this);
+        getServer().getPluginManager().registerEvents(new PlayerTeleportListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerDropItemListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerDeathListener(this), this);
         getServer().getPluginManager().registerEvents(new EntityDeathListener(this), this);

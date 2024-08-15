@@ -5,12 +5,14 @@ import com.ranull.graves.event.GraveExplodeEvent;
 import com.ranull.graves.type.Grave;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockExplodeEvent;
 
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * Listens for BlockExplodeEvent to handle interactions with grave blocks when they are affected by explosions.
@@ -32,29 +34,37 @@ public class BlockExplodeListener implements Listener {
      *
      * @param event The BlockExplodeEvent to handle.
      */
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onBlockExplode(BlockExplodeEvent event) {
-        Iterator<Block> iterator = event.blockList().iterator();
+        List<Block> affectedBlocks = event.blockList();
+        Iterator<Block> iterator = affectedBlocks.iterator();
 
-        try {
-            while (iterator.hasNext()) {
-                Block block = iterator.next();
-                Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
+        while (iterator.hasNext()) {
+            Block block = iterator.next();
+            Location blockLocation = block.getLocation();
 
-                if (grave != null) {
-                    Location location = block.getLocation();
 
-                    if (isNewGrave(grave)) {
-                        iterator.remove();
-                    } else if (shouldExplode(grave)) {
-                        handleGraveExplosion(event, iterator, block, grave, location);
-                    } else {
+            Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
+            if (grave != null) {
+                if (isNewGrave(grave)) {
+                    if (isNearGrave(blockLocation, block)) {
+                        event.setCancelled(true);
+                        event.blockList().clear();
                         iterator.remove();
                     }
+                } else if (shouldExplode(grave)) {
+                    handleGraveExplosion(event, iterator, block, grave, blockLocation);
+                } else if (isNearGrave(blockLocation, block)) {
+                    // Prevent blocks within the radius from being affected by the explosion
+                    event.setCancelled(true);
+                    event.blockList().clear();
+                    iterator.remove();
+                } else {
+                    event.setCancelled(true);
+                    event.blockList().clear();
+                    iterator.remove();
                 }
             }
-        } catch (ArrayIndexOutOfBoundsException ignored) {
-            // Effectively ends the loop
         }
     }
 
@@ -100,15 +110,32 @@ public class BlockExplodeListener implements Listener {
 
             plugin.getGraveManager().closeGrave(grave);
             plugin.getGraveManager().playEffect("effect.loot", location, grave);
-            plugin.getEntityManager().runCommands("event.command.explode", event.getBlock().getType().name(), location, grave);
+            plugin.getEntityManager().runCommands("event.command.explode", block.getType().name(), location, grave);
 
             if (plugin.getConfig("zombie.explode", grave).getBoolean("zombie.explode")) {
                 plugin.getEntityManager().spawnZombie(location, grave);
             }
         } else {
-            if (iterator != null && iterator.hasNext()) {
-                iterator.remove();
+            iterator.remove();
+        }
+    }
+
+    /**
+     * Checks if the given location is within 15 blocks of any grave.
+     *
+     * @param location The location to check.
+     * @return True if the location is within 15 blocks of any grave, false otherwise.
+     */
+    private boolean isNearGrave(Location location, Block block) {
+        for (Grave grave : plugin.getCacheManager().getGraveMap().values()) {
+            Location graveLocation = plugin.getGraveManager().getGraveLocation(block.getLocation(), grave);
+            if (graveLocation != null) {
+                double distance = location.distance(graveLocation);
+                if (distance <= 15) {
+                    return true;
+                }
             }
         }
+        return false;
     }
 }

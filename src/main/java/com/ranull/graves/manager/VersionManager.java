@@ -482,30 +482,4 @@ public final class VersionManager {
 
         return toReturn;
     }
-
-    /**
-     * Returns the appropriate Material for the given block depending on the Minecraft version.
-     * This method ensures compatibility between different versions, particularly between
-     * Minecraft 1.8 and newer versions where certain block names have changed.
-     *
-     * @param material The original Material to be checked and potentially converted.
-     * @return The correct Material for the current Minecraft version.
-     *         For example, if the input is Material.SOIL and the version is 1.9 or newer,
-     *         it will return Material.FARMLAND.
-     * @throws IllegalArgumentException If the provided material is not valid for the current Minecraft version.
-     */
-    public Material getBlockForVersion(String material) {
-        Material toReturn = null;
-        switch (material) {
-            case "SOIL":
-                try {
-                    toReturn = Material.valueOf("SOIL");
-                } catch (NullPointerException | IllegalArgumentException e) {
-                    toReturn = Material.valueOf("FARMLAND"); // Assume server is running on 1.9 or newer
-                }
-                break;
-            // Add other cases for different Materials here
-        }
-        return toReturn;
-    }
 }
