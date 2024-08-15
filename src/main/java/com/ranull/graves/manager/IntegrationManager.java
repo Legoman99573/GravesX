@@ -652,7 +652,7 @@ public final class IntegrationManager {
     }
 
     public boolean hasVaultEconomy() {
-        return hasVaultEconomy != null;
+        return hasVaultEconomy;
     }
 
     /**
