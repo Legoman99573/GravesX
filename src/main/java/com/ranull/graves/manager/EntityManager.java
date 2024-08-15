@@ -201,7 +201,7 @@ public final class EntityManager extends EntityDataManager {
                 if (entity instanceof Player) {
                     Player player = (Player) entity;
 
-                    if (plugin.getIntegrationManager().hasVault()) {
+                    if (plugin.getIntegrationManager().hasVault() && plugin.getIntegrationManager().hasVaultEconomy()) {
                         double teleportCost = getTeleportCost(entity.getLocation(), locationTeleport, grave);
 
                         if (plugin.getIntegrationManager().getVault().hasBalance(player, teleportCost)

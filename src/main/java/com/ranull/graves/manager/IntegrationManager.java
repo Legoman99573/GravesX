@@ -213,6 +213,8 @@ public final class IntegrationManager {
      */
     private CoreProtectIntegration coreProtectIntegration;
 
+    private boolean hasVaultEconomy;
+
     /**
      * Initializes a new instance of the {@code IntegrationManager} class.
      *
@@ -649,6 +651,10 @@ public final class IntegrationManager {
         return playerNPC != null;
     }
 
+    public boolean hasVaultEconomy() {
+        return hasVaultEconomy != null;
+    }
+
     /**
      * Checks if CitizensNPC integration is loaded.
      *
@@ -752,6 +758,7 @@ public final class IntegrationManager {
         Permission permission = permissionProvider.getProvider();
         vault = new Vault(economy, permission);
         hasVaultPermissions = true;
+        hasVaultEconomy = true;
 
         plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + ". Economy is enabled.");
         plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions provider.");
@@ -767,6 +774,7 @@ public final class IntegrationManager {
         Economy economy = economyProvider.getProvider();
         vault = new Vault(economy);
         hasVaultPermissions = false;
+        hasVaultEconomy = true;
 
         plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + ". Economy is enabled.");
         plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions provider. Vault will not be used as a Permissions Provider.");
@@ -782,6 +790,7 @@ public final class IntegrationManager {
         Permission permission = permissionProvider.getProvider();
         vault = new Vault(permission);
         hasVaultPermissions = true;
+        hasVaultEconomy = false;
 
         plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s economy. This is likely because you are missing an economy plugin. Economy will be disabled.");
         plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions provider.");
@@ -795,6 +804,7 @@ public final class IntegrationManager {
     private void disableVaultIntegration(Plugin vaultPlugin) {
         vault = null;
         hasVaultPermissions = false;
+        hasVaultEconomy = false;
 
         plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s economy. This is likely because you are missing an economy plugin. Economy will be disabled.");
         plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions provider. Vault will not be used as a Permissions Provider.");
