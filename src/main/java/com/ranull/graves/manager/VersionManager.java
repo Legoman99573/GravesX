@@ -482,4 +482,23 @@ public final class VersionManager {
 
         return toReturn;
     }
+
+    public Material getMaterialForVersion(String material) {
+        Material toReturn = null;
+        switch (material) {
+            case "RECOVERY_COMPASS":
+                try {
+                    toReturn = Material.valueOf("RECOVERY_COMPASS"); // Server is running on 1.19 or newer
+                } catch (NullPointerException | IllegalArgumentException e) {
+                    toReturn = Material.valueOf("COMPASS"); // Server is older than 1.19
+                }
+                break;
+                // Add other cases for different materials here
+        }
+        if (toReturn == null) {
+            throw new IllegalArgumentException("Material can't be null. This is a bug.");
+        }
+
+        return toReturn;
+    }
 }

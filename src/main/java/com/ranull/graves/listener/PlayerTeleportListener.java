@@ -90,7 +90,7 @@ public class PlayerTeleportListener implements Listener {
                 ItemMeta itemMeta = item.getItemMeta();
                 if (itemMeta != null) {
                     // Check if the item is a compass with the specific name
-                    if ((item.getType() == Material.valueOf("COMPASS")|| item.getType() == Material.valueOf("RECOVERY_COMPASS"))
+                    if ((item.getType() == Material.valueOf(String.valueOf(plugin.getVersionManager().getMaterialForVersion("RECOVERY_COMPASS"))))
                             && itemMeta.hasDisplayName()
                             && itemMeta.getDisplayName().equals(compassName)) {
 
