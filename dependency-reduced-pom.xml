@@ -78,6 +78,10 @@
               <pattern>com.zaxxer.hikari</pattern>
               <shadedPattern>${project.groupId}.${project.artifactId}.hikari</shadedPattern>
             </relocation>
+            <relocation>
+              <pattern>com.tchristofferson.configupdater</pattern>
+              <shadedPattern>${project.groupId}.${project.artifactId}.configupdater</shadedPattern>
+            </relocation>
           </relocations>
         </configuration>
       </plugin>
@@ -213,6 +217,10 @@
       <id>ugandavrc-maven-releases</id>
       <name>UgandaVRC Repository</name>
       <url>https://mvn.ugandavrc.com/releases</url>
+    </repository>
+    <repository>
+      <id>maven-central</id>
+      <url>https://oss.sonatype.org/content/groups/public</url>
     </repository>
   </repositories>
   <dependencies>

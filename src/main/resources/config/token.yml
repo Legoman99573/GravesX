@@ -17,17 +17,17 @@ settings:
     basic:
       # Token name
       material: SUNFLOWER # Item type used for the token (e.g., SUNFLOWER)
-      name: "Grave Token" # Display name of the grave token
+      name: 'Grave Token' # Display name of the grave token
       craft: true # Can players craft this grave token
       glow: true # Should the grave token glow
       model-data: -1 # Custom model data for the token item; -1 means none
       # Grave token lore
       lore:
-        - "&7Keep this in your inventory and"
-        - "&7when you die a grave will be"
-        - "&7created."
+        - '&7Keep this in your inventory and'
+        - '&7when you die a grave will be'
+        - '&7created.'
       # Grave token recipe; use AIR for an empty square
       recipe:
-        - "GOLD_INGOT GOLD_INGOT GOLD_INGOT"
-        - "GOLD_INGOT EMERALD GOLD_INGOT"
-        - "GOLD_INGOT GOLD_INGOT GOLD_INGOT"
+        - 'GOLD_INGOT GOLD_INGOT GOLD_INGOT'
+        - 'GOLD_INGOT EMERALD GOLD_INGOT'
+        - 'GOLD_INGOT GOLD_INGOT GOLD_INGOT'

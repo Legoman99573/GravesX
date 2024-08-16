@@ -10,6 +10,7 @@ import com.ranull.graves.listener.*;
 import com.ranull.graves.manager.*;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.*;
+import com.tchristofferson.configupdater.ConfigUpdater;
 import org.bstats.bukkit.Metrics;
 import org.bstats.charts.SimplePie;
 import org.bstats.charts.SingleLineChart;
@@ -31,6 +32,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.concurrent.Callable;
 
@@ -348,25 +351,94 @@ public class Graves extends JavaPlugin {
     }
 
     private void updateConfig() {
-        double currentConfigVersion = 6;
-        double configVersion = getConfig().getInt("config-version");
+        int currentConfigVersion = 7;
+        File configFolder = new File(getDataFolder(), "config");
+
+        // Load the main config file to check the version
+        File mainConfigFile = new File(configFolder, "config.yml");
+        FileConfiguration mainConfig = YamlConfiguration.loadConfiguration(mainConfigFile);
+        double configVersion = mainConfig.getDouble("config-version", 0);
 
         if (configVersion < currentConfigVersion) {
+            // Create the outdated folder if it doesn't exist
             new File(getDataFolder(), "outdated").mkdirs();
 
-            File singleConfigFile = new File(getDataFolder(), "config.yml");
-            File folderConfigFile = new File(getDataFolder(), "config");
+            // Backup the outdated config files
+            backupOutdatedConfigs(configVersion);
 
-            if (singleConfigFile.exists()) {
-                FileUtil.moveFile(singleConfigFile, "outdated/config.yml-" + configVersion);
-            } else {
-                FileUtil.moveFile(folderConfigFile, "outdated/config-" + configVersion);
-            }
-
+            // Log a warning message
             warningMessage("Outdated config detected (v" + configVersion + "), current version is (v"
-                    + currentConfigVersion + "), renaming outdated config file.");
-            saveDefaultConfig();
+                    + currentConfigVersion + "). Renaming outdated config files.");
+
+            // Update each config file directly
+            updateConfigFile("config.yml", currentConfigVersion, true);
+            updateConfigFile("entity.yml", currentConfigVersion, false);
+            updateConfigFile("grave.yml", currentConfigVersion, false);
+            updateConfigFile("graveyard.yml", currentConfigVersion, false);
+            updateConfigFile("permission.yml", currentConfigVersion, false);
+            updateConfigFile("token.yml", currentConfigVersion, false);
+
+            // Reload the main config after all updates
             reloadConfig();
+        }
+    }
+
+    private void backupOutdatedConfigs(double configVersion) {
+        File configFolder = new File(getDataFolder(), "config");
+        String[] configFiles = {"config.yml", "entity.yml", "grave.yml", "graveyard.yml", "permission.yml", "token.yml"};
+
+        File outdatedFolder = new File(getDataFolder(), "outdated");
+        outdatedFolder.mkdirs(); // Ensure the directory exists
+
+        for (String configFileName : configFiles) {
+            File configFile = new File(configFolder, configFileName);
+            if (configFile.exists()) {
+                File backupFile = new File(outdatedFolder, configFileName + "-" + configVersion);
+                try {
+                    Files.copy(configFile.toPath(), backupFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException e) {
+                    logStackTrace(e);
+                }
+            }
+        }
+    }
+
+    private void updateConfigFile(String fileName, int currentConfigVersion, boolean shouldUpdateConfigVersion) {
+        File configFile = new File(getDataFolder(), "config/" + fileName);
+        if (configFile.exists()) {
+            try {
+                // Use the resource name matching the file name in the JAR
+                String resourceName = "config/" + fileName;
+                InputStream resourceStream = getResource(resourceName);
+
+                if (resourceStream == null) {
+                    getLogger().severe("Resource " + resourceName + " not found in the JAR.");
+                    return;
+                }
+
+                // Update the configuration file using ConfigUpdater without ignored sections
+                ConfigUpdater.update(
+                        this, // Pass the plugin instance
+                        resourceName,
+                        configFile,
+                        Arrays.asList() // Pass an empty list if you do not need to ignore sections
+                );
+
+                if (shouldUpdateConfigVersion) {
+                    // Load the updated config and set the new version
+                    FileConfiguration config = YamlConfiguration.loadConfiguration(configFile);
+                    config.set("config-version", currentConfigVersion);
+                    config.save(configFile);
+                }
+
+                getLogger().info("Config updated: " + configFile.getAbsolutePath());
+
+            } catch (IOException e) {
+                getLogger().severe("Failed to update " + fileName + ": " + e.getMessage());
+                logStackTrace(e);
+            }
+        } else {
+            getLogger().severe("File " + configFile.getAbsolutePath() + " does not exist.");
         }
     }
 

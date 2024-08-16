@@ -1,5 +1,5 @@
 # Config version, you should never manually change this.
-config-version: 6
+config-version: 7
 
 ###############
 # Core Config #
@@ -21,23 +21,23 @@ settings:
       # Unless you know what you're doing, leave the options under sqlite default.
       # Journal mode for SQLite. Options include DELETE, TRUNCATE, PERSIST, MEMORY, WAL, OFF.
       # Refer to https://www.sqlite.org/pragma.html#pragma_journal_mode for more details.
-      journal-mode: "WAL"
+      journal-mode: 'WAL'
       # Synchronous mode for SQLite. Options include 0 (OFF), 1 (NORMAL), 2 (FULL), 3 (EXTRA).
       # Refer to https://www.sqlite.org/pragma.html#pragma_synchronous for more details.
-      synchronous: "OFF"
+      synchronous: 'OFF'
 
     mysql:
       # Unless you know what you're doing, leave the options under mysql default.
       # Host of the MySQL database.
-      host: "localhost"
+      host: 'localhost'
       # Port for the MySQL database (do not change unless you use a different port).
       port: 3306
       # Database username. Ensure the user has access to the database.
-      username: "username"
+      username: 'username'
       # Database password. Case-sensitive.
-      password: "password"
+      password: 'password'
       # Database to use.
-      database: "graves"
+      database: 'graves'
       # Maximum number of connections allowed to the database. 
       # Do not change unless you know what you are doing.
       maxConnections: 10
@@ -58,15 +58,15 @@ settings:
     postgresql:
       # Unless you know what you're doing, leave the options under postgresql default.
       # Host of the PostgreSQL database.
-      host: "localhost"
+      host: 'localhost'
       # Port for the PostgreSQL database (do not change unless you use a different port).
       port: 5432
       # Database username. Ensure the user has access to the database.
-      username: "username"
+      username: 'username'
       # Database password. Case-sensitive.
-      password: "password"
+      password: 'password'
       # Database to use.
-      database: "graves"
+      database: 'graves'
       # Maximum number of connections allowed to the database.
       # Do not change unless you know what you are doing.
       maxConnections: 10
@@ -81,23 +81,23 @@ settings:
       ssl: false
       # SSL factory class. Default: org.postgresql.ssl.NonValidatingFactory.
       # Refer to PostgreSQL SSL documentation for more details.
-      sslfactory: "org.postgresql.ssl.NonValidatingFactory"
+      sslfactory: 'org.postgresql.ssl.NonValidatingFactory'
       # SSL mode. Options include disable, allow, prefer, require, verify-ca, verify-full.
       # Refer to PostgreSQL SSL documentation for more details.
-      sslmode: "disable"
+      sslmode: 'disable'
       # Path to the server root certificate.
-      sslrootcert: "/path/to/server.crt"
+      sslrootcert: '/path/to/server.crt'
       # Path to the SSL certificate.
-      sslcert: "/path/to/client.crt"
+      sslcert: '/path/to/client.crt'
       # Path to the SSL key.
-      sslkey: "/path/to/client.key"
+      sslkey: '/path/to/client.key'
 
     h2:
       # Unless you know what you're doing, leave the options under h2 default.
       # Username for the H2 database.
-      username: "sa"
+      username: 'sa'
       # Password for the H2 database. The default is an empty string.
-      password: ""
+      password: ''
       # Maximum number of connections allowed to the database.
       # Do not change unless you know what you are doing.
       maxConnections: 50
@@ -124,8 +124,8 @@ settings:
   debug:
     # UUID or name of admins to send debug information to. https://mcuuid.net/
     admin:
-      - "c59ac6d2-4851-4183-a9f7-15d1a293eed6" # Ranull
-      - "069a79f4-44e9-4726-a5be-fca90e38aaf5" # Notch
+      - 'c59ac6d2-4851-4183-a9f7-15d1a293eed6' # Ranull
+      - '069a79f4-44e9-4726-a5be-fca90e38aaf5' # Notch
     # 0 = Nothing, 1 = Information, 2 = Failures
     level: 0
 

@@ -96,9 +96,9 @@ settings:
         head:
           # 0 = Player/Entity head, (1 = Custom texture or 2 = Player username set under name).
           type: 1
-          base64: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYjdjYWI1NmM4MmNiODFiZGI5OTc5YTQ2NGJjOWQzYmEzZTY3MjJiYTEyMmNmNmM1Mjg3MzAxMGEyYjU5YWVmZSJ9fX0="
+          base64: 'eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYjdjYWI1NmM4MmNiODFiZGI5OTc5YTQ2NGJjOWQzYmEzZTY3MjJiYTEyMmNmNmM1Mjg3MzAxMGEyYjU5YWVmZSJ9fX0='
           # If type is set to 2.
-          name: "MHF_Chest"
+          name: 'MHF_Chest'
 
       ############
       # Hologram #
@@ -119,9 +119,9 @@ settings:
           # Hologram offset Z.
           z: 0
         line:
-          - "&c%owner_name_display%'s &rGrave"
-          - "&r%item%&a♯&c/&r%level%&e♦ &c| %time_alive_remaining_formatted%"
-          - "&cDeath: &f%killer_name_display% &c☠"
+          - '&c%owner_name_display%''s &rGrave'
+          - '&r%item%&a♯&c/&r%level%&e♦ &c| %time_alive_remaining_formatted%'
+          - '&cDeath: &f%killer_name_display% &c☠'
 
       ##############
       # Protection #
@@ -146,9 +146,9 @@ settings:
             other: false
         state:
           # Message for protected graves.
-          protected: "&c✘"
+          protected: '&c✘'
           # Message for unprotected graves.
-          unprotected: "&a✔"
+          unprotected: '&a✔'
 
       #############
       # Graveyard #
@@ -203,7 +203,7 @@ settings:
         # How long should the entity be given a compass on respawn after the grave was first created.
         compass-time: 300
         # Should we run a function after respawning, you can use menu and list among the other functions.
-        function: "none"
+        function: 'none'
 
       ############
       # Particle #
@@ -212,15 +212,15 @@ settings:
         # Enable the particles feature.
         enabled: true
         # List for particles (Must be in caps) https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Particle.html
-        type: "ENCHANTMENT_TABLE"
+        type: 'ENCHANTMENT_TABLE'
         # Amount of particles.
         count: 4
         # Options Below Only applies to REDSTONE or DUST.
         dust-size: 4
         # Legacy Colors: https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Color.html
         # To use hex colors, just set to #rrggbb. This only works on 1.16 or newer where hex colors are supported.
-        dust-color: "RED"
-        # dust-color: "#FF0000"
+        dust-color: 'RED'
+        # dust-color: '#FF0000'
         offset:
           # Particle offset X.
           x: 0
@@ -235,7 +235,7 @@ settings:
       # Compass that points towards the closest location belonging to a grave, only supported on 1.16.2+.
       compass:
         # The function that gets run on right click.
-        function: "distance"
+        function: 'distance'
         # Ignore the compass if an entity dies with it, drop it normally.
         ignore: true
         # Should a previous compass be destroyed when creating a new grave.
@@ -243,14 +243,14 @@ settings:
         # Should the compass be a recovery compass, 1.19+ only. Older versions will fallback to a regular compass
         recovery: true
         # Name of the compass.
-        name: "%owner_name%'s Grave"
+        name: '%owner_name%''s Grave'
         # Should the compass glow.
         glow: true
         # Custom model data for the compass, -1 is none.
         model-data: -1
         # Lore of the compass.
         lore:
-          - "%world_formatted%, %x%x, %y%y, %z%z"
+          - '%world_formatted%, %x%x, %y%y, %z%z'
 
       ############
       # Obituary #
@@ -260,30 +260,30 @@ settings:
         # Should obituaries be enabled. Keep note that this will add an item to peoples inventories
         enabled: true
         # Title of the obituary.
-        title: "&c%owner_name%'s Obituary"
+        title: '&c%owner_name%''s Obituary'
         # Author of the obituary.
-        author: "%killer_name%"
+        author: '%killer_name%'
         # Should the obituary glow.
         glow: true
         # Custom model data, -1 is none.
         model-data: -1
         # Lines of the obituary.
         line:
-          - "         Obituary         "
-          - "-------------------"
-          - "  Name: %owner_name%"
-          - "  Cause: %killer_name%"
-          - "  Date: %time_creation_formatted%"
-          - "  Items: %item%"
-          - "  Exp: %experience%"
-          - "  Location:"
-          - "    World: %world_formatted%"
-          - "    X: %x%"
-          - "    Y: %y%"
-          - "    Z: %z%"
+          - '         Obituary         '
+          - '-------------------'
+          - '  Name: %owner_name%'
+          - '  Cause: %killer_name%'
+          - '  Date: %time_creation_formatted%'
+          - '  Items: %item%'
+          - '  Exp: %experience%'
+          - '  Location:'
+          - '    World: %world_formatted%'
+          - '    X: %x%'
+          - '    Y: %y%'
+          - '    Z: %z%'
         # Lore of the obituary.
         lore:
-          - "Date: %time_creation_formatted%"
+          - 'Date: %time_creation_formatted%'
 
       ########
       # Head #
@@ -297,10 +297,10 @@ settings:
         # Custom model data, -1 is none.
         model-data: -1
         # Name of the head.
-        name: "%owner_name%'s Head"
+        name: '%owner_name%''s Head'
         # Lore of the head.
         lore:
-          - "Killed by %killer_name%"
+          - 'Killed by %killer_name%'
 
       ##########
       # Zombie #
@@ -309,7 +309,7 @@ settings:
         # Valid Zombie Types. Must be in caps. https://hub.spigotmc.org/javadocs/spigot/org/bukkit/entity/LivingEntity.html
         type: ZOMBIE
         # Name of the zombie.
-        name: "%owner_name%'s Zombie"
+        name: '%owner_name%''s Zombie'
         # Should a grave spawn a zombie when it is looted by its owner.
         spawn-owner: false
         # Should a grave spawn a zombie if it is looted by another player.
@@ -335,7 +335,7 @@ settings:
         # Should graves require tokens for their creation.
         enabled: false
         # Name of the token defined in token.yml file.
-        name: "basic"
+        name: 'basic'
 
       ###########
       # Virtual #
@@ -397,7 +397,7 @@ settings:
         # Should FurnitureLib furniture be used.
         enabled: true
         # Object ID.
-        name: "Grave1"
+        name: 'Grave1'
         head:
           replace: true
           material:
@@ -407,8 +407,8 @@ settings:
             - ZOMBIE_HEAD
         # If the model contains a sign, this is the text we will apply to it.
         line:
-          - "%owner_name% Died"
-          - "By %killer_name%"
+          - '%owner_name% Died'
+          - 'By %killer_name%'
 
       ###################
       # FurnitureEngine #
@@ -418,41 +418,41 @@ settings:
         # Should FurnitureEngine furniture be used.
         enabled: false
         # Furniture name.
-        name: "grave"
+        name: 'grave'
 
       ##############
       # ItemsAdder #
       ##############
       # The option requires ItemsAdder, you must have this installed to use models.
-      # Graves automatically adds models into ItemsAdder, if you want to use it you will need to re-generate your pack and use "graves:grave" as the furniture name.
+      # Graves automatically adds models into ItemsAdder, if you want to use it you will need to re-generate your pack and use 'graves:grave' as the furniture name.
       itemsadder:
         furniture:
           # Should we use ItemsAdder furniture?
           enabled: true
           # Furniture name.
-          name: "graves:grave"
+          name: 'graves:grave'
         block:
           # Should we use ItemsAdder blocks?
           enabled: false
           # Block name.
-          name: "itemsadder:nice_stone"
+          name: 'itemsadder:nice_stone'
 
       ##########
       # Oraxen #
       ##########
       # The option requires Oraxen, you must have this installed to use models.
-      # Graves automatically adds models into Oraxen, if you want to use it you will need to re-generate your pack and use "grave" as the furniture name.
+      # Graves automatically adds models into Oraxen, if you want to use it you will need to re-generate your pack and use 'grave' as the furniture name.
       oraxen:
         furniture:
           # Should we use Oraxen furniture?
           enabled: false
           # Block name.
-          name: "grave"
+          name: 'grave'
         block:
           # Should we use Oraxen blocks?
           enabled: false
           # Block name.
-          name: "caveblock"
+          name: 'caveblock'
 
       #############
       # PlayerNPC #
@@ -463,7 +463,7 @@ settings:
           # Should we create a corpse?
           enabled: false
           # What pose should the entity use? https://sergiferry.github.io/PlayerNPC/dev/sergiferry/playernpc/api/NPC.Pose.html
-          pose: "SLEEPING"
+          pose: 'SLEEPING'
           # Corpse offset X.
           offset:
             x: 0
@@ -493,7 +493,7 @@ settings:
           # Should we create a corpse?
           enabled: false
           # What pose should the entity use? https://jd.citizensnpcs.co/net/citizensnpcs/util/PlayerAnimation.html
-          pose: "SLEEP"
+          pose: 'SLEEP'
           # Corpse offset X.
           offset:
             x: 0
@@ -522,7 +522,7 @@ settings:
         # Should schematics be enabled.
         enabled: false
         # Schematic file name.
-        name: "grave_default"
+        name: 'grave_default'
         # Schematic offset X.
         offset:
           x: 0
@@ -559,40 +559,40 @@ settings:
         command:
           loot:
             # Commands to run when looting a grave.
-            - ""
-            #- "say %interact_name% looted %owner_name%'s grave"
+            - ''
+            #- 'say %interact_name% looted %owner_name%'s grave'
           create:
             # Commands to run when creating a grave.
-            - ""
-            #- "say %owner_name% was killed by %killer_name% at %x%x %y%y %z%z, grave lasts for %time_alive_remaining_formatted%."
+            - ''
+            #- 'say %owner_name% was killed by %killer_name% at %x%x %y%y %z%z, grave lasts for %time_alive_remaining_formatted%.'
           block:
             # Commands to run when placing a grave block.
-            - ""
-            #- "say %owner_name% grave block placed at %x%x %y%y %z%z."
+            - ''
+            #- 'say %owner_name% grave block placed at %x%x %y%y %z%z.'
           open:
             # Commands to run when opening a grave.
-            - ""
-            #- "say %interact_name% is looting %owner_name%'s grave."
+            - ''
+            #- 'say %interact_name% is looting %owner_name%'s grave.'
           break:
             # Commands to run when breaking a grave.
-            - ""
-            #- "say %interact_name% broke %owner_name%'s grave."
+            - ''
+            #- 'say %interact_name% broke %owner_name%'s grave.'
           explode:
             # Commands to run when a grave explodes.
-            - ""
-            #- "say %interact_name% exploded %owner_name%'s grave."
+            - ''
+            #- 'say %interact_name% exploded %owner_name%'s grave.'
           teleport:
             # Commands to run when teleporting to a grave.
-            - ""
-            #- "say %interact_name% teleported to %owner_name%'s grave."
+            - ''
+            #- 'say %interact_name% teleported to %owner_name%'s grave.'
           autoloot:
             # Commands to run when auto-looting a grave.
-            - ""
-            #- "say %interact_name% auto looted %owner_name%'s grave."
+            - ''
+            #- 'say %interact_name% auto looted %owner_name%'s grave.'
           zombiespawn:
             # Commands to run when zombies spawn at a grave.
-            - ""
-            #- "say %interact_name% made zombies spawn at %owner_name%'s grave."
+            - ''
+            #- 'say %interact_name% made zombies spawn at %owner_name%'s grave.'
 
       ##########
       # Ignore #
@@ -602,28 +602,28 @@ settings:
         item:
           # Items that graves will ignore by material.
           material:
-            - ""
+            - ''
             #- BEDROCK  # https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Material.html
           # Items that graves will ignore by exact name.
           name:
-            - ""
-            #- "&4Admin Sword"
+            - ''
+            #- '&4Admin Sword'
           # Items that graves will ignore by exact lore.
           lore:
-            - ""
-            #- "Soulbound"
+            - ''
+            #- 'Soulbound'
           # Items that graves will ignore if the name contains this string.
           name-contains:
-            - ""
-            #- "Super Pickaxe"
+            - ''
+            #- 'Super Pickaxe'
           # Items that graves will ignore if the lore contains this string.
           lore-contains:
-            - ""
-            #- "Ignore Lore"
+            - ''
+            #- 'Ignore Lore'
         block:
           # Blocks that graves will not spawn in.
           material:
-            - ""
+            - ''
             #- LAVA
 
       #########
@@ -719,78 +719,78 @@ settings:
       # Messages and formats for various interactions and events.
       message:
         # Prefix for messages.
-        prefix: "&c☠ &8» &r"
+        prefix: '&c☠ &8» &r'
         # Messages for different interactions.
-        loot: ""
-        experience: "Looted &c%level% &rlevels from grave."
-        empty: "You don't have any graves."
-        death: "You were killed in &c%world_formatted% &rby &c%killer_name%&r."
-        block: "Grave created at &c%x%&rx, &c%y%&ry, &c%z%&rz in &c%world_formatted%&r."
-        permission: "You don't have permission to create a grave here."
-        cost: "Creating a grave costs &c%cost%&r."
-        no-token: "A grave was not created because you didn't have a grave token."
-        give-token: "You were given a Grave Token."
-        distance: "You are &c%distance% &rblocks away."
-        distance-world: "Can't measure distance, wrong world."
-        teleport: "You teleported to your grave."
-        teleport-top: "Grave is in an unsafe location, you have been teleported nearby."
-        teleport-failure: "Teleport failed, teleport location is unsafe."
-        teleport-disabled: "Grave teleportation is disabled."
-        build-denied: "A grave was not created because you don't have permission to build where you died."
-        distance-virtual: "You are too far away to virtually open this grave."
-        permission-denied: "Permission denied."
-        protection: "This grave is protected for %time_protection_remaining_formatted%."
-        region-create-deny: "A grave was not created because grave creation is disabled in this region."
-        region-teleport-deny: "Grave teleportation is disabled in this region."
+        loot: ''
+        experience: 'Looted &c%level% &rlevels from grave.'
+        empty: 'You don''t have any graves.'
+        death: 'You were killed in &c%world_formatted% &rby &c%killer_name%&r.'
+        block: 'Grave created at &c%x%&rx, &c%y%&ry, &c%z%&rz in &c%world_formatted%&r.'
+        permission: 'You don''t have permission to create a grave here.'
+        cost: 'Creating a grave costs &c%cost%&r.'
+        no-token: 'A grave was not created because you didn''t have a grave token.'
+        give-token: 'You were given a Grave Token.'
+        distance: 'You are &c%distance% &rblocks away.'
+        distance-world: 'Can''t measure distance, wrong world.'
+        teleport: 'You teleported to your grave.'
+        teleport-top: 'Grave is in an unsafe location, you have been teleported nearby.'
+        teleport-failure: 'Teleport failed, teleport location is unsafe.'
+        teleport-disabled: 'Grave teleportation is disabled.'
+        build-denied: 'A grave was not created because you don''t have permission to build where you died.'
+        distance-virtual: 'You are too far away to virtually open this grave.'
+        permission-denied: 'Permission denied.'
+        protection: 'This grave is protected for %time_protection_remaining_formatted%.'
+        region-create-deny: 'A grave was not created because grave creation is disabled in this region.'
+        region-teleport-deny: 'Grave teleportation is disabled in this region.'
 
         world:
           # World names formatting.
-          world: "Overworld"
-          world_nether: "Nether"
-          world_the_end: "The End"
+          world: 'Overworld'
+          world_nether: 'Nether'
+          world_the_end: 'The End'
 
         death-reason:
           # Death reasons mapping.
-          ENTITY_ATTACK: "Attacked"
-          ENTITY_SWEEP_ATTACK: "Sweep Attacked"
-          PROJECTILE: "Projectile Struck"
-          SUFFOCATION: "Suffocated"
-          FALL: "Fell"
-          FIRE: "Burned"
-          FIRE_TICK: "Burned"
-          MELTING: "Melted"
-          LAVA: "Burned"
-          DROWNING: "Drowned"
-          BLOCK_EXPLOSION: "Exploded"
-          ENTITY_EXPLOSION: "Exploded"
-          VOID: "Voided"
-          LIGHTNING: "Zeus"
-          SUICIDE: "Suicide"
-          STARVATION: "Starved"
-          POISON: "Poisoned"
-          MAGIC: "Magic Missile"
-          WITHER: "Withered Away"
-          FALLING_BLOCK: "Crushed"
-          THORNS: "Thorned"
-          DRAGON_BREATH: "Dragon Breath"
-          CUSTOM: "Dark Magic"
-          FLY_INTO_WALL: "Splat"
-          HOT_FLOOR: "Burned Feet"
-          CRAMMING: "Crushed"
-          DRYOUT: "Dried Out"
-          FREEZE: "Froze"
+          ENTITY_ATTACK: 'Attacked'
+          ENTITY_SWEEP_ATTACK: 'Sweep Attacked'
+          PROJECTILE: 'Projectile Struck'
+          SUFFOCATION: 'Suffocated'
+          FALL: 'Fell'
+          FIRE: 'Burned'
+          FIRE_TICK: 'Burned'
+          MELTING: 'Melted'
+          LAVA: 'Burned'
+          DROWNING: 'Drowned'
+          BLOCK_EXPLOSION: 'Exploded'
+          ENTITY_EXPLOSION: 'Exploded'
+          VOID: 'Voided'
+          LIGHTNING: 'Zeus'
+          SUICIDE: 'Suicide'
+          STARVATION: 'Starved'
+          POISON: 'Poisoned'
+          MAGIC: 'Magic Missile'
+          WITHER: 'Withered Away'
+          FALLING_BLOCK: 'Crushed'
+          THORNS: 'Thorned'
+          DRAGON_BREATH: 'Dragon Breath'
+          CUSTOM: 'Dark Magic'
+          FLY_INTO_WALL: 'Splat'
+          HOT_FLOOR: 'Burned Feet'
+          CRAMMING: 'Crushed'
+          DRYOUT: 'Dried Out'
+          FREEZE: 'Froze'
 
       ########
       # Time #
       ########
       # Time formatting for various durations.
       time:
-        second: "&c%second%&fs "
-        minute: "&c%minute%&fm "
-        hour: "&c%hour%&fh "
-        day: "&c%day%&fd "
-        infinite: "&cForever"
-        date: "dd-MM-yyyy"
+        second: '&c%second%&fs '
+        minute: '&c%minute%&fm '
+        hour: '&c%hour%&fh '
+        day: '&c%day%&fd '
+        infinite: '&cForever'
+        date: 'dd-MM-yyyy'
 
       #######
       # GUI #
@@ -799,7 +799,7 @@ settings:
       gui:
         grave:
           # Title of the grave GUI.
-          title: "%owner_name%'s Grave"
+          title: '%owner_name%''s Grave'
 
         menu:
           list:
@@ -808,68 +808,68 @@ settings:
               block: true
               material: CHEST
             # Title for the grave list menu.
-            title: "Grave List"
-            function: "menu"
-            name: "Grave"
+            title: 'Grave List'
+            function: 'menu'
+            name: 'Grave'
             glow: false
             model-data: -1
-            empty: "You don't have any graves."
+            empty: 'You don''t have any graves.'
             lore:
-              - "Created &f%time_lived_formatted% &cago"
+              - 'Created &f%time_lived_formatted% &cago'
 
           grave:
             # Title for the individual grave menu.
-            title: "Grave"
+            title: 'Grave'
             slot:
               0:
-                material: "PAPER"
-                function: "distance"
-                name: "Information"
+                material: 'PAPER'
+                function: 'distance'
+                name: 'Information'
                 glow: false
                 model-data: -1
                 lore:
-                  - "Items: &f%item%"
-                  - "Levels: &f%level%"
-                  - "Death Location: &f%world_formatted%, %x%x, %y%y, %z%z"
+                  - 'Items: &f%item%'
+                  - 'Levels: &f%level%'
+                  - 'Death Location: &f%world_formatted%, %x%x, %y%y, %z%z'
 
               1:
-                material: "ENDER_PEARL"
-                function: "teleportation"
-                name: "Teleport"
+                material: 'ENDER_PEARL'
+                function: 'teleportation'
+                name: 'Teleport'
                 glow: false
                 model-data: -1
                 lore:
-                  - "Teleport to your grave"
+                  - 'Teleport to your grave'
 
               #2: # Toggle protection on and off.
-              #  material: "TRIPWIRE_HOOK"
-              #  function: "protection"
-              #  name: "Toggle Protection %state_protection%"
+              #  material: 'TRIPWIRE_HOOK'
+              #  function: 'protection'
+              #  name: 'Toggle Protection %state_protection%'
               #  glow: false
               #  model-data: -1
               #  lore:
-              #    - "Toggle grave protection"
+              #    - 'Toggle grave protection'
 
               #3: # Open your grave remotely.
-              #  material: "CHEST"
-              #  function: "virtual"
-              #  name: "open grave"
+              #  material: 'CHEST'
+              #  function: 'virtual'
+              #  name: 'open grave'
               #  glow: false
               #  model-data: -1
               #  lore:
-              #    - "Open your grave remotely"
+              #    - 'Open your grave remotely'
 
           graveyard:
             # Title for the graveyard menu.
-            title: "Graveyards"
+            title: 'Graveyards'
             slot:
               0:
-                material: "PAPER"
-                function: "distance"
-                name: "Information"
+                material: 'PAPER'
+                function: 'distance'
+                name: 'Information'
                 glow: false
                 model-data: -1
                 lore:
-                  - "Items: &f%item%"
-                  - "Levels: &f%level%"
-                  - "Death Location: &f%world_formatted%, %x%x, %y%y, %z%z"
+                  - 'Items: &f%item%'
+                  - 'Levels: &f%level%'
+                  - 'Death Location: &f%world_formatted%, %x%x, %y%y, %z%z'
