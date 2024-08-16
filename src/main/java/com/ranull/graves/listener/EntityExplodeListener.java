@@ -85,7 +85,7 @@ public class EntityExplodeListener implements Listener {
      * @return True if the grave should explode, false otherwise.
      */
     private boolean shouldExplode(Grave grave) {
-        return plugin.getConfig("explode", grave).getBoolean("explode");
+        return plugin.getConfig("grave.explode", grave).getBoolean("grave.explode");
     }
 
     /**
@@ -98,7 +98,7 @@ public class EntityExplodeListener implements Listener {
      * @param location  The location of the grave.
      */
     private void handleGraveExplosion(EntityExplodeEvent event, Iterator<Block> iterator, Block block, Grave grave, Location location) {
-        GraveExplodeEvent graveExplodeEvent = new GraveExplodeEvent(location, null, grave);
+        GraveExplodeEvent graveExplodeEvent = new GraveExplodeEvent(location, event.getEntity(), grave);
         plugin.getServer().getPluginManager().callEvent(graveExplodeEvent);
 
         if (!graveExplodeEvent.isCancelled()) {
@@ -110,7 +110,7 @@ public class EntityExplodeListener implements Listener {
 
             plugin.getGraveManager().closeGrave(grave);
             plugin.getGraveManager().playEffect("effect.loot", location, grave);
-            plugin.getEntityManager().runCommands("event.command.explode", block.getType().name(), location, grave);
+            plugin.getEntityManager().runCommands("event.command.explode", event.getEntity(), location, grave);
 
             if (plugin.getConfig("zombie.explode", grave).getBoolean("zombie.explode")) {
                 plugin.getEntityManager().spawnZombie(location, grave);
