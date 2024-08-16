@@ -52,7 +52,7 @@ public class EntityChangeListener implements Listener {
                 Location graveLocation = plugin.getGraveManager().getGraveLocation(block.getLocation(), grave);
                 if (graveLocation != null) {
                     double distance = location.distance(graveLocation);
-                    if (distance <= plugin.getConfig("grave.protection-radius", grave).getInt("grave.protection-radius")) {
+                    if (plugin.getConfig("grave.protection-radius", grave).getInt("grave.protection-radius") != 0 && distance <= plugin.getConfig("grave.protection-radius", grave).getInt("grave.protection-radius")) {
                         return true;
                     }
                 }
