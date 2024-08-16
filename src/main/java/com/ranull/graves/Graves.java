@@ -357,7 +357,7 @@ public class Graves extends JavaPlugin {
         // Load the main config file to check the version
         File mainConfigFile = new File(configFolder, "config.yml");
         FileConfiguration mainConfig = YamlConfiguration.loadConfiguration(mainConfigFile);
-        double configVersion = mainConfig.getDouble("config-version", 0);
+        int configVersion = mainConfig.getInt("config-version", 0);
 
         if (configVersion < currentConfigVersion) {
             // Create the outdated folder if it doesn't exist
@@ -407,21 +407,21 @@ public class Graves extends JavaPlugin {
         File configFile = new File(getDataFolder(), "config/" + fileName);
         if (configFile.exists()) {
             try {
-                // Use the resource name matching the file name in the JAR
+                // Use ConfigUpdater to update the file
                 String resourceName = "config/" + fileName;
                 InputStream resourceStream = getResource(resourceName);
 
                 if (resourceStream == null) {
-                    getLogger().severe("Resource " + resourceName + " not found in the JAR.");
+                    getLogger().warning("Resource " + resourceName + " not found in the JAR.");
                     return;
                 }
 
-                // Update the configuration file using ConfigUpdater without ignored sections
+                // Update configuration
                 ConfigUpdater.update(
-                        this, // Pass the plugin instance
-                        resourceName,
-                        configFile,
-                        Arrays.asList() // Pass an empty list if you do not need to ignore sections
+                        this,                   // Pass the plugin instance
+                        resourceName,           // Resource name in JAR
+                        configFile,             // File to update
+                        Collections.emptyList() // Empty list if no sections to ignore
                 );
 
                 if (shouldUpdateConfigVersion) {
