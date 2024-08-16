@@ -483,6 +483,12 @@ public final class VersionManager {
         return toReturn;
     }
 
+    /**
+     * Retrieves the appropriate enchantment type for the given version.
+     *
+     * @param material The enchantment name.
+     * @return The Material enum corresponding to the given material name.
+     */
     public Material getMaterialForVersion(String material) {
         Material toReturn = null;
         switch (material) {
