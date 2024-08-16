@@ -150,14 +150,18 @@ public class BlockBreakListener implements Listener {
      * @return True if the location is within 15 blocks of any grave, false otherwise.
      */
     private boolean isNearGrave(Location location, Player player) {
-        for (Grave grave : plugin.getCacheManager().getGraveMap().values()) {
-            Location graveLocation = plugin.getGraveManager().getGraveLocation(player.getLocation(), grave);
-            if (graveLocation != null) {
-                double distance = location.distance(graveLocation);
-                if (distance <= 15) {
-                    return true;
+        try {
+            for (Grave grave : plugin.getCacheManager().getGraveMap().values()) {
+                Location graveLocation = plugin.getGraveManager().getGraveLocation(player.getLocation(), grave);
+                if (graveLocation != null) {
+                    double distance = location.distance(graveLocation);
+                    if (distance <= 15) {
+                        return true;
+                    }
                 }
             }
+        } catch (IllegalArgumentException ignored) {
+            // Assuming grave is in another world
         }
         return false;
     }
