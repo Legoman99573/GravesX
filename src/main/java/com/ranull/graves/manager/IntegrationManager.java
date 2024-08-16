@@ -1218,6 +1218,13 @@ public final class IntegrationManager {
                 plugin.compatibilityMessage(deluxeCombatPlugin.getName() + " Detected, in order to work with graves you need to set disable-drop-handling to true in " + deluxeCombatPlugin.getName() + "'s data.yml file.");
             }
 
+            try {
+                Class.forName("ru.xezard.items.remover.ItemsRemoverPlugin");
+                plugin.compatibilityMessage("XItemsRemover Detected. Plugin is known to leave [pdd] lore on all items. It is best to not modify plugin.yml to remove the loadsbefore option.");
+            } catch (ClassNotFoundException ignore) {
+                // ignore
+            }
+
             checkForPluginManagers(); // Plugin Manager Jumpscare
 
             similarPluginWarning("DeadChest");
@@ -1256,6 +1263,7 @@ public final class IntegrationManager {
         if (detectedPlugins.length() > 0) {
             // Let owner know they are running a plugin manager
             plugin.getLogger().warning("Detected server is running a Plugin Manager based plugin: " + detectedPlugins);
+            plugin.getLogger().warning("No support will be given if you use one of these plugins.");
         }
     }
 

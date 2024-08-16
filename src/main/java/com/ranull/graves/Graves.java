@@ -324,11 +324,11 @@ public class Graves extends JavaPlugin {
     }
 
     public void warningMessage(String string) {
-        getLogger().info("Warning: " + string);
+        getLogger().warning("Warning: " + string);
     }
 
     public void compatibilityMessage(String string) {
-        getLogger().info("Compatibility: " + string);
+        getLogger().severe("Compatibility: " + string);
     }
 
     public void infoMessage(String string) {
