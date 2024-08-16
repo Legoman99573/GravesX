@@ -172,7 +172,7 @@ public class PlayerMoveListener implements Listener {
                             Grave grave = plugin.getCacheManager().getGraveMap().get(graveUUID);
                             if (grave != null && location.getWorld() != null) {
                                 Location graveLocation = plugin.getGraveManager().getGraveLocation(player.getLocation(), grave);
-                                if (graveLocation != null && location.distance(graveLocation) <= 15) {
+                                if (graveLocation != null && location.distance(graveLocation) <= plugin.getConfig("grave.protection-radius", grave).getInt("grave.protection-radius")) {
                                     // Remove the specific item from the inventory
                                     inventory.remove(item);
                                 }

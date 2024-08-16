@@ -8,49 +8,51 @@ settings:
       #########
       # Grave #
       #########
-      # (Second) How long graves should stay alive for, 300 = 5 minutes, 10800 = 3 hours, -1 lasts forever.
-      # The max amount of graves an entity can have.
-      # Can graves be broken.
-      # Can graves be blown up.
       grave:
+        # (Second) How long graves should stay alive for, 300 = 5 minutes, 10800 = 3 hours, -1 lasts forever.
         time: 10800
+        # The max amount of graves an entity can have.
         max: 18
+        # Can graves be broken.
         break: true
+        # Can graves be blown up.
         explode: false
+        # The radius a grave may be protected. Setting to less than 2 could allow floating blocks when looted. Best to keep it at least more than two
+        protection-radius: 15
 
       #############
       # Placement #
       #############
-      # Only create graves where the entity can build, should work with all protection plugins.
-      # Only create graves where the entity can build, (According to ProtectionLib).
-      # If the entity dies in the air should the grave fall to the ground.
-      # If the entity dies in the void, should it place a grave in the air if it can't find anywhere else.
-      # If the entity dies in lava should the grave it floats to the top.
-      # If the entity dies in the void, try place the grave on the last solid block they stood on. (Only works for players)
-      # If the entity dies in lava, try place the grave on the last solid block they stood on. (Only works for players)
-      # If a grave tries is trying to be created and can't find a valid location should the player keep their inventory.
-      # Placement offset X, this will affect all other offsets.
-      # Placement offset Y, this will affect all other offsets.
-      # Placement offset Z, this will affect all other offsets.
       placement:
+        # Only create graves where the entity can build, should work with all protection plugins.
         can-build: false
+        # Only create graves where the entity can build, (According to ProtectionLib).
         can-build-protectionlib: false
+        # If the entity dies in the air should the grave fall to the ground.
         ground: true
+        # If the entity dies in the void, should it place a grave in the air if it can't find anywhere else.
         void: true
+        # If the entity dies in lava should the grave it floats to the top.
         lava-top: true
+        # If the entity dies in the void, should it place a grave in the air if it can't find anywhere else.
         void-smart: true
+        # If the entity dies in lava, try place the grave on the last solid block they stood on. (Only works for players)
         lava-smart: true
+        # If a grave tries is trying to be created and can't find a valid location should the player keep their inventory.
         failure-keep-inventory: true
         offset:
+          # Placement offset X, this will affect all other offsets.
           x: 0
+          # Placement offset Y, this will affect all other offsets.
           y: 0
+          # Placement offset Z, this will affect all other offsets.
           z: 0
 
       #########
       # World #
       #########
-      # What worlds will a grave will spawn in.
       world:
+        # What worlds will a grave will spawn in. ALL will allow all worlds
         #- world
         #- world_nether
         #- world_the_end
@@ -59,62 +61,62 @@ settings:
       ########
       # Drop #
       #########
-      # Should a grave drop its contents when destroyed for the following reasons.
-      # If broken by a player, should we try to autoloot the grave's contents.
-      # If not all items can be picked up when auto-looting a grave, should we break the grave anyway and drop them on the ground.
-      # When a grave times out drop everything in it. If false it gets destroyed.
-      # When a grave explodes drop everything in it. If false it gets destroyed.
-      # When a grave is broken drop everything in it. If false it gets destroyed.
       drop:
+        # Should a grave drop its contents when destroyed for the following reasons.
         auto-loot:
+          # If broken by a player, should we try to autoloot the grave's contents.
           enabled: false
+          # If not all items can be picked up when auto-looting a grave, should we break the grave anyway and drop them on the ground.
           break: true
+        # When a grave times out drop everything in it. If false it gets destroyed.
         timeout: false
+        # When a grave explodes drop everything in it. If false it gets destroyed.
         explode: true
+        # When a grave is broken drop everything in it. If false it gets destroyed.
         break: true
 
       #########
       # Block #
       #########
       # Block options, this can be disabled if you only want holograms.
-      # Should grave blocks be enabled.
-      # Material: PLAYER_HEAD, CHEST, BEACON.
-      # Should graves be looted if the block is walked over.
-      # Block offset X.
-      # Block offset Y.
-      # Block offset Z.
-      # 0 = Player/Entity head, (1 = Custom texture or 2 = Player username set under name).
-      # If type is set to 2.
       block:
+        # Should grave blocks be enabled.
         enabled: true
+        # Material: PLAYER_HEAD, CHEST, BEACON.
         material: PLAYER_HEAD
+        # Should graves be looted if the block is walked over.
         walk-over: false
         offset:
+          # Block offset X.
           x: 0
+          # Block offset Y.
           y: 0
+          # Block offset Z.
           z: 0
         head:
+          # 0 = Player/Entity head, (1 = Custom texture or 2 = Player username set under name).
           type: 1
           base64: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYjdjYWI1NmM4MmNiODFiZGI5OTc5YTQ2NGJjOWQzYmEzZTY3MjJiYTEyMmNmNmM1Mjg3MzAxMGEyYjU5YWVmZSJ9fX0="
+          # If type is set to 2.
           name: "MHF_Chest"
 
       ############
       # Hologram #
       ############
       # If you are running PaperMC you can set armor-stands-tick to false for improved performance without impacting any functionality.
-      # Should holograms be created.
-      # Should the hologram be a marker, you can't interact with markers.
-      # How far apart should holograms be from each-other.
-      # Hologram offset X.
-      # Hologram offset Y.
-      # Hologram offset Z.
       hologram:
+        # Should holograms be created.
         enabled: true
+        # Should the hologram be a marker, you can't interact with markers.
         marker: true
+        # How far apart should holograms be from each-other.
         height-line: 0.28
         offset:
+          # Hologram offset X.
           x: 0
+          # Hologram offset Y.
           y: -0.28
+          # Hologram offset Z.
           z: 0
         line:
           - "&c%owner_name_display%'s &rGrave"
@@ -125,64 +127,64 @@ settings:
       # Protection #
       ##############
       # Protection options, protect graves from players, this does not protect from explosions, look for grave: explode: to disable this.
-      # Enable the grave protection feature.
-      # Seconds, 300 = 5 minutes. Set to -1 to always stay locked.
-      # Can the owner open the owner's grave.
-      # Can the killer open the owner's grave.
-      # Can other entities open the owner's grave.
-      # If a killer can't be found should the owner be allowed to open the grave.
-      # If a killer can't be found should everyone be allowed to open the grave.
-      # Message for protected graves.
-      # Message for unprotected graves.
       protection:
+        # Enable the grave protection feature.
         enabled: false
+        # Seconds, 300 = 5 minutes. Set to -1 to always stay locked.
         time: 300
         open:
+          # Can the owner open the owner's grave.
           owner: true
+          # Can the killer open the owner's grave.
           killer: true
+          # Can other entities open the owner's grave.
           other: false
           missing:
+            # If a killer can't be found should the owner be allowed to open the grave.
             owner: true
+            # If a killer can't be found should everyone be allowed to open the grave.
             other: false
         state:
+          # Message for protected graves.
           protected: "&c✘"
+          # Message for unprotected graves.
           unprotected: "&a✔"
 
       #############
       # Graveyard #
       #############
-      # Enable the graveyard feature.
-      # If a suitable graveyard is found, should we still spawn the grave where the entity died.
       graveyard:
+        # Enable the graveyard feature.
         enabled: true
+        # If a suitable graveyard is found, should we still spawn the grave where the entity died.
         death: false
 
       ############
       # Teleport #
       ############
       # Teleportation options.
-      # Can the entity teleport to their grave from the Graves GUI.
-      # How much it costs to teleport to a grave, you need Vault for this.
-      # Extra cost added on top of cost if the grave is in a different world.
-      # Increase the price the further away the grave is.
-      # Should entities be allowed to always teleport to a grave even if unsafe.
-      # If the grave is in an unsafe location, should the entity be teleported to the top.
       teleport:
+        # Can the entity teleport to their grave from the Graves GUI.
         enabled: true
+        # How much it costs to teleport to a grave, you need Vault for this.
         cost: 5
+        # Extra cost added on top of cost if the grave is in a different world.
         cost-different-world: 20
+        # Increase the price the further away the grave is.
         cost-distance-increase: true
+        # Should entities be allowed to always teleport to a grave even if unsafe.
         unsafe: false
+        # If the grave is in an unsafe location, should the entity be teleported to the top.
         top: true
 
       ###########
       # Storage #
       ###########
       # How the items are saved in graves.
-      # COMPACT - stacks all items and puts them into a small as possible inventory
-      # EXACT - matches the player's inventory exactly.
-      # CHESTSORT - Automatically sorts all items in graves in a neat fashion. This will not have the same behavior as EXACT. Acts more like COMPACT, but sorts it all if needed. (ChestSort must be installed)
       storage:
+        # COMPACT - stacks all items and puts them into a small as possible inventory
+        # EXACT - matches the player's inventory exactly.
+        # CHESTSORT - Automatically sorts all items in graves in a neat fashion. This will not have the same behavior as EXACT. Acts more like COMPACT, but sorts it all if needed. (ChestSort must be installed)
         mode: COMPACT
 
       ##############
@@ -195,77 +197,77 @@ settings:
       ###########
       # Respawn #
       ###########
-      # Should entities be given a compass to their last grave when they respawn. (Only works for players)
-      # How long should the entity be given a compass on respawn after the grave was first created.
-      # Should we run a function after respawning, you can use menu and list among the other functions.
       respawn:
+        # Should entities be given a compass to their last grave when they respawn. (Only works for players)
         compass: true
+        # How long should the entity be given a compass on respawn after the grave was first created.
         compass-time: 300
+        # Should we run a function after respawning, you can use menu and list among the other functions.
         function: "none"
 
       ############
       # Particle #
       ############
-      # Enable the particles feature.
-      # https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Particle.html
-      # Amount of particles.
-      # Only applies to REDSTONE.
-      # Legacy Colors: https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Color.html
-      # To use hex colors, just set to #rrggbb. This only works on 1.16 or newer where hex colors are supported.
-      # Particle offset X.
-      # Particle offset Y.
-      # Particle offset Z.
       particle:
+        # Enable the particles feature.
         enabled: true
+        # List for particles (Must be in caps) https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Particle.html
         type: "ENCHANTMENT_TABLE"
+        # Amount of particles.
         count: 4
+        # Options Below Only applies to REDSTONE or DUST.
         dust-size: 4
+        # Legacy Colors: https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Color.html
+        # To use hex colors, just set to #rrggbb. This only works on 1.16 or newer where hex colors are supported.
         dust-color: "RED"
+        # dust-color: "#FF0000"
         offset:
+          # Particle offset X.
           x: 0
+          # Particle offset Y.
           y: 0
+          # Particle offset Z.
           z: 0
 
       ###########
       # Compass #
       ###########
       # Compass that points towards the closest location belonging to a grave, only supported on 1.16.2+.
-      # The function that gets run on right click.
-      # Ignore the compass if an entity dies with it, drop it normally.
-      # Should a previous compass be destroyed when creating a new grave.
-      # Should the compass be a recovery compass, 1.19+ only.
-      # Name of the compass.
-      # Should the compass glow.
-      # Custom model data for the compass, -1 is none.
-      # Lore of the compass.
       compass:
+        # The function that gets run on right click.
         function: "distance"
+        # Ignore the compass if an entity dies with it, drop it normally.
         ignore: true
+        # Should a previous compass be destroyed when creating a new grave.
         destroy: true
+        # Should the compass be a recovery compass, 1.19+ only. Older versions will fallback to a regular compass
         recovery: true
+        # Name of the compass.
         name: "%owner_name%'s Grave"
+        # Should the compass glow.
         glow: true
+        # Custom model data for the compass, -1 is none.
         model-data: -1
+        # Lore of the compass.
         lore:
           - "%world_formatted%, %x%x, %y%y, %z%z"
 
       ############
       # Obituary #
       ############
-      # Put an obituary for the entity in the grave.
-      # Should obituaries be enabled.
-      # Title of the obituary.
-      # Author of the obituary.
-      # Should the obituary glow.
-      # Custom model data, -1 is none.
-      # Lines of the obituary.
-      # Lore of the obituary.
+      # Puts an obituary for an entity in the grave.
       obituary:
+        # Should obituaries be enabled. Keep note that this will add an item to peoples inventories
         enabled: true
+        # Title of the obituary.
         title: "&c%owner_name%'s Obituary"
+        # Author of the obituary.
         author: "%killer_name%"
+        # Should the obituary glow.
         glow: true
+        # Custom model data, -1 is none.
         model-data: -1
+        # Lines of the obituary.
         line:
           - "         Obituary         "
           - "-------------------"
@@ -279,6 +281,7 @@ settings:
           - "    X: %x%"
           - "    Y: %y%"
           - "    Z: %z%"
+        # Lore of the obituary.
         lore:
           - "Date: %time_creation_formatted%"
 
@@ -286,41 +289,42 @@ settings:
       # Head #
       ########
       # Drop a head belonging to the grave owner.
-      # Chance a head should be created, 0.2 = 20%, 1 = 100%, 0 = 0%.
-      # Custom model data, -1 is none.
-      # Name of the head.
-      # Lore of the head.
       head:
+        # Should heads be enabled?
         enabled: false
+        # Chance a head should be created, 0.2 = 20%, 1 = 100%, 0 = 0%.
         percent: 0.2
+        # Custom model data, -1 is none.
         model-data: -1
+        # Name of the head.
         name: "%owner_name%'s Head"
+        # Lore of the head.
         lore:
           - "Killed by %killer_name%"
 
       ##########
       # Zombie #
       ##########
-      # https://hub.spigotmc.org/javadocs/spigot/org/bukkit/entity/LivingEntity.html(
-      # Name of the zombie.
-      # Should a grave spawn a zombie when it is looted by its owner.
-      # Should a grave spawn a zombie if it is looted by another player.
-      # Should a zombie only spawn if the player broke the grave not open it.
-      # Should a grave spawn a zombie if it is blown up, this only works if the grave can be blown up.
-      # Will the zombie have the owner's head on.
-      # How much health the zombie has.
-      # Can the zombie pick up dropped items.
-      # Do grave zombies drop items, this may include the head it is wearing.
       zombie:
+        # Valid Zombie Types. Must be in caps. https://hub.spigotmc.org/javadocs/spigot/org/bukkit/entity/LivingEntity.html
         type: ZOMBIE
+        # Name of the zombie.
         name: "%owner_name%'s Zombie"
+        # Should a grave spawn a zombie when it is looted by its owner.
         spawn-owner: false
+        # Should a grave spawn a zombie if it is looted by another player.
         spawn-other: true
+        # Should a zombie only spawn if the player broke the grave not open it.
         only-break: false
+        # Should a grave spawn a zombie if it is blown up, this only works if the grave can be blown up.
         explode: false
+        # Will the zombie have the owner's head on.
         owner-head: true
+        # How much health the zombie has.
         health: 20
+        # Can the zombie pick up dropped items.
         pickup: false
+        # Do grave zombies drop items, this may include the head it is wearing.
         drop: false
 
       #########
@@ -358,12 +362,12 @@ settings:
         marker: false
         # Should the armor stand be small.
         small: false
-        # Armor Stand offset X.
-        # Armor Stand offset Y.
-        # Armor Stand offset Z.
         offset:
+          # Armor Stand offset X.
           x: 0
+          # Armor Stand offset Y.
           y: 0
+          # Armor Stand offset Z.
           z: 0
 
       ###############
@@ -377,12 +381,12 @@ settings:
         material: PAPER
         # Custom model data, -1 is none.
         model-data: -1
-        # Item Frame offset X.
-        # Item Frame offset Y.
-        # Item Frame offset Z.
         offset:
+          # Item Frame offset X.
           x: 0
+          # Item Frame offset Y.
           y: 0
+          # Item Frame offset Z.
           z: 0
 
       ################
