@@ -1,4 +1,4 @@
-'#######################
+#######################
 # Permission Override #
 #######################
 # Override config options for players with these permissions, "graves.permission.{name}".
@@ -26,7 +26,7 @@ settings:
         material: BEACON
       gui:
         grave:
-          title: 'VIP %owner_name%''s Grave'
+          title: "VIP %owner_name%'s Grave"
 
     # graves.permission.schem
     schem:
@@ -35,11 +35,11 @@ settings:
           y: 1
       hologram:
         line:
-          - '&c☠ &rHere Lies &2%owner_name% &c☠'
-          - '&rKilled by &c%killer_name%'
+          - "&c☠ &rHere Lies &2%owner_name% &c☠"
+          - "&rKilled by &c%killer_name%"
       schematic:
         enabled: true
-        name: 'grave_default'
+        name: "grave_default"
 
     # graves.permission.holo
     holo:
@@ -49,9 +49,9 @@ settings:
       hologram:
         enabled: true
         line:
-          - '&7%owner_name%''s &rGrave'
-          - 'Killed by &7%killer_name%'
-          - '%time_alive_remaining_formatted%'
+          - "&7%owner_name%'s &rGrave"
+          - "Killed by &7%killer_name%"
+          - "%time_alive_remaining_formatted%"
 
     # graves.permission.dirt
     dirt:
@@ -63,4 +63,4 @@ settings:
     # graves.permission.disabled
     disabled:
       grave:
-        enabled: false'
+        enabled: false
