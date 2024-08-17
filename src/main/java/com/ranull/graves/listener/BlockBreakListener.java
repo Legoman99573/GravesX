@@ -59,7 +59,7 @@ public class BlockBreakListener implements Listener {
             }
         } else if (isNearGrave(block.getLocation(), player)) {
             event.setCancelled(true);
-            player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET + "You can't break blocks near a grave site.");
+            plugin.getEntityManager().sendMessage("message.grave-protection-break-deny", player);
         }
     }
 

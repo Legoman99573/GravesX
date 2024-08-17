@@ -44,7 +44,7 @@ public class BlockPlaceListener implements Listener {
             event.setCancelled(true);
         } else if (isNearGrave(block.getLocation())) {
             event.setCancelled(true);
-            player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET + "You can't place blocks near a grave site.");
+            plugin.getEntityManager().sendMessage("message.grave-protection-build-deny", player);
         }
     }
 

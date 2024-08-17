@@ -742,6 +742,8 @@ settings:
         protection: "This grave is protected for %time_protection_remaining_formatted%."
         region-create-deny: "A grave was not created because grave creation is disabled in this region."
         region-teleport-deny: "Grave teleportation is disabled in this region."
+        grave-protection-build-deny: "You can't build blocks near a grave site."
+        grave-protection-break-deny: "You can't break blocks near a grave site."
 
         world:
           # World names formatting.
