@@ -53,7 +53,7 @@ public final class PlaceholderAPI extends PlaceholderExpansion implements Relati
     @NotNull
     @Override
     public String getIdentifier() {
-        return "graves";
+        return "gravesx";
     }
 
     @NotNull
