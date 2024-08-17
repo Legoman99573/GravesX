@@ -110,6 +110,11 @@ public final class ServerUtil {
         } else {
             stringList.add(plugin.getDescription().getName() + " Permissions Provider: Bukkit");
         }
+        if (plugin.getPluginReleaseType()) {
+            stringList.add(plugin.getDescription().getName() + " Plugin Release: Development Build");
+        } else {
+            stringList.add(plugin.getDescription().getName() + " Plugin Release: Production Release");
+        }
         stringList.add(plugin.getDescription().getName() + " Config Version: " + plugin.getConfig().getInt("config-version"));
 
         File configDir = new File("plugins/GravesX/config");

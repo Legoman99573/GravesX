@@ -56,6 +56,7 @@ public class Graves extends JavaPlugin {
     private Compatibility compatibility;
     private FileConfiguration fileConfiguration;
     private boolean wasReloaded = false;
+    private boolean isDevelopmentBuild = false;
 
     @Override
     public void onLoad() {
@@ -111,8 +112,9 @@ public class Graves extends JavaPlugin {
         });
 
         if (getConfig().getBoolean("settings.metrics.enabled", true)) {
-            getLogger().info("Metrics has been enabled. All metrics will be sent to https://bstats.org/plugin/bukkit/Graves/12849.");
+            getLogger().info("Metrics has been enabled. All metrics will be sent to https://bstats.org/plugin/bukkit/Graves/12849 and https://bstats.org/plugin/bukkit/GravesX/23069.");
             registerMetrics();
+            registerMetricsLegacy();
         } else {
             getLogger().warning("Metrics has been disabled. Metrics will not be sent.");
         }
@@ -227,6 +229,59 @@ public class Graves extends JavaPlugin {
             @Override
             public String call() throws Exception {
                 return getDataManager().getType();
+            }
+        }));
+
+        metrics.addCustomChart(new SimplePie("plugin_release", new Callable<String>() {
+            @Override
+            public String call() throws Exception {
+                if (isDevelopmentBuild) {
+                    return "Development Build";
+                } else {
+                    return "Production Build";
+                }
+            }
+        }));
+    }
+
+    private void registerMetricsLegacy() {
+        Metrics metricsLegacy = new Metrics(this, getMetricsIDLegacy());
+
+        metricsLegacy.addCustomChart(new SingleLineChart("graves", new Callable<Integer>() {
+            @Override
+            public Integer call() throws Exception {
+                return cacheManager.getGraveMap().size();
+            }
+        }));
+
+        metricsLegacy.addCustomChart(new SimplePie("permission_handler", new Callable<String>() {
+            @Override
+            public String call() throws Exception {
+                if (getIntegrationManager().hasLuckPermsHandler()) {
+                    return "LuckPerms";
+                } else if (getIntegrationManager().hasVaultPermProvider()) {
+                    return "Vault";
+                } else {
+                    return "Bukkit";
+                }
+            }
+        }));
+
+        metricsLegacy.addCustomChart(new SimplePie("database", new Callable<String>() {
+            @Override
+            public String call() throws Exception {
+                return getDataManager().getType();
+            }
+        }));
+
+        metricsLegacy.addCustomChart(new SimplePie("plugin_release", new Callable<String>() {
+            @Override
+            public String call() throws Exception {
+                if (isDevelopmentBuild) {
+                    return "Development Build";
+                } else {
+                    return "Production Build";
+                }
             }
         }));
     }
@@ -465,6 +520,7 @@ public class Graves extends JavaPlugin {
                             getLogger().warning("Latest Version:  " + latestVersion);
                             getLogger().warning("Grab the latest release from https://www.spigotmc.org/resources/" + getSpigotID() + "/");
                         } else if (comparisonResult > 0) {
+                            isDevelopmentBuild = true;
                             getLogger().severe("You are running " + getDescription().getName() + " version " + installedVersion + ", which is a development build and is not production safe.");
                             getLogger().severe("THERE WILL NOT BE SUPPORT IF YOU LOSE GRAVE DATA FROM DEVELOPMENT OR COMPILED BUILDS. THIS BUILD IS FOR TESTING PURPOSES ONLY");
                             getLogger().severe("Keep note that you are using a development version when you report bugs.");
@@ -629,6 +685,10 @@ public class Graves extends JavaPlugin {
 
     public Compatibility getCompatibility() {
         return compatibility;
+    }
+
+    public boolean getPluginReleaseType() {
+        return isDevelopmentBuild;
     }
 
     public ConfigurationSection getConfig(String config, Grave grave) {
@@ -798,7 +858,11 @@ public class Graves extends JavaPlugin {
     }
 
     public final int getMetricsID() {
-        return 12849;
+        return 23069; // https://bstats.org/plugin/bukkit/GravesX/23069
+    }
+
+    public final int getMetricsIDLegacy() {
+        return 12849; // https://bstats.org/plugin/bukkit/Graves/12849
     }
 
     public void logStackTrace(Exception e) {
