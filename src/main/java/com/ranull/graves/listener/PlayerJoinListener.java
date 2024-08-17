@@ -43,11 +43,7 @@ public class PlayerJoinListener implements Listener {
 
         if (shouldCheckForUpdates(player)) {
             plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-                String latestVersion = plugin.getLatestVersion();
-
-                if (latestVersion != null) {
-                    notifyPlayerIfOutdated(player, latestVersion);
-                }
+                notifyPlayerIfOutdated(player);
             });
         }
     }
@@ -66,22 +62,33 @@ public class PlayerJoinListener implements Listener {
      * Notifies the player if their plugin version is outdated.
      *
      * @param player         The player to notify.
-     * @param latestVersion The latest version of the plugin.
      */
-    private void notifyPlayerIfOutdated(Player player, String latestVersion) {
+    private void notifyPlayerIfOutdated(Player player) {
+        String latestVersion = plugin.getLatestVersion();
+        String installedVersion = plugin.getDescription().getVersion();
         try {
-            double currentVersion = Double.parseDouble(plugin.getVersion());
-            double newVersion = Double.parseDouble(latestVersion);
-            int comparisonResult = compareVersions(String.valueOf(currentVersion), String.valueOf(newVersion));
+            int comparisonResult = compareVersions(installedVersion, latestVersion);
+            // getLogger().info("Version Comparison Result: " + comparisonResult);
 
-            if (comparisonResult > 0) {
-                sendOutdatedVersionMessage(player, currentVersion, newVersion);
-            } else if (comparisonResult < 0) {
-                sendDevelopmentVersionMessage(player, currentVersion);
+            if (comparisonResult < 0) {
+                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "You are using an outdated version of " + plugin.getDescription().getName() + ".");
+                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Installed Version: " + installedVersion);
+                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Latest Version:  " + latestVersion);
+                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Grab the latest release from https://www.spigotmc.org/resources/" + plugin.getSpigotID() + "/");
+            } else if (comparisonResult > 0) {
+                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "You are running " + plugin.getDescription().getName() + " version " + installedVersion + ", which is a development build and is not production safe.");
+                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "THERE WILL NOT BE SUPPORT IF YOU LOSE GRAVE DATA FROM DEVELOPMENT OR COMPILED BUILDS. THIS BUILD IS FOR TESTING PURPOSES ONLY");
+                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Keep note that you are using a development version when you report bugs.");
+                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "If the same issue occurs in "  + latestVersion + ", then let us know in https://discord.ranull.com/.");
+            } else {
+                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET + "You are running the latest version of " + plugin.getDescription().getName() + ".");
             }
         } catch (NumberFormatException exception) {
-            if (isDifferentVersion(plugin.getVersion(), latestVersion)) {
-                sendOutdatedVersionMessage(player, plugin.getVersion(), latestVersion);
+            //plugin.getLogger().severe("NumberFormatException: " + exception.getMessage());
+            if (!installedVersion.equalsIgnoreCase(latestVersion)) {
+                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "You are either running an outdated version of " + plugin.getDescription().getName() + " or a development version.");
+                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Installed Version: " + installedVersion);
+                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Latest Version:  " + latestVersion);
             }
         }
     }
