@@ -141,6 +141,11 @@
   </build>
   <repositories>
     <repository>
+      <id>ugandavrc-maven-releases</id>
+      <name>UgandaVRC Repository</name>
+      <url>https://mvn.ugandavrc.com/releases</url>
+    </repository>
+    <repository>
       <id>spigotmc-repo</id>
       <url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
     </repository>
@@ -151,6 +156,10 @@
     <repository>
       <id>minecraft-repo</id>
       <url>https://libraries.minecraft.net/</url>
+    </repository>
+    <repository>
+      <id>codemc-repo</id>
+      <url>https://repo.codemc.io/repository/maven-public/</url>
     </repository>
     <repository>
       <id>oraxen</id>
@@ -210,15 +219,6 @@
       <url>https://jitpack.io/</url>
     </repository>
     <repository>
-      <id>codemc-repo</id>
-      <url>https://repo.codemc.io/repository/maven-public/</url>
-    </repository>
-    <repository>
-      <id>ugandavrc-maven-releases</id>
-      <name>UgandaVRC Repository</name>
-      <url>https://mvn.ugandavrc.com/releases</url>
-    </repository>
-    <repository>
       <id>maven-central</id>
       <url>https://oss.sonatype.org/content/groups/public</url>
     </repository>
@@ -238,7 +238,7 @@
     </dependency>
     <dependency>
       <groupId>net.coreprotect</groupId>
-      <artifactId>CoreProtect</artifactId>
+      <artifactId>coreprotect</artifactId>
       <version>22.4</version>
       <scope>provided</scope>
     </dependency>

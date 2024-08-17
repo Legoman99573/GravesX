@@ -111,7 +111,10 @@ public class Graves extends JavaPlugin {
         });
 
         if (getConfig().getBoolean("settings.metrics.enabled", true)) {
+            getLogger().info("Metrics has been enabled. All metrics will be sent to https://bstats.org/plugin/bukkit/Graves/12849.");
             registerMetrics();
+        } else {
+            getLogger().warning("Metrics has been disabled. Metrics will not be sent.");
         }
     }
 
@@ -226,7 +229,6 @@ public class Graves extends JavaPlugin {
                 return getDataManager().getType();
             }
         }));
-
     }
 
     public boolean wasReloaded() {
