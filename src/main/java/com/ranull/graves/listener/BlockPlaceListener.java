@@ -85,8 +85,8 @@ public class BlockPlaceListener implements Listener {
                     }
                 }
             }
-        } catch (IllegalArgumentException ignored) {
-            // Assuming grave is in another world
+        } catch (Exception ignored) {
+            // ignore
         }
         return false;
     }

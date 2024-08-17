@@ -3,7 +3,6 @@ package com.ranull.graves.listener;
 import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -81,8 +80,8 @@ public class BlockBurnAndIgniteListener implements Listener {
                     }
                 }
             }
-        } catch (IllegalArgumentException ignored) {
-            // Assuming grave is in another world
+        } catch (Exception ignored) {
+            // ignore
         }
         return false;
     }
