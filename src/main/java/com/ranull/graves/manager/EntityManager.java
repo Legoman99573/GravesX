@@ -517,7 +517,13 @@ public final class EntityManager extends EntityDataManager {
             }
 
             if (string != null && !string.isEmpty() && !string.equals(prefix)) {
-                player.sendMessage(StringUtil.parseString(string, entity, name, location, grave, plugin));
+                String message = StringUtil.parseString(string, entity, name, location, grave, plugin);
+                if (!message.contains("null")) {
+                    plugin.debugMessage("Message found for " + string + " in grave.yml. Sending message to " + entity.getName() +".", 2);
+                    player.sendMessage(message);
+                } else {
+                    plugin.debugMessage("Message is missing for " + string + " in grave.yml. Not sending message to " + entity.getName() +".", 2);
+                }
             }
         }
     }
