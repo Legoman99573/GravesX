@@ -149,37 +149,17 @@ public final class GraveManager {
                 Location location = graveTimeoutEvent.getLocation();
                 Chunk chunk = location.getChunk();
                 if (!chunk.isLoaded()) {
+                    plugin.debugMessage("Loaded unloaded chunk x: " + chunk.getX() + ", z: " + chunk.getZ() + ". Graves should dump contents.", 2);
                     chunk.load();
                 }
 
-                // Cancel existing tasks for this grave if they exist
-                tasks.values().forEach(BukkitTask::cancel);
-
-                BukkitTask dropItemsTask = new BukkitRunnable() {
-                    @Override
-                    public void run() {
+                // Schedule synchronous task to drop items and experience
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (chunk.isLoaded()) {
                         dropGraveItems(location, grave);
                         dropGraveExperience(location, grave);
-
-                        BukkitTask unloadChunkTask = new BukkitRunnable() {
-                            @Override
-                            public void run() {
-                                if (chunk.isLoaded() && arePlayersInChunk(chunk)) {
-                                    // Reschedule unloading if players are still in the chunk
-                                    this.runTaskLater(plugin, 100L); // Check again after 5 seconds
-                                } else if (chunk.isLoaded()) {
-                                    chunk.unload();
-                                }
-                            }
-                        }.runTaskLater(plugin, 60L); // 60 ticks = 3 seconds after items dropped
-
-                        // Store task reference
-                        tasks.put("unloadChunk_" + grave.getUUID(), unloadChunkTask);
                     }
-                }.runTaskLater(plugin, 40L); // 40 ticks = 2 seconds
-
-                // Store task reference
-                tasks.put("dropItems_" + grave.getUUID(), dropItemsTask);
+                });
             }
 
             if (grave.getOwnerType() == EntityType.PLAYER && grave.getOwnerUUID() != null) {
@@ -267,20 +247,24 @@ public final class GraveManager {
      * @param location           the location representing the chunk coordinates.
      */
     private void processEntityData(ChunkData chunkData, List<EntityData> entityDataRemoveList, Location location) {
-        for (EntityData entityData : new ArrayList<>(chunkData.getEntityDataMap().values())) {
-            if (entityData == null) {
-                plugin.debugMessage("Encountered null EntityData while processing chunk at coordinates: ("
-                        + chunkData.getX() + ", " + chunkData.getZ() + ").", 2);
-                continue;
-            }
-
-            if (entityData.getUUIDGrave() != null && plugin.getCacheManager().getGraveMap().containsKey(entityData.getUUIDGrave())) {
-                if (plugin.isEnabled() && entityData instanceof HologramData) {
-                    processHologramData((HologramData) entityData, location, entityDataRemoveList);
+        try {
+            for (EntityData entityData : new ArrayList<>(chunkData.getEntityDataMap().values())) {
+                if (entityData == null) {
+                    plugin.debugMessage("Encountered null EntityData while processing chunk at coordinates: ("
+                            + chunkData.getX() + ", " + chunkData.getZ() + ").", 2);
+                    continue;
                 }
-            } else {
-                entityDataRemoveList.add(entityData);
+
+                if (entityData.getUUIDGrave() != null && plugin.getCacheManager().getGraveMap().containsKey(entityData.getUUIDGrave())) {
+                    if (plugin.isEnabled() && entityData instanceof HologramData) {
+                        processHologramData((HologramData) entityData, location, entityDataRemoveList);
+                    }
+                } else {
+                    entityDataRemoveList.add(entityData);
+                }
             }
+        } catch (ArrayIndexOutOfBoundsException ignored) {
+            // ignored
         }
     }
 
@@ -292,21 +276,25 @@ public final class GraveManager {
      * @param entityDataRemoveList the list to which hologram data to be removed will be added.
      */
     private void processHologramData(HologramData hologramData, Location location, List<EntityData> entityDataRemoveList) {
-        Grave grave = plugin.getCacheManager().getGraveMap().get(hologramData.getUUIDGrave());
+        try {
+            Grave grave = plugin.getCacheManager().getGraveMap().get(hologramData.getUUIDGrave());
 
-        if (grave != null) {
-            List<String> lineList = plugin.getConfig("hologram.line", grave).getStringList("hologram.line");
-            Collections.reverse(lineList);
+            if (grave != null) {
+                List<String> lineList = plugin.getConfig("hologram.line", grave).getStringList("hologram.line");
+                Collections.reverse(lineList);
 
-            for (Entity entity : hologramData.getLocation().getChunk().getEntities()) {
-                if (entity.getUniqueId().equals(hologramData.getUUIDEntity())) {
-                    if (hologramData.getLine() < lineList.size()) {
-                        entity.setCustomName(StringUtil.parseString(lineList.get(hologramData.getLine()), location, grave, plugin));
-                    } else {
-                        entityDataRemoveList.add(hologramData);
+                for (Entity entity : hologramData.getLocation().getChunk().getEntities()) {
+                    if (entity.getUniqueId().equals(hologramData.getUUIDEntity())) {
+                        if (hologramData.getLine() < lineList.size()) {
+                            entity.setCustomName(StringUtil.parseString(lineList.get(hologramData.getLine()), location, grave, plugin));
+                        } else {
+                            entityDataRemoveList.add(hologramData);
+                        }
                     }
                 }
             }
+        } catch (ArrayIndexOutOfBoundsException ignored) {
+            // ignored
         }
     }
 
@@ -317,14 +305,18 @@ public final class GraveManager {
      * @param blockDataRemoveList the list to which block data to be removed will be added.
      */
     private void processBlockData(ChunkData chunkData, List<BlockData> blockDataRemoveList) {
-        for (BlockData blockData : new ArrayList<>(chunkData.getBlockDataMap().values())) {
-            if (blockData.getLocation().getWorld() != null) {
-                if (plugin.getCacheManager().getGraveMap().containsKey(blockData.getGraveUUID())) {
-                    graveParticle(blockData.getLocation(), plugin.getCacheManager().getGraveMap().get(blockData.getGraveUUID()));
-                } else {
-                    blockDataRemoveList.add(blockData);
+        try {
+            for (BlockData blockData : new ArrayList<>(chunkData.getBlockDataMap().values())) {
+                if (blockData.getLocation().getWorld() != null) {
+                    if (plugin.getCacheManager().getGraveMap().containsKey(blockData.getGraveUUID())) {
+                        graveParticle(blockData.getLocation(), plugin.getCacheManager().getGraveMap().get(blockData.getGraveUUID()));
+                    } else {
+                        blockDataRemoveList.add(blockData);
+                    }
                 }
             }
+        } catch (ArrayIndexOutOfBoundsException ignored) {
+            // ignored
         }
     }
 
