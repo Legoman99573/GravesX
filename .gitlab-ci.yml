@@ -35,14 +35,11 @@ build-job:       # This job runs in the build stage, which runs first.
   script:
     - echo "Compiling the code..."
     - mvn package -Dmaven.test.skip.exec=true
-    - mvn site:site -Dmaven.test.skip.exec=true
     - echo "Compile complete."
   artifacts:
     paths:
       - target/*.jar
       - /*.jar
-      - target/site/apidocs/**/*
-      - site/apidocs/**/*
 
 pages-job:
   stage: pages
