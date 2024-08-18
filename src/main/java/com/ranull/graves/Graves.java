@@ -32,6 +32,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
+import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
@@ -57,6 +58,7 @@ public class Graves extends JavaPlugin {
     private FileConfiguration fileConfiguration;
     private boolean wasReloaded = false;
     private boolean isDevelopmentBuild = false;
+    private LibraryUtil libraryUtil;
 
     @Override
     public void onLoad() {
@@ -71,6 +73,20 @@ public class Graves extends JavaPlugin {
                 getLogger().severe("Failed to rename legacy folder Graves to GravesX. Ensure the folder doesn't already exist.");
             }
         }
+
+        libraryUtil = new LibraryUtil(getLogger());
+
+        // Load the specified libraries dynamically
+        libraryUtil.loadDynamicLibrary("net.kyori:adventure-text-minimessage:4.17.0");
+        libraryUtil.loadDynamicLibrary("net.kyori:adventure-api:4.17.0");
+        libraryUtil.loadDynamicLibrary("org.xerial:sqlite-jdbc:3.46.0.0");
+        libraryUtil.loadDynamicLibrary("org.json:json:20240303");
+        libraryUtil.loadDynamicLibrary("com.google.code.gson:gson:2.10.1");
+        libraryUtil.loadDynamicLibrary("org.mariadb.jdbc:mariadb-java-client:3.4.1");
+        libraryUtil.loadDynamicLibrary("com.mysql:mysql-connector-j:9.0.0");
+        libraryUtil.loadDynamicLibrary("com.h2database:h2:2.3.230");
+        libraryUtil.loadDynamicLibrary("org.postgresql:postgresql:42.7.3");
+
         saveDefaultConfig();
 
         integrationManager = new IntegrationManager(this);
