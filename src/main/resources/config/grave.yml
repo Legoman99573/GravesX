@@ -18,7 +18,7 @@ settings:
         # Can graves be blown up.
         explode: false
         # The radius a grave may be protected. Setting to less than 2 could allow floating blocks when looted. Best to keep it at least more than two. To disable, just set to 0
-        protection-radius: 15
+        protection-radius: 5
 
       #############
       # Placement #
