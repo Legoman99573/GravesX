@@ -590,7 +590,7 @@ public class EntityDeathListener implements Listener {
         }
 
         setupObituary(grave, graveItemStackList, livingEntity, location);
-        setupSkull(grave, graveItemStackList);
+        setupSkull(grave, graveItemStackList, livingEntity, location);
         grave.setInventory(plugin.getGraveManager().getGraveInventory(grave, livingEntity, graveItemStackList, removedItemStackList, permissionList));
         grave.setEquipmentMap(!plugin.getVersionManager().is_v1_7() ? plugin.getEntityManager().getEquipmentMap(livingEntity, grave) : new HashMap<>());
 
@@ -647,9 +647,16 @@ public class EntityDeathListener implements Listener {
      * @param grave               The grave to set up.
      * @param graveItemStackList  The list of item stacks for the grave.
      */
-    private void setupSkull(Grave grave, List<ItemStack> graveItemStackList) {
+    private void setupSkull(Grave grave, List<ItemStack> graveItemStackList, LivingEntity livingEntity, Location location) {
         if (plugin.getConfig("head.enabled", grave).getBoolean("head.enabled") && Math.random() < plugin.getConfig("head.percent", grave).getDouble("head.percent") && grave.getOwnerTexture() != null && grave.getOwnerTextureSignature() != null) {
-            graveItemStackList.add(plugin.getItemStackManager().getGraveHead(grave));
+            GravePlayerHeadDropEvent gravePlayerHeadDropEvent = new GravePlayerHeadDropEvent(grave, location, livingEntity);
+            plugin.getServer().getPluginManager().callEvent(gravePlayerHeadDropEvent);
+
+            if (!gravePlayerHeadDropEvent.isCancelled()) {
+                Location graveLocation = grave.getLocationDeath();
+                plugin.debugMessage("Player Head for " + livingEntity.getName() + " was dropped at grave x: " + graveLocation.getBlockX() + ", y: " + graveLocation.getBlockY() + ", z: " + graveLocation.getBlockZ() + ".", 2);
+                graveItemStackList.add(plugin.getItemStackManager().getGraveHead(grave));
+            }
         }
     }
 
