@@ -2,9 +2,7 @@ package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
 import com.ranull.graves.data.BlockData;
-import com.ranull.graves.event.GraveBlockPlaceEvent;
-import com.ranull.graves.event.GraveCreateEvent;
-import com.ranull.graves.event.GraveObituaryAddEvent;
+import com.ranull.graves.event.*;
 import com.ranull.graves.integration.WorldGuard;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.type.Graveyard;
@@ -438,7 +436,7 @@ public class EntityDeathListener implements Listener {
         setupGrave(grave, livingEntity, entityName, permissionList);
         setGraveExperience(grave, event, livingEntity);
         setupGraveKiller(grave, livingEntity);
-        setupGraveProtection(grave);
+        setupGraveProtection(livingEntity, grave);
         GraveCreateEvent graveCreateEvent = new GraveCreateEvent(livingEntity, grave);
         plugin.getServer().getPluginManager().callEvent(graveCreateEvent);
         if (!graveCreateEvent.isCancelled()) {
@@ -530,10 +528,14 @@ public class EntityDeathListener implements Listener {
      *
      * @param grave The grave to set up.
      */
-    private void setupGraveProtection(Grave grave) {
+    private void setupGraveProtection(LivingEntity livingEntity, Grave grave) {
         if (plugin.getConfig("protection.enabled", grave).getBoolean("protection.enabled")) {
-            grave.setProtection(true);
-            grave.setTimeProtection(plugin.getConfig("protection.time", grave).getInt("protection.time") * 1000L);
+            GraveProtectionCreateEvent graveProtectionCreateEvent = new GraveProtectionCreateEvent(livingEntity, grave);
+            plugin.getServer().getPluginManager().callEvent(graveProtectionCreateEvent);
+            if (!graveProtectionCreateEvent.isCancelled()) {
+                grave.setProtection(true);
+                grave.setTimeProtection(plugin.getConfig("protection.time", grave).getInt("protection.time") * 1000L);
+            }
         }
     }
 

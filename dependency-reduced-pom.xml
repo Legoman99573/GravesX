@@ -410,7 +410,7 @@
     </dependency>
     <dependency>
       <groupId>net.kyori</groupId>
-      <artifactId>adventure-text-minimessage</artifactId>
+      <artifactId>adventure-api</artifactId>
       <version>4.17.0</version>
       <scope>provided</scope>
     </dependency>
