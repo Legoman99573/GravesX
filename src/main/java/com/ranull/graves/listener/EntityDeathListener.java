@@ -9,6 +9,7 @@ import com.ranull.graves.type.Graveyard;
 import com.ranull.graves.util.*;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
@@ -623,8 +624,8 @@ public class EntityDeathListener implements Listener {
                 plugin.getServer().getPluginManager().callEvent(graveObituaryAddEvent);
 
                 if (!graveObituaryAddEvent.isCancelled()) {
-                    Location graveLocation = grave.getLocation();
-                    plugin.debugMessage("Obituary added to " + grave.getOwnerName() + "'s Grave at location x: " + graveLocation.getBlockX() + " y: " + graveLocation.getBlockY() + " z: " + graveLocation.getBlockZ() + ".", 2);
+                    Block graveLocation = location.getBlock();
+                    plugin.debugMessage("Obituary added to " + grave.getOwnerName() + "'s Grave at location x: " + graveLocation.getX() + " y: " + graveLocation.getY() + " z: " + graveLocation.getZ() + ".", 2);
                     graveItemStackList.add(plugin.getItemStackManager().getGraveObituary(grave));
                 }
             }
