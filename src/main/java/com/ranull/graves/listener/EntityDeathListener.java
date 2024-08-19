@@ -4,6 +4,7 @@ import com.ranull.graves.Graves;
 import com.ranull.graves.data.BlockData;
 import com.ranull.graves.event.GraveBlockPlaceEvent;
 import com.ranull.graves.event.GraveCreateEvent;
+import com.ranull.graves.event.GraveObituaryAddEvent;
 import com.ranull.graves.integration.WorldGuard;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.type.Graveyard;
@@ -586,7 +587,7 @@ public class EntityDeathListener implements Listener {
             locationMap.put(grave.getLocationDeath(), BlockData.BlockType.DEATH);
         }
 
-        setupObituary(grave, graveItemStackList);
+        setupObituary(grave, graveItemStackList, livingEntity, location);
         setupSkull(grave, graveItemStackList);
         grave.setInventory(plugin.getGraveManager().getGraveInventory(grave, livingEntity, graveItemStackList, removedItemStackList, permissionList));
         grave.setEquipmentMap(!plugin.getVersionManager().is_v1_7() ? plugin.getEntityManager().getEquipmentMap(livingEntity, grave) : new HashMap<>());
@@ -604,10 +605,38 @@ public class EntityDeathListener implements Listener {
      * @param grave               The grave to set up.
      * @param graveItemStackList  The list of item stacks for the grave.
      */
-    private void setupObituary(Grave grave, List<ItemStack> graveItemStackList) {
+    private void setupObituary(Grave grave, List<ItemStack> graveItemStackList, LivingEntity livingEntity, Location location) {
         if (plugin.getConfig("obituary.enabled", grave).getBoolean("obituary.enabled")) {
-            graveItemStackList.add(plugin.getItemStackManager().getGraveObituary(grave));
+            double percentage = plugin.getConfig("obituary.percent", grave).getDouble("obituary.percent");
+
+            // Ensure the percentage is between 0 and 1
+            if (percentage < 0) {
+                percentage = 0;
+            } else if (percentage > 1) {
+                percentage = 1;
+            }
+
+            if (shouldAddObituaryItem(percentage)) {
+                GraveObituaryAddEvent graveObituaryAddEvent = new GraveObituaryAddEvent(grave, location, livingEntity);
+                plugin.getServer().getPluginManager().callEvent(graveObituaryAddEvent);
+
+                if (!graveObituaryAddEvent.isCancelled()) {
+                    Location graveLocation = grave.getLocation();
+                    plugin.debugMessage("Obituary added to " + grave.getOwnerName() + "'s Grave at location x: " + graveLocation.getBlockX() + " y: " + graveLocation.getBlockY() + " z: " + graveLocation.getBlockZ() + ".", 2);
+                    graveItemStackList.add(plugin.getItemStackManager().getGraveObituary(grave));
+                }
+            }
         }
+    }
+
+    /**
+     * Determines whether to add the obituary item based on the percentage.
+     *
+     * @param percentage The percentage value (between 0 and 1).
+     * @return true if the obituary item should be added; false otherwise.
+     */
+    private boolean shouldAddObituaryItem(double percentage) {
+        return Math.random() <= percentage;
     }
 
     /**

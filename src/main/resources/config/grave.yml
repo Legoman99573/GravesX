@@ -259,6 +259,8 @@ settings:
       obituary:
         # Should obituaries be enabled. Keep note that this will add an item to peoples inventories
         enabled: true
+        # Chance an obituary should be created, 0.2 = 20%, 1 = 100%, 0 = 0%.
+        percent: 1
         # Title of the obituary.
         title: "&c%owner_name%'s Obituary"
         # Author of the obituary.
