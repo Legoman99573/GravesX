@@ -27,7 +27,7 @@ public final class MiniMessage {
      * @return The legacy text representation of the MiniMessage formatted string.
      *         If MiniMessage is not initialized, returns the original string.
      */
-    public String parseString(String string) {
+    public String parseString(String string) {  //TODO Properly handle stuff like hover text, clickable links, etc. PR appreciated if someone can make this work.
         return (miniMessage != null) ?
                 LegacyComponentSerializer.legacySection().serialize(miniMessage.deserialize(string)) :
                 string;
