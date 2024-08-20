@@ -113,6 +113,11 @@ public class Grave implements InventoryHolder, Serializable {
     private boolean protection;
 
     /**
+     * Indicates whether grave is abandoned.
+     */
+    private boolean is_abandoned;
+
+    /**
      * The amount of time the instance has been alive, in milliseconds.
      */
     private long timeAlive;
@@ -591,6 +596,25 @@ public class Grave implements InventoryHolder, Serializable {
     public long getLivedTime() {
         return System.currentTimeMillis() - timeCreation;
     }
+
+    /**
+     * Determines if a grave was abandoned. Credit to <a href="https://gitlab.com/ranull/minecraft/graves/-/merge_requests/6">Grave abandoning feature</a>
+     *
+     * @return the abandoned grave.
+     */
+    public boolean isAbandoned() {
+        return is_abandoned;
+    }
+
+    /**
+     * Determines if a grave was abandoned. Credit to <a href="https://gitlab.com/ranull/minecraft/graves/-/merge_requests/6">Grave abandoning feature</a>
+     *
+     * @param is_abandoned set grave as abandoned.
+     */
+    public void setAbandoned(boolean is_abandoned) {
+        this.is_abandoned = is_abandoned;
+    }
+
 
     /**
      * Gets the number of items in the grave's inventory.

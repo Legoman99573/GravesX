@@ -70,6 +70,8 @@ settings:
           break: true
         # When a grave times out drop everything in it. If false it gets destroyed.
         timeout: false
+        # When a grave times out set the grave to an abandoned state instead of dropping everything? If false, nothing changes for this behavior. Must have drop.timeout disabled.
+        abandon: true
         # When a grave explodes drop everything in it. If false it gets destroyed.
         explode: true
         # When a grave is broken drop everything in it. If false it gets destroyed.
@@ -750,6 +752,7 @@ settings:
         region-teleport-deny: "Grave teleportation is disabled in this region."
         grave-protection-build-deny: "You can't build blocks near a grave site."
         grave-protection-break-deny: "You can't break blocks near a grave site."
+        grave-abandoned: "Your grave at &c%x%&rx, &c%y%&ry, &c%z%&rz in &c%world_formatted%&r has been abandoned with &c%item% &ritems and &c%experience% &rExperience."
 
         world:
           # World names formatting.
@@ -867,6 +870,14 @@ settings:
               #  lore:
               #    - "Open your grave remotely"
 
+              #4: # Abandon your grave.
+              #  material: "COMPASS"
+              #  function: "abandoned"
+              #  name: "abandon grave"
+              #  glow: false
+              #  model-data: -1
+              #  lore:
+              #    - "Toggle Abandoned %state_abandoned%"
           graveyard:
             # Title for the graveyard menu.
             title: "Graveyards"

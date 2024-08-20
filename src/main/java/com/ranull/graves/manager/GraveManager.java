@@ -5,6 +5,7 @@ import com.ranull.graves.data.BlockData;
 import com.ranull.graves.data.ChunkData;
 import com.ranull.graves.data.EntityData;
 import com.ranull.graves.data.HologramData;
+import com.ranull.graves.event.GraveAbandonedEvent;
 import com.ranull.graves.event.GraveAutoLootEvent;
 import com.ranull.graves.event.GraveProtectionExpiredEvent;
 import com.ranull.graves.event.GraveTimeoutEvent;
@@ -144,32 +145,48 @@ public final class GraveManager {
 
         if (!graveTimeoutEvent.isCancelled()) {
             plugin.debugMessage("GraveTimeoutEvent not cancelled for grave: " + grave.getUUID(), 2);
-
-            if (graveTimeoutEvent.getLocation() != null && plugin.getConfig("drop.timeout", grave).getBoolean("drop.timeout")) {
-                Location location = graveTimeoutEvent.getLocation();
-                Chunk chunk = location.getChunk();
-                if (!chunk.isLoaded()) {
-                    plugin.debugMessage("Loaded unloaded chunk x: " + chunk.getX() + ", z: " + chunk.getZ() + ". Graves should dump contents.", 2);
-                    chunk.load();
-                }
-
-                // Schedule synchronous task to drop items and experience
-                Bukkit.getScheduler().runTask(plugin, () -> {
-                    if (chunk.isLoaded()) {
-                        dropGraveItems(location, grave);
-                        dropGraveExperience(location, grave);
+            if (plugin.getConfig("drop.timeout", grave).getBoolean("drop.timeout")) {
+                if (graveTimeoutEvent.getLocation() != null) {
+                    Location location = graveTimeoutEvent.getLocation();
+                    Chunk chunk = location.getChunk();
+                    if (!chunk.isLoaded()) {
+                        plugin.debugMessage("Loaded unloaded chunk x: " + chunk.getX() + ", z: " + chunk.getZ() + ". Graves should dump contents.", 2);
+                        chunk.load();
                     }
-                });
-            }
 
-            if (grave.getOwnerType() == EntityType.PLAYER && grave.getOwnerUUID() != null) {
-                Player player = plugin.getServer().getPlayer(grave.getOwnerUUID());
-                if (player != null) {
-                    plugin.getEntityManager().sendMessage("message.timeout", player, graveTimeoutEvent.getLocation(), grave);
+                    // Schedule synchronous task to drop items and experience
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        if (chunk.isLoaded()) {
+                            dropGraveItems(location, grave);
+                            dropGraveExperience(location, grave);
+                        }
+                    });
                 }
-            }
 
-            graveRemoveList.add(grave);
+                if (grave.getOwnerType() == EntityType.PLAYER && grave.getOwnerUUID() != null) {
+                    Player player = plugin.getServer().getPlayer(grave.getOwnerUUID());
+                    if (player != null) {
+                        plugin.getEntityManager().sendMessage("message.timeout", player, graveTimeoutEvent.getLocation(), grave);
+                    }
+                }
+
+                graveRemoveList.add(grave);
+            } else if (plugin.getConfig("drop.abandon", grave).getBoolean("drop.abandon")) {
+                GraveAbandonedEvent graveAbandonedEvent = new GraveAbandonedEvent(grave);
+                plugin.getServer().getPluginManager().callEvent(graveAbandonedEvent);
+
+                if (!graveAbandonedEvent.isCancelled()) {
+                    if (grave.getOwnerType() == EntityType.PLAYER && grave.getOwnerUUID() != null) {
+                        Player player = plugin.getServer().getPlayer(grave.getOwnerUUID());
+                        plugin.getEntityManager().sendMessage("message.abandoned", player, graveAbandonedEvent.getLocation(), grave);
+                        abandonGrave(grave);
+                    }
+                } else {
+                    graveRemoveList.add(grave);
+                }
+            } else {
+                graveRemoveList.add(grave);
+            }
         } else {
             // Log the cancellation and set the grave's time to -1
             plugin.debugMessage("GraveTimeoutEvent cancelled for grave: " + grave.getUUID() + ", setting time alive to forever.", 2);
@@ -373,6 +390,27 @@ public final class GraveManager {
                 plugin.getDataManager().updateGrave(grave, "protection", String.valueOf(grave.getProtection() ? 1 : 0));
             }
         }
+    }
+
+    /**
+     * Abandons a grave.
+     *
+     * @param grave    the grave to abandon.
+     */
+    public void abandonGrave(Grave grave) {
+        grave.setAbandoned(true);
+        grave.setExperience(0);
+        grave.setTimeProtection(0);
+        grave.setTimeAlive(-1);
+        grave.setTimeAliveRemaining(-1);
+        grave.setOwnerName("Abandoned");
+        grave.setOwnerDisplayName("Abandoned");
+        grave.setOwnerTexture("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZTYxZjFmY2Q0MmY0OGNhNTFmOWRhN2M1NWI3MmYzNWE4MjZlNzViNmEwMjA0OGExZGVhNWQ3MTE5YmM5Y2Q2OSJ9fX0=");
+        plugin.getDataManager().updateGrave(grave, "owner_name", String.valueOf(grave.getOwnerName()));
+        plugin.getDataManager().updateGrave(grave, "experience", String.valueOf(grave.getExperience()));
+        plugin.getDataManager().updateGrave(grave, "owner_name_display", String.valueOf(grave.getOwnerDisplayName()));
+        plugin.getDataManager().updateGrave(grave, "is_abandoned", String.valueOf(grave.isAbandoned() ? 1 : 0));
+        plugin.getDataManager().loadGraveMap();
     }
 
     /**
@@ -945,7 +983,7 @@ public final class GraveManager {
         List<Grave> graveList = new ArrayList<>();
 
         plugin.getCacheManager().getGraveMap().forEach((key, value) -> {
-            if (value.getOwnerUUID() != null && value.getOwnerUUID().equals(uuid)) {
+            if (!value.isAbandoned() && value.getOwnerUUID() != null && value.getOwnerUUID().equals(uuid)) {
                 graveList.add(value);
             }
         });

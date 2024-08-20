@@ -670,6 +670,7 @@ public final class DataManager {
                         "equipment TEXT,\n" +
                         "experience INT(16),\n" +
                         "protection INT(1),\n" +
+                        "is_abandoned INT(1),\n" +
                         "time_alive BIGINT,\n" +
                         "time_protection BIGINT,\n" +
                         "time_creation BIGINT,\n" +
@@ -695,6 +696,7 @@ public final class DataManager {
         addColumnIfNotExists(name, "equipment", "TEXT");
         addColumnIfNotExists(name, "experience", "INT(16)");
         addColumnIfNotExists(name, "protection", "INT(1)");
+        addColumnIfNotExists(name, "is_abandoned", "INT(1)");
         addColumnIfNotExists(name, "time_alive", "BIGINT");
         addColumnIfNotExists(name, "time_protection", "BIGINT");
         addColumnIfNotExists(name, "time_creation", "BIGINT");
@@ -789,7 +791,7 @@ public final class DataManager {
     /**
      * Loads the grave map from the database.
      */
-    private void loadGraveMap() {
+    public void loadGraveMap() {
         plugin.getCacheManager().getGraveMap().clear();
 
         String query = "SELECT * FROM grave;";
@@ -864,7 +866,7 @@ public final class DataManager {
     /**
      * Loads the block map from the database.
      */
-    private void loadBlockMap() {
+    public void loadBlockMap() {
         String query = "SELECT * FROM block;";
 
         try (Connection connection = getConnection();
@@ -923,7 +925,7 @@ public final class DataManager {
     /**
      * Loads the hologram map from the database.
      */
-    private void loadHologramMap() {
+    public void loadHologramMap() {
         String query = "SELECT * FROM hologram;";
 
         try (Connection connection = getConnection();
@@ -1131,7 +1133,7 @@ public final class DataManager {
         }
     }
 
-    private boolean graveyardExists(String name) {
+    public boolean graveyardExists(String name) {
         String query = "SELECT COUNT(*) FROM graveyards WHERE name = ?";
 
         try (Connection connection = dataSource.getConnection();
@@ -1336,6 +1338,7 @@ public final class DataManager {
         String permissions = grave.getPermissionList() != null && !grave.getPermissionList().isEmpty()
                 ? "'" + StringUtils.join(grave.getPermissionList(), "|") + "'" : "NULL";
         int protection = grave.getProtection() ? 1 : 0;
+        int isAbandoned = grave.isAbandoned() ? 1 : 0;
         int experience = grave.getExperience();
         long timeAlive = grave.getTimeAlive();
         long timeProtection = grave.getTimeProtection();
@@ -1344,12 +1347,12 @@ public final class DataManager {
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () ->
                 executeUpdate("INSERT INTO grave (uuid, owner_type, owner_name, owner_name_display, owner_uuid,"
                         + " owner_texture, owner_texture_signature, killer_type, killer_name, killer_name_display,"
-                        + " killer_uuid, location_death, yaw, pitch, inventory, equipment, experience, protection, time_alive,"
+                        + " killer_uuid, location_death, yaw, pitch, inventory, equipment, experience, protection, is_abandoned, time_alive,"
                         + "time_protection, time_creation, permissions) VALUES (" + uuid + ", " + ownerType + ", "
                         + ownerName + ", " + ownerNameDisplay + ", " + ownerUUID + ", " + ownerTexture + ", "
                         + ownerTextureSignature + ", " + killerType + ", " + killerName + ", " + killerNameDisplay + ", "
                         + killerUUID + ", " + locationDeath + ", " + yaw + ", " + pitch + ", " + inventory + ", "
-                        + equipment + ", " + experience + ", " + protection + ", " + timeAlive + ", "
+                        + equipment + ", " + experience + ", " + protection + ", " + isAbandoned + ", " + timeAlive + ", "
                         + timeProtection + ", " + timeCreation + ", " + permissions + ");"));
     }
 
@@ -1425,6 +1428,7 @@ public final class DataManager {
             grave.setPitch(resultSet.getFloat("pitch"));
             grave.setExperience(resultSet.getInt("experience"));
             grave.setProtection(resultSet.getInt("protection") == 1);
+            grave.setAbandoned(resultSet.getInt("is_abandoned") == 1);
             grave.setTimeAlive(resultSet.getLong("time_alive"));
             grave.setTimeProtection(resultSet.getLong("time_protection"));
             grave.setTimeCreation(resultSet.getLong("time_creation"));
@@ -1629,7 +1633,7 @@ public final class DataManager {
     /**
      * Migrates data from SQLite to the target database (MySQL, MariaDB, PostgreSQL, or H2).
      */
-    public void migrate() {
+    private void migrate() {
         File dataFolder = new File(plugin.getDataFolder(), "data");
         File sqliteFile = new File(dataFolder, "data.db");
 
@@ -1900,7 +1904,7 @@ public final class DataManager {
     /**
      * Checks if the SQLite database is locked and attempts to unlock it by running COMMIT or ROLLBACK.
      */
-    public void checkAndUnlockDatabase() {
+    private void checkAndUnlockDatabase() {
         if (type != Type.SQLITE) return;
         String checkQuery = "SELECT 1";
         try (Connection connection = getConnection();

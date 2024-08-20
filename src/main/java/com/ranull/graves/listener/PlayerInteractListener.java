@@ -201,14 +201,20 @@ public class PlayerInteractListener implements Listener {
                         //player.closeInventory(); // Close the player's inventory
                        // player.openInventory(player.getInventory()); // Reopen the player's inventory
                     } else {
-                        player.getInventory().setItem(player.getInventory().getHeldItemSlot(),
-                                plugin.getEntityManager().createGraveCompass(player, location, grave));
-                        plugin.getEntityManager().runFunction(player, plugin.getConfig("compass.function", grave).getString("compass.function"), grave);
+                        ItemStack graveCompass = plugin.getEntityManager().createGraveCompass(player, location, grave);
+
+                        if (graveCompass != null && graveCompass.getItemMeta() != null && !graveCompass.getItemMeta().getDisplayName().contains("Abandoned")) {
+                            player.getInventory().setItem(player.getInventory().getHeldItemSlot(),
+                                    graveCompass);
+                            plugin.getEntityManager().runFunction(player, plugin.getConfig("compass.function", grave).getString("compass.function"), grave);
+                        } else {
+                            player.getInventory().remove(itemStack);
+                        }
                     }
                 } else {
                     player.getInventory().remove(itemStack);
-                    player.closeInventory(); // Close the player's inventory
-                    player.openInventory(player.getInventory()); // Reopen the player's inventory
+                    //player.closeInventory(); // Close the player's inventory
+                    //player.openInventory(player.getInventory()); // Reopen the player's inventory
                 }
             } else {
                 player.getInventory().remove(itemStack);

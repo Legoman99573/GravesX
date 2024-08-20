@@ -642,6 +642,16 @@ public final class EntityManager extends EntityDataManager {
                 }
                 return true;
             }
+
+            case "abandoned": {
+                Location location = plugin.getGraveManager().getGraveLocation(entity.getLocation(), grave);
+                if (location != null) {
+                    playPlayerSound("sound.abandoned", entity, grave);
+                    plugin.getEntityManager().sendMessage("message.abandoned", entity, location, grave);
+                    plugin.getGraveManager().abandonGrave(grave);
+                }
+                break;
+            }
             case "distance": {
                 Location location = plugin.getGraveManager().getGraveLocation(entity.getLocation(), grave);
                 if (location != null) {

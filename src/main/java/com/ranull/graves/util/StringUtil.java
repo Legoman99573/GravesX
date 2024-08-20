@@ -138,6 +138,7 @@ public final class StringUtil {
                                     .getString("protection.state.protected", "Protected") : plugin
                                     .getConfig("protection.state.unprotected", grave)
                                     .getString("protection.state.unprotected", "Unprotected"))
+                    .replace("%state_abandoned%", String.valueOf(grave.isAbandoned()))
                     .replace("%item%", String.valueOf(grave.getItemAmount()));
             if (grave.getExperience() > 0) {
                 string = string.replace("%level%", String.valueOf(ExperienceUtil
