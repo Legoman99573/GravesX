@@ -192,10 +192,13 @@ public final class StringUtil {
             matcher = pattern.matcher(string);
         }
 
-        if (plugin.getIntegrationManager().hasMiniMessage()) {
-            string = string.replace("§", "&");
-            string = plugin.getIntegrationManager().getMiniMessage().parseString(string);
-        }
+        /*
+         * Removed since this converts all to legacy, thus breaking everything.
+         * if (plugin.getIntegrationManager().hasMiniMessage()) {
+         *     string = string.replace("§", "&");
+         *     string = plugin.getIntegrationManager().getMiniMessage().parseString(string);
+         * }
+         */
 
         return string.replace("&", "§");
     }

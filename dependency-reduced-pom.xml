@@ -72,15 +72,23 @@
             </relocation>
             <relocation>
               <pattern>com.github.puregero.multilib</pattern>
-              <shadedPattern>${project.groupId}.${project.artifactId}.multilib</shadedPattern>
+              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.multilib</shadedPattern>
             </relocation>
             <relocation>
               <pattern>com.zaxxer.hikari</pattern>
-              <shadedPattern>${project.groupId}.${project.artifactId}.hikari</shadedPattern>
+              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.hikari</shadedPattern>
             </relocation>
             <relocation>
               <pattern>com.tchristofferson.configupdater</pattern>
-              <shadedPattern>${project.groupId}.${project.artifactId}.configupdater</shadedPattern>
+              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.configupdater</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>de.themoep.minedown</pattern>
+              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.minedown</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>net.kyori</pattern>
+              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.kyori</shadedPattern>
             </relocation>
           </relocations>
         </configuration>
@@ -406,24 +414,6 @@
       <groupId>com.github.jojodmo</groupId>
       <artifactId>ItemBridge</artifactId>
       <version>b0054538c1</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>net.kyori</groupId>
-      <artifactId>adventure-api</artifactId>
-      <version>4.17.0</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>net.kyori</groupId>
-      <artifactId>adventure-platform-bukkit</artifactId>
-      <version>4.3.4</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>de.themoep</groupId>
-      <artifactId>minedown</artifactId>
-      <version>1.7.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>

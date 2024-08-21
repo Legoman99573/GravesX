@@ -73,7 +73,7 @@ public final class GraveManager {
      * Starts the grave timer task that periodically checks and updates graves.
      */
     private void startGraveTimer() {
-        plugin.getServer().getScheduler().runTaskTimer(plugin, this::checkAndUpdateGraves, 10L, 10L); // 10 ticks = 0.5 seconds
+        plugin.getServer().getScheduler().runTaskTimer(plugin, this::checkAndUpdateGraves, 20L, 20L); // 10 ticks = 0.5 seconds
     }
 
     /**

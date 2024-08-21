@@ -5,6 +5,7 @@ import com.ranull.graves.data.EntityData;
 import com.ranull.graves.event.GraveAutoLootEvent;
 import com.ranull.graves.event.GraveTeleportEvent;
 import com.ranull.graves.event.GraveZombieSpawnEvent;
+import com.ranull.graves.integration.MiniMessage;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.*;
 import org.bukkit.*;
@@ -520,7 +521,11 @@ public final class EntityManager extends EntityDataManager {
                 String message = StringUtil.parseString(string, entity, name, location, grave, plugin);
                 if (!message.contains("null")) {
                     plugin.debugMessage("Message found for " + string + " in grave.yml. Sending message to " + entity.getName() +".", 2);
-                    player.sendMessage(message);
+                    if (plugin.getIntegrationManager().hasMiniMessage()) {
+                        MiniMessage.sendMessage(player, message);
+                    } else {
+                        player.sendMessage(message); // assuming the server doesn't support MiniMessage or integration is disabled.
+                    }
                 } else {
                     plugin.debugMessage("Message is missing for " + string + " in grave.yml. Not sending message to " + entity.getName() +".", 2);
                 }

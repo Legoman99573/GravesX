@@ -13,6 +13,6 @@ public final class MineDown {
      * @return The legacy text representation of the MineDown formatted string.
      */
     public String parseString(String string) {
-        return BaseComponent.toLegacyText(de.themoep.minedown.MineDown.parse(string));
+        return BaseComponent.toLegacyText((BaseComponent) de.themoep.minedown.adventure.MineDown.parse(string));
     }
 }

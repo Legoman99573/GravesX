@@ -1,8 +1,11 @@
 package com.ranull.graves.manager;
 
 import com.ranull.graves.Graves;
+import com.ranull.graves.integration.MiniMessage;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.StringUtil;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -14,7 +17,9 @@ import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Manages the creation and manipulation of ItemStacks related to graves.
@@ -54,46 +59,121 @@ public final class ItemStackManager extends EntityDataManager {
         Enchantment durability = plugin.getVersionManager().getEnchantmentForVersion("DURABILITY");
 
         if (bookMeta != null) {
-            List<String> lineList = new ArrayList<>();
-            List<String> loreList = new ArrayList<>();
+            if (plugin.getIntegrationManager().hasMiniMessage()) {
+                List<String> lineList = new ArrayList<>();
+                List<String> loreList = new ArrayList<>();
 
-            for (String lore : plugin.getConfig("obituary.line", grave).getStringList("obituary.line")) {
-                lineList.add(StringUtil.parseString(lore, grave.getLocationDeath(), grave, plugin));
-            }
-
-            for (String string : plugin.getConfig("obituary.lore", grave).getStringList("obituary.lore")) {
-                loreList.add(ChatColor.GRAY + StringUtil.parseString(string, grave.getLocationDeath(), grave, plugin));
-            }
-
-            int customModelData = plugin.getConfig("obituary.model-data", grave).getInt("obituary.model-data", -1);
-
-            if (customModelData > -1) {
-                bookMeta.setCustomModelData(customModelData);
-            }
-
-            if (plugin.getConfig("obituary.glow", grave).getBoolean("obituary.glow")) {
-                bookMeta.addEnchant(durability, 1, true);
-
-                if (!plugin.getVersionManager().is_v1_7()) {
-                    bookMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+                for (String lore : plugin.getConfig("obituary.line", grave).getStringList("obituary.line")) {
+                    lineList.add(MiniMessage.convertLegacyToMiniMessage(StringUtil.parseString(lore, grave.getLocationDeath(), grave, plugin)));
                 }
-            }
 
-            if (!plugin.getVersionManager().is_v1_7() && !plugin.getVersionManager().is_v1_8()
-                    && !plugin.getVersionManager().is_v1_9()) {
-                bookMeta.setGeneration(null);
-            }
+                for (String string : plugin.getConfig("obituary.lore", grave).getStringList("obituary.lore")) {
+                    loreList.add(MiniMessage.convertLegacyToMiniMessage(StringUtil.parseString(string, grave.getLocationDeath(), grave, plugin)));
+                }
 
-            bookMeta.setPages(String.join("\n", lineList));
-            bookMeta.setLore(loreList);
-            bookMeta.setTitle(ChatColor.WHITE + StringUtil.parseString(plugin.getConfig("obituary.title", grave)
-                    .getString("obituary.title"), grave, plugin));
-            bookMeta.setAuthor(StringUtil.parseString(plugin.getConfig("obituary.author", grave)
-                    .getString("obituary.author"), grave, plugin));
-            itemStack.setItemMeta(bookMeta);
+                // Split lineList into pages, with each page having up to 13 lines
+                List<List<String>> pages = splitIntoPages(lineList, 13);
+
+                int customModelData = plugin.getConfig("obituary.model-data", grave).getInt("obituary.model-data", -1);
+
+                if (customModelData > -1) {
+                    bookMeta.setCustomModelData(customModelData);
+                }
+
+                if (plugin.getConfig("obituary.glow", grave).getBoolean("obituary.glow")) {
+                    bookMeta.addEnchant(durability, 1, true);
+
+                    if (!plugin.getVersionManager().is_v1_7()) {
+                        bookMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+                    }
+                }
+
+                if (!plugin.getVersionManager().is_v1_7() && !plugin.getVersionManager().is_v1_8()
+                        && !plugin.getVersionManager().is_v1_9()) {
+                    bookMeta.setGeneration(null);
+                }
+
+                // Convert pages from List<List<String>> to List<Component>
+                List<Component> componentPages = pages.stream()
+                        .map(page -> MiniMessage.miniMessage().deserialize(String.join("\n", page)))
+                        .collect(Collectors.toList());
+
+                List<Component> componentList = loreList.stream()
+                        .map(lore -> MiniMessage.miniMessage().deserialize(lore))
+                        .collect(Collectors.toList());
+
+                String title = MiniMessage.convertLegacyToMiniMessage(plugin.getConfig("obituary.title", grave).getString("obituary.title"));
+
+                String author = MiniMessage.convertLegacyToMiniMessage(plugin.getConfig("obituary.author", grave).getString("obituary.author"));
+
+                return MiniMessage.formatBookMeta(itemStack,
+                        MiniMessage.miniMessage().deserialize(StringUtil.parseString(title, grave, plugin)),
+                        MiniMessage.miniMessage().deserialize(StringUtil.parseString(author, grave, plugin)),
+                        componentPages, componentList);
+            } else {
+                List<String> lineList = new ArrayList<>();
+                List<String> loreList = new ArrayList<>();
+
+                for (String lore : plugin.getConfig("obituary.line", grave).getStringList("obituary.line")) {
+                    lineList.add(StringUtil.parseString(lore, grave.getLocationDeath(), grave, plugin));
+                }
+
+                for (String string : plugin.getConfig("obituary.lore", grave).getStringList("obituary.lore")) {
+                    loreList.add(StringUtil.parseString(string, grave.getLocationDeath(), grave, plugin));
+                }
+
+                // Split lineList into pages, with each page having up to 13 lines
+                List<List<String>> pages = splitIntoPages(lineList, 13);
+
+                int customModelData = plugin.getConfig("obituary.model-data", grave).getInt("obituary.model-data", -1);
+
+                if (customModelData > -1) {
+                    bookMeta.setCustomModelData(customModelData);
+                }
+
+                if (plugin.getConfig("obituary.glow", grave).getBoolean("obituary.glow")) {
+                    bookMeta.addEnchant(durability, 1, true);
+
+                    if (!plugin.getVersionManager().is_v1_7()) {
+                        bookMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+                    }
+                }
+
+                if (!plugin.getVersionManager().is_v1_7() && !plugin.getVersionManager().is_v1_8()
+                        && !plugin.getVersionManager().is_v1_9()) {
+                    bookMeta.setGeneration(null);
+                }
+
+                // Convert pages back to List<String> for legacy handling
+                List<String> stringPages = pages.stream()
+                        .map(page -> String.join("\n", page))
+                        .collect(Collectors.toList());
+
+                bookMeta.setPages(String.join("\n", stringPages));
+                bookMeta.setLore(loreList);
+                bookMeta.setTitle(ChatColor.WHITE + StringUtil.parseString(plugin.getConfig("obituary.title", grave)
+                        .getString("obituary.title"), grave, plugin));
+                bookMeta.setAuthor(StringUtil.parseString(plugin.getConfig("obituary.author", grave)
+                        .getString("obituary.author"), grave, plugin));
+                itemStack.setItemMeta(bookMeta);
+            }
         }
 
         return itemStack;
+    }
+
+    /**
+     * Splits a list of strings into sublists, each containing up to maxLinesPerPage lines.
+     * @param lines The list of strings to split.
+     * @param maxLinesPerPage The maximum number of lines per page.
+     * @return A list of pages, where each page is a list of strings.
+     */
+    private List<List<String>> splitIntoPages(List<String> lines, int maxLinesPerPage) {
+        List<List<String>> pages = new ArrayList<>();
+        for (int i = 0; i < lines.size(); i += maxLinesPerPage) {
+            pages.add(new ArrayList<>(lines.subList(i, Math.min(i + maxLinesPerPage, lines.size()))));
+        }
+        return pages;
     }
 
     /**

@@ -3,6 +3,7 @@ package com.ranull.graves.manager;
 import com.ranull.graves.Graves;
 import com.ranull.graves.data.EntityData;
 import com.ranull.graves.data.HologramData;
+import com.ranull.graves.integration.MiniMessage;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.LocationUtil;
 import com.ranull.graves.util.StringUtil;
@@ -70,7 +71,13 @@ public final class HologramManager extends EntityDataManager {
                     armorStand.setGravity(false);
                     armorStand.setCustomNameVisible(true);
                     armorStand.setSmall(true);
-                    armorStand.setCustomName(StringUtil.parseString(line, location, grave, plugin));
+
+                    // Use MiniMessage if available to format the custom name
+                    if (plugin.getIntegrationManager().hasMiniMessage()) {
+                        armorStand.setCustomName(StringUtil.parseString(MiniMessage.setArmorStandName(line), location, grave, plugin));
+                    } else {
+                        armorStand.setCustomName(StringUtil.parseString(line, location, grave, plugin));
+                    }
 
                     if (!plugin.getVersionManager().is_v1_7()) {
                         try {
