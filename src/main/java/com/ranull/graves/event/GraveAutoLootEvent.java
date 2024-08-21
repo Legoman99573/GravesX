@@ -39,17 +39,18 @@ public class GraveAutoLootEvent extends GraveEvent {
      *
      * @return The handler list for this event.
      */
-    @Override
-    public @NotNull HandlerList getHandlers() {
+    @NotNull
+    public static HandlerList getHandlerList() {
         return HANDLERS;
     }
 
     /**
-     * Gets the static list of handlers for this event.
+     * Gets the list of handlers for this event.
      *
-     * @return The static handler list for this event.
+     * @return The handler list for this event.
      */
-    public static @NotNull HandlerList getHandlerList() {
+    @Override
+    public @NotNull HandlerList getHandlers() {
         return HANDLERS;
     }
 }

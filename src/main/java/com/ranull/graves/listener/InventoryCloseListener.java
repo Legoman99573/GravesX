@@ -79,9 +79,7 @@ public class InventoryCloseListener implements Listener {
      */
     private void callGraveCloseEvent(InventoryCloseEvent event, Grave grave, Player player, Entity entity) {
         GraveCloseEvent graveCloseEvent = new GraveCloseEvent(event.getView(), grave, player);
-        GraveCloseEvent graveCloseEventLegacy = new GraveCloseEvent(grave, event.getView(), entity);
         plugin.getServer().getPluginManager().callEvent(graveCloseEvent);
-        plugin.getServer().getPluginManager().callEvent(graveCloseEventLegacy);
     }
 
     /**

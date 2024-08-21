@@ -39,8 +39,8 @@ public class GraveZombieSpawnEvent extends GraveEvent {
      *
      * @return The handler list for this event.
      */
-    @Override
-    public @NotNull HandlerList getHandlers() {
+    @NotNull
+    public static HandlerList getHandlerList() {
         return HANDLERS;
     }
 
@@ -49,7 +49,8 @@ public class GraveZombieSpawnEvent extends GraveEvent {
      *
      * @return The handler list for this event.
      */
-    public static @NotNull HandlerList getHandlerList() {
+    @Override
+    public @NotNull HandlerList getHandlers() {
         return HANDLERS;
     }
 }

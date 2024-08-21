@@ -60,13 +60,11 @@ public class InventoryOpenListener implements Listener {
         Entity entity = event.getPlayer();
 
         GraveOpenEvent graveOpenEvent = new GraveOpenEvent(event.getView(), grave, player);
-        GraveOpenEvent graveOpenEventLegacy = new GraveOpenEvent(event.getView(), grave, entity);
 
         // Call the custom GraveOpenEvent
         plugin.getServer().getPluginManager().callEvent(graveOpenEvent);
-        plugin.getServer().getPluginManager().callEvent(graveOpenEventLegacy);
 
         // Cancel the inventory open event if the GraveOpenEvent was cancelled
-        event.setCancelled(graveOpenEvent.isCancelled() || graveOpenEventLegacy.isCancelled());
+        event.setCancelled(graveOpenEvent.isCancelled());
     }
 }

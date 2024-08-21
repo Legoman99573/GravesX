@@ -41,15 +41,26 @@ public class GraveOpenEvent extends GraveEvent {
     }
 
     /**
-     * @deprecated          Use {@link GraveOpenEvent#GraveOpenEvent(InventoryView, Grave, Player)} instead for better player logging
+     * @deprecated          Use {@link #GraveOpenEvent(InventoryView, Grave, Player)} instead for better player logging.
      * Constructs a new {@code GraveOpenEvent}.
      *
-     * @param inventoryView The inventory view that is being closed.
+     * @param inventoryView The inventory view that is being opened.
      * @param grave         The grave associated with the inventory view.
-     * @param entity        The entity who is closing the inventory.
+     * @param entity        The entity who is opening the inventory.
      */
+    @Deprecated
     public GraveOpenEvent(InventoryView inventoryView, Grave grave, Entity entity) {
-        super(grave, entity, grave.getLocation(), inventoryView, null, null, null, null, null);
+        this(inventoryView, grave, entity instanceof Player ? (Player) entity : null);
+    }
+
+    /**
+     * Gets the list of handlers for this event.
+     *
+     * @return The handler list for this event.
+     */
+    @NotNull
+    public static HandlerList getHandlerList() {
+        return HANDLERS;
     }
 
     /**
@@ -59,15 +70,6 @@ public class GraveOpenEvent extends GraveEvent {
      */
     @Override
     public @NotNull HandlerList getHandlers() {
-        return HANDLERS;
-    }
-
-    /**
-     * Gets the static list of handlers for this event.
-     *
-     * @return The static handler list for this event.
-     */
-    public static @NotNull HandlerList getHandlerList() {
         return HANDLERS;
     }
 }

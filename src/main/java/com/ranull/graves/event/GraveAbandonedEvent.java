@@ -44,5 +44,4 @@ public class GraveAbandonedEvent extends GraveEvent {
     public @NotNull HandlerList getHandlers() {
         return HANDLERS;
     }
-
 }

@@ -35,16 +35,20 @@ public class GraveBreakEvent extends GraveEvent {
     /**
      * Gets the list of handlers for this event.
      *
-     * @return The list of handlers.
+     * @return The handler list for this event.
      */
     @NotNull
-    @Override
-    public HandlerList getHandlers() {
+    public static HandlerList getHandlerList() {
         return HANDLERS;
     }
 
-    @NotNull
-    public static HandlerList getHandlerList() {
+    /**
+     * Gets the list of handlers for this event.
+     *
+     * @return The handler list for this event.
+     */
+    @Override
+    public @NotNull HandlerList getHandlers() {
         return HANDLERS;
     }
 }

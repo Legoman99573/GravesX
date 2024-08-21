@@ -710,10 +710,8 @@ public class EntityDeathListener implements Listener {
             }
             location.add(offsetX, offsetY, offsetZ);
             GraveBlockPlaceEvent graveBlockPlaceEvent = new GraveBlockPlaceEvent(grave, location, entry.getValue(), entry.getKey().getBlock(), livingEntity);
-            GraveBlockPlaceEvent graveBlockPlaceEventLegacy = new GraveBlockPlaceEvent(grave, location, entry.getValue());
             plugin.getServer().getPluginManager().callEvent(graveBlockPlaceEvent);
-            plugin.getServer().getPluginManager().callEvent(graveBlockPlaceEventLegacy);
-            if (!graveBlockPlaceEvent.isCancelled() && !graveBlockPlaceEventLegacy.isCancelled()) {
+            if (!graveBlockPlaceEvent.isCancelled()) {
                 plugin.getGraveManager().placeGrave(graveBlockPlaceEvent.getLocation(), grave);
                 plugin.getEntityManager().sendMessage("message.block", livingEntity, location, grave);
                 plugin.getEntityManager().runCommands("event.command.block", livingEntity, graveBlockPlaceEvent.getLocation(), grave);

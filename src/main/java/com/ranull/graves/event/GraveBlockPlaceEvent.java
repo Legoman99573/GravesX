@@ -37,7 +37,7 @@ public class GraveBlockPlaceEvent extends GraveEvent {
     }
 
     /**
-     * @deprecated      Use {@link GraveBlockPlaceEvent#GraveBlockPlaceEvent(Grave, Location, BlockData.BlockType, Block, LivingEntity)} instead to log LivingEntity and Block
+     * @deprecated Use {@link GraveBlockPlaceEvent#GraveBlockPlaceEvent(Grave, Location, BlockData.BlockType, Block, LivingEntity)} instead.
      * Constructs a new GraveBlockPlaceEvent.
      *
      * @param grave     The grave associated with the event.
@@ -46,15 +46,26 @@ public class GraveBlockPlaceEvent extends GraveEvent {
      */
     @Deprecated
     public GraveBlockPlaceEvent(Grave grave, Location location, BlockData.BlockType blockType) {
-        super(grave, null, location, null, null, blockType, null, null, null);
+        this(grave, location, blockType, null, null); // Delegate to the new constructor with nulls for the missing parameters
     }
 
-    @Override
-    public @NotNull HandlerList getHandlers() {
+    /**
+     * Gets the list of handlers for this event.
+     *
+     * @return The handler list for this event.
+     */
+    @NotNull
+    public static HandlerList getHandlerList() {
         return HANDLERS;
     }
 
-    public static HandlerList getHandlerList() {
+    /**
+     * Gets the list of handlers for this event.
+     *
+     * @return The handler list for this event.
+     */
+    @Override
+    public @NotNull HandlerList getHandlers() {
         return HANDLERS;
     }
 }

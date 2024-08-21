@@ -26,11 +26,21 @@ public class GraveProtectionExpiredEvent extends GraveEvent {
         super(grave, null, grave.getLocationDeath(), null, null, null,null, null, null);
     }
 
+    /**
+     * Gets the list of handlers for this event.
+     *
+     * @return The handler list for this event.
+     */
     @NotNull
     public static HandlerList getHandlerList() {
         return HANDLERS;
     }
 
+    /**
+     * Gets the list of handlers for this event.
+     *
+     * @return The handler list for this event.
+     */
     @Override
     public @NotNull HandlerList getHandlers() {
         return HANDLERS;
