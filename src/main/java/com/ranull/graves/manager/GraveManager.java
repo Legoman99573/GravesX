@@ -133,10 +133,10 @@ public final class GraveManager {
      */
     private void handleGraveTimeout(Grave grave, List<Grave> graveRemoveList) {
         long remainingTime = grave.getTimeAliveRemaining();
+        boolean isAbandoned = grave.isAbandoned();
         plugin.debugMessage("Handling timeout for grave: " + grave.getUUID() + " with remaining time: " + remainingTime, 1);
 
-        if (remainingTime == -1) {
-            plugin.debugMessage("Grave " + grave.getUUID() + " has infinite time remaining, skipping timeout handling.", 2);
+        if (remainingTime == -1 || isAbandoned) {
             return;
         }
 
@@ -179,6 +179,7 @@ public final class GraveManager {
                     if (grave.getOwnerType() == EntityType.PLAYER && grave.getOwnerUUID() != null) {
                         Player player = plugin.getServer().getPlayer(grave.getOwnerUUID());
                         plugin.getEntityManager().sendMessage("message.abandoned", player, graveAbandonedEvent.getLocation(), grave);
+                        grave.setTimeAliveRemaining(-1);
                         abandonGrave(grave);
                     }
                 } else {
