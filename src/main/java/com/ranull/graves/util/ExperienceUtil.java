@@ -77,12 +77,19 @@ public final class ExperienceUtil {
     }
 
     /**
+     * @deprecated
+     * <p>
+     * This method is deprecated and will be removed in a future version.
+     * Use {@link #getLevelFromExperience(long)} instead.
+     * </p>
+     *
      * Gets the amount of experience a player will drop upon death based on a percentage.
      *
      * @param player          The player to get the drop experience from.
      * @param expStorePercent The percentage of experience to drop.
      * @return The amount of experience to drop.
      */
+    @Deprecated
     public static int getPlayerDropExperience(Player player, float expStorePercent) {
         int experience = getPlayerExperience(player);
 

@@ -24,11 +24,18 @@ public final class FileUtil {
     }
 
     /**
+     * @deprecated
+     * <p>
+     * This method is deprecated and will be removed in a future version.
+     * Use {@link #moveFile(File, String)} instead.
+     *</p>
+     *
      * Copies a file to a new location with a new name.
      *
      * @param file The file to be copied.
      * @param name The new name for the copied.
      */
+    @Deprecated
     public static void copyFile(File file, String name) {
         try {
             Files.copy(file.toPath(), file.toPath().resolveSibling(name));

@@ -204,12 +204,15 @@ public final class StringUtil {
     }
 
     /**
-     * Parses time placeholders in a string and replaces them with the corresponding values.
+     * @deprecated
+     * This method is deprecated and will be removed in a future version.
+     * Use {@link #getDateString(Grave, long, Graves)} instead.
      *
      * @param string The string to parse.
      * @param grave  The grave object.
      * @return The parsed string with time placeholders replaced.
      */
+    @Deprecated
     public static String parseTime(String string, Grave grave) {
         long time = grave.getTimeCreation() - grave.getTimeAlive();
         int day = (int) TimeUnit.SECONDS.toDays(time);
