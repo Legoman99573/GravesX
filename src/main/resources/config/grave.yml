@@ -19,6 +19,8 @@ settings:
         explode: false
         # The radius a grave may be protected. Setting to less than 2 could allow floating blocks when looted. Best to keep it at least more than two. To disable, just set to 0
         protection-radius: 5
+        # Should we replace the oldest graves with a new one when a player his the max limit? This will remove abandoned graves as well and all contents will be lost.
+        replace-oldest: false
 
       #############
       # Placement #
@@ -753,6 +755,7 @@ settings:
         grave-protection-build-deny: "You can't build blocks near a grave site."
         grave-protection-break-deny: "You can't break blocks near a grave site."
         grave-abandoned: "Your grave at &c%x%&rx, &c%y%&ry, &c%z%&rz in &c%world_formatted%&r has been abandoned with &c%item% &ritems and &c%experience% &rExperience."
+        grave-oldest-replaced: "Your oldest grave has been removed since you have reached the max limit."
 
         world:
           # World names formatting.

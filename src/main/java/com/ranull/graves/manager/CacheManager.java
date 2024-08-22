@@ -155,4 +155,26 @@ public final class CacheManager {
     public Map<UUID, List<ItemStack>> getRemovedItemStackMap() {
         return removedItemStackMap;
     }
+
+    /**
+     * Returns the oldest grave for a given player.
+     * @param playerUUID The UUID of the player whose graves to consider.
+     * @return The oldest grave for the specified player.
+     */
+    public Grave getOldestGrave(UUID playerUUID) {
+        long oldestTime = Long.MAX_VALUE;
+        Grave oldestGrave = null;
+
+        for (Grave cur : graveMap.values()) { // Iterate over all graves
+            if (cur.getOwnerUUID().equals(playerUUID)) { // Check if the grave belongs to the specified player
+                long curTime = cur.getTimeCreation();
+                if (curTime < oldestTime) {
+                    oldestTime = curTime;
+                    oldestGrave = cur;
+                }
+            }
+        }
+
+        return oldestGrave;
+    }
 }

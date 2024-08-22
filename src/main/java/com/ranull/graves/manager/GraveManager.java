@@ -478,6 +478,17 @@ public final class GraveManager {
     }
 
     /**
+     * Removes the oldest grave.
+     */
+
+    public void removeOldestGrave(LivingEntity livingEntity) {
+        Grave toDel = plugin.getCacheManager().getOldestGrave(livingEntity.getUniqueId());
+        if (toDel != null) {
+            removeGrave(toDel);
+        }
+    }
+
+    /**
      * Removes a grave and its associated data.
      *
      * @param grave the grave to remove.

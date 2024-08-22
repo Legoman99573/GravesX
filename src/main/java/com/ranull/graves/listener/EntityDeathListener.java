@@ -90,10 +90,34 @@ public class EntityDeathListener implements Listener {
 
         if (!isValidDamageCause(livingEntity, permissionList, entityName)) return;
 
-        if (plugin.getGraveManager().getGraveList(livingEntity).size() >= plugin.getConfig("grave.max", livingEntity, permissionList).getInt("grave.max")) {
-            plugin.getEntityManager().sendMessage("message.max", livingEntity, livingEntity.getLocation(), permissionList);
-            plugin.debugMessage("Grave not created for " + entityName + " because they reached maximum graves", 2);
-            return;
+        Player player = ((PlayerDeathEvent) event).getEntity().getPlayer();
+
+// Retrieve the server-configured maximum graves
+        int serverMaxGraves = plugin.getConfig("grave.max", livingEntity, permissionList).getInt("grave.max");
+
+        // Retrieve the permission-based maximum graves
+        int maxGravesPermission = getMaxGravesPermission(player);
+
+        // Determine the applicable limit
+        // Use the permission-based limit if it's available; otherwise, fall back to the server-configured limit
+        int applicableMaxGraves = (maxGravesPermission > 0) ? maxGravesPermission : serverMaxGraves;
+
+        // Check if the player has reached the applicable grave limit
+        if (plugin.getGraveManager().getGraveList(livingEntity).size() >= applicableMaxGraves) {
+            if (plugin.hasGrantedPermission("graves.max.replace", player) && plugin
+                    .getConfig("grave.replace-oldest", livingEntity, permissionList).getBoolean("grave.replace-oldest")) {
+                plugin.getGraveManager().removeOldestGrave(livingEntity);
+                plugin.getEntityManager().sendMessage("message.grave-oldest-replaced", livingEntity, livingEntity.getLocation(),
+                        permissionList);
+                plugin.debugMessage("Grave replaced oldest for " + entityName + " because they reached maximum graves", 2);
+            } else if (plugin.hasGrantedPermission("graves.max.bypass", player)) {
+                plugin.debugMessage("Grave created for " + entityName + " even though they reached the maximum graves cap", 2);
+            } else {
+                plugin.getEntityManager().sendMessage("message.max", livingEntity, livingEntity.getLocation(),
+                        permissionList);
+                plugin.debugMessage("Grave not created for " + entityName + " because they reached maximum graves", 2);
+                return;
+            }
         }
 
         if (!hasValidToken(livingEntity, permissionList, entityName, event.getDrops())) return;
@@ -105,6 +129,35 @@ public class EntityDeathListener implements Listener {
         } else {
             plugin.debugMessage("Grave not created for " + entityName + " because they had no drops", 2);
         }
+    }
+
+    /**
+     * Retrieves the maximum number of graves a player is allowed to have based on their permissions.
+     * <p>
+     * The method checks for permissions related to grave limits and returns the highest limit found. If the player
+     * has the "grave.max.limit.unlimited" permission, the method will return {@code Integer.MAX_VALUE} indicating
+     * that the player has no limit on the number of graves. If no specific permissions are found, the method returns
+     * {@code 0} by default, which should be interpreted as no specific limit set by permissions.
+     * </p>
+     *
+     * @param player The player whose grave limit is being checked.
+     * @return The maximum number of graves the player is allowed to have. Returns {@code Integer.MAX_VALUE} for
+     *         unlimited graves, or {@code 0} if no specific limit is set by permissions.
+     */
+    private int getMaxGravesPermission(Player player) {
+        int maxGraves = 0; // Default to 0, indicating no specific limit set
+
+        // Retrieve all permissions related to grave limits
+        for (int i = 0; i <= 10; i++) { // Adjust the range as needed
+            String permission = "grave.max.limit." + i;
+            if (plugin.hasGrantedPermission("grave.max.limit.unlimited", player)) {
+                return Integer.MAX_VALUE; // Player has unlimited graves
+            } else if (plugin.hasGrantedPermission(permission, player)) {
+                maxGraves = i;
+            }
+        }
+
+        return maxGraves;
     }
 
     /**

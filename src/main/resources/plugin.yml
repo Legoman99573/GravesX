@@ -129,6 +129,18 @@ permissions:
     default: op
     description: Dump server information
 
+  graves.max.replace:
+    default: true
+    description: Replaces the oldest grave
+
+  graves.max.limit.*:
+    default: false
+    description: Sets the max amount of graves a player has. Falls back to the max grave limit in grave.yml
+
+  graves.max.bypass:
+    default: op
+    description: Allows players to bypass to the max grave limit in grave.yml
+
   graves.purge:
     default: op
     description: Purge graves
