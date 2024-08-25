@@ -92,7 +92,7 @@ public class EntityDeathListener implements Listener {
 
         Player player = ((PlayerDeathEvent) event).getEntity().getPlayer();
 
-// Retrieve the server-configured maximum graves
+        // Retrieve the server-configured maximum graves
         int serverMaxGraves = plugin.getConfig("grave.max", livingEntity, permissionList).getInt("grave.max");
 
         // Retrieve the permission-based maximum graves

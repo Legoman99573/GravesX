@@ -321,6 +321,8 @@ public final class DataManager {
             config.setIdleTimeout(600000); // 10 minutes
             config.setConnectionTestQuery("SELECT 1");
             config.setLeakDetectionThreshold(15000); // Detect connection leaks
+            dataSource = new HikariDataSource(config);
+            checkAndUnlockDatabase(); // Check and unlock the database if needed
         } else if (type == Type.SQLITE) {
             migrateRootDataSubData();
             HikariConfig config = new HikariConfig();
@@ -392,10 +394,6 @@ public final class DataManager {
             }
 
             dataSource = new HikariDataSource(config);
-
-            if (testDatabaseConnection()) {
-                migrate();
-            }
         }
     }
 
