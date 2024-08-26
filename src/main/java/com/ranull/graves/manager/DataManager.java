@@ -9,6 +9,7 @@ import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.*;
 import org.apache.commons.lang3.StringUtils;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.EntityType;
 import org.bukkit.inventory.EquipmentSlot;
@@ -16,6 +17,7 @@ import org.bukkit.inventory.ItemStack;
 
 import java.io.File;
 import java.sql.*;
+import java.sql.Date;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -304,6 +306,7 @@ public final class DataManager {
             config.addDataSourceProperty("maintainTimeStats", "false");
             config.addDataSourceProperty("alwaysSendSetIsolation", "false");
             config.addDataSourceProperty("cacheCallableStmts", "true");
+            config.addDataSourceProperty("dataSourceName", "Graves");
             config.addDataSourceProperty("ssl", String.valueOf(ssl));
             if (ssl) {
                 config.addDataSourceProperty("sslfactory", allowPublicKeyRetrieval);
@@ -312,7 +315,7 @@ public final class DataManager {
                 config.addDataSourceProperty("sslcert", sslcert);
                 config.addDataSourceProperty("sslkey", sslkey);
             }
-            config.setDriverClassName("org.postgresql.ds.PGSimpleDataSource");
+            config.setDriverClassName("org.postgresql.Driver");
             config.setMaximumPoolSize(maxConnections);
             config.setMaxLifetime(maxLifetime);
             config.setMinimumIdle(2);
@@ -522,9 +525,27 @@ public final class DataManager {
      */
     public List<String> getColumnList(String tableName) {
         List<String> columnList = new ArrayList<>();
-        String query = (type == Type.MYSQL || type == Type.MARIADB)
-                ? "DESCRIBE " + tableName + ";"
-                : "PRAGMA table_info(" + tableName + ");";
+        String query = null;
+
+        // Determine the query based on the database type
+        switch (type) {
+            case MYSQL:
+            case MARIADB:
+                query = "DESCRIBE " + tableName + ";";
+                break;
+            case SQLITE:
+                query = "PRAGMA table_info(" + tableName + ");";
+                break;
+            case POSTGRESQL:
+                query = "SELECT column_name FROM information_schema.columns WHERE table_name = '" + tableName + "';";
+                break;
+            case H2:
+                query = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '" + tableName + "';";
+                break;
+            default:
+                plugin.getLogger().severe("Unsupported database type: " + type);
+                return columnList;
+        }
 
         try (Connection connection = getConnection(); // Ensure you get a connection
              Statement statement = connection != null ? connection.createStatement() : null;
@@ -532,11 +553,20 @@ public final class DataManager {
 
             if (resultSet != null) {
                 while (resultSet.next()) {
-                    String columnName = (type == Type.MYSQL || type == Type.MARIADB) ? resultSet.getString("Field") : resultSet.getString("name");
+                    String columnName;
+                    if (type == Type.MYSQL || type == Type.MARIADB) {
+                        columnName = resultSet.getString("Field");
+                    } else if (type == Type.SQLITE) {
+                        columnName = resultSet.getString("name"); // Corrected column name for SQLite
+                    } else {
+                        columnName = resultSet.getString("COLUMN_NAME");
+                    }
                     columnList.add(columnName);
                 }
             }
         } catch (SQLException exception) {
+            plugin.getLogger().severe("Error occurred while getting Column List: " + exception.getMessage());
+            plugin.getLogger().severe("Query: " + query);
             plugin.logStackTrace(exception);
         }
 
@@ -551,30 +581,60 @@ public final class DataManager {
      */
     public boolean tableExists(String tableName) {
         ResultSet resultSet = null;
+        String query = null;
+
+        // Determine the query based on the database type
+        switch (type) {
+            case MYSQL:
+            case MARIADB:
+                query = "SHOW TABLES LIKE '" + tableName + "';";
+                break;
+            case SQLITE:
+                query = "SELECT name FROM sqlite_master WHERE type='table' AND name='" + tableName + "';";
+                break;
+            case POSTGRESQL:
+                query = "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = '" + tableName + "');";
+                break;
+            case H2:
+                query = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '" + tableName + "';";
+                break;
+            default:
+                plugin.getLogger().severe("Unsupported database type: " + type);
+                return false;
+        }
+
         try (Connection connection = getConnection();
              Statement statement = connection != null ? connection.createStatement() : null) {
-            if (type == Type.MYSQL || type == Type.MARIADB) {
-                if (statement != null) {
-                    resultSet = statement.executeQuery("SHOW TABLES LIKE '" + tableName + "';");
-                }
-            } else {
-                if (statement != null) {
-                    resultSet = statement.executeQuery("SELECT name FROM sqlite_master WHERE type='table' AND name='" + tableName + "';");
+            if (statement != null) {
+                resultSet = statement.executeQuery(query);
+            }
+            if (resultSet != null && resultSet.next()) {
+                // For PostgreSQL and H2, check if the result indicates the table exists
+                if (type == Type.POSTGRESQL) {
+                    return resultSet.getBoolean(1);
+                } else if (type == Type.H2) {
+                    return resultSet.getInt(1) > 0;
+                } else {
+                    return true; // For MySQL, MariaDB, and SQLite, table exists if the result is returned
                 }
             }
-            return resultSet != null && resultSet.next();
         } catch (NullPointerException | SQLException exception) {
+            plugin.getLogger().severe("Error occurred while checking if table exists: " + exception.getMessage());
+            plugin.getLogger().severe("Query: " + query);
             plugin.logStackTrace(exception);
-            return false;
         } finally {
             if (resultSet != null) {
                 try {
                     resultSet.close();
                 } catch (SQLException exception) {
+                    plugin.getLogger().severe("Error occurred while closing resultSet: " + exception.getMessage());
+                    plugin.getLogger().severe("Result Set: " + resultSet);
                     plugin.logStackTrace(exception);
                 }
             }
         }
+
+        return false;
     }
 
     /**
@@ -587,8 +647,32 @@ public final class DataManager {
      */
     private void addColumnIfNotExists(String tableName, String columnName, String columnDefinition) throws SQLException {
         List<String> columnList = getColumnList(tableName);
+
         if (!columnList.contains(columnName)) {
-            executeUpdate("ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + columnDefinition + ";");
+            String query;
+
+            switch (type) {
+                case MYSQL:
+                case MARIADB:
+                case SQLITE:
+                    query = "ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + columnDefinition + ";";
+                    break;
+                case POSTGRESQL:
+                    query = "DO $$ BEGIN " +
+                            "IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = '" + tableName + "' AND column_name = '" + columnName + "') THEN " +
+                            "ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + columnDefinition + "; " +
+                            "END IF; " +
+                            "END $$;";
+                    break;
+                case H2:
+                    query = "ALTER TABLE " + tableName + " ADD COLUMN IF NOT EXISTS " + columnName + " " + columnDefinition + ";";
+                    break;
+                default:
+                    plugin.getLogger().severe("Unsupported database type: " + type);
+                    return;
+            }
+
+            executeUpdate(query, new Object[0]);
         }
     }
 
@@ -600,31 +684,7 @@ public final class DataManager {
     public void setupGraveTable() throws SQLException {
         String name = "grave";
         if (!tableExists(name)) {
-            if (type == Type.H2) {
-                executeUpdate("CREATE TABLE IF NOT EXISTS " + name + " (" +
-                        "uuid VARCHAR(255) UNIQUE,\n" +
-                        "owner_type VARCHAR(255),\n" +
-                        "owner_name VARCHAR(255),\n" +
-                        "owner_name_display VARCHAR(255),\n" +
-                        "owner_uuid VARCHAR(255),\n" +
-                        "owner_texture TEXT,\n" +
-                        "owner_texture_signature TEXT,\n" +
-                        "killer_type VARCHAR(255),\n" +
-                        "killer_name VARCHAR(255),\n" +
-                        "killer_name_display VARCHAR(255),\n" +
-                        "killer_uuid VARCHAR(255),\n" +
-                        "location_death VARCHAR(255),\n" +
-                        "yaw FLOAT,\n" +
-                        "pitch FLOAT,\n" +
-                        "inventory TEXT,\n" +
-                        "equipment TEXT,\n" +
-                        "experience INT,\n" +
-                        "protection INT,\n" +
-                        "time_alive BIGINT,\n" +
-                        "time_protection BIGINT,\n" +
-                        "time_creation BIGINT,\n" +
-                        "permissions TEXT);");
-            } else if (type == Type.POSTGRESQL) {
+            if (type == Type.H2 || type == Type.POSTGRESQL) {
                 executeUpdate("CREATE TABLE IF NOT EXISTS " + name + " (" +
                         "uuid VARCHAR(255) UNIQUE,\n" +
                         "owner_type VARCHAR(255),\n" +
@@ -644,10 +704,11 @@ public final class DataManager {
                         "equipment TEXT,\n" +
                         "experience INT,\n" +
                         "protection INT,\n" +
+                        "is_abandoned INT,\n" +
                         "time_alive BIGINT,\n" +
                         "time_protection BIGINT,\n" +
                         "time_creation BIGINT,\n" +
-                        "permissions TEXT);");
+                        "permissions TEXT);", new Object[0]);
             } else {
                 executeUpdate("CREATE TABLE IF NOT EXISTS " + name + " (" +
                         "uuid VARCHAR(255) UNIQUE,\n" +
@@ -672,7 +733,7 @@ public final class DataManager {
                         "time_alive BIGINT,\n" +
                         "time_protection BIGINT,\n" +
                         "time_creation BIGINT,\n" +
-                        "permissions TEXT);");
+                        "permissions TEXT);", new Object[0]);
             }
         }
 
@@ -688,13 +749,24 @@ public final class DataManager {
         addColumnIfNotExists(name, "killer_name_display", "VARCHAR(255)");
         addColumnIfNotExists(name, "killer_uuid", "VARCHAR(255)");
         addColumnIfNotExists(name, "location_death", "VARCHAR(255)");
-        addColumnIfNotExists(name, "yaw", "FLOAT(16)");
-        addColumnIfNotExists(name, "pitch", "FLOAT(16)");
+        if (type == Type.POSTGRESQL || type == Type.H2) {
+            addColumnIfNotExists(name, "yaw", "REAL");
+            addColumnIfNotExists(name, "pitch", "REAL");
+        } else {
+            addColumnIfNotExists(name, "yaw", "FLOAT(16)");
+            addColumnIfNotExists(name, "pitch", "FLOAT(16)");
+        }
         addColumnIfNotExists(name, "inventory", "TEXT");
         addColumnIfNotExists(name, "equipment", "TEXT");
-        addColumnIfNotExists(name, "experience", "INT(16)");
-        addColumnIfNotExists(name, "protection", "INT(1)");
-        addColumnIfNotExists(name, "is_abandoned", "INT(1)");
+        if (type == Type.POSTGRESQL || type == Type.H2) {
+            addColumnIfNotExists(name, "experience", "INT");
+            addColumnIfNotExists(name, "protection", "INT");
+            addColumnIfNotExists(name, "is_abandoned", "INT");
+        } else {
+            addColumnIfNotExists(name, "experience", "INT(16)");
+            addColumnIfNotExists(name, "protection", "INT(1)");
+            addColumnIfNotExists(name, "is_abandoned", "INT(1)");
+        }
         addColumnIfNotExists(name, "time_alive", "BIGINT");
         addColumnIfNotExists(name, "time_protection", "BIGINT");
         addColumnIfNotExists(name, "time_creation", "BIGINT");
@@ -708,14 +780,21 @@ public final class DataManager {
      */
     public void setupBlockTable() throws SQLException {
         String name = "block";
+
+        // Check if the table exists and create it if it does not
         if (!tableExists(name)) {
-            executeUpdate("CREATE TABLE IF NOT EXISTS " + name + " (" +
+            String createTableQuery;
+
+            createTableQuery = "CREATE TABLE " + name + " (" +
                     "location VARCHAR(255),\n" +
                     "uuid_grave VARCHAR(255),\n" +
                     "replace_material VARCHAR(255),\n" +
-                    "replace_data TEXT);");
+                    "replace_data TEXT);";
+
+            executeUpdate(createTableQuery, new Object[0]);
         }
 
+        // Ensure all columns exist
         addColumnIfNotExists(name, "location", "VARCHAR(255)");
         addColumnIfNotExists(name, "uuid_grave", "VARCHAR(255)");
         addColumnIfNotExists(name, "replace_material", "VARCHAR(255)");
@@ -735,7 +814,7 @@ public final class DataManager {
                 "serializedLocations TEXT," +
                 "PRIMARY KEY (name, world)" +
                 ");";
-        executeUpdate(createTableQuery);
+        executeUpdate(createTableQuery, new Object[0]);
     }
 
     /**
@@ -746,24 +825,44 @@ public final class DataManager {
     public void setupHologramTable() throws SQLException {
         String name = "hologram";
         if (!tableExists(name)) {
-            if (type == Type.H2) {
-                executeUpdate("CREATE TABLE IF NOT EXISTS " + name + " (" +
-                        "uuid_entity VARCHAR(255),\n" +
-                        "uuid_grave VARCHAR(255),\n" +
-                        "line INT,\n" +
-                        "location VARCHAR(255));");
-            } else {
-                executeUpdate("CREATE TABLE IF NOT EXISTS " + name + " (" +
-                        "uuid_entity VARCHAR(255),\n" +
-                        "uuid_grave VARCHAR(255),\n" +
-                        "line INT(16),\n" +
-                        "location VARCHAR(255));");
+            String createTableQuery;
+
+            switch (type) {
+                case MYSQL:
+                case MARIADB:
+                    createTableQuery = "CREATE TABLE IF NOT EXISTS " + name + " (" +
+                            "uuid_entity VARCHAR(255),\n" +
+                            "uuid_grave VARCHAR(255),\n" +
+                            "line INT(16),\n" +
+                            "location VARCHAR(255));";
+                    break;
+                case SQLITE:
+                    createTableQuery = "CREATE TABLE IF NOT EXISTS " + name + " (" +
+                            "uuid_entity VARCHAR(255),\n" +
+                            "uuid_grave VARCHAR(255),\n" +
+                            "line INTEGER,\n" +  // SQLite uses INTEGER instead of INT
+                            "location VARCHAR(255));";
+                    break;
+                case POSTGRESQL:
+                case H2:
+                    createTableQuery = "CREATE TABLE IF NOT EXISTS " + name + " (" +
+                            "uuid_entity VARCHAR(255),\n" +
+                            "uuid_grave VARCHAR(255),\n" +
+                            "line INTEGER,\n" +  // PostgreSQL and H2 use INTEGER
+                            "location VARCHAR(255));";
+                    break;
+                default:
+                    plugin.getLogger().severe("Unsupported database type: " + type);
+                    return;
             }
+
+            executeUpdate(createTableQuery);
         }
 
+        // Ensure all columns exist with appropriate types
         addColumnIfNotExists(name, "uuid_entity", "VARCHAR(255)");
         addColumnIfNotExists(name, "uuid_grave", "VARCHAR(255)");
-        addColumnIfNotExists(name, "line", "INT(16)");
+        addColumnIfNotExists(name, "line", "INTEGER"); // Use INTEGER for consistency
         addColumnIfNotExists(name, "location", "VARCHAR(255)");
     }
 
@@ -774,13 +873,15 @@ public final class DataManager {
      * @throws SQLException if an SQL error occurs.
      */
     private void setupEntityTable(String name) throws SQLException {
-        if (!tableExists(name)) {
-            executeUpdate("CREATE TABLE IF NOT EXISTS " + name + " (" +
-                    "location VARCHAR(255),\n" +
-                    "uuid_entity VARCHAR(255),\n" +
-                    "uuid_grave VARCHAR(255));");
-        }
+        // Create table if it does not exist
+        String createTableQuery = "CREATE TABLE IF NOT EXISTS " + name + " (" +
+                "location VARCHAR(255), " +
+                "uuid_entity VARCHAR(255), " +
+                "uuid_grave VARCHAR(255));";
 
+        executeUpdate(createTableQuery, new Object[0]);
+
+        // Add columns if they do not exist
         addColumnIfNotExists(name, "location", "VARCHAR(255)");
         addColumnIfNotExists(name, "uuid_entity", "VARCHAR(255)");
         addColumnIfNotExists(name, "uuid_grave", "VARCHAR(255)");
@@ -804,7 +905,11 @@ public final class DataManager {
                     plugin.getCacheManager().getGraveMap().put(grave.getUUID(), grave);
                 }
             }
-        } catch (NullPointerException | SQLException exception) {
+        } catch (SQLException exception) {
+            plugin.getLogger().severe("Error occurred while loading Grave Map: " + exception.getMessage());
+            plugin.logStackTrace(exception);
+        } catch (NullPointerException exception) {
+            plugin.getLogger().severe("A null pointer exception occurred while loading Grave Map: " + exception.getMessage());
             plugin.logStackTrace(exception);
         }
     }
@@ -824,16 +929,44 @@ public final class DataManager {
                 String world = resultSet.getString("world");
                 String type = resultSet.getString("type");
                 String serializedLocations = resultSet.getString("serializedLocations");
-                Graveyard graveyard = new Graveyard(name, plugin.getServer().getWorld(world), Graveyard.Type.valueOf(type.toUpperCase()));
+
+                // Handle potential null values for `world` and `type`
+                if (world == null || type == null) {
+                    plugin.getLogger().warning("Skipping graveyard with missing 'world' or 'type': " + name);
+                    continue;
+                }
+
+                // Handle case insensitivity for the type
+                Graveyard.Type graveyardType;
+                try {
+                    graveyardType = Graveyard.Type.valueOf(type.toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    plugin.getLogger().warning("Unknown graveyard type for '" + name + "': " + type);
+                    continue;
+                }
+
+                // Ensure the world is not null before attempting to use it
+                World serverWorld = plugin.getServer().getWorld(world);
+                if (serverWorld == null) {
+                    plugin.getLogger().warning("World not found for graveyard '" + name + "': " + world);
+                    continue;
+                }
+
+                Graveyard graveyard = new Graveyard(name, serverWorld, graveyardType);
                 Map<Location, BlockFace> locations = Graveyard.deserializeLocations(serializedLocations);
+
                 for (Map.Entry<Location, BlockFace> entry : locations.entrySet()) {
                     graveyard.addGraveLocation(entry.getKey(), entry.getValue());
                 }
+
                 plugin.getCacheManager().getGraveyardsMap().put(name, graveyard);
             }
-        } catch (NullPointerException | SQLException e) {
+        } catch (SQLException e) {
             plugin.getLogger().severe("Failed to load graveyards: " + e.getMessage());
-            e.printStackTrace();
+            plugin.logStackTrace(e);
+        } catch (NullPointerException e) {
+            plugin.getLogger().severe("NullPointerException while loading graveyards: " + e.getMessage());
+            plugin.logStackTrace(e);
         }
     }
 
@@ -846,17 +979,20 @@ public final class DataManager {
         String serializedLocation = Base64Util.objectToBase64(graveyard.getGraveLocationMap());
         String query = "UPDATE graveyards SET serializedLocations = ? WHERE name = ? AND world = ?";
 
+        // Prepare parameters for the query
+        Object[] parameters = {
+                serializedLocation,
+                graveyard.getName(),
+                graveyard.getWorld().getName()
+        };
+
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-            try (Connection connection = getConnection();
-                 PreparedStatement statement = connection != null ? connection.prepareStatement(query) : null) {
-                if (statement != null) {
-                    statement.setString(1, serializedLocation);
-                    statement.setString(2, graveyard.getName());
-                    statement.setString(3, graveyard.getWorld().getName());
-                    statement.executeUpdate();
-                }
+            try {
+                // Use the custom executeUpdate method
+                executeUpdate(query, parameters);
             } catch (SQLException e) {
                 plugin.getLogger().severe("Failed to update graveyard location data: " + e.getMessage());
+                plugin.logStackTrace(e);
             }
         });
     }
@@ -867,23 +1003,35 @@ public final class DataManager {
     public void loadBlockMap() {
         String query = "SELECT * FROM block;";
 
-        try (Connection connection = getConnection();
-             Statement statement = connection != null ? connection.createStatement() : null;
-             ResultSet resultSet = statement != null ? statement.executeQuery(query) : null) {
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try (Connection connection = getConnection();
+                 PreparedStatement statement = connection != null ? connection.prepareStatement(query) : null;
+                 ResultSet resultSet = statement != null ? statement.executeQuery() : null) {
 
-            if (resultSet != null) {
+                if (statement == null || resultSet == null) {
+                    plugin.getLogger().severe("Failed to create statement or result set.");
+                    return;
+                }
+
                 while (resultSet.next()) {
+                    // Retrieve and convert data
                     Location location = LocationUtil.stringToLocation(resultSet.getString("location"));
                     UUID uuidGrave = UUID.fromString(resultSet.getString("uuid_grave"));
                     String replaceMaterial = resultSet.getString("replace_material");
                     String replaceData = resultSet.getString("replace_data");
 
-                    getChunkData(location).addBlockData(new BlockData(location, uuidGrave, replaceMaterial, replaceData));
+                    // Ensure required fields are valid
+                    if (replaceMaterial != null && replaceData != null) {
+                        getChunkData(location).addBlockData(new BlockData(location, uuidGrave, replaceMaterial, replaceData));
+                    } else {
+                        plugin.getLogger().warning("Data is missing or invalid in result set for location: " + location);
+                    }
                 }
+            } catch (SQLException exception) {
+                plugin.getLogger().severe("Error occurred while loading Block Map: " + exception.getMessage());
+                plugin.logStackTrace(exception);
             }
-        } catch (SQLException exception) {
-            plugin.logStackTrace(exception);
-        }
+        });
     }
 
     /**
@@ -895,29 +1043,46 @@ public final class DataManager {
     private void loadEntityMap(String table, EntityData.Type type) {
         String query = "SELECT * FROM " + table + ";";
 
-        try (Connection connection = getConnection();
-             Statement statement = connection.createStatement();
-             ResultSet resultSet = statement.executeQuery(query)) {
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try (Connection connection = getConnection();
+                 PreparedStatement statement = connection.prepareStatement(query);
+                 ResultSet resultSet = statement.executeQuery()) {
 
-            while (resultSet.next()) {
-                Location location = null;
+                while (resultSet.next()) {
+                    Location location = null;
 
-                if (resultSet.getString("location") != null) {
-                    location = LocationUtil.stringToLocation(resultSet.getString("location"));
-                } else if (resultSet.getString("chunk") != null) {
-                    location = LocationUtil.chunkStringToLocation(resultSet.getString("chunk"));
+                    // Handle possible null values for location and chunk
+                    String locationString = resultSet.getString("location");
+                    String chunkString = resultSet.getString("chunk");
+
+                    if (locationString != null) {
+                        location = LocationUtil.stringToLocation(locationString);
+                    } else if (chunkString != null) {
+                        location = LocationUtil.chunkStringToLocation(chunkString);
+                    }
+
+                    if (location != null) {
+                        // Ensure UUIDs are not null and valid
+                        String uuidEntityString = resultSet.getString("uuid_entity");
+                        String uuidGraveString = resultSet.getString("uuid_grave");
+
+                        if (uuidEntityString != null && uuidGraveString != null) {
+                            UUID uuidEntity = UUID.fromString(uuidEntityString);
+                            UUID uuidGrave = UUID.fromString(uuidGraveString);
+
+                            getChunkData(location).addEntityData(new EntityData(location, uuidEntity, uuidGrave, type));
+                        } else {
+                            plugin.getLogger().warning("Missing UUIDs in result set for location: " + location);
+                        }
+                    } else {
+                        plugin.getLogger().warning("Invalid location data in result set.");
+                    }
                 }
-
-                if (location != null) {
-                    UUID uuidEntity = UUID.fromString(resultSet.getString("uuid_entity"));
-                    UUID uuidGrave = UUID.fromString(resultSet.getString("uuid_grave"));
-
-                    getChunkData(location).addEntityData(new EntityData(location, uuidEntity, uuidGrave, type));
-                }
+            } catch (SQLException exception) {
+                plugin.getLogger().severe("Error occurred while loading Entity Map: " + exception.getMessage());
+                plugin.logStackTrace(exception);
             }
-        } catch (NullPointerException | SQLException exception) {
-            plugin.logStackTrace(exception);
-        }
+        });
     }
 
     /**
@@ -926,30 +1091,44 @@ public final class DataManager {
     public void loadHologramMap() {
         String query = "SELECT * FROM hologram;";
 
-        try (Connection connection = getConnection();
-             Statement statement = connection.createStatement();
-             ResultSet resultSet = statement.executeQuery(query)) {
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try (Connection connection = getConnection();
+                 PreparedStatement statement = connection.prepareStatement(query);
+                 ResultSet resultSet = statement.executeQuery()) {
 
-            while (resultSet.next()) {
-                Location location = null;
+                while (resultSet.next()) {
+                    Location location = null;
 
-                if (resultSet.getString("location") != null) {
-                    location = LocationUtil.stringToLocation(resultSet.getString("location"));
-                } else if (resultSet.getString("chunk") != null) {
-                    location = LocationUtil.chunkStringToLocation(resultSet.getString("chunk"));
+                    // Handle possible null values for location
+                    String locationString = resultSet.getString("location");
+
+                    if (locationString != null) {
+                        location = LocationUtil.stringToLocation(locationString);
+                    }
+
+                    if (location != null) {
+                        // Ensure UUIDs are not null and valid
+                        String uuidEntityString = resultSet.getString("uuid_entity");
+                        String uuidGraveString = resultSet.getString("uuid_grave");
+
+                        if (uuidEntityString != null && uuidGraveString != null) {
+                            UUID uuidEntity = UUID.fromString(uuidEntityString);
+                            UUID uuidGrave = UUID.fromString(uuidGraveString);
+                            int line = resultSet.getInt("line");
+
+                            getChunkData(location).addEntityData(new HologramData(location, uuidEntity, uuidGrave, line));
+                        } else {
+                            plugin.getLogger().warning("Missing UUIDs in result set for location: " + location);
+                        }
+                    } else {
+                        plugin.getLogger().warning("Invalid location data in result set.");
+                    }
                 }
-
-                if (location != null) {
-                    UUID uuidEntity = UUID.fromString(resultSet.getString("uuid_entity"));
-                    UUID uuidGrave = UUID.fromString(resultSet.getString("uuid_grave"));
-                    int line = resultSet.getInt("line");
-
-                    getChunkData(location).addEntityData(new HologramData(location, uuidEntity, uuidGrave, line));
-                }
+            } catch (SQLException exception) {
+                plugin.getLogger().severe("Error occurred while loading Hologram Map: " + exception.getMessage());
+                plugin.logStackTrace(exception);
             }
-        } catch (NullPointerException | SQLException exception) {
-            plugin.logStackTrace(exception);
-        }
+        });
     }
 
     /**
@@ -961,29 +1140,47 @@ public final class DataManager {
     private void loadEntityDataMap(String table, EntityData.Type type) {
         String query = "SELECT * FROM " + table + ";";
 
-        try (Connection connection = getConnection();
-             Statement statement = connection != null ? connection.createStatement() : null;
-             ResultSet resultSet = statement != null ? statement.executeQuery(query) : null) {
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try (Connection connection = getConnection();
+                 PreparedStatement statement = connection.prepareStatement(query);
+                 ResultSet resultSet = statement.executeQuery()) {
 
-            while (resultSet != null && resultSet.next()) {
-                Location location = null;
+                while (resultSet.next()) {
+                    Location location = null;
 
-                if (resultSet.getString("location") != null) {
-                    location = LocationUtil.stringToLocation(resultSet.getString("location"));
-                } else if (resultSet.getString("chunk") != null) {
-                    location = LocationUtil.chunkStringToLocation(resultSet.getString("chunk"));
+                    // Retrieve and convert location or chunk data
+                    String locationString = resultSet.getString("location");
+                    String chunkString = resultSet.getString("chunk");
+
+                    if (locationString != null) {
+                        location = LocationUtil.stringToLocation(locationString);
+                    } else if (chunkString != null) {
+                        location = LocationUtil.chunkStringToLocation(chunkString);
+                    }
+
+                    if (location != null) {
+                        // Retrieve and validate UUIDs
+                        String uuidEntityString = resultSet.getString("uuid_entity");
+                        String uuidGraveString = resultSet.getString("uuid_grave");
+
+                        if (uuidEntityString != null && uuidGraveString != null) {
+                            UUID uuidEntity = UUID.fromString(uuidEntityString);
+                            UUID uuidGrave = UUID.fromString(uuidGraveString);
+
+                            // Add entity data to the chunk data map
+                            getChunkData(location).addEntityData(new EntityData(location, uuidEntity, uuidGrave, type));
+                        } else {
+                            plugin.getLogger().warning("Missing UUIDs for location: " + location);
+                        }
+                    } else {
+                        plugin.getLogger().warning("Invalid location or chunk data for result set entry.");
+                    }
                 }
-
-                if (location != null) {
-                    UUID uuidEntity = UUID.fromString(resultSet.getString("uuid_entity"));
-                    UUID uuidGrave = UUID.fromString(resultSet.getString("uuid_grave"));
-
-                    getChunkData(location).addEntityData(new EntityData(location, uuidEntity, uuidGrave, type));
-                }
+            } catch (SQLException exception) {
+                plugin.getLogger().severe("Error occurred while loading Entity Data Map: " + exception.getMessage());
+                plugin.logStackTrace(exception);
             }
-        } catch (SQLException exception) {
-            plugin.logStackTrace(exception);
-        }
+        });
     }
 
     /**
@@ -994,14 +1191,29 @@ public final class DataManager {
     public void addBlockData(BlockData blockData) {
         getChunkData(blockData.getLocation()).addBlockData(blockData);
 
-        String uuidGrave = blockData.getGraveUUID() != null ? "'" + blockData.getGraveUUID() + "'" : "NULL";
-        String location = "'" + LocationUtil.locationToString(blockData.getLocation()) + "'";
-        String replaceMaterial = blockData.getReplaceMaterial() != null ? "'" + blockData.getReplaceMaterial() + "'" : "NULL";
-        String replaceData = blockData.getReplaceData() != null ? "'" + blockData.getReplaceData() + "'" : "NULL";
+        String query = "INSERT INTO block (location, uuid_grave, replace_material, replace_data) VALUES (?, ?, ?, ?)";
+        Object[] parameters = new Object[4];
 
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () ->
-                executeUpdate("INSERT INTO block (location, uuid_grave, replace_material, replace_data) " +
-                        "VALUES (" + location + ", " + uuidGrave + ", " + replaceMaterial + ", " + replaceData + ");"));
+        // Set location
+        parameters[0] = LocationUtil.locationToString(blockData.getLocation());
+
+        // Set uuid_grave
+        parameters[1] = blockData.getGraveUUID() != null ? blockData.getGraveUUID().toString() : null;
+
+        // Set replace_material
+        parameters[2] = blockData.getReplaceMaterial();
+
+        // Set replace_data
+        parameters[3] = blockData.getReplaceData();
+
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                executeUpdate(query, parameters);
+            } catch (SQLException exception) {
+                plugin.getLogger().severe("Failed to add block data: " + exception.getMessage());
+                plugin.logStackTrace(exception);
+            }
+        });
     }
 
     /**
@@ -1012,9 +1224,17 @@ public final class DataManager {
     public void removeBlockData(Location location) {
         getChunkData(location).removeBlockData(location);
 
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () ->
-                executeUpdate("DELETE FROM block WHERE location = '"
-                        + LocationUtil.locationToString(location) + "';"));
+        String query = "DELETE FROM block WHERE location = ?";
+        Object[] parameters = { LocationUtil.locationToString(location) };
+
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                executeUpdate(query, parameters);
+            } catch (SQLException exception) {
+                plugin.getLogger().severe("Failed to remove block data: " + exception.getMessage());
+                plugin.logStackTrace(exception);
+            }
+        });
     }
 
     /**
@@ -1025,14 +1245,22 @@ public final class DataManager {
     public void addHologramData(HologramData hologramData) {
         getChunkData(hologramData.getLocation()).addEntityData(hologramData);
 
-        String location = "'" + LocationUtil.locationToString(hologramData.getLocation()) + "'";
-        String uuidEntity = "'" + hologramData.getUUIDEntity() + "'";
-        String uuidGrave = "'" + hologramData.getUUIDGrave() + "'";
-        int line = hologramData.getLine();
+        String query = "INSERT INTO hologram (uuid_entity, uuid_grave, line, location) VALUES (?, ?, ?, ?)";
+        Object[] parameters = {
+                hologramData.getUUIDEntity().toString(),
+                hologramData.getUUIDGrave().toString(),
+                hologramData.getLine(),
+                LocationUtil.locationToString(hologramData.getLocation())
+        };
 
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () ->
-                executeUpdate("INSERT INTO hologram (uuid_entity, uuid_grave, line, location) VALUES ("
-                        + uuidEntity + ", " + uuidGrave + ", " + line + ", " + location + ");"));
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                executeUpdate(query, parameters);
+            } catch (SQLException exception) {
+                plugin.getLogger().severe("Failed to add hologram data: " + exception.getMessage());
+                plugin.logStackTrace(exception);
+            }
+        });
     }
 
     /**
@@ -1042,19 +1270,19 @@ public final class DataManager {
      */
     public void removeHologramData(List<EntityData> entityDataList) {
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            String sql = "DELETE FROM hologram WHERE uuid_entity = ?";
             try (Connection connection = getConnection();
-                 Statement statement = connection != null ? connection.createStatement() : null) {
-                for (EntityData hologramData : entityDataList) {
-                    getChunkData(hologramData.getLocation()).removeEntityData(hologramData);
-                    if (statement != null) {
-                        statement.addBatch("DELETE FROM hologram WHERE uuid_entity = '"
-                                + hologramData.getUUIDEntity() + "';");
-                    }
-                }
+                 PreparedStatement statement = connection != null ? connection.prepareStatement(sql) : null) {
                 if (statement != null) {
+                    for (EntityData hologramData : entityDataList) {
+                        getChunkData(hologramData.getLocation()).removeEntityData(hologramData);
+                        statement.setString(1, String.valueOf(hologramData.getUUIDEntity()));
+                        statement.addBatch();
+                    }
                     executeBatch(statement);
                 }
             } catch (SQLException exception) {
+                plugin.getLogger().severe("Error occurred while removing hologram data: " + exception.getMessage());
                 plugin.logStackTrace(exception);
             }
         });
@@ -1069,14 +1297,23 @@ public final class DataManager {
         getChunkData(entityData.getLocation()).addEntityData(entityData);
 
         String table = entityDataTypeTable(entityData.getType());
+        String query = "INSERT INTO " + table + " (location, uuid_entity, uuid_grave) VALUES (?, ?, ?)";
 
-        String location = "'" + LocationUtil.locationToString(entityData.getLocation()) + "'";
-        String uuidEntity = "'" + entityData.getUUIDEntity() + "'";
-        String uuidGrave = "'" + entityData.getUUIDGrave() + "'";
+        String location = LocationUtil.locationToString(entityData.getLocation());
+        Object[] parameters = {
+                location,
+                entityData.getUUIDEntity(),
+                entityData.getUUIDGrave()
+        };
 
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () ->
-                executeUpdate("INSERT INTO " + table + " (location, uuid_entity, uuid_grave) VALUES ("
-                        + location + ", " + uuidEntity + ", " + uuidGrave + ");"));
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                executeUpdate(query, parameters);
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Failed to add entity data: " + e.getMessage());
+                plugin.logStackTrace(e);
+            }
+        });
     }
 
     /**
@@ -1097,21 +1334,19 @@ public final class DataManager {
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             try (Connection connection = getConnection();
                  Statement statement = connection != null ? connection.createStatement() : null) {
-                for (EntityData entityData : entityDataList) {
-                    getChunkData(entityData.getLocation()).removeEntityData(entityData);
-                    String table = entityDataTypeTable(entityData.getType());
-                    if (statement != null) {
-                        statement.addBatch("DELETE FROM " + table + " WHERE uuid_entity = '"
-                                + entityData.getUUIDEntity() + "';");
-                        plugin.debugMessage("Removing " + table + " for grave "
-                                + entityData.getUUIDGrave(), 1);
+                if (statement != null) {
+                    for (EntityData entityData : entityDataList) {
+                        getChunkData(entityData.getLocation()).removeEntityData(entityData);
+                        String table = entityDataTypeTable(entityData.getType());
+                        String query = "DELETE FROM " + table + " WHERE uuid_entity = ?";
+                        Object[] parameters = { entityData.getUUIDEntity() };
+                        executeUpdate(query, parameters);
+                        plugin.debugMessage("Removing " + table + " for grave " + entityData.getUUIDGrave(), 1);
                     }
                 }
-                if (statement != null) {
-                    executeBatch(statement);
-                }
-            } catch (SQLException exception) {
-                plugin.logStackTrace(exception);
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Failed to remove entity data: " + e.getMessage());
+                plugin.logStackTrace(e);
             }
         });
     }
@@ -1131,12 +1366,20 @@ public final class DataManager {
         }
     }
 
+    /**
+     * Checks if a graveyard with the specified name exists in the database.
+     *
+     * @param name the name of the graveyard.
+     * @return true if the graveyard exists, false otherwise.
+     */
     public boolean graveyardExists(String name) {
         String query = "SELECT COUNT(*) FROM graveyards WHERE name = ?";
 
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
+
             statement.setString(1, name);
+
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (resultSet.next()) {
                     return resultSet.getInt(1) > 0;
@@ -1150,53 +1393,56 @@ public final class DataManager {
         return false;
     }
 
+    /**
+     * Updates a graveyard in the database.
+     *
+     * @param graveyard           the graveyard to update.
+     * @param serializedLocations the new serialized locations for the graveyard.
+     */
     private void updateGraveyard(Graveyard graveyard, String serializedLocations) {
         String query = "UPDATE graveyards SET world = ?, type = ?, serializedLocations = ? WHERE name = ?";
 
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(query)) {
-            statement.setString(1, graveyard.getWorld().getName());
-            statement.setString(2, graveyard.getType().toString());
-            statement.setString(3, serializedLocations);
-            statement.setString(4, graveyard.getName());
+        Object[] parameters = {
+                graveyard.getWorld().getName(),
+                graveyard.getType().toString(),
+                serializedLocations,
+                graveyard.getName()
+        };
 
-            int rowsAffected = statement.executeUpdate();
-            if (rowsAffected == 0) {
-                plugin.getLogger().severe("No rows updated for graveyard: " + graveyard.getName());
-            } else {
-                plugin.getLogger().info("Successfully updated graveyard: " + graveyard.getName());
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                executeUpdate(query, parameters);
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Failed to update graveyard: " + e.getMessage());
+                plugin.logStackTrace(e);
             }
-        } catch (SQLException e) {
-            plugin.getLogger().severe("Failed to update graveyard: " + e.getMessage());
-            plugin.logStackTrace(e);
-        }
+        });
     }
 
     /**
-     * Inserts a graveyard to the database.
+     * Inserts a graveyard into the database.
      *
-     * @param graveyard The graveyard to save.
+     * @param graveyard           the graveyard to insert.
+     * @param serializedLocations the serialized locations for the graveyard.
      */
     private void insertGraveyard(Graveyard graveyard, String serializedLocations) {
         String query = "INSERT INTO graveyards (name, world, type, serializedLocations) VALUES (?, ?, ?, ?)";
 
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(query)) {
-            statement.setString(1, graveyard.getName());
-            statement.setString(2, graveyard.getWorld().getName());
-            statement.setString(3, graveyard.getType().toString());
-            statement.setString(4, serializedLocations);
+        Object[] parameters = {
+                graveyard.getName(),
+                graveyard.getWorld().getName(),
+                graveyard.getType().toString(),
+                serializedLocations
+        };
 
-            int rowsAffected = statement.executeUpdate();
-            if (rowsAffected == 0) {
-                plugin.getLogger().severe("Failed to insert graveyard: " + graveyard.getName());
-            } else {
-                plugin.getLogger().info("Successfully inserted graveyard: " + graveyard.getName());
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                executeUpdate(query, parameters);
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Failed to insert graveyard: " + e.getMessage());
+                plugin.logStackTrace(e);
             }
-        } catch (SQLException e) {
-            plugin.getLogger().severe("Failed to insert graveyard: " + e.getMessage());
-            plugin.logStackTrace(e);
-        }
+        });
     }
 
     /**
@@ -1217,8 +1463,7 @@ public final class DataManager {
                         String name = resultSet.getString("name");
                         String world = resultSet.getString("world");
                         String type = resultSet.getString("type");
-                        String serializedLocation = resultSet.getString("serializedLocation");
-                        // Assume there's a method in your Graves plugin to get a World by its name
+                        // Assumes there's a method to get World by its name
                         return new Graveyard(name, plugin.getServer().getWorld(world), Graveyard.Type.valueOf(type.toUpperCase()));
                     }
                 }
@@ -1237,16 +1482,19 @@ public final class DataManager {
     public void deleteGraveyard(Graveyard graveyard) {
         String query = "DELETE FROM graveyards WHERE name = ? AND world = ?";
 
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection != null ? connection.prepareStatement(query) : null) {
-            if (statement != null) {
-                statement.setString(1, graveyard.getName());
-                statement.setString(2, graveyard.getWorld().getName());
-                statement.executeUpdate();
+        Object[] parameters = {
+                graveyard.getName(),
+                graveyard.getWorld().getName()
+        };
+
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                executeUpdate(query, parameters);
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Failed to delete graveyard: " + e.getMessage());
+                plugin.logStackTrace(e);
             }
-        } catch (SQLException e) {
-            plugin.getLogger().severe("Failed to delete graveyard: " + e.getMessage());
-        }
+        });
     }
 
     public boolean hasGraveAtLocation(Location location) {
@@ -1304,54 +1552,45 @@ public final class DataManager {
     public void addGrave(Grave grave) {
         plugin.getCacheManager().getGraveMap().put(grave.getUUID(), grave);
 
-        String uuid = grave.getUUID() != null ? "'" + grave.getUUID() + "'" : "NULL";
-        String ownerType = grave.getOwnerType() != null ? "'" + grave.getOwnerType() + "'" : "NULL";
-        String ownerName = grave.getOwnerName() != null ? "'" + grave.getOwnerName()
-                .replace("'", "''") + "'" : "NULL";
-        String ownerNameDisplay = grave.getOwnerNameDisplay() != null ? "'" + grave.getOwnerNameDisplay()
-                .replace("'", "''") + "'" : "NULL";
-        String ownerUUID = grave.getOwnerUUID() != null ? "'" + grave.getOwnerUUID() + "'" : "NULL";
-        String ownerTexture = grave.getOwnerTexture() != null ? "'" + grave.getOwnerTexture()
-                .replace("'", "''") + "'" : "NULL";
-        String ownerTextureSignature = grave.getOwnerTextureSignature() != null ? "'" + grave.getOwnerTextureSignature()
-                .replace("'", "''") + "'" : "NULL";
-        String killerType = grave.getKillerType() != null ? "'" + grave.getKillerType() + "'" : "NULL";
-        String killerName = grave.getKillerName() != null ? "'" + grave.getKillerName()
-                .replace("'", "''") + "'" : "NULL";
-        String killerNameDisplay = grave.getKillerNameDisplay() != null ? "'" + grave.getKillerNameDisplay()
-                .replace("'", "''") + "'" : "NULL";
-        String killerUUID = grave.getKillerUUID() != null ? "'" + grave.getKillerUUID() + "'" : "NULL";
-        String locationDeath = grave.getLocationDeath() != null ? "'"
-                + LocationUtil.locationToString(grave.getLocationDeath()) + "'" : "NULL";
-        float yaw = grave.getYaw();
-        float pitch = grave.getPitch();
-        String inventory = "'" + InventoryUtil.inventoryToString(grave.getInventory()) + "'";
+        String query = "INSERT INTO grave (uuid, owner_type, owner_name, owner_name_display, owner_uuid, owner_texture, owner_texture_signature, killer_type, killer_name, killer_name_display, killer_uuid, location_death, yaw, pitch, inventory, equipment, experience, protection, is_abandoned, time_alive, time_protection, time_creation, permissions) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        // Convert EquipmentSlot keys to String and filter out null values from the map before serialization
-        Map<String, Object> equipmentMap = grave.getEquipmentMap().entrySet().stream()
-                .filter(entry -> entry.getValue() != null)
-                .collect(Collectors.toMap(entry -> entry.getKey().name(), Map.Entry::getValue));
+        // Prepare parameters
+        Object[] parameters = {
+                grave.getUUID(),
+                grave.getOwnerType(),
+                grave.getOwnerName() != null ? grave.getOwnerName().replace("'", "''") : null,
+                grave.getOwnerNameDisplay() != null ? grave.getOwnerNameDisplay().replace("'", "''") : null,
+                grave.getOwnerUUID(),
+                grave.getOwnerTexture() != null ? grave.getOwnerTexture().replace("'", "''") : null,
+                grave.getOwnerTextureSignature() != null ? grave.getOwnerTextureSignature().replace("'", "''") : null,
+                grave.getKillerType(),
+                grave.getKillerName() != null ? grave.getKillerName().replace("'", "''") : null,
+                grave.getKillerNameDisplay() != null ? grave.getKillerNameDisplay().replace("'", "''") : null,
+                grave.getKillerUUID(),
+                grave.getLocationDeath() != null ? LocationUtil.locationToString(grave.getLocationDeath()) : null,
+                grave.getYaw(),
+                grave.getPitch(),
+                InventoryUtil.inventoryToString(grave.getInventory()),
+                Base64Util.objectToBase64(grave.getEquipmentMap().entrySet().stream()
+                        .filter(entry -> entry.getValue() != null)
+                        .collect(Collectors.toMap(entry -> entry.getKey().name(), Map.Entry::getValue))),
+                grave.getExperience(),
+                grave.getProtection() ? 1 : 0,
+                grave.isAbandoned() ? 1 : 0,
+                grave.getTimeAlive(),
+                grave.getTimeProtection(),
+                grave.getTimeCreation(),
+                grave.getPermissionList() != null && !grave.getPermissionList().isEmpty() ? StringUtils.join(grave.getPermissionList(), "|") : null
+        };
 
-        String equipment = "'" + Base64Util.objectToBase64(equipmentMap) + "'";
-        String permissions = grave.getPermissionList() != null && !grave.getPermissionList().isEmpty()
-                ? "'" + StringUtils.join(grave.getPermissionList(), "|") + "'" : "NULL";
-        int protection = grave.getProtection() ? 1 : 0;
-        int isAbandoned = grave.isAbandoned() ? 1 : 0;
-        int experience = grave.getExperience();
-        long timeAlive = grave.getTimeAlive();
-        long timeProtection = grave.getTimeProtection();
-        long timeCreation = grave.getTimeCreation();
-
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () ->
-                executeUpdate("INSERT INTO grave (uuid, owner_type, owner_name, owner_name_display, owner_uuid,"
-                        + " owner_texture, owner_texture_signature, killer_type, killer_name, killer_name_display,"
-                        + " killer_uuid, location_death, yaw, pitch, inventory, equipment, experience, protection, is_abandoned, time_alive,"
-                        + "time_protection, time_creation, permissions) VALUES (" + uuid + ", " + ownerType + ", "
-                        + ownerName + ", " + ownerNameDisplay + ", " + ownerUUID + ", " + ownerTexture + ", "
-                        + ownerTextureSignature + ", " + killerType + ", " + killerName + ", " + killerNameDisplay + ", "
-                        + killerUUID + ", " + locationDeath + ", " + yaw + ", " + pitch + ", " + inventory + ", "
-                        + equipment + ", " + experience + ", " + protection + ", " + isAbandoned + ", " + timeAlive + ", "
-                        + timeProtection + ", " + timeCreation + ", " + permissions + ");"));
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                executeUpdate(query, parameters);
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Failed to add grave: " + e.getMessage());
+                plugin.logStackTrace(e);
+            }
+        });
     }
 
     /**
@@ -1371,8 +1610,37 @@ public final class DataManager {
     public void removeGrave(UUID uuid) {
         plugin.getCacheManager().getGraveMap().remove(uuid);
 
+        String query = "DELETE FROM grave WHERE uuid = ?";
+        Object[] parameters = { uuid };
+
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-            executeUpdate("DELETE FROM grave WHERE uuid = '" + uuid + "';");
+            try {
+                executeUpdate(query, parameters);
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Failed to remove grave: " + e.getMessage());
+                plugin.logStackTrace(e);
+            }
+        });
+    }
+
+    /**
+     * Updates a grave in the database.
+     *
+     * @param grave  the grave to update.
+     * @param column the column to update.
+     * @param integer the new integer value for the column.
+     */
+    public void updateGrave(Grave grave, String column, int integer) {
+        String query = "UPDATE grave SET " + column + " = ? WHERE uuid = ?";
+        Object[] parameters = { integer, grave.getUUID() };
+
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                executeUpdate(query, parameters);
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Failed to update grave: " + e.getMessage());
+                plugin.logStackTrace(e);
+            }
         });
     }
 
@@ -1384,9 +1652,16 @@ public final class DataManager {
      * @param string the new value for the column.
      */
     public void updateGrave(Grave grave, String column, String string) {
+        String query = "UPDATE grave SET " + column + " = ? WHERE uuid = ?";
+        Object[] parameters = { string, grave.getUUID() };
+
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-            executeUpdate("UPDATE grave SET " + column + " = '" + string + "' WHERE uuid = '"
-                    + grave.getUUID() + "';");
+            try {
+                executeUpdate(query, parameters);
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Failed to update grave: " + e.getMessage());
+                plugin.logStackTrace(e);
+            }
         });
     }
 
@@ -1394,57 +1669,55 @@ public final class DataManager {
      * Converts a ResultSet to a Grave object.
      *
      * @param resultSet the ResultSet to convert.
-     * @return the Grave object.
+     * @return the Grave object, or null if an error occurs.
      */
     public Grave resultSetToGrave(ResultSet resultSet) {
         try {
-            Grave grave = new Grave(UUID.fromString(resultSet.getString("uuid")));
+            if (resultSet.next()) {
+                Grave grave = new Grave(UUID.fromString(resultSet.getString("uuid")));
 
-            grave.setOwnerType(resultSet.getString("owner_type") != null
-                    ? EntityType.valueOf(resultSet.getString("owner_type")) : null);
-            grave.setOwnerName(resultSet.getString("owner_name") != null
-                    ? resultSet.getString("owner_name") : null);
-            grave.setOwnerNameDisplay(resultSet.getString("owner_name_display") != null
-                    ? resultSet.getString("owner_name_display") : null);
-            grave.setOwnerUUID(resultSet.getString("owner_uuid") != null
-                    ? UUID.fromString(resultSet.getString("owner_uuid")) : null);
-            grave.setOwnerTexture(resultSet.getString("owner_texture") != null
-                    ? resultSet.getString("owner_texture") : null);
-            grave.setOwnerTextureSignature(resultSet.getString("owner_texture_signature") != null
-                    ? resultSet.getString("owner_texture_signature") : null);
-            grave.setKillerType(resultSet.getString("killer_type") != null
-                    ? EntityType.valueOf(resultSet.getString("killer_type")) : null);
-            grave.setKillerName(resultSet.getString("killer_name") != null
-                    ? resultSet.getString("killer_name") : null);
-            grave.setKillerNameDisplay(resultSet.getString("killer_name_display") != null
-                    ? resultSet.getString("killer_name_display") : null);
-            grave.setKillerUUID(resultSet.getString("killer_uuid") != null
-                    ? UUID.fromString(resultSet.getString("killer_uuid")) : null);
-            grave.setLocationDeath(resultSet.getString("location_death") != null
-                    ? LocationUtil.stringToLocation(resultSet.getString("location_death")) : null);
-            grave.setYaw(resultSet.getFloat("yaw"));
-            grave.setPitch(resultSet.getFloat("pitch"));
-            grave.setExperience(resultSet.getInt("experience"));
-            grave.setProtection(resultSet.getInt("protection") == 1);
-            grave.setAbandoned(resultSet.getInt("is_abandoned") == 1);
-            grave.setTimeAlive(resultSet.getLong("time_alive"));
-            grave.setTimeProtection(resultSet.getLong("time_protection"));
-            grave.setTimeCreation(resultSet.getLong("time_creation"));
-            grave.setPermissionList(resultSet.getString("permissions") != null
-                    ? new ArrayList<>(Arrays.asList(resultSet.getString("permissions").split("\\|"))) : null);
-            grave.setInventory(InventoryUtil.stringToInventory(grave, resultSet.getString("inventory"),
-                    StringUtil.parseString(plugin.getConfig("gui.grave.title", grave.getOwnerType(),
-                                    grave.getPermissionList())
-                            .getString("gui.grave.title"), grave.getLocationDeath(), grave, plugin), plugin));
+                grave.setOwnerType(resultSet.getString("owner_type") != null
+                        ? EntityType.valueOf(resultSet.getString("owner_type")) : null);
+                grave.setOwnerName(resultSet.getString("owner_name"));
+                grave.setOwnerNameDisplay(resultSet.getString("owner_name_display"));
+                grave.setOwnerUUID(resultSet.getString("owner_uuid") != null
+                        ? UUID.fromString(resultSet.getString("owner_uuid")) : null);
+                grave.setOwnerTexture(resultSet.getString("owner_texture"));
+                grave.setOwnerTextureSignature(resultSet.getString("owner_texture_signature"));
+                grave.setKillerType(resultSet.getString("killer_type") != null
+                        ? EntityType.valueOf(resultSet.getString("killer_type")) : null);
+                grave.setKillerName(resultSet.getString("killer_name"));
+                grave.setKillerNameDisplay(resultSet.getString("killer_name_display"));
+                grave.setKillerUUID(resultSet.getString("killer_uuid") != null
+                        ? UUID.fromString(resultSet.getString("killer_uuid")) : null);
+                grave.setLocationDeath(resultSet.getString("location_death") != null
+                        ? LocationUtil.stringToLocation(resultSet.getString("location_death")) : null);
+                grave.setYaw(resultSet.getFloat("yaw"));
+                grave.setPitch(resultSet.getFloat("pitch"));
+                grave.setExperience(resultSet.getInt("experience"));
+                grave.setProtection(resultSet.getInt("protection") == 1);
+                grave.setAbandoned(resultSet.getInt("is_abandoned") == 1);
+                grave.setTimeAlive(resultSet.getLong("time_alive"));
+                grave.setTimeProtection(resultSet.getLong("time_protection"));
+                grave.setTimeCreation(resultSet.getLong("time_creation"));
+                grave.setPermissionList(resultSet.getString("permissions") != null
+                        ? new ArrayList<>(Arrays.asList(resultSet.getString("permissions").split("\\|"))) : new ArrayList<>());
+                grave.setInventory(InventoryUtil.stringToInventory(grave, resultSet.getString("inventory"),
+                        StringUtil.parseString(plugin.getConfig("gui.grave.title", grave.getOwnerType(),
+                                        grave.getPermissionList())
+                                .getString("gui.grave.title"), grave.getLocationDeath(), grave, plugin), plugin));
 
-            if (resultSet.getString("equipment") != null) {
-                Map<EquipmentSlot, ItemStack> equipmentMap = (Map<EquipmentSlot, ItemStack>) Base64Util
-                        .base64ToObject(resultSet.getString("equipment"));
-                grave.setEquipmentMap(equipmentMap != null ? equipmentMap : new HashMap<>());
+                if (resultSet.getString("equipment") != null) {
+                    @SuppressWarnings("unchecked")
+                    Map<EquipmentSlot, ItemStack> equipmentMap = (Map<EquipmentSlot, ItemStack>) Base64Util
+                            .base64ToObject(resultSet.getString("equipment"));
+                    grave.setEquipmentMap(equipmentMap != null ? equipmentMap : new HashMap<>());
+                }
+
+                return grave;
             }
-
-            return grave;
         } catch (SQLException exception) {
+            plugin.getLogger().severe("Error occurred while converting a ResultSet to a Grave object: " + exception.getMessage());
             plugin.logStackTrace(exception);
         }
         return null;
@@ -1475,6 +1748,67 @@ public final class DataManager {
     }
 
     /**
+     * Retrieves the versions of supported databases.
+     *
+     * @return a map of database types and their versions as integers.
+     * @throws SQLException if a database access error occurs.
+     */
+    public Map<String, Map<String, Integer>> getDatabaseVersions() throws SQLException {
+        Map<String, Map<String, Integer>> versionData = new HashMap<>();
+        String version = getDatabaseVersion(); // Fetch version as a string
+
+        // Use a dummy integer value (e.g., 1) for each version entry
+        Map<String, Integer> versionInfo = new HashMap<>();
+        if (type == Type.MYSQL) {
+            versionInfo.put(version, 1);
+            versionData.put("MySQL", versionInfo);
+        } else if (type == Type.MARIADB) {
+            versionInfo.put(version, 1);
+            versionData.put("MariaDB", versionInfo);
+        } else if (type == Type.POSTGRESQL) {
+            versionInfo.put(version, 1);
+            versionData.put("PostgreSQL", versionInfo);
+        } else {
+            versionData.put("Other", Collections.singletonMap("Unknown", 1));
+        }
+        return versionData;
+    }
+
+    /**
+     * Retrieves the version of the database connection type.
+     *
+     * @return the database version as a string.
+     * @throws SQLException if a database access error occurs.
+     */
+    public String getDatabaseVersion() throws SQLException {
+        try (Connection connection = dataSource.getConnection()) {
+            String query;
+            if (type == Type.POSTGRESQL) {
+                query = "SELECT version()";
+            } else if (type == Type.MARIADB || type == Type.MYSQL) {
+                query = "SHOW VARIABLES LIKE 'version_comment'";
+            } else {
+                return "Unknown";
+            }
+
+            try (Statement statement = connection.createStatement();
+                 ResultSet resultSet = statement.executeQuery(query)) {
+                if (resultSet.next()) {
+                    if (type == Type.POSTGRESQL) {
+                        return resultSet.getString(1); // PostgreSQL version
+                    } else {
+                        return resultSet.getString("Value"); // MySQL/MariaDB version comment
+                    }
+                } else {
+                    return "Unknown";
+                }
+            }
+        } catch (Exception e) {
+            return "Unknown";
+        }
+    }
+
+    /**
      * Closes the database connection.
      */
     public void closeConnection() {
@@ -1489,38 +1823,129 @@ public final class DataManager {
      * @param statement the statement containing the batch.
      */
     private void executeBatch(Statement statement) {
+        if (statement == null) {
+            plugin.debugMessage("Attempted to execute batch with a null statement.", 1);
+            return;
+        }
+
         try {
             statement.executeBatch();
         } catch (SQLException exception) {
+            // Log the error message and the state of the batch statement
+            plugin.getLogger().severe("Error occurred while executing batch: " + exception.getMessage());
+            plugin.getLogger().severe("Failed batch statement: " + statement);
             plugin.logStackTrace(exception);
         }
     }
 
     /**
-     * Executes an update SQL statement.
+     * Executes an update SQL statement (deprecated method).
      *
      * @param sql the SQL statement.
+     * @deprecated Use {@link #executeUpdate(String, Object[])} instead for parameterized queries.
      */
-    private void executeUpdate(String sql) {
-        Statement statement = null;
+    @Deprecated
+    private void executeUpdate(String sql) throws SQLException {
+        // Convert the SQL statement to an array of parameters for the new method
+        // This is a simple conversion assuming no parameters were used. For a real case, you'd need a more complex implementation.
+        executeUpdate(sql, new Object[0]);
+    }
+
+    /**
+     * Executes an update SQL statement with parameters.
+     *
+     * @param sql        the SQL statement.
+     * @param parameters the parameters for the SQL statement.
+     * @throws SQLException if a database access error occurs.
+     */
+    private void executeUpdate(String sql, Object[] parameters) throws SQLException {
         Connection connection = null;
+        PreparedStatement statement = null;
         try {
             connection = getConnection();
             if (connection != null) {
-                statement = connection.createStatement();
-                statement.executeUpdate(sql);
+                statement = connection.prepareStatement(sql);
+                for (int i = 0; i < parameters.length; i++) {
+                    Object parameter = parameters[i];
+                    if (parameter == null) {
+                        statement.setNull(i + 1, Types.NULL);
+                    } else {
+                        switch (parameter.getClass().getSimpleName()) {
+                            case "String":
+                                statement.setString(i + 1, (String) parameter);
+                                break;
+                            case "Integer":
+                                statement.setInt(i + 1, (Integer) parameter);
+                                break;
+                            case "Long":
+                                statement.setLong(i + 1, (Long) parameter);
+                                break;
+                            case "Double":
+                                statement.setDouble(i + 1, (Double) parameter);
+                                break;
+                            case "Float":
+                                statement.setFloat(i + 1, (Float) parameter);
+                                break;
+                            case "Boolean":
+                                statement.setBoolean(i + 1, (Boolean) parameter);
+                                break;
+                            case "UUID":
+                                statement.setObject(i + 1, parameter.toString(), Types.VARCHAR); // Use VARCHAR for UUIDs in PostgreSQL
+                                break;
+                            case "byte[]":
+                                statement.setBytes(i + 1, (byte[]) parameter);
+                                break;
+                            case "Date":
+                                statement.setDate(i + 1, (Date) parameter);
+                                break;
+                            case "Timestamp":
+                                statement.setTimestamp(i + 1, (Timestamp) parameter);
+                                break;
+                            case "LocalDate":
+                                statement.setObject(i + 1, parameter, Types.DATE); // Java 8+ Date API
+                                break;
+                            case "LocalDateTime":
+                                statement.setObject(i + 1, parameter, Types.TIMESTAMP);
+                                break;
+                            case "Clob":
+                                statement.setClob(i + 1, (Clob) parameter);
+                                break;
+                            case "Blob":
+                                statement.setBlob(i + 1, (Blob) parameter);
+                                break;
+                            case "EntityType":
+                                statement.setString(i + 1, ((EntityType) parameter).name()); // Convert EntityType to String
+                                break;
+                            default:
+                                statement.setObject(i + 1, parameter);
+                                break;
+                        }
+                    }
+                }
+                statement.executeUpdate();
             }
         } catch (SQLException exception) {
-            // Log the SQL statement and exception message
-            plugin.getLogger().severe("Error executing SQL update: " + exception.getMessage());
-            plugin.getLogger().severe("Failed SQL statement: " + sql);
-            plugin.logStackTrace(exception);
+            String sqlState = exception.getSQLState();
+            String message = exception.getMessage().toLowerCase();
+            // Ignore errors related to existing tables or columns
+            if ("42701".equals(sqlState) || "42P07".equals(sqlState) || "42S01".equals(sqlState) || "X0Y32".equals(sqlState)
+                    || (message.contains("duplicate column name") && "SQLITE_ERROR".equals(sqlState))) { // SQLite doesn't natively support these checks. Just ignore the messages.
+                // plugin.getLogger().info("Skipping statement due to already existing table/column: " + sql);
+                // Table and/or column already exists. Ignore it all together.
+            } else {
+                // Log the SQL statement and exception message for other errors
+                plugin.getLogger().severe("Error executing SQL update: " + exception.getMessage());
+                plugin.getLogger().severe("Failed SQL statement: " + sql);
+                plugin.logStackTrace(exception);
+            }
         } finally {
             // Ensure statement and connection are closed properly
             if (statement != null) {
                 try {
                     statement.close();
                 } catch (SQLException exception) {
+                    plugin.getLogger().severe("Error occurred while closing statement: " + exception.getMessage());
+                    plugin.getLogger().severe("Failed closing statement: " + statement);
                     plugin.logStackTrace(exception);
                 }
             }
@@ -1528,6 +1953,8 @@ public final class DataManager {
                 try {
                     connection.close();
                 } catch (SQLException exception) {
+                    plugin.getLogger().severe("Error occurred while closing connection: " + exception.getMessage());
+                    plugin.getLogger().severe("Failed closing connection: " + connection);
                     plugin.logStackTrace(exception);
                 }
             }
@@ -1640,88 +2067,108 @@ public final class DataManager {
             return;
         }
 
-        boolean migrationSuccess = true;
+        HikariConfig config = new HikariConfig();
+        String journalMode = plugin.getConfig().getString("settings.storage.sqlite.journal-mode", "WAL");
+        String synchronous = plugin.getConfig().getString("settings.storage.sqlite.synchronous", "OFF");
 
-        try (Connection sqliteConnection = DriverManager.getConnection("jdbc:sqlite:" + sqliteFile.getPath())) {
+        config.setJdbcUrl("jdbc:sqlite:" + sqliteFile.getPath());
+        config.setConnectionTimeout(30000); // 30 seconds
+        config.setIdleTimeout(600000); // 10 minutes
+        config.setMaxLifetime(1800000); // 30 minutes
+        config.setMaximumPoolSize(50);
+        config.addDataSourceProperty("dataSource.journalMode", journalMode);
+        config.addDataSourceProperty("dataSource.synchronous", synchronous);
+        config.setConnectionInitSql("PRAGMA busy_timeout = 30000; PRAGMA journal_mode=" + journalMode + "; PRAGMA synchronous=" + synchronous + ";");
+        config.setPoolName("Graves SQLite to " + type + " Migration");
+        config.addDataSourceProperty("autoReconnect", "true");
+        config.setDriverClassName("org.sqlite.JDBC");
+
+        try (HikariDataSource dataSourceMigrate = new HikariDataSource(config);
+             Connection sqliteConnection = dataSourceMigrate.getConnection()) {
+
             DatabaseMetaData metaData = sqliteConnection.getMetaData();
-            ResultSet tables = metaData.getTables(null, null, "%", new String[]{"TABLE"});
+            try (ResultSet tables = metaData.getTables(null, null, "%", new String[]{"TABLE"})) {
+                boolean migrationSuccess = true;
 
-            while (tables.next()) {
-                String tableName = tables.getString("TABLE_NAME");
-                StringBuilder createTableQuery = new StringBuilder();
-                List<String> columns = new ArrayList<>();
+                while (tables.next()) {
+                    String tableName = tables.getString("TABLE_NAME");
+                    StringBuilder createTableQuery = new StringBuilder();
+                    List<String> columns = new ArrayList<>();
 
-                try (Statement sqliteStatement = sqliteConnection.createStatement();
-                     ResultSet tableData = sqliteStatement.executeQuery("SELECT * FROM " + tableName)) {
+                    try (Statement sqliteStatement = sqliteConnection.createStatement();
+                         ResultSet tableData = sqliteStatement.executeQuery("SELECT * FROM " + tableName)) {
 
-                    ResultSetMetaData tableMetaData = tableData.getMetaData();
-                    createTableQuery.append("CREATE TABLE IF NOT EXISTS ").append(tableName).append(" (");
-                    for (int i = 1; i <= tableMetaData.getColumnCount(); i++) {
-                        String columnName = tableMetaData.getColumnName(i);
-                        String sqliteType = tableMetaData.getColumnTypeName(i);
-                        String targetType = mapSQLiteTypeToTargetDB(sqliteType, columnName);
-                        plugin.getLogger().info("Mapping column: " + columnName + " of type: " + sqliteType + " to target DB type: " + targetType);
-
-                        if (targetType != null) {
-                            createTableQuery.append(columnName)
-                                    .append(" ")
-                                    .append(targetType)
-                                    .append(i == tableMetaData.getColumnCount() ? ")" : ", ");
-                            columns.add(columnName);
-                        }
-                    }
-
-                    if (columns.isEmpty()) {
-                        plugin.getLogger().warning("No valid columns found for table " + tableName + ". Skipping table creation.");
-                        continue;
-                    }
-
-                    plugin.getLogger().info("Creating table with query: " + createTableQuery.toString());
-                    executeUpdate(createTableQuery.toString());
-
-                    // Modify columns if necessary
-                    if ("grave".equals(tableName)) {
-                        adjustGraveTableForTargetDB();
-                    }
-
-                    while (tableData.next()) {
-                        StringBuilder insertQuery = new StringBuilder("INSERT INTO " + tableName + " (");
-                        insertQuery.append(String.join(", ", columns)).append(") VALUES (");
-
+                        ResultSetMetaData tableMetaData = tableData.getMetaData();
+                        createTableQuery.append("CREATE TABLE IF NOT EXISTS ").append(tableName).append(" (");
                         for (int i = 1; i <= tableMetaData.getColumnCount(); i++) {
-                            if (columns.contains(tableMetaData.getColumnName(i))) {
-                                String data = tableData.getString(i);
-                                if (data != null) {
-                                    data = data.replace("'", "''");
+                            String columnName = tableMetaData.getColumnName(i);
+                            String sqliteType = tableMetaData.getColumnTypeName(i);
+                            String targetType = mapSQLiteTypeToTargetDB(sqliteType, columnName);
+
+                            if (targetType != null) {
+                                createTableQuery.append(columnName).append(" ").append(targetType);
+                                if (i < tableMetaData.getColumnCount()) {
+                                    createTableQuery.append(", ");
+                                } else {
+                                    createTableQuery.append(")");
                                 }
-                                insertQuery.append(data != null ? "'" + data + "'" : "NULL").append(", ");
+                                columns.add(columnName);
                             }
                         }
-                        // Remove trailing comma and space, and close the parenthesis
-                        insertQuery.setLength(insertQuery.length() - 2);
-                        insertQuery.append(")");
 
-                        plugin.getLogger().info("Inserting data with query: " + insertQuery.toString());
-                        executeUpdate(insertQuery.toString());
+                        if (columns.isEmpty()) {
+                            plugin.getLogger().warning("No valid columns found for table " + tableName + ". Skipping table creation.");
+                            continue;
+                        }
+
+                        plugin.getLogger().info("Creating table with query: " + createTableQuery.toString());
+                        executeUpdate(createTableQuery.toString(), new Object[0]);
+
+                        if ("grave".equals(tableName)) {
+                            adjustGraveTableForTargetDB();
+                        }
+
+                        String insertQueryTemplate = "INSERT INTO " + tableName + " (" + String.join(", ", columns) + ") VALUES (" + String.join(", ", Collections.nCopies(columns.size(), "?")) + ")";
+                        try (PreparedStatement insertStatement = getConnection().prepareStatement(insertQueryTemplate)) {
+                            while (tableData.next()) {
+                                for (int i = 1; i <= tableMetaData.getColumnCount(); i++) {
+                                    String columnName = tableMetaData.getColumnName(i);
+                                    if (columns.contains(columnName)) {
+                                        String data = tableData.getString(i);
+                                        if (data != null) {
+                                            data = data.replace("'", "''");
+                                        }
+                                        insertStatement.setString(columns.indexOf(columnName) + 1, data != null ? data : null);
+                                    }
+                                }
+                                plugin.getLogger().info("Inserting data with query: " + insertQueryTemplate);
+                                insertStatement.executeUpdate();
+                            }
+                        } catch (SQLException e) {
+                            plugin.getLogger().severe("Error inserting data into table " + tableName + ": " + e.getMessage());
+                            plugin.getLogger().severe("Failed query template: " + insertQueryTemplate);
+                            migrationSuccess = false;
+                        }
+                    } catch (SQLException e) {
+                        plugin.getLogger().severe("Error migrating table " + tableName + ": " + e.getMessage());
+                        plugin.getLogger().severe("Failed query: " + createTableQuery);
+                        migrationSuccess = false;
                     }
-                } catch (SQLException e) {
-                    plugin.getLogger().severe("Error migrating table " + tableName + ": " + e.getMessage());
-                    plugin.getLogger().severe("Failed query: " + createTableQuery);
-                    migrationSuccess = false;
                 }
+
+                if (migrationSuccess) {
+                    File renamedFile = new File(dataFolder, "data.old.db");
+                    if (sqliteFile.renameTo(renamedFile)) {
+                        plugin.getLogger().info("SQLite database successfully renamed to data.old.db");
+                    } else {
+                        plugin.getLogger().severe("Failed to rename SQLite database to data.old.db");
+                    }
+                }
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Error retrieving tables from SQLite: " + e.getMessage());
             }
         } catch (SQLException e) {
             plugin.getLogger().severe("Error migrating SQLite to target DB: " + e.getMessage());
-            migrationSuccess = false;
-        }
-
-        if (migrationSuccess) {
-            File renamedFile = new File(dataFolder, "data.old.db");
-            if (sqliteFile.renameTo(renamedFile)) {
-                plugin.getLogger().info("SQLite database successfully renamed to data.old.db");
-            } else {
-                plugin.getLogger().severe("Failed to rename SQLite database to data.old.db");
-            }
         }
     }
 
@@ -1858,25 +2305,18 @@ public final class DataManager {
     private void adjustGraveTableForTargetDB() throws SQLException {
         if (this.type == Type.MYSQL || this.type == Type.MARIADB) {
             plugin.getLogger().info("Altering table grave to ensure column sizes are correct.");
-            executeUpdate("ALTER TABLE grave MODIFY owner_texture TEXT");
-            executeUpdate("ALTER TABLE grave MODIFY owner_texture_signature TEXT");
-            executeUpdate("ALTER TABLE grave MODIFY time_creation BIGINT");
-            executeUpdate("ALTER TABLE grave MODIFY time_protection BIGINT");
-            executeUpdate("ALTER TABLE grave MODIFY time_alive BIGINT");
-        } else if (this.type == Type.POSTGRESQL) {
+            executeUpdate("ALTER TABLE grave MODIFY owner_texture TEXT", new Object[0]);
+            executeUpdate("ALTER TABLE grave MODIFY owner_texture_signature TEXT", new Object[0]);
+            executeUpdate("ALTER TABLE grave MODIFY time_creation BIGINT", new Object[0]);
+            executeUpdate("ALTER TABLE grave MODIFY time_protection BIGINT", new Object[0]);
+            executeUpdate("ALTER TABLE grave MODIFY time_alive BIGINT", new Object[0]);
+        } else if (this.type == Type.POSTGRESQL || this.type == Type.H2) {
             plugin.getLogger().info("Altering table grave to ensure column sizes are correct.");
-            executeUpdate("ALTER TABLE grave ALTER COLUMN owner_texture TYPE TEXT");
-            executeUpdate("ALTER TABLE grave ALTER COLUMN owner_texture_signature TYPE TEXT");
-            executeUpdate("ALTER TABLE grave ALTER COLUMN time_creation TYPE BIGINT");
-            executeUpdate("ALTER TABLE grave ALTER COLUMN time_protection TYPE BIGINT");
-            executeUpdate("ALTER TABLE grave ALTER COLUMN time_alive TYPE BIGINT");
-        } else if (this.type == Type.H2) {
-            plugin.getLogger().info("Altering table grave to ensure column sizes are correct.");
-            executeUpdate("ALTER TABLE grave ALTER COLUMN owner_texture TEXT");
-            executeUpdate("ALTER TABLE grave ALTER COLUMN owner_texture_signature TEXT");
-            executeUpdate("ALTER TABLE grave ALTER COLUMN time_creation BIGINT");
-            executeUpdate("ALTER TABLE grave ALTER COLUMN time_protection BIGINT");
-            executeUpdate("ALTER TABLE grave ALTER COLUMN time_alive BIGINT");
+            executeUpdate("ALTER TABLE grave ALTER COLUMN owner_texture TYPE TEXT", new Object[0]);
+            executeUpdate("ALTER TABLE grave ALTER COLUMN owner_texture_signature TYPE TEXT", new Object[0]);
+            executeUpdate("ALTER TABLE grave ALTER COLUMN time_creation TYPE BIGINT", new Object[0]);
+            executeUpdate("ALTER TABLE grave ALTER COLUMN time_protection TYPE BIGINT", new Object[0]);
+            executeUpdate("ALTER TABLE grave ALTER COLUMN time_alive TYPE BIGINT", new Object[0]);
         }
     }
 

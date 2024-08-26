@@ -12,6 +12,7 @@ import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.*;
 import com.tchristofferson.configupdater.ConfigUpdater;
 import org.bstats.bukkit.Metrics;
+import org.bstats.charts.DrilldownPie;
 import org.bstats.charts.SimplePie;
 import org.bstats.charts.SingleLineChart;
 import org.bukkit.ChatColor;
@@ -57,6 +58,8 @@ public class Graves extends JavaPlugin {
     private FileConfiguration fileConfiguration;
     private boolean wasReloaded = false;
     private boolean isDevelopmentBuild = false;
+    private boolean isOutdatedBuild = false;
+    private boolean isUnknownBuild = false;
 
     @Override
     public void onLoad() {
@@ -238,9 +241,20 @@ public class Graves extends JavaPlugin {
             public String call() throws Exception {
                 if (isDevelopmentBuild) {
                     return "Development Build";
+                } else if (isOutdatedBuild) {
+                    return "Outdated Build";
+                } else if (isUnknownBuild) {
+                    return "Unknown Build";
                 } else {
                     return "Production Build";
                 }
+            }
+        }));
+
+        metrics.addCustomChart(new DrilldownPie("database_versions", new Callable<Map<String, Map<String, Integer>>>() {
+            @Override
+            public Map<String, Map<String, Integer>> call() throws Exception {
+                return getDataManager().getDatabaseVersions();
             }
         }));
     }
@@ -283,6 +297,13 @@ public class Graves extends JavaPlugin {
                 } else {
                     return "Production Build";
                 }
+            }
+        }));
+
+        metricsLegacy.addCustomChart(new DrilldownPie("database_versions", new Callable<Map<String, Map<String, Integer>>>() {
+            @Override
+            public Map<String, Map<String, Integer>> call() throws Exception {
+                return getDataManager().getDatabaseVersions();
             }
         }));
     }
@@ -359,7 +380,7 @@ public class Graves extends JavaPlugin {
 
     public void debugMessage(String string, int level) {
         if (getConfig().getInt("settings.debug.level", 0) >= level) {
-            getLogger().info("Debug: " + string);
+            getLogger().warning("Debug: " + string);
 
             for (String admin : getConfig().getStringList("settings.debug.admin")) {
                 Player player = getServer().getPlayer(admin);
@@ -516,6 +537,7 @@ public class Graves extends JavaPlugin {
                         // getLogger().info("Version Comparison Result: " + comparisonResult);
 
                         if (comparisonResult < 0) {
+                            isOutdatedBuild = true;
                             getLogger().warning("You are using an outdated version of " + getDescription().getName() + ".");
                             getLogger().warning("Installed Version: " + installedVersion);
                             getLogger().warning("Latest Version:  " + latestVersion);
@@ -530,6 +552,7 @@ public class Graves extends JavaPlugin {
                             getLogger().info("You are running the latest version of " + getDescription().getName() + ".");
                         }
                     } catch (NumberFormatException exception) {
+                        isUnknownBuild = true;
                         getLogger().severe("NumberFormatException: " + exception.getMessage());
                         if (!installedVersion.equalsIgnoreCase(latestVersion)) {
                             getLogger().severe("You are either running an outdated version of " + getDescription().getName() + " or a development version.");
@@ -688,8 +711,16 @@ public class Graves extends JavaPlugin {
         return compatibility;
     }
 
-    public boolean getPluginReleaseType() {
-        return isDevelopmentBuild;
+    public String getPluginReleaseType() {
+        if (isDevelopmentBuild) {
+            return "Development Build";
+        } else if (isOutdatedBuild) {
+            return "Outdated Build";
+        } else if (isUnknownBuild) {
+            return "Unknown Build";
+        } else {
+            return "Production Build";
+        }
     }
 
     public ConfigurationSection getConfig(String config, Grave grave) {

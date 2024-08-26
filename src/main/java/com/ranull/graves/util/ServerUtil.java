@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
 
@@ -102,7 +101,15 @@ public final class ServerUtil {
         if (plugin.getVersionManager().hasAPIVersion()) {
             stringList.add(plugin.getDescription().getName() + " API Version: " + plugin.getDescription().getAPIVersion());
         }
-        stringList.add(plugin.getDescription().getName() + " Database Type: " + plugin.getConfig().getString("settings.storage.type", "SQLITE").toUpperCase());
+        String databaseTypefromConfig = plugin.getConfig().getString("settings.storage.type", "SQLITE").toUpperCase();
+        stringList.add(plugin.getDescription().getName() + " Database Type: " + databaseTypefromConfig);
+        if (databaseTypefromConfig.equals("MYSQL") || databaseTypefromConfig.equals("MARIADB") || databaseTypefromConfig.equals("POSTGRESQL")) {
+            try {
+                stringList.add(plugin.getDescription().getName() + " Database Version: " + plugin.getDataManager().getDatabaseVersion());
+            } catch (Exception e) {
+                stringList.add(plugin.getDescription().getName() + " Database Version: Unknown");
+            }
+        }
         if (plugin.getIntegrationManager().hasLuckPermsHandler()) {
             stringList.add(plugin.getDescription().getName() + " Permissions Provider: LuckPerms");
         } else if (plugin.getIntegrationManager().hasVaultPermProvider()) {
@@ -110,11 +117,7 @@ public final class ServerUtil {
         } else {
             stringList.add(plugin.getDescription().getName() + " Permissions Provider: Bukkit");
         }
-        if (plugin.getPluginReleaseType()) {
-            stringList.add(plugin.getDescription().getName() + " Plugin Release: Development Build");
-        } else {
-            stringList.add(plugin.getDescription().getName() + " Plugin Release: Production Release");
-        }
+        stringList.add(plugin.getDescription().getName() + " Plugin Release: " + plugin.getPluginReleaseType());
         stringList.add(plugin.getDescription().getName() + " Config Version: " + plugin.getConfig().getInt("config-version"));
 
         File configDir = new File("plugins/GravesX/config");
