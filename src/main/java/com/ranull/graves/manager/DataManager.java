@@ -1887,7 +1887,7 @@ public final class DataManager {
                                 statement.setFloat(i + 1, (Float) parameter);
                                 break;
                             case "Boolean":
-                                statement.setBoolean(i + 1, (Boolean) parameter);
+                                statement.setInt(i + 1, (Boolean) parameter ? 1 : 0);
                                 break;
                             case "UUID":
                                 statement.setObject(i + 1, parameter.toString(), Types.VARCHAR); // Use VARCHAR for UUIDs in PostgreSQL
