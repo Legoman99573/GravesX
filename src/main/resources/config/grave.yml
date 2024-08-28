@@ -107,7 +107,7 @@ settings:
       ############
       # Hologram #
       ############
-      # If you are running PaperMC you can set armor-stands-tick to false for improved performance without impacting any functionality.
+      # If you are running PaperMC you can set armor-stands-tick to false for improved performance without impacting any functionality. If holograms remain after looting graves, you may need to re-enable armor-stands-tick by setting it to true.
       hologram:
         # Should holograms be created.
         enabled: true
