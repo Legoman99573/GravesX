@@ -112,9 +112,11 @@ public final class FurnitureLib extends EntityDataManager {
                                 plugin.getConfig("furniturelib.line", grave)
                                         .getStringList("furniturelib.line"), grave));
 
-                if (plugin.getConfig("furniturelib.head.replace", grave)
-                        .getBoolean("furniturelib.head.replace")) {
-                    objectID.getPacketList().forEach((fEntity) -> setSkull((fContainerEntity) fEntity, grave));
+                if (plugin.getConfig("furniturelib.head.replace", grave).getBoolean("furniturelib.head.replace")) {
+                    objectID.getPacketList().stream()
+                            .filter(fEntity -> fEntity instanceof fContainerEntity)
+                            .map(fEntity -> (fContainerEntity) fEntity)
+                            .forEach(fContainerEntity -> setSkull(fContainerEntity, grave));
                 }
 
                 furnitureLib.getFurnitureManager().addObjectID(objectID);
