@@ -1792,10 +1792,12 @@ public final class DataManager {
             try (Statement statement = connection.createStatement();
                  ResultSet resultSet = statement.executeQuery(query)) {
                 if (resultSet.next()) {
-                    if (type == Type.POSTGRESQL) {
-                        return resultSet.getString(1); // PostgreSQL version
+                    String version = resultSet.getString(1);
+                    if (version != null && !version.isEmpty()) {
+                        // Split the version string by the comma and return the first part
+                        return version.split(",")[0];
                     } else {
-                        return resultSet.getString("version()"); // MySQL/MariaDB version comment
+                        return "Unknown";
                     }
                 } else {
                     return "Unknown";
