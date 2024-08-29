@@ -5,6 +5,7 @@ import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.BlockFaceUtil;
 import com.ranull.graves.util.ResourceUtil;
 import com.sk89q.worldedit.EditSession;
+import com.sk89q.worldedit.MaxChangedBlocksException;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
@@ -17,20 +18,21 @@ import com.sk89q.worldedit.math.transform.AffineTransform;
 import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.session.ClipboardHolder;
 import com.sk89q.worldedit.session.PasteBuilder;
+import com.sk89q.worldedit.world.block.BlockState;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
-import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.entity.Entity;
 import org.bukkit.plugin.Plugin;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Provides integration with WorldEdit for schematic operations.
@@ -40,6 +42,8 @@ public final class WorldEdit {
     private final Plugin worldEditPlugin;
     private final com.sk89q.worldedit.WorldEdit worldEdit;
     private final Map<String, Clipboard> stringClipboardMap;
+    private final Map<UUID, EditSession> graveEditSessions;
+    private final Map<UUID, Map<BlockVector3, BlockState>> graveBlockStates = new HashMap<>();
 
     /**
      * Constructs a new WorldEdit integration instance with the specified plugin and WorldEdit plugin.
@@ -52,6 +56,7 @@ public final class WorldEdit {
         this.worldEditPlugin = worldEditPlugin;
         this.worldEdit = com.sk89q.worldedit.WorldEdit.getInstance();
         this.stringClipboardMap = new HashMap<>();
+        this.graveEditSessions = new HashMap<>();
 
         saveData();
         loadData();
@@ -99,6 +104,26 @@ public final class WorldEdit {
         }
     }
 
+    // Method to create and store an EditSession tied to a grave UUID
+    private EditSession createEditSessionForGrave(UUID graveUUID, World world) {
+        EditSession editSession = worldEdit.newEditSession(BukkitAdapter.adapt(world));
+        graveEditSessions.put(graveUUID, editSession);
+        return editSession;
+    }
+
+    // Method to retrieve an EditSession for a grave UUID
+    private EditSession getEditSessionForGrave(UUID graveUUID) {
+        return graveEditSessions.get(graveUUID);
+    }
+
+    // Method to clear and remove the EditSession for a grave UUID
+    private void clearEditSessionForGrave(UUID graveUUID) {
+        EditSession editSession = graveEditSessions.remove(graveUUID);
+        if (editSession != null) {
+            editSession.close(); // Make sure to close the EditSession
+        }
+    }
+
     /**
      * Creates and places a schematic at the specified location based on the configuration for the given grave.
      *
@@ -114,7 +139,7 @@ public final class WorldEdit {
                 int offsetY = plugin.getConfig("schematic.offset.y", grave).getInt("schematic.offset.y");
                 int offsetZ = plugin.getConfig("schematic.offset.z", grave).getInt("schematic.offset.z");
 
-                pasteSchematic(location.clone().add(offsetX, offsetY, offsetZ), location.getYaw(), schematicName);
+                pasteSchematic(location.clone().add(offsetX, offsetY, offsetZ), location.getYaw(), schematicName, grave);
                 plugin.debugMessage("Placing schematic for " + grave.getUUID() + " at "
                         + location.getWorld().getName() + ", " + (location.getBlockX() + 0.5) + "x, "
                         + (location.getBlockY() + 0.5) + "y, " + (location.getBlockZ() + 0.5) + "z", 1);
@@ -205,8 +230,8 @@ public final class WorldEdit {
      * @param name     The name of the schematic.
      * @return The Clipboard of the pasted schematic, or {@code null} if the schematic could not be pasted.
      */
-    public Clipboard pasteSchematic(Location location, String name) {
-        return pasteSchematic(location, 0, name);
+    public Clipboard pasteSchematic(Location location, String name, Grave grave) {
+        return pasteSchematic(location, 0, name, grave);
     }
 
     /**
@@ -217,63 +242,169 @@ public final class WorldEdit {
      * @param name     The name of the schematic.
      * @return The Clipboard of the pasted schematic, or {@code null} if the schematic could not be pasted.
      */
-    public Clipboard pasteSchematic(Location location, float yaw, String name) {
-        return pasteSchematic(location, yaw, name, true);
+    public Clipboard pasteSchematic(Location location, float yaw, String name, Grave grave) {
+        return pasteSchematic(location, yaw, name, grave, plugin.getConfig("schematic.ignore-air", grave).getBoolean("schematic.ignore-air"));
     }
 
-    private Clipboard pasteSchematic(Location location, float yaw, String name, boolean ignoreAirBlocks) {
+    public Clipboard pasteSchematic(Location location, float yaw, String name, Grave grave, boolean ignoreAirBlocks) {
         if (location.getWorld() != null) {
-            if (stringClipboardMap.containsKey(name)) {
-                Clipboard clipboard = stringClipboardMap.get(name);
+            if (hasSchematic(name)) {
+                Clipboard clipboard = getSchematic(location, yaw, name, grave);
 
-                try (EditSession editSession = getEditSession(location.getWorld())) {
+                // Create or retrieve the EditSession for the grave UUID
+                EditSession editSession = createEditSessionForGrave(grave.getUUID(), location.getWorld());
+
+                // Create a latch to wait for the block state save
+                CountDownLatch latch = new CountDownLatch(1);
+
+                // Save the current state of blocks using the EditSession
+                new Thread(() -> {
+                    saveCurrentBlockState(location, editSession, grave);
+                    latch.countDown();  // Signal that saving is complete
+                }).start();
+
+                try {
+                    // Wait for the save operation to complete with a timeout of 5 seconds
+                    boolean completed = latch.await(5, TimeUnit.SECONDS);
+
+                    if (!completed) {
+                        plugin.getLogger().warning("Timeout while waiting for block state save. Proceeding with schematic paste.");
+                    }
+
+                    // Use ClipboardHolder to manage clipboard data
                     ClipboardHolder clipboardHolder = new ClipboardHolder(clipboard);
-
                     clipboardHolder.setTransform(clipboardHolder.getTransform().combine(getYawTransform(yaw)));
-                    Operations.complete(clipboardHolder.createPaste(editSession).to(locationToBlockVector3(location))
-                            .ignoreAirBlocks(ignoreAirBlocks).build());
+
+                    // Perform the paste operation
+                    Operations.complete(clipboardHolder.createPaste(editSession)
+                            .to(locationToBlockVector3(location))
+                            .ignoreAirBlocks(ignoreAirBlocks)
+                            .build());
 
                     return clipboardHolder.getClipboard();
-                } catch (WorldEditException exception) {
+                } catch (InterruptedException | WorldEditException exception) {
+                    plugin.getLogger().severe("Error pasting schematic: " + exception.getMessage());
                     plugin.logStackTrace(exception);
                 }
             } else {
-                plugin.debugMessage("Can't find schematic " + name, 1);
+                plugin.getLogger().warning("Can't find schematic " + name);
             }
         }
 
         return null;
     }
 
-    private PasteBuilder getSchematic(Location location, float yaw, String name) {
-        return getSchematic(location, yaw, name, true);
+    private void saveCurrentBlockState(Location location, EditSession editSession, Grave grave) {
+        World world = location.getWorld();
+        if (world != null) {
+            // Define the dimensions of the area to save
+            int radius = plugin.getConfig("schematic.radius", grave).getInt("schematic.radius"); // Define the radius or dimensions of the area to save
+            int minX = location.getBlockX() - radius;
+            int minY = location.getBlockY() - radius;
+            int minZ = location.getBlockZ() - radius;
+            int maxX = location.getBlockX() + radius;
+            int maxY = location.getBlockY() + radius;
+            int maxZ = location.getBlockZ() + radius;
+
+            Map<BlockVector3, com.sk89q.worldedit.world.block.BlockState> blockStates = new HashMap<>();
+
+            for (int x = minX; x <= maxX; x++) {
+                for (int y = minY; y <= maxY; y++) {
+                    for (int z = minZ; z <= maxZ; z++) {
+                        BlockVector3 pos = BlockVector3.at(x, y, z);
+                        com.sk89q.worldedit.world.block.BlockState state = editSession.getBlock(pos);
+                        plugin.debugMessage("BlockVector3: " + pos.toString(), 1);
+                        plugin.debugMessage("BlockState: " + state, 1);
+                        blockStates.put(pos, state);
+                    }
+                }
+            }
+
+            graveBlockStates.put(grave.getUUID(), blockStates);
+        }
+    }
+
+    private Clipboard getSchematic(Location location, float yaw, String name, Grave grave) {
+        return getSchematic(location, yaw, name, plugin.getConfig("schematic.ignore-air", grave).getBoolean("schematic.ignore-air"));
     }
 
 
     /**
-     * Retrieves a PasteBuilder for the specified schematic at the given location with rotation based on yaw.
+     * Retrieves a Clipboard for the specified schematic at the given location with rotation based on yaw.
      *
      * @param location The location to paste the schematic.
      * @param yaw      The yaw rotation for the schematic.
      * @param name     The name of the schematic.
      * @param ignoreAirBlocks Whether to ignore air blocks when pasting.
-     * @return A PasteBuilder for the schematic, or {@code null} if the schematic could not be found.
+     * @return A Clipboard for the schematic, or {@code null} if the schematic could not be found.
      */
-    private PasteBuilder getSchematic(Location location, float yaw, String name, boolean ignoreAirBlocks) {
-        if (location.getWorld() != null) {
-            if (stringClipboardMap.containsKey(name)) {
-                Clipboard clipboard = stringClipboardMap.get(name);
-                ClipboardHolder clipboardHolder = new ClipboardHolder(clipboard);
+    private Clipboard getSchematic(Location location, float yaw, String name, boolean ignoreAirBlocks) {
+        if (location.getWorld() == null) {
+            plugin.getLogger().warning("World is null for location: " + location);
+            return null;
+        }
 
-                clipboardHolder.setTransform(clipboardHolder.getTransform().combine(getYawTransform(yaw)));
-                return clipboardHolder.createPaste(getEditSession(location.getWorld()))
-                        .to(locationToBlockVector3(location)).ignoreAirBlocks(ignoreAirBlocks);
-            } else {
-                plugin.debugMessage("Can't find schematic " + name, 1);
-            }
+        Clipboard clipboard = stringClipboardMap.get(name);
+        if (clipboard == null) {
+            plugin.getLogger().warning("Schematic not found: " + name);
+            return null;
+        }
+
+        try {
+            // Create a ClipboardHolder for transformations
+            ClipboardHolder clipboardHolder = new ClipboardHolder(clipboard);
+            clipboardHolder.setTransform(clipboardHolder.getTransform().combine(getYawTransform(yaw)));
+
+            // Configure an EditSession for the location
+            EditSession editSession = getEditSession(location.getWorld());
+            BlockVector3 position = locationToBlockVector3(location);
+
+            // Perform the paste operation to set up the clipboard
+            Operations.complete(clipboardHolder.createPaste(editSession)
+                    .to(position)
+                    .ignoreAirBlocks(ignoreAirBlocks)
+                    .build());
+
+            return clipboardHolder.getClipboard();
+        } catch (WorldEditException e) {
+            plugin.getLogger().severe("Error setting up Clipboard: " + e.getMessage());
+            plugin.logStackTrace(e);
         }
 
         return null;
+    }
+
+    public void clearSchematic(Grave grave) {  //TODO fix to where it actually clears the schematic. Needs triage.
+        UUID graveUUID = grave.getUUID();
+        Location location = grave.getLocationDeath();
+        EditSession editSession = getEditSessionForGrave(graveUUID);
+        if (editSession != null) {
+            try {
+                // Restore the previous block state using the EditSession
+                restoreBlockState(editSession, grave);
+
+                plugin.debugMessage("Restored block state for grave " + graveUUID + " at location " + location, 1);
+            } catch (Exception e) {
+                plugin.getLogger().severe("Failed to restore block state from " + graveUUID + " at location " + location);
+                plugin.logStackTrace(e);
+            } finally {
+                // Clear and close the EditSession
+                clearEditSessionForGrave(graveUUID);
+            }
+        } else {
+            plugin.debugMessage("No EditSession found for grave " + graveUUID + " to clear at location " + location, 1);
+        }
+    }
+
+    private void restoreBlockState(EditSession editSession, Grave grave) throws MaxChangedBlocksException {
+        Map<BlockVector3, com.sk89q.worldedit.world.block.BlockState> blockStates = graveBlockStates.get(grave.getUUID());
+        if (blockStates != null) {
+            for (Map.Entry<BlockVector3, com.sk89q.worldedit.world.block.BlockState> entry : blockStates.entrySet()) {
+                BlockVector3 pos = entry.getKey();
+                com.sk89q.worldedit.world.block.BlockState state = entry.getValue();
+                editSession.setBlock(pos, state);
+            }
+        }
     }
 
     /**
@@ -299,9 +430,9 @@ public final class WorldEdit {
                 return affineTransform.rotateY(270);
             case WEST:
                 return affineTransform.rotateY(90);
+            default:
+                return affineTransform;
         }
-
-        return affineTransform;
     }
 
     /**
@@ -310,7 +441,7 @@ public final class WorldEdit {
      * @param location The Bukkit Location to convert.
      * @return The equivalent WorldEdit BlockVector3.
      */
-    public BlockVector3 locationToBlockVector3(Location location) {
+    private BlockVector3 locationToBlockVector3(Location location) {
         return BlockVector3.at(location.getBlockX(), location.getBlockY(), location.getBlockZ());
     }
 

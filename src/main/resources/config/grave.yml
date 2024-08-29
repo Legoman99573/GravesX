@@ -529,6 +529,8 @@ settings:
         enabled: false
         # Schematic file name.
         name: "grave_default"
+        # Radius to rollback
+        radius: 10
         # Schematic offset X.
         offset:
           x: 0
@@ -536,6 +538,8 @@ settings:
           y: 0
           # Schematic offset Z.
           z: 0
+        # Should we ignore air blocks? Most cases, this should be true, but with some schematics, you may need to set this to false.
+        ignore-air: true
 
       #########
       # Sound #

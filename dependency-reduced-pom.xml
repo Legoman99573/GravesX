@@ -385,28 +385,52 @@
     <dependency>
       <groupId>io.th0rgal</groupId>
       <artifactId>oraxen</artifactId>
-      <version>1.179.0</version>
+      <version>1.181.0</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>
-          <artifactId>mclogs</artifactId>
-          <groupId>gs.mclo</groupId>
+          <artifactId>actions-spigot</artifactId>
+          <groupId>me.gabytm.util</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>annotations</artifactId>
+          <groupId>org.jetbrains</groupId>
         </exclusion>
         <exclusion>
           <artifactId>PlayerAnimator</artifactId>
           <groupId>com.ticxo</groupId>
         </exclusion>
         <exclusion>
-          <artifactId>actions-spigot</artifactId>
-          <groupId>me.gabytm.util</groupId>
+          <artifactId>IF</artifactId>
+          <groupId>com.github.stefvanschie.inventoryframework</groupId>
         </exclusion>
         <exclusion>
-          <artifactId>*</artifactId>
-          <groupId>net.kyori</groupId>
+          <artifactId>protectionlib</artifactId>
+          <groupId>io.th0rgal</groupId>
         </exclusion>
         <exclusion>
-          <artifactId>*</artifactId>
+          <artifactId>triumph-gui</artifactId>
+          <groupId>dev.triumphteam</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>bstats-bukkit</artifactId>
+          <groupId>org.bstats</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>custom-block-data</artifactId>
+          <groupId>com.jeff-media</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>persistent-data-serializer</artifactId>
+          <groupId>com.jeff-media</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>MorePersistentDataTypes</artifactId>
           <groupId>com.jeff_media</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>java</artifactId>
+          <groupId>gs.mclo</groupId>
         </exclusion>
       </exclusions>
     </dependency>

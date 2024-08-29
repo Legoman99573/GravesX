@@ -501,6 +501,10 @@ public final class GraveManager {
         plugin.getEntityManager().removeEntity(grave);
         plugin.getDataManager().removeGrave(grave);
 
+        if (plugin.getIntegrationManager().hasWorldEdit()) {
+            plugin.getIntegrationManager().getWorldEdit().clearSchematic(grave);
+        }
+
         if (plugin.getIntegrationManager().hasMultiPaper()) {
             plugin.getIntegrationManager().getMultiPaper().notifyGraveRemoval(grave);
         }
@@ -1183,8 +1187,8 @@ public final class GraveManager {
                 plugin.getEntityManager().spawnZombie(location, player, player, grave);
                 giveGraveExperience(player, grave);
                 playEffect("effect.loot", location, grave);
-                closeGrave(grave);
                 removeGrave(grave);
+                closeGrave(grave);
                 plugin.debugMessage("Grave " + grave.getUUID() + " autolooted by " + player.getName(), 1);
             } else {
                 plugin.getEntityManager().playWorldSound("sound.open", location, grave);
