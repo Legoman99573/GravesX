@@ -1783,10 +1783,8 @@ public final class DataManager {
     public String getDatabaseVersion() throws SQLException {
         try (Connection connection = dataSource.getConnection()) {
             String query;
-            if (type == Type.POSTGRESQL) {
+            if (type == Type.POSTGRESQL || type == Type.MARIADB || type == Type.MYSQL) {
                 query = "SELECT version()";
-            } else if (type == Type.MARIADB || type == Type.MYSQL) {
-                query = "SHOW VARIABLES LIKE 'version_comment'";
             } else {
                 return "Unknown";
             }
@@ -1797,7 +1795,7 @@ public final class DataManager {
                     if (type == Type.POSTGRESQL) {
                         return resultSet.getString(1); // PostgreSQL version
                     } else {
-                        return resultSet.getString("Value"); // MySQL/MariaDB version comment
+                        return resultSet.getString("version()"); // MySQL/MariaDB version comment
                     }
                 } else {
                     return "Unknown";
