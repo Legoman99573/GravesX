@@ -9,6 +9,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.InventoryHolder;
 
@@ -84,6 +85,11 @@ public class InventoryClickListener implements Listener {
         Grave grave = graveList.getGrave(event.getSlot());
 
         if (grave != null) {
+            if (event.getClick() == ClickType.SHIFT_LEFT) {
+                event.setCancelled(true); // Prevents items from being put in inventory
+                return;
+            }
+
             // Run function associated with the clicked slot in GraveList
             plugin.getEntityManager().runFunction(player, plugin.getConfig("gui.menu.list.function", grave)
                     .getString("gui.menu.list.function", "menu"), grave);
@@ -104,6 +110,11 @@ public class InventoryClickListener implements Listener {
         Grave grave = graveMenu.getGrave();
 
         if (grave != null) {
+            if (event.getClick() == ClickType.SHIFT_LEFT) {
+                event.setCancelled(true); // Prevents items from being put in inventory
+                return;
+            }
+
             // Run function associated with the clicked slot in GraveMenu
             plugin.getEntityManager().runFunction(player,
                     plugin.getConfig("gui.menu.grave.slot." + event.getSlot() + ".function", grave)
