@@ -198,7 +198,13 @@ public final class ItemStackManager extends EntityDataManager {
             List<String> loreList = new ArrayList<>();
 
             for (String string : plugin.getConfig("head.lore", grave).getStringList("head.lore")) {
-                loreList.add(ChatColor.GRAY + StringUtil.parseString(string, grave.getLocationDeath(), grave, plugin));
+                if (plugin.getIntegrationManager().hasMiniMessage()) {
+                    String loreNew = StringUtil.parseString("&7" + string, grave.getLocationDeath(), grave, plugin);
+                    loreList.add(MiniMessage.parseString(loreNew));
+                } else {
+                    loreList.add(ChatColor.GRAY + StringUtil.parseString(string, grave.getLocationDeath(), grave, plugin));
+                }
+
             }
 
             int customModelData = plugin.getConfig("head.model-data", grave).getInt("head.model-data", -1);
@@ -208,8 +214,18 @@ public final class ItemStackManager extends EntityDataManager {
             }
 
             itemMeta.setLore(loreList);
-            itemMeta.setDisplayName(ChatColor.WHITE + StringUtil.parseString(plugin.getConfig("head.name", grave)
-                    .getString("head.name"), grave, plugin));
+
+            String displayName;
+            if (plugin.getIntegrationManager().hasMiniMessage()) {
+                String displayNameNew = StringUtil.parseString("&f" + plugin.getConfig("head.name", grave)
+                        .getString("head.name"), grave, plugin);
+                displayName = MiniMessage.parseString(displayNameNew);
+            } else {
+                displayName = ChatColor.WHITE + StringUtil.parseString(plugin.getConfig("head.name", grave)
+                        .getString("head.name"), grave, plugin);
+            }
+
+            itemMeta.setDisplayName(displayName);
             itemStack.setItemMeta(itemMeta);
         }
 

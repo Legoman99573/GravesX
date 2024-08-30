@@ -835,7 +835,12 @@ public final class EntityManager extends EntityDataManager {
                         .getString("zombie.name"), location, grave, plugin);
 
                 if (!zombieName.equals("")) {
-                    livingEntity.setCustomName(zombieName);
+                    if (plugin.getIntegrationManager().hasMiniMessage()) {
+                        livingEntity.setCustomName(MiniMessage.parseString(zombieName));
+                    } else {
+                        livingEntity.setCustomName(zombieName);
+                    }
+
                 }
 
                 setDataByte(livingEntity, "graveZombie");
