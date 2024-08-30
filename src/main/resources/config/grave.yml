@@ -804,6 +804,19 @@ settings:
           CRAMMING: "Crushed"
           DRYOUT: "Dried Out"
           FREEZE: "Froze"
+          SONIC_BOOM: "Sonic Boomed"
+          STALAGMITE: "Impaled"
+          OUTSIDE_BORDER: "Crossed the Border"
+          FALLING_STALACTITE: "Impaled"
+          GENERIC: "Died"
+          ENTITY_HIT: "Hit"
+          ENTITY_BURN: "Burned by Entity"
+          ENDER_DRAGON: "Dragon"
+          WITHER_SKULL: "Wither Skull"
+          CONSTRUCTION: "Construction Error"
+          SLIME: "Slammed"
+          ELDER_GUARDIAN: "Guardian Attack"
+          KILL: "Killed"
 
       ########
       # Time #
