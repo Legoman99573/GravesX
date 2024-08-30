@@ -101,6 +101,10 @@ permissions:
     default: true
     description: Can view graves
 
+  graves.potion-effect:
+    default: true
+    description: Can receive potion effect on respawn
+
   graves.gui.other:
     default: op
     description: Can view other peoples graves

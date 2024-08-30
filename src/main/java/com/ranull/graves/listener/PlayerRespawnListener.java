@@ -70,7 +70,7 @@ public class PlayerRespawnListener implements Listener {
      */
     private void applyPotionEffectIfWithinTime(Player player, List<String> permissionList, Grave grave) {
         if (!plugin.getConfig("respawn.potion-effect", player, permissionList)
-                .getBoolean("respawn.potion-effect")) return;
+                .getBoolean("respawn.potion-effect") && plugin.hasGrantedPermission("graves.potion-effect", player.getPlayer())) return;
 
         long respawnTimeLimit = plugin.getConfig("respawn.potion-effect-time-limit", player, permissionList)
                 .getInt("respawn.potion-effect-time-limit") * 1000L;
