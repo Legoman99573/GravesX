@@ -817,6 +817,7 @@ settings:
           SLIME: "Slammed"
           ELDER_GUARDIAN: "Guardian Attack"
           KILL: "Killed"
+          CONTACT: "Touched"
 
       ########
       # Time #
