@@ -209,6 +209,13 @@ settings:
         # Should we run a function after respawning, you can use menu and list among the other functions.
         function: "none"
 
+        # Should entities be given a potion effect when they respawn. (Only works for players)
+        potion-effect: false
+        # How long should the entity be given time to respawn after the grave was first created.
+        potion-effect-time-limit: 300
+        # How long (in seconds) should the effect last for.
+        potion-effect-duration: 15
+
       ############
       # Particle #
       ############

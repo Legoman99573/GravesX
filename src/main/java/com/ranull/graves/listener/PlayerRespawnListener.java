@@ -9,6 +9,8 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import java.util.List;
 
@@ -33,6 +35,7 @@ public class PlayerRespawnListener implements Listener {
      * This method:
      * - Runs a scheduled task to execute a function configured for respawn events.
      * - Checks if a compass should be given to the player based on the respawn time and config settings.
+     * - Applies a potion effect if the player respawns within the allowed time.
      *
      * @param event The PlayerRespawnEvent to handle.
      */
@@ -48,6 +51,9 @@ public class PlayerRespawnListener implements Listener {
             // Schedule a function to run after player respawn
             scheduleRespawnFunction(player, permissionList, grave);
 
+            // Apply potion effect if within allowed time
+            applyPotionEffectIfWithinTime(player, permissionList, grave);
+
             // Check if a compass should be given to the player
             if (shouldGiveCompass(player, permissionList, grave)) {
                 giveCompassToPlayer(event, player, grave);
@@ -56,11 +62,36 @@ public class PlayerRespawnListener implements Listener {
     }
 
     /**
+     * Applies a potion effect to the player if they respawn within the allowed time.
+     *
+     * @param player The player who respawned.
+     * @param permissionList The list of permissions for the player.
+     * @param grave The grave associated with the player.
+     */
+    private void applyPotionEffectIfWithinTime(Player player, List<String> permissionList, Grave grave) {
+        if (!plugin.getConfig("respawn.potion-effect", player, permissionList)
+                .getBoolean("respawn.potion-effect")) return;
+
+        long respawnTimeLimit = plugin.getConfig("respawn.potion-effect-time-limit", player, permissionList)
+                .getInt("respawn.potion-effect-time-limit") * 1000L;
+
+        if (grave.getLivedTime() <= respawnTimeLimit) {
+            int effectDuration = plugin.getConfig("respawn.potion-effect-duration", player, permissionList)
+                    .getInt("respawn.potion-effect-duration") * 20; // Duration in ticks (20 ticks = 1 second)
+
+            PotionEffect potionEffect = new PotionEffect(PotionEffectType.RESISTANCE, effectDuration, 4);
+            PotionEffect potionEffect2 = new PotionEffect(PotionEffectType.FIRE_RESISTANCE, effectDuration, 0);
+            player.addPotionEffect(potionEffect);
+            player.addPotionEffect(potionEffect2);
+        }
+    }
+
+    /**
      * Schedules a function to run after the player respawns.
      *
-     * @param player        The player who respawned.
+     * @param player The player who respawned.
      * @param permissionList The list of permissions for the player.
-     * @param grave         The grave associated with the player.
+     * @param grave The grave associated with the player.
      */
     private void scheduleRespawnFunction(Player player, List<String> permissionList, Grave grave) {
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
@@ -73,9 +104,9 @@ public class PlayerRespawnListener implements Listener {
     /**
      * Checks if a compass should be given to the player based on the respawn time and configuration settings.
      *
-     * @param player        The player who respawned.
+     * @param player The player who respawned.
      * @param permissionList The list of permissions for the player.
-     * @param grave         The grave associated with the player.
+     * @param grave The grave associated with the player.
      * @return True if a compass should be given, false otherwise.
      */
     private boolean shouldGiveCompass(Player player, List<String> permissionList, Grave grave) {
@@ -89,9 +120,9 @@ public class PlayerRespawnListener implements Listener {
     /**
      * Gives a compass to the player that points to the location of their grave.
      *
-     * @param event  The PlayerRespawnEvent.
+     * @param event The PlayerRespawnEvent.
      * @param player The player who respawned.
-     * @param grave  The grave associated with the player.
+     * @param grave The grave associated with the player.
      */
     private void giveCompassToPlayer(PlayerRespawnEvent event, Player player, Grave grave) {
         List<Location> locationList = plugin.getGraveManager()
