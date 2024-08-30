@@ -430,7 +430,7 @@ public class Graves extends JavaPlugin {
     }
 
     private void updateConfig() {
-        int currentConfigVersion = 9;
+        int currentConfigVersion = 10;
         File configFolder = new File(getDataFolder(), "config");
 
         // Load the main config file to check the version

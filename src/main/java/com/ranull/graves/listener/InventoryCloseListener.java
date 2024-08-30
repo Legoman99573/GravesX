@@ -104,7 +104,7 @@ public class InventoryCloseListener implements Listener {
 
         // Execute commands and send messages related to the grave
         plugin.getEntityManager().runCommands("event.command.loot", player, player.getLocation(), grave);
-        plugin.getEntityManager().sendMessage("message.loot", player, player.getLocation(), grave);
+        plugin.getEntityManager().sendMessage("message.looted", player, player.getLocation(), grave);
 
         // Spawn a zombie at the grave's death location
         plugin.getEntityManager().spawnZombie(grave.getLocationDeath(), player, player, grave);

@@ -731,7 +731,7 @@ settings:
         # Prefix for messages.
         prefix: "&c☠ &8» &r"
         # Messages for different interactions.
-        loot: ""
+        looted: "You looted &c%owner_name%&r's grave at &c%x%&rx, &c%y%&ry, &c%z%&rz in &c%world_formatted%&r."
         experience: "Looted &c%level% &rlevels from grave."
         empty: "You don't have any graves."
         death: "You were killed in &c%world_formatted% &rby &c%killer_name%&r."

@@ -1210,7 +1210,7 @@ public final class GraveManager {
 
             if (grave.getItemAmount() <= 0) {
                 plugin.getEntityManager().runCommands("event.command.loot", player, location, grave);
-                plugin.getEntityManager().sendMessage("message.loot", player, location, grave);
+                plugin.getEntityManager().sendMessage("message.looted", player, location, grave);
                 plugin.getEntityManager().playWorldSound("sound.close", location, grave);
                 plugin.getEntityManager().spawnZombie(location, player, player, grave);
                 giveGraveExperience(player, grave);

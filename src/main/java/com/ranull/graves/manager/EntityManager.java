@@ -526,21 +526,20 @@ public final class EntityManager extends EntityDataManager {
                     .getString("message.prefix");
 
             if (prefix != null && !prefix.equals("")) {
-                string = prefix + string;
+                if (plugin.getIntegrationManager().hasMiniMessage()) {
+                    string = prefix + "<white>" + string;
+                } else {
+                    string = prefix + string;
+                }
+
             }
 
-            if (string != null && !string.isEmpty() && !string.equals(prefix)) {
-                String message = StringUtil.parseString(string, entity, name, location, grave, plugin);
-                if (!message.contains("null")) {
-                    plugin.debugMessage("Message found for " + string + " in grave.yml. Sending message to " + entity.getName() +".", 2);
-                    if (plugin.getIntegrationManager().hasMiniMessage()) {
-                        MiniMessage.sendMessage(player, message);
-                    } else {
-                        player.sendMessage(message); // assuming the server doesn't support MiniMessage or integration is disabled.
-                    }
-                } else {
-                    plugin.debugMessage("Message is missing for " + string + " in grave.yml. Not sending message to " + entity.getName() +".", 2);
-                }
+            String message = StringUtil.parseString(string, entity, name, location, grave, plugin);
+            plugin.debugMessage("Message found for " + string + " in grave.yml. Sending message to " + entity.getName() +".", 2);
+            if (plugin.getIntegrationManager().hasMiniMessage()) {
+                MiniMessage.sendMessage(player, message);
+            } else {
+                player.sendMessage(message); // assuming the server doesn't support MiniMessage or integration is disabled.
             }
         }
     }
