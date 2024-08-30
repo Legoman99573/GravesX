@@ -76,6 +76,10 @@
                             <pattern>net.kyori</pattern>
                             <shadedPattern>${project.groupId}.${project.artifactId}.libraries.kyori</shadedPattern>
                         </relocation>
+                        <relocation>
+                            <pattern>me.imdanix.text</pattern>
+                            <shadedPattern>${project.groupId}.${project.artifactId}.libraries.imdanix</shadedPattern>
+                        </relocation>
                     </relocations>
                 </configuration>
                 <executions>
@@ -520,6 +524,12 @@
             <groupId>net.kyori</groupId>
             <artifactId>adventure-platform-bukkit</artifactId>
             <version>4.3.4</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.imDaniX</groupId>
+            <artifactId>MiniTranslator</artifactId>
+            <version>v2.1</version>
             <scope>compile</scope>
         </dependency>
         <dependency>

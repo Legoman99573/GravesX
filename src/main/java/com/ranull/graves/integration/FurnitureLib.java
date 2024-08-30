@@ -170,7 +170,12 @@ public final class FurnitureLib extends EntityDataManager {
             int counter = 0;
             for (String string : stringList) {
                 if (counter <= 4) {
-                    sign.setLine(counter, StringUtil.parseString(string, block.getLocation(), grave, plugin));
+                    if (plugin.getIntegrationManager().hasMiniMessage()) {
+                        String newLine = StringUtil.parseString(string, block.getLocation(), grave, plugin);
+                        sign.setLine(counter, MiniMessage.parseString(newLine));
+                    } else {
+                        sign.setLine(counter, StringUtil.parseString(string, block.getLocation(), grave, plugin));
+                    }
                     counter++;
                 } else {
                     break;

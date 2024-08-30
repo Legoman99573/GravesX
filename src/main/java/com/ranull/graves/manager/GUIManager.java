@@ -1,6 +1,7 @@
 package com.ranull.graves.manager;
 
 import com.ranull.graves.Graves;
+import com.ranull.graves.integration.MiniMessage;
 import com.ranull.graves.inventory.GraveList;
 import com.ranull.graves.inventory.GraveMenu;
 import com.ranull.graves.type.Grave;
@@ -105,10 +106,20 @@ public final class GUIManager {
 
             if (!playerGraveList.isEmpty()) {
                 GraveList graveList = new GraveList(uuid, playerGraveList);
-                Inventory inventory = plugin.getServer().createInventory(graveList,
-                        InventoryUtil.getInventorySize(playerGraveList.size()),
-                        StringUtil.parseString(plugin.getConfig("gui.menu.list.title", player, permissionList)
-                                .getString("gui.menu.list.title", "Graves Main Menu"), player, plugin));
+                Inventory inventory;
+                if (plugin.getIntegrationManager().hasMiniMessage()) {
+                    String guiTitle = StringUtil.parseString(plugin.getConfig("gui.menu.list.title", player, permissionList)
+                            .getString("gui.menu.list.title", "Graves Main Menu"), player, plugin);
+                    String guiNew = MiniMessage.convertLegacyToMiniMessage(guiTitle);
+                    inventory = plugin.getServer().createInventory(graveList,
+                            InventoryUtil.getInventorySize(playerGraveList.size()),
+                            MiniMessage.parseString(guiNew));
+                } else {
+                    inventory = plugin.getServer().createInventory(graveList,
+                            InventoryUtil.getInventorySize(playerGraveList.size()),
+                            StringUtil.parseString(plugin.getConfig("gui.menu.list.title", player, permissionList)
+                                    .getString("gui.menu.list.title", "Graves Main Menu"), player, plugin));
+                }
 
                 setGraveListItems(inventory, playerGraveList);
                 graveList.setInventory(inventory);
@@ -171,8 +182,15 @@ public final class GUIManager {
         if (entity instanceof Player) {
             Player player = (Player) entity;
             GraveMenu graveMenu = new GraveMenu(grave);
-            String title = StringUtil.parseString(plugin.getConfig("gui.menu.grave.title", player, grave.getPermissionList())
-                    .getString("gui.menu.grave.title", "Grave"), player, plugin);
+            String title;
+            if (plugin.getIntegrationManager().hasMiniMessage()) {
+                String newTitle = StringUtil.parseString(plugin.getConfig("gui.menu.grave.title", player, grave.getPermissionList())
+                        .getString("gui.menu.grave.title", "Grave"), player, plugin);
+                title = MiniMessage.parseString(newTitle);
+            } else {
+                title = StringUtil.parseString(plugin.getConfig("gui.menu.grave.title", player, grave.getPermissionList())
+                        .getString("gui.menu.grave.title", "Grave"), player, plugin);
+            }
             Inventory inventory = plugin.getServer().createInventory(graveMenu, InventoryUtil.getInventorySize(5), title);
 
             setGraveMenuItems(inventory, grave);

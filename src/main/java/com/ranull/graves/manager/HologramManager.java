@@ -74,7 +74,8 @@ public final class HologramManager extends EntityDataManager {
 
                     // Use MiniMessage if available to format the custom name
                     if (plugin.getIntegrationManager().hasMiniMessage()) {
-                        armorStand.setCustomName(StringUtil.parseString(MiniMessage.setArmorStandName(line), location, grave, plugin));
+                        String newLine = StringUtil.parseString(line, location, grave, plugin);
+                        armorStand.setCustomName(MiniMessage.parseString(newLine));
                     } else {
                         armorStand.setCustomName(StringUtil.parseString(line, location, grave, plugin));
                     }

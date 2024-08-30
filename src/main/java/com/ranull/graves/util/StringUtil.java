@@ -3,6 +3,7 @@ package com.ranull.graves.util;
 import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
 import me.clip.placeholderapi.PlaceholderAPI;
+import me.imdanix.text.MiniTranslator;
 import net.md_5.bungee.api.ChatColor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.text.WordUtils;
@@ -192,13 +193,10 @@ public final class StringUtil {
             matcher = pattern.matcher(string);
         }
 
-        /*
-         * Removed since this converts all to legacy, thus breaking everything.
-         * if (plugin.getIntegrationManager().hasMiniMessage()) {
-         *     string = string.replace("§", "&");
-         *     string = plugin.getIntegrationManager().getMiniMessage().parseString(string);
-         * }
-         */
+        if (plugin.getIntegrationManager().hasMiniMessage()) {
+            string = string.replace("§", "&");
+            return MiniTranslator.toMini(string);
+        }
 
         return string.replace("&", "§");
     }

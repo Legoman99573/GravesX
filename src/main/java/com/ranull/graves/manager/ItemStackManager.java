@@ -4,8 +4,8 @@ import com.ranull.graves.Graves;
 import com.ranull.graves.integration.MiniMessage;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.StringUtil;
+import me.imdanix.text.MiniTranslator;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -102,13 +102,21 @@ public final class ItemStackManager extends EntityDataManager {
                         .map(lore -> MiniMessage.miniMessage().deserialize(lore))
                         .collect(Collectors.toList());
 
-                String title = MiniMessage.convertLegacyToMiniMessage(plugin.getConfig("obituary.title", grave).getString("obituary.title"));
+                String title = plugin.getConfig("obituary.title", grave).getString("obituary.title");
 
-                String author = MiniMessage.convertLegacyToMiniMessage(plugin.getConfig("obituary.author", grave).getString("obituary.author"));
+                String author = plugin.getConfig("obituary.author", grave).getString("obituary.author");
+
+                String titleOriginal = StringUtil.parseString(title, grave, plugin);
+
+                String authorOriginal = StringUtil.parseString(author, grave, plugin);
+
+                Component titleConverted = MiniMessage.miniMessage.deserialize(MiniMessage.convertLegacyToMiniMessage(titleOriginal));
+
+                Component authorConverted = MiniMessage.miniMessage.deserialize(MiniMessage.convertLegacyToMiniMessage(authorOriginal));
 
                 return MiniMessage.formatBookMeta(itemStack,
-                        MiniMessage.miniMessage().deserialize(StringUtil.parseString(title, grave, plugin)),
-                        MiniMessage.miniMessage().deserialize(StringUtil.parseString(author, grave, plugin)),
+                        titleConverted,
+                        authorConverted,
                         componentPages, componentList);
             } else {
                 List<String> lineList = new ArrayList<>();
@@ -245,16 +253,29 @@ public final class ItemStackManager extends EntityDataManager {
 
         if (itemStack.getItemMeta() != null) {
             ItemMeta itemMeta = itemStack.getItemMeta();
-            String name = ChatColor.WHITE + StringUtil.parseString(plugin.getConfig("gui.menu.list.name", grave)
-                    .getString("gui.menu.list.name"), grave, plugin).replace("%number%",
-                    String.valueOf(number));
+            String name;
+            if (plugin.getIntegrationManager().hasMiniMessage()) {
+                String newName = StringUtil.parseString("&f" + plugin.getConfig("gui.menu.list.name", grave)
+                        .getString("gui.menu.list.name"), grave, plugin).replace("%number%",
+                        String.valueOf(number));
+                name = MiniMessage.parseString(newName);
+            } else {
+                name = ChatColor.WHITE + StringUtil.parseString(plugin.getConfig("gui.menu.list.name", grave)
+                        .getString("gui.menu.list.name"), grave, plugin).replace("%number%",
+                        String.valueOf(number));
+            }
             List<String> loreList = new ArrayList<>();
             int customModelData = plugin.getConfig("gui.menu.list.model-data", grave)
                     .getInt("gui.menu.list.model-data", -1);
 
             for (String string : plugin.getConfig("gui.menu.list.lore", grave).getStringList("gui.menu.list.lore")) {
                 e = Bukkit.getEntity(grave.getOwnerUUID());
-                loreList.add(ChatColor.GRAY + StringUtil.parseString(string, e, grave.getLocationDeath(), grave, plugin));
+                if (plugin.getIntegrationManager().hasMiniMessage()) {
+                    String loreOriginal = StringUtil.parseString("&7" + string, e, grave.getLocationDeath(), grave, plugin);
+                    loreList.add(MiniMessage.parseString(loreOriginal));
+                } else {
+                    loreList.add(ChatColor.GRAY + StringUtil.parseString(string, e, grave.getLocationDeath(), grave, plugin));
+                }
             }
 
             if (plugin.getConfig().getBoolean("gui.menu.list.glow")) {
@@ -297,8 +318,15 @@ public final class ItemStackManager extends EntityDataManager {
 
         if (itemStack.getItemMeta() != null) {
             ItemMeta itemMeta = itemStack.getItemMeta();
-            String name = ChatColor.WHITE + StringUtil.parseString(plugin.getConfig("gui.menu.grave.slot." + slot + ".name", grave)
-                    .getString("gui.menu.grave.slot." + slot + ".name"), grave, plugin);
+            String name;
+            if (plugin.getIntegrationManager().hasMiniMessage()) {
+                String newName = StringUtil.parseString("&f" + plugin.getConfig("gui.menu.grave.slot." + slot + ".name", grave)
+                        .getString("gui.menu.grave.slot." + slot + ".name"), grave, plugin);
+                name = MiniMessage.parseString(newName);
+            } else {
+                name = ChatColor.WHITE + StringUtil.parseString(plugin.getConfig("gui.menu.grave.slot." + slot + ".name", grave)
+                        .getString("gui.menu.grave.slot." + slot + ".name"), grave, plugin);
+            }
             List<String> loreList = new ArrayList<>();
             int customModelData = plugin.getConfig("gui.menu.grave.slot." + slot + ".model-data", grave)
                     .getInt("gui.menu.grave.slot." + slot + ".model-data", -1);
@@ -306,7 +334,13 @@ public final class ItemStackManager extends EntityDataManager {
             for (String string : plugin.getConfig("gui.menu.grave.slot." + slot + ".lore", grave)
                     .getStringList("gui.menu.grave.slot." + slot + ".lore")) {
                 e = Bukkit.getEntity(grave.getOwnerUUID());
-                loreList.add(ChatColor.GRAY + StringUtil.parseString(string, e, grave.getLocationDeath(), grave, plugin));
+                if (plugin.getIntegrationManager().hasMiniMessage()) {
+                    String newLore = StringUtil.parseString("&7" + string, e, grave.getLocationDeath(), grave, plugin);
+                    loreList.add(MiniMessage.parseString(newLore));
+                } else {
+                    loreList.add(ChatColor.GRAY + StringUtil.parseString(string, e, grave.getLocationDeath(), grave, plugin));
+                }
+
             }
 
             if (plugin.getConfig().getBoolean("gui.menu.grave.slot." + slot + ".glow")) {
@@ -348,8 +382,15 @@ public final class ItemStackManager extends EntityDataManager {
 
         if (itemStack.getItemMeta() != null) {
             ItemMeta itemMeta = itemStack.getItemMeta();
-            String name = ChatColor.WHITE + StringUtil.parseString(plugin.getConfig("gui.menu.grave.slot." + slot + ".name", grave)
-                    .getString("gui.menu.grave.slot." + slot + ".name"), grave, plugin);
+            String name;
+            if (plugin.getIntegrationManager().hasMiniMessage()) {
+                String newName = ChatColor.WHITE + StringUtil.parseString(plugin.getConfig("gui.menu.grave.slot." + slot + ".name", grave)
+                        .getString("gui.menu.grave.slot." + slot + ".name"), grave, plugin);
+                name = MiniMessage.parseString(newName);
+            } else {
+                name = ChatColor.WHITE + StringUtil.parseString(plugin.getConfig("gui.menu.grave.slot." + slot + ".name", grave)
+                        .getString("gui.menu.grave.slot." + slot + ".name"), grave, plugin);
+            }
             List<String> loreList = new ArrayList<>();
             int customModelData = plugin.getConfig("gui.menu.grave.slot." + slot + ".model-data", grave)
                     .getInt("gui.menu.grave.slot." + slot + ".model-data", -1);
@@ -357,7 +398,12 @@ public final class ItemStackManager extends EntityDataManager {
             for (String string : plugin.getConfig("gui.menu.grave.slot." + slot + ".lore", grave)
                     .getStringList("gui.menu.grave.slot." + slot + ".lore")) {
                 e = Bukkit.getEntity(grave.getOwnerUUID());
-                loreList.add(ChatColor.GRAY + StringUtil.parseString(string, e, grave.getLocationDeath(), grave, plugin));
+                if (plugin.getIntegrationManager().hasMiniMessage()) {
+                    String newLore = StringUtil.parseString("&7" + string, e, grave.getLocationDeath(), grave, plugin);
+                    loreList.add(MiniMessage.parseString(newLore));
+                } else {
+                    loreList.add(ChatColor.GRAY + StringUtil.parseString(string, e, grave.getLocationDeath(), grave, plugin));
+                }
             }
 
             if (plugin.getConfig().getBoolean("gui.menu.grave.slot." + slot + ".glow")) {

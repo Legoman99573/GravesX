@@ -1,6 +1,7 @@
 package com.ranull.graves.manager;
 
 import com.ranull.graves.Graves;
+import com.ranull.graves.integration.MiniMessage;
 import com.ranull.graves.util.StringUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -113,14 +114,27 @@ public final class RecipeManager {
                 ItemMeta itemMeta = itemStack.getItemMeta();
 
                 if (itemMeta != null) {
-                    String name = ChatColor.WHITE + StringUtil.parseString(plugin.getConfig()
-                            .getString("settings.token." + token + ".name"), plugin);
+                    String name;
+                    if (plugin.getIntegrationManager().hasMiniMessage()) {
+                        String newName = StringUtil.parseString("&f" + plugin.getConfig()
+                                .getString("settings.token." + token + ".name"), plugin);
+                        name = MiniMessage.parseString(newName);
+                    } else {
+                        name = ChatColor.WHITE + StringUtil.parseString(plugin.getConfig()
+                                .getString("settings.token." + token + ".name"), plugin);
+                    }
+
                     List<String> loreList = new ArrayList<>();
                     int customModelData = plugin.getConfig().getInt("settings.token." + token
                             + ".model-data", -1);
 
                     for (String string : plugin.getConfig().getStringList("settings.token." + token + ".lore")) {
-                        loreList.add(ChatColor.GRAY + StringUtil.parseString(string, plugin));
+                        if (plugin.getIntegrationManager().hasMiniMessage()) {
+                            String newLine = StringUtil.parseString("&7" + string, plugin);
+                            loreList.add(MiniMessage.parseString(newLine));
+                        } else {
+                            loreList.add(ChatColor.GRAY + StringUtil.parseString(string, plugin));
+                        }
                     }
 
                     if (plugin.getConfig().getBoolean("settings.token." + token + ".glow")) {

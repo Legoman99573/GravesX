@@ -9,6 +9,7 @@ import com.ranull.graves.event.GraveAbandonedEvent;
 import com.ranull.graves.event.GraveAutoLootEvent;
 import com.ranull.graves.event.GraveProtectionExpiredEvent;
 import com.ranull.graves.event.GraveTimeoutEvent;
+import com.ranull.graves.integration.MiniMessage;
 import com.ranull.graves.inventory.GraveList;
 import com.ranull.graves.inventory.GraveMenu;
 import com.ranull.graves.type.Grave;
@@ -304,7 +305,12 @@ public final class GraveManager {
                 for (Entity entity : hologramData.getLocation().getChunk().getEntities()) {
                     if (entity.getUniqueId().equals(hologramData.getUUIDEntity())) {
                         if (hologramData.getLine() < lineList.size()) {
-                            entity.setCustomName(StringUtil.parseString(lineList.get(hologramData.getLine()), location, grave, plugin));
+                            if (plugin.getIntegrationManager().hasMiniMessage()) {
+                                String newHologramLine = StringUtil.parseString(lineList.get(hologramData.getLine()), location, grave, plugin);
+                                entity.setCustomName(MiniMessage.parseString(newHologramLine));
+                            } else {
+                                entity.setCustomName(StringUtil.parseString(lineList.get(hologramData.getLine()), location, grave, plugin));
+                            }
                         } else {
                             entityDataRemoveList.add(hologramData);
                         }

@@ -90,6 +90,10 @@
               <pattern>net.kyori</pattern>
               <shadedPattern>${project.groupId}.${project.artifactId}.libraries.kyori</shadedPattern>
             </relocation>
+            <relocation>
+              <pattern>me.imdanix.text</pattern>
+              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.imdanix</shadedPattern>
+            </relocation>
           </relocations>
         </configuration>
       </plugin>
