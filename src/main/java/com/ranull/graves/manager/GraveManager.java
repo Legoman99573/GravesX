@@ -166,7 +166,7 @@ public final class GraveManager {
 
                 if (grave.getOwnerType() == EntityType.PLAYER && grave.getOwnerUUID() != null) {
                     Player player = plugin.getServer().getPlayer(grave.getOwnerUUID());
-                    if (player != null) {
+                    if (player != null && player.isOnline()) {
                         plugin.getEntityManager().sendMessage("message.timeout", player, graveTimeoutEvent.getLocation(), grave);
                     }
                 }
@@ -179,14 +179,28 @@ public final class GraveManager {
                 if (!graveAbandonedEvent.isCancelled()) {
                     if (grave.getOwnerType() == EntityType.PLAYER && grave.getOwnerUUID() != null) {
                         Player player = plugin.getServer().getPlayer(grave.getOwnerUUID());
-                        plugin.getEntityManager().sendMessage("message.abandoned", player, graveAbandonedEvent.getLocation(), grave);
+                        if (player != null && player.isOnline()) {
+                            plugin.getEntityManager().sendMessage("message.abandoned", player, graveAbandonedEvent.getLocation(), grave);
+                        }
                         grave.setTimeAliveRemaining(-1);
                         abandonGrave(grave);
                     }
                 } else {
+                    if (grave.getOwnerType() == EntityType.PLAYER && grave.getOwnerUUID() != null) {
+                        Player player = plugin.getServer().getPlayer(grave.getOwnerUUID());
+                        if (player != null && player.isOnline()) {
+                            plugin.getEntityManager().sendMessage("message.timeout", player, graveTimeoutEvent.getLocation(), grave);
+                        }
+                    }
                     graveRemoveList.add(grave);
                 }
             } else {
+                if (grave.getOwnerType() == EntityType.PLAYER && grave.getOwnerUUID() != null) {
+                    Player player = plugin.getServer().getPlayer(grave.getOwnerUUID());
+                    if (player != null && player.isOnline()) {
+                        plugin.getEntityManager().sendMessage("message.timeout", player, graveTimeoutEvent.getLocation(), grave);
+                    }
+                }
                 graveRemoveList.add(grave);
             }
         } else {
@@ -731,8 +745,16 @@ public final class GraveManager {
                                        List<String> permissionList) {
         List<ItemStack> filterGraveItemStackList = filterGraveItemStackList(graveItemStackList, removedItemStackList,
                 livingEntity, permissionList);
-        String title = StringUtil.parseString(plugin.getConfig("gui.grave.title", grave)
-                .getString("gui.grave.title"), livingEntity, grave.getLocationDeath(), grave, plugin);
+        String title;
+        if (plugin.getIntegrationManager().hasMiniMessage()) {
+            String newTitle = StringUtil.parseString(plugin.getConfig("gui.grave.title", grave)
+                    .getString("gui.grave.title"), livingEntity, grave.getLocationDeath(), grave, plugin);
+            title = MiniMessage.parseString(newTitle);
+        } else {
+            title = StringUtil.parseString(plugin.getConfig("gui.grave.title", grave)
+                    .getString("gui.grave.title"), livingEntity, grave.getLocationDeath(), grave, plugin);
+        }
+
         Grave.StorageMode storageMode = getStorageMode(plugin.getConfig("storage.mode", grave)
                 .getString("storage.mode"));
 

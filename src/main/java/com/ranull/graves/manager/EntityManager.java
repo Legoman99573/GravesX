@@ -110,14 +110,26 @@ public final class EntityManager extends EntityDataManager {
                     itemMeta.addEnchant(enchantment, 1, true);
                     itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
                 }
+                if (plugin.getIntegrationManager().hasMiniMessage()) {
+                    String compass_name = StringUtil.parseString("&f" + plugin
+                            .getConfig("compass.name", grave).getString("compass.name"), grave, plugin);
+                    itemMeta.setDisplayName(MiniMessage.parseString(compass_name));
+                    itemMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "graveUUID"),
+                            PersistentDataType.STRING, grave.getUUID().toString());
 
-                itemMeta.setDisplayName(ChatColor.WHITE + StringUtil.parseString(plugin
-                        .getConfig("compass.name", grave).getString("compass.name"), grave, plugin));
-                itemMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "graveUUID"),
-                        PersistentDataType.STRING, grave.getUUID().toString());
+                    for (String string : plugin.getConfig("compass.lore", grave).getStringList("compass.lore")) {
+                        String compass_lore = StringUtil.parseString("&7" + string, location, grave, plugin);
+                        loreList.add(MiniMessage.parseString(compass_lore));
+                    }
+                } else {
+                    itemMeta.setDisplayName(ChatColor.WHITE + StringUtil.parseString(plugin
+                            .getConfig("compass.name", grave).getString("compass.name"), grave, plugin));
+                    itemMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "graveUUID"),
+                            PersistentDataType.STRING, grave.getUUID().toString());
 
-                for (String string : plugin.getConfig("compass.lore", grave).getStringList("compass.lore")) {
-                    loreList.add(ChatColor.GRAY + StringUtil.parseString(string, location, grave, plugin));
+                    for (String string : plugin.getConfig("compass.lore", grave).getStringList("compass.lore")) {
+                        loreList.add(ChatColor.GRAY + StringUtil.parseString(string, location, grave, plugin));
+                    }
                 }
 
                 itemMeta.setLore(loreList);

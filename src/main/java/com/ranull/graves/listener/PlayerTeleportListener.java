@@ -1,7 +1,9 @@
 package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
+import com.ranull.graves.integration.MiniMessage;
 import com.ranull.graves.type.Grave;
+import com.ranull.graves.util.StringUtil;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -77,7 +79,7 @@ public class PlayerTeleportListener implements Listener {
     }
 
     /**
-     * Removes a specific type of compass (e.g., RECOVERY_COMPASS) from the player's inventory if within a 10-block radius of a grave.
+     * Removes a specific type of compass (e.g., RECOVERY_COMPASS) from the player's inventory if within a configured block radius of a grave.
      *
      * @param player   The player to check.
      * @param location The player's current location.
@@ -86,17 +88,13 @@ public class PlayerTeleportListener implements Listener {
         PlayerInventory inventory = player.getInventory();
         ItemStack[] items = inventory.getContents();
 
-        // Retrieve the item name from the config or hardcoded
-        String compassName = ChatColor.WHITE +  player.getDisplayName() + "'s Grave";
-
         for (ItemStack item : items) {
             if (item != null && item.hasItemMeta()) {
                 ItemMeta itemMeta = item.getItemMeta();
                 if (itemMeta != null) {
                     // Check if the item is a compass with the specific name
                     if ((item.getType() == Material.valueOf(String.valueOf(plugin.getVersionManager().getMaterialForVersion("RECOVERY_COMPASS"))))
-                            && itemMeta.hasDisplayName()
-                            && itemMeta.getDisplayName().equals(compassName)) {
+                            && itemMeta.hasDisplayName()) {
 
                         UUID graveUUID = getGraveUUIDFromItemStack(item);
 
@@ -106,7 +104,18 @@ public class PlayerTeleportListener implements Listener {
                                 Location graveLocation = plugin.getGraveManager().getGraveLocation(player.getLocation(), grave);
                                 if (graveLocation != null && location.distance(graveLocation) <= 15) {
                                     // Remove the specific item from the inventory
-                                    inventory.remove(item);
+                                    String compassName;
+                                    if (plugin.getIntegrationManager().hasMiniMessage()) {
+                                        String compassNameNew = StringUtil.parseString("&f" + plugin
+                                                .getConfig("compass.name", grave).getString("compass.name"), grave, plugin);
+                                        compassName = MiniMessage.parseString(compassNameNew);
+                                    } else {
+                                        compassName = StringUtil.parseString("&f" + plugin
+                                                .getConfig("compass.name", grave).getString("compass.name"), grave, plugin);
+                                    }
+                                    if (itemMeta.getDisplayName().equals(compassName)) {
+                                        inventory.remove(item);
+                                    }
                                 }
                             }
                         }

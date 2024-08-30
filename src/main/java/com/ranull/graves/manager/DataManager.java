@@ -1150,30 +1150,26 @@ public final class DataManager {
 
                     // Retrieve and convert location or chunk data
                     String locationString = resultSet.getString("location");
-                    String chunkString = resultSet.getString("chunk");
 
                     if (locationString != null) {
                         location = LocationUtil.stringToLocation(locationString);
-                    } else if (chunkString != null) {
-                        location = LocationUtil.chunkStringToLocation(chunkString);
+                    } else {
+                        plugin.getLogger().warning("Invalid location for result set entry");
+                        return;
                     }
 
-                    if (location != null) {
-                        // Retrieve and validate UUIDs
-                        String uuidEntityString = resultSet.getString("uuid_entity");
-                        String uuidGraveString = resultSet.getString("uuid_grave");
+                    // Retrieve and validate UUIDs
+                    String uuidEntityString = resultSet.getString("uuid_entity");
+                    String uuidGraveString = resultSet.getString("uuid_grave");
 
-                        if (uuidEntityString != null && uuidGraveString != null) {
-                            UUID uuidEntity = UUID.fromString(uuidEntityString);
-                            UUID uuidGrave = UUID.fromString(uuidGraveString);
+                    if (uuidEntityString != null && uuidGraveString != null) {
+                        UUID uuidEntity = UUID.fromString(uuidEntityString);
+                        UUID uuidGrave = UUID.fromString(uuidGraveString);
 
-                            // Add entity data to the chunk data map
-                            getChunkData(location).addEntityData(new EntityData(location, uuidEntity, uuidGrave, type));
-                        } else {
-                            plugin.getLogger().warning("Missing UUIDs for location: " + location);
-                        }
+                        // Add entity data to the chunk data map
+                        getChunkData(location).addEntityData(new EntityData(location, uuidEntity, uuidGrave, type));
                     } else {
-                        plugin.getLogger().warning("Invalid location or chunk data for result set entry.");
+                        plugin.getLogger().warning("Missing UUIDs for location: " + location);
                     }
                 }
             } catch (SQLException exception) {
