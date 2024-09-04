@@ -565,6 +565,7 @@ public final class EntityManager extends EntityDataManager {
         if (entity instanceof Player) {
             Player player = (Player) entity;
 
+            String originalConfigString = string;
             if (grave != null) {
                 string = plugin.getConfig(string, grave).getString(string);
             } else {
@@ -574,21 +575,31 @@ public final class EntityManager extends EntityDataManager {
             String prefix = plugin.getConfig("message.prefix", entity.getType(), permissionList)
                     .getString("message.prefix");
 
-            if (prefix != null && !prefix.equals("")) {
-                if (plugin.getIntegrationManager().hasMiniMessage()) {
-                    string = prefix + "<white>" + string;
+            // Check if the original string is empty before applying the prefix
+            if (string != null && !string.isEmpty()) {
+                if (prefix != null && !prefix.equals("")) {
+                    if (plugin.getIntegrationManager().hasMiniMessage()) {
+                        string = prefix + "<white>" + string;
+                    } else {
+                        string = prefix + string;
+                    }
                 } else {
-                    string = prefix + string;
+                    if (plugin.getIntegrationManager().hasMiniMessage()) {
+                        string = "<white>" + string;
+                    } else {
+                        string = "&r" + string;
+                    }
                 }
 
-            }
-
-            String message = StringUtil.parseString(string, entity, name, location, grave, plugin);
-            plugin.debugMessage("Message found for " + string + " in grave.yml. Sending message to " + entity.getName() +".", 2);
-            if (plugin.getIntegrationManager().hasMiniMessage()) {
-                MiniMessage.sendMessage(player, message);
+                String message = StringUtil.parseString(string, entity, name, location, grave, plugin);
+                plugin.debugMessage("Message found for " + string + " in grave.yml. Sending message to " + entity.getName() + ".", 2);
+                if (plugin.getIntegrationManager().hasMiniMessage()) {
+                    MiniMessage.sendMessage(player, message);
+                } else {
+                    player.sendMessage(message); // assuming the server doesn't support MiniMessage or integration is disabled.
+                }
             } else {
-                player.sendMessage(message); // assuming the server doesn't support MiniMessage or integration is disabled.
+                plugin.debugMessage("Original string " + originalConfigString + " is empty, no message sent.", 2);
             }
         }
     }
