@@ -11,7 +11,6 @@ import net.citizensnpcs.api.npc.NPC;
 import net.citizensnpcs.api.trait.trait.Equipment;
 import net.citizensnpcs.trait.SkinTrait;
 import net.citizensnpcs.util.NMS;
-import net.citizensnpcs.util.PlayerAnimation;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -170,8 +169,50 @@ public final class CitizensNPC extends EntityDataManager {
                     // Make the NPC perform the configured animation (default is sleeping)
                     if (npc.getEntity() instanceof Player) {
                         Player npcPlayer = (Player) npc.getEntity();
-                        PlayerAnimation.valueOf(plugin.getConfig("citizens.corpse.pose", grave)
-                                .getString("citizens.corpse.pose", "SLEEP").toUpperCase()).play(npcPlayer); // Uh yeah its fucking possible citizens devs. ~Legoman99573 after having multiple beers :)
+                        String animation = plugin.getConfig().getString("citizens.corpse.pose", "SLEEP").toUpperCase();
+
+                        try {
+                            // Attempt to load the correct PlayerAnimation class
+                            Class<? extends Enum<?>> playerAnimationClass;
+                            try {
+                                playerAnimationClass = (Class<? extends Enum<?>>) Class.forName("net.citizensnpcs.util.PlayerAnimation");
+                            } catch (ClassNotFoundException e) {
+                                playerAnimationClass = (Class<? extends Enum<?>>) Class.forName("net.citizensnpcs.api.util.PlayerAnimation");
+                            }
+
+                            // Use the safer approach to get the enum constant
+                            Enum<?> playerAnimation;
+                            try {
+                                playerAnimation = Enum.valueOf(playerAnimationClass.asSubclass(Enum.class), animation);
+                                // Invoke the play method using reflection
+                                try {
+                                    playerAnimation.getClass().getMethod("play", Player.class).invoke(playerAnimation, npcPlayer);
+                                } catch (NoSuchMethodException nsme) {
+                                    plugin.getLogger().warning("Animation " + animation + " is not supported in this version.");
+                                    // Print all valid enum constants
+                                    Object[] enums = playerAnimationClass.getEnumConstants();
+                                    if (enums != null) {
+                                        plugin.getLogger().warning("Valid animations for " + playerAnimationClass.getSimpleName() + ":");
+                                        for (Object enumConstant : enums) {
+                                            plugin.getLogger().warning("- " + enumConstant.toString());
+                                        }
+                                    }
+                                }
+                            } catch (IllegalArgumentException e) {
+                                plugin.getLogger().warning("Invalid animation: " + animation + ". Please check the available animations.");
+                                Object[] enums = playerAnimationClass.getEnumConstants();
+                                if (enums != null) {
+                                    plugin.getLogger().warning("Valid animations for " + playerAnimationClass.getSimpleName() + ":");
+                                    for (Object enumConstant : enums) {
+                                        plugin.getLogger().warning("- " + enumConstant.toString());
+                                    }
+                                }
+                            }
+
+                        } catch (Exception e) {
+                            plugin.getLogger().severe("An error occurred while performing the animation: " + e.getMessage());
+                            plugin.logStackTrace(e);
+                        }
                     }
 
                     if (plugin.getConfig("citizens.corpse.glow.enabled", grave)
