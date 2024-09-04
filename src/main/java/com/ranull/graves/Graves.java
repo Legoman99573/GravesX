@@ -410,7 +410,7 @@ public class Graves extends JavaPlugin {
     }
 
     public void compatibilityMessage(String string) {
-        getLogger().severe("Compatibility: " + string);
+        getLogger().warning("Compatibility: " + string);
     }
 
     public void infoMessage(String string) {
