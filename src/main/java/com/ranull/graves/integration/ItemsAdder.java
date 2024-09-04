@@ -14,6 +14,7 @@ import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.plugin.Plugin;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -56,12 +57,35 @@ public final class ItemsAdder extends EntityDataManager {
                 plugin.debugMessage("Saving " + itemsAdderPlugin.getName() + " data.", 1);
             }
         } else {
+            deleteOldItemsAdderData(plugin.getPluginsFolder() + "/" + itemsAdderPlugin.getName() + "/data/items_packs/graves");
+            deleteOldItemsAdderData(plugin.getPluginsFolder() + "/" + itemsAdderPlugin.getName() + "/data/resource_pack/assets/graves");
+
             if (plugin.getConfig().getBoolean("settings.integration.itemsadder.write")) {
                 ResourceUtil.copyResources("data/plugin/" + itemsAdderPlugin.getName().toLowerCase() + "/data",
                         plugin.getPluginsFolder() + "/" + itemsAdderPlugin.getName() + "/contents/graves/configs", plugin);
                 ResourceUtil.copyResources("data/model/grave.json", plugin.getPluginsFolder() + "/"
                         + itemsAdderPlugin.getName() + "/contents/graves/resource_pack/graves/models/items/graves/grave.json", plugin);
                 plugin.debugMessage("Saving " + itemsAdderPlugin.getName() + " data.", 1);
+            }
+        }
+    }
+
+    /**
+     * Deletes older ItemsAdder Data to give room for new data for newer versions without affecting other files (as some models may need them for backwards compatibility).
+     */
+    private void deleteOldItemsAdderData(String path) {
+        File file = new File(path);
+        if (file.exists()) {
+            try {
+                if (file.isDirectory()) {
+                    for (File subFile : file.listFiles()) {
+                        deleteOldItemsAdderData(subFile.getPath());
+                    }
+                }
+                file.delete();
+                plugin.getLogger().info("Deleted old ItemsAdder data at: " + path);
+            } catch (NullPointerException e) {
+                plugin.getLogger().warning("Failed to delete old ItemsAdder data at: " + path + ". You will need to delete these manually.");
             }
         }
     }
