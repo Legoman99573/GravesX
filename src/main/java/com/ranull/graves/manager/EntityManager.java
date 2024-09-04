@@ -42,11 +42,6 @@ public final class EntityManager extends EntityDataManager {
     private final Graves plugin;
 
     /**
-     * The task list for Teleportation Tasks.
-     */
-    private final Map<Player, BukkitRunnable> teleportTasks = new HashMap<>();
-
-    /**
      * Initializes the EntityManager with the specified plugin instance.
      *
      * @param plugin the Graves plugin instance.
