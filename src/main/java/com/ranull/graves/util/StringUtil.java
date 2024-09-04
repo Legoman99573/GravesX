@@ -14,6 +14,7 @@ import org.bukkit.entity.EntityType;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -180,7 +181,6 @@ public final class StringUtil {
 
         string = string.replace("%plugin_name%", plugin.getName())
                 .replace("%plugin_version%", plugin.getVersion())
-                .replace("%plugin_latest_version%", plugin.getLatestVersion())
                 .replace("%spigot_id%", String.valueOf(plugin.getSpigotID()));
 
         if (plugin.getIntegrationManager().hasMineDown()) {
