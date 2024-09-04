@@ -172,6 +172,8 @@ settings:
         enabled: true
         # How much it costs to teleport to a grave, you need Vault for this.
         cost: 5
+        # How long should it be before a player is teleported to a grave in seconds? Set to 0 to make teleportation instant.
+        delay: 0
         # Extra cost added on top of cost if the grave is in a different world.
         cost-different-world: 20
         # Increase the price the further away the grave is.
@@ -757,6 +759,7 @@ settings:
         teleport-top: "Grave is in an unsafe location, you have been teleported nearby."
         teleport-failure: "Teleport failed, teleport location is unsafe."
         teleport-disabled: "Grave teleportation is disabled."
+        teleport-cancelled: "Teleport cancelled due to movement."
         build-denied: "A grave was not created because you don't have permission to build where you died."
         distance-virtual: "You are too far away to virtually open this grave."
         permission-denied: "Permission denied."

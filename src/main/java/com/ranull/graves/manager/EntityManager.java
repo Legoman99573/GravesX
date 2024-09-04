@@ -23,6 +23,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.metadata.MetadataValue;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.NumberConversions;
 
 import java.util.*;
@@ -39,6 +40,11 @@ public final class EntityManager extends EntityDataManager {
      * </p>
      */
     private final Graves plugin;
+
+    /**
+     * The task list for Teleportation Tasks.
+     */
+    private final Map<Player, BukkitRunnable> teleportTasks = new HashMap<>();
 
     /**
      * Initializes the EntityManager with the specified plugin instance.
@@ -182,13 +188,6 @@ public final class EntityManager extends EntityDataManager {
         return null;
     }
 
-    /**
-     * Teleports an entity to a specified location associated with a grave.
-     *
-     * @param entity   the entity to teleport.
-     * @param location the location to teleport to.
-     * @param grave    the grave associated with the teleportation.
-     */
     public void teleportEntity(Entity entity, Location location, Grave grave) {
         if (canTeleport(entity, location)) {
             location = LocationUtil.roundLocation(location);
@@ -210,9 +209,12 @@ public final class EntityManager extends EntityDataManager {
                 }
             }
 
+            final long delayTicks = plugin.getConfig("teleport.delay", grave).getLong("teleport.delay");
+
             if (locationTeleport != null && locationTeleport.getWorld() != null) {
                 if (entity instanceof Player) {
                     Player player = (Player) entity;
+                    final Location initialLocation = player.getLocation();
 
                     if (plugin.getIntegrationManager().hasVault() && plugin.getIntegrationManager().hasVaultEconomy()) {
                         double teleportCost = getTeleportCost(entity.getLocation(), locationTeleport, grave);
@@ -223,9 +225,29 @@ public final class EntityManager extends EntityDataManager {
 
                             plugin.getServer().getPluginManager().callEvent(graveTeleportEvent);
                             if (!graveTeleportEvent.isCancelled()) {
-                                player.teleport(locationTeleport);
-                                plugin.getEntityManager().sendMessage("message.teleport", player, locationTeleport, grave);
-                                plugin.getEntityManager().playPlayerSound("sound.teleport", player, locationTeleport, grave);
+                                if (delayTicks > 0) {
+                                    Location finalLocationTeleport1 = locationTeleport;
+                                    new BukkitRunnable() {
+                                        @Override
+                                        public void run() {
+                                            if (player.isOnline() && player.getLocation().equals(initialLocation)) {
+                                                player.teleport(finalLocationTeleport1);
+                                                plugin.getEntityManager().sendMessage("message.teleport", player, finalLocationTeleport1, grave);
+                                                plugin.getEntityManager().playPlayerSound("sound.teleport", player, finalLocationTeleport1, grave);
+                                            } else {
+                                                plugin.getEntityManager().sendMessage("message.teleport-cancelled", player, player.getLocation(), grave);
+                                            }
+                                        }
+                                    }.runTaskLater(plugin, delayTicks * 20L);
+                                } else {
+                                    if (player.isOnline() && player.getLocation().equals(initialLocation)) {
+                                        player.teleport(locationTeleport);
+                                        plugin.getEntityManager().sendMessage("message.teleport", player, locationTeleport, grave);
+                                        plugin.getEntityManager().playPlayerSound("sound.teleport", player, locationTeleport, grave);
+                                    } else {
+                                        plugin.getEntityManager().sendMessage("message.teleport-cancelled", player, player.getLocation(), grave);
+                                    }
+                                }
                             }
                         } else {
                             plugin.getEntityManager().sendMessage("message.no-money", player, player.getLocation(), grave);
@@ -235,7 +257,25 @@ public final class EntityManager extends EntityDataManager {
 
                         plugin.getServer().getPluginManager().callEvent(graveTeleportEvent);
                         if (!graveTeleportEvent.isCancelled()) {
-                            player.teleport(locationTeleport);
+                            if (delayTicks > 0) {
+                                Location finalLocationTeleport = locationTeleport;
+                                new BukkitRunnable() {
+                                    @Override
+                                    public void run() {
+                                        if (player.isOnline() && player.getLocation().equals(initialLocation)) {
+                                            player.teleport(finalLocationTeleport);
+                                        } else {
+                                            plugin.getEntityManager().sendMessage("message.teleport-cancelled", player, player.getLocation(), grave);
+                                        }
+                                    }
+                                }.runTaskLater(plugin, delayTicks * 20L);
+                            } else {
+                                if (player.isOnline() && player.getLocation().equals(initialLocation)) {
+                                    player.teleport(locationTeleport);
+                                } else {
+                                    plugin.getEntityManager().sendMessage("message.teleport-cancelled", player, player.getLocation(), grave);
+                                }
+                            }
                         }
                     }
                 } else {
@@ -243,7 +283,21 @@ public final class EntityManager extends EntityDataManager {
 
                     plugin.getServer().getPluginManager().callEvent(graveTeleportEvent);
                     if (!graveTeleportEvent.isCancelled()) {
-                        entity.teleport(locationTeleport);
+                        if (delayTicks > 0) {
+                            Location finalLocationTeleport2 = locationTeleport;
+                            new BukkitRunnable() {
+                                @Override
+                                public void run() {
+                                    if (entity.isValid()) {
+                                        entity.teleport(finalLocationTeleport2);
+                                    }
+                                }
+                            }.runTaskLater(plugin, delayTicks * 20L);
+                        } else {
+                            if (entity.isValid()) {
+                                entity.teleport(locationTeleport);
+                            }
+                        }
                     }
                 }
             } else {
