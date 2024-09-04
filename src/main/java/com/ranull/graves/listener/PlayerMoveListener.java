@@ -168,23 +168,27 @@ public class PlayerMoveListener implements Listener {
 
                         if (graveUUID != null) {
                             Grave grave = plugin.getCacheManager().getGraveMap().get(graveUUID);
-                            if (grave != null && location.getWorld() != null) {
-                                Location graveLocation = plugin.getGraveManager().getGraveLocation(player.getLocation(), grave);
-                                if (graveLocation != null && location.distance(graveLocation) <= 15) {
-                                    // Remove the specific item from the inventory
-                                    String compassName;
-                                    if (plugin.getIntegrationManager().hasMiniMessage()) {
-                                        String compassNameNew = StringUtil.parseString("&f" + plugin
-                                                .getConfig("compass.name", grave).getString("compass.name"), grave, plugin);
-                                        compassName = MiniMessage.parseString(compassNameNew);
-                                    } else {
-                                        compassName = StringUtil.parseString("&f" + plugin
-                                                .getConfig("compass.name", grave).getString("compass.name"), grave, plugin);
-                                    }
-                                    if (itemMeta.getDisplayName().equals(compassName)) {
-                                        inventory.remove(item);
+                            try {
+                                if (grave != null && location.getWorld() != null) {
+                                    Location graveLocation = plugin.getGraveManager().getGraveLocation(player.getLocation(), grave);
+                                    if (graveLocation != null && location.distance(graveLocation) <= 15) {
+                                        // Remove the specific item from the inventory
+                                        String compassName;
+                                        if (plugin.getIntegrationManager().hasMiniMessage()) {
+                                            String compassNameNew = StringUtil.parseString("&f" + plugin
+                                                    .getConfig("compass.name", grave).getString("compass.name"), grave, plugin);
+                                            compassName = MiniMessage.parseString(compassNameNew);
+                                        } else {
+                                            compassName = StringUtil.parseString("&f" + plugin
+                                                    .getConfig("compass.name", grave).getString("compass.name"), grave, plugin);
+                                        }
+                                        if (itemMeta.getDisplayName().equals(compassName)) {
+                                            inventory.remove(item);
+                                        }
                                     }
                                 }
+                            } catch (IllegalArgumentException | NullPointerException ignored) {
+                                // ignored
                             }
                         }
                     }
