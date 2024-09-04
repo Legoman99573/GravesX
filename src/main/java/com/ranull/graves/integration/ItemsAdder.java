@@ -45,13 +45,49 @@ public final class ItemsAdder extends EntityDataManager {
      * Copies resource files needed for ItemsAdder integration.
      */
     public void saveData() {
-        if (plugin.getConfig().getBoolean("settings.integration.itemsadder.write")) {
-            ResourceUtil.copyResources("data/plugin/" + itemsAdderPlugin.getName().toLowerCase() + "/data",
-                    plugin.getPluginsFolder() + "/" + itemsAdderPlugin.getName() + "/data", plugin);
-            ResourceUtil.copyResources("data/model/grave.json", plugin.getPluginsFolder() + "/"
-                    + itemsAdderPlugin.getName() + "/data/resource_pack/assets/graves/models/graves/grave.json", plugin);
-            plugin.debugMessage("Saving " + itemsAdderPlugin.getName() + " data.", 1);
+        String version = itemsAdderPlugin.getDescription().getVersion();
+        String targetVersion = "3.3.0";
+        if (compareVersions(version, targetVersion) < 0) {
+            if (plugin.getConfig().getBoolean("settings.integration.itemsadder.write")) {
+                ResourceUtil.copyResources("data/plugin/" + itemsAdderPlugin.getName().toLowerCase() + "/data",
+                        plugin.getPluginsFolder() + "/" + itemsAdderPlugin.getName() + "/data", plugin);
+                ResourceUtil.copyResources("data/model/grave.json", plugin.getPluginsFolder() + "/"
+                        + itemsAdderPlugin.getName() + "/data/resource_pack/assets/graves/models/graves/grave.json", plugin);
+                plugin.debugMessage("Saving " + itemsAdderPlugin.getName() + " data.", 1);
+            }
+        } else {
+            if (plugin.getConfig().getBoolean("settings.integration.itemsadder.write")) {
+                ResourceUtil.copyResources("data/plugin/" + itemsAdderPlugin.getName().toLowerCase() + "/data",
+                        plugin.getPluginsFolder() + "/" + itemsAdderPlugin.getName() + "/contents/graves/configs", plugin);
+                ResourceUtil.copyResources("data/model/grave.json", plugin.getPluginsFolder() + "/"
+                        + itemsAdderPlugin.getName() + "/contents/graves/resource_pack/graves/models/items/graves/grave.json", plugin);
+                plugin.debugMessage("Saving " + itemsAdderPlugin.getName() + " data.", 1);
+            }
         }
+    }
+
+    /**
+     * Compares versions for ItemsAdder integration.
+     */
+    private int compareVersions(String v1, String v2) {
+        // Split by '-' to ignore the pre-release or build metadata
+        String[] mainVersion1 = v1.split("-", 2);
+        String[] mainVersion2 = v2.split("-", 2);
+
+        // Compare only the numeric parts
+        String[] parts1 = mainVersion1[0].split("\\.");
+        String[] parts2 = mainVersion2[0].split("\\.");
+
+        int length = Math.max(parts1.length, parts2.length);
+        for (int i = 0; i < length; i++) {
+            int part1 = i < parts1.length ? Integer.parseInt(parts1[i]) : 0;
+            int part2 = i < parts2.length ? Integer.parseInt(parts2[i]) : 0;
+
+            if (part1 < part2) return -1;
+            if (part1 > part2) return 1;
+        }
+
+        return 0;
     }
 
     /**

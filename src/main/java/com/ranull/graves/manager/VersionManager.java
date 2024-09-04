@@ -130,6 +130,14 @@ public final class VersionManager {
     private boolean isMohist;
 
     /**
+     * Indicates whether the server is older than 1.20.5/1.20.6.
+     * <p>
+     * This {@code boolean} flag shows if the server or plugin is older than 1.20.5/1.20.6.
+     * </p>
+     */
+    private boolean isLegacyVersion;
+
+    /**
      * Initializes a new instance of the VersionManager class.
      */
     public VersionManager() {
@@ -175,9 +183,24 @@ public final class VersionManager {
      */
     public String getVersion() {
         try {
+            this.isLegacyVersion = true;
             return Bukkit.getServer().getClass().getPackage().getName().split("\\.")[3];
         } catch (Exception e) {
+            this.isLegacyVersion = false;
             return Bukkit.getServer().getVersion();
+        }
+    }
+
+    /**
+     * Checks if the server is running on Bukkit versions older than 1.20.5/1.20.6.
+     *
+     * @return True if the server is running on versions of Bukkit if older than 1.20.5/1.20.6.
+     */
+    public boolean isLegacyVersion() {
+        try {
+            return isLegacyVersion;
+        } catch (NullPointerException e) {
+            return false;
         }
     }
 
@@ -426,6 +449,26 @@ public final class VersionManager {
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean is_v1_18() {
         return version.matches("(?i)v1_18_R1|v1_18_R2");
+    }
+
+    /**
+     * Checks if the server version is 1.19.
+     *
+     * @return True if the server version is 1.19, otherwise false.
+     */
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+    public boolean is_v1_19() {
+        return version.matches("(?i)v1_19_R1|v1_19_R2|v1_19_R3");
+    }
+
+    /**
+     * Checks if the server version is 1.18.
+     *
+     * @return True if the server version is 1.18, otherwise false.
+     */
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+    public boolean is_v1_20() {
+        return version.matches("(?i)v1_20_R1|v1_20_R2|v1_20_R3");
     }
 
     /**
