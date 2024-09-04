@@ -178,6 +178,11 @@ public final class StringUtil {
                     .replace("%interact_uuid%", entity.getUniqueId().toString());
         }
 
+        string = string.replace("%plugin_name%", plugin.getName())
+                .replace("%plugin_version%", plugin.getVersion())
+                .replace("%plugin_latest_version%", plugin.getLatestVersion())
+                .replace("%spigot_id%", String.valueOf(plugin.getSpigotID()));
+
         if (plugin.getIntegrationManager().hasMineDown()) {
             string = plugin.getIntegrationManager().getMineDown().parseString(string);
         }

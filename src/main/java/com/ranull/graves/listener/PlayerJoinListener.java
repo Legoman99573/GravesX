@@ -1,12 +1,17 @@
 package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
+import com.ranull.graves.integration.MiniMessage;
+import com.ranull.graves.type.Grave;
+import com.ranull.graves.util.StringUtil;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+
+import java.util.List;
 
 /**
  * Listener for handling PlayerJoinEvent to notify players about plugin updates.
@@ -66,29 +71,64 @@ public class PlayerJoinListener implements Listener {
     private void notifyPlayerIfOutdated(Player player) {
         String latestVersion = plugin.getLatestVersion();
         String installedVersion = plugin.getDescription().getVersion();
+        String prefix = plugin.getConfig("message.prefix", player)
+                .getString("message.prefix");
         try {
             int comparisonResult = compareVersions(installedVersion, latestVersion);
             // getLogger().info("Version Comparison Result: " + comparisonResult);
 
             if (comparisonResult < 0) {
-                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "You are using an outdated version of " + plugin.getDescription().getName() + ".");
-                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Installed Version: " + installedVersion);
-                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Latest Version:  " + latestVersion);
-                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Grab the latest release from https://www.spigotmc.org/resources/" + plugin.getSpigotID() + "/");
+                List<String> stringList = plugin.getConfig("message.grave-plugin-version-outdated", player)
+                        .getStringList("message.grave-plugin-version-outdated");
+                if (plugin.getIntegrationManager().hasMiniMessage()) {
+                    for (String message : stringList) {
+                        String toConvert = StringUtil.parseString(prefix + message, player.getPlayer(), plugin);
+                        String newString = MiniMessage.parseString(toConvert);
+                        player.sendMessage(newString);
+                    }
+                } else {
+                    for (String message : stringList) {
+                        player.sendMessage(StringUtil.parseString(prefix + message, player.getPlayer(), plugin));
+                    }
+                }
             } else if (comparisonResult > 0) {
-                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "You are running " + plugin.getDescription().getName() + " version " + installedVersion + ", which is a development build and is not production safe.");
-                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "THERE WILL NOT BE SUPPORT IF YOU LOSE GRAVE DATA FROM DEVELOPMENT OR COMPILED BUILDS. THIS BUILD IS FOR TESTING PURPOSES ONLY");
-                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Keep note that you are using a development version when you report bugs.");
-                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "If the same issue occurs in "  + latestVersion + ", then let us know in https://discord.ranull.com/.");
+                List<String> stringList = plugin.getConfig("message.grave-plugin-version-development", player)
+                        .getStringList("message.grave-plugin-version-development");
+                if (plugin.getIntegrationManager().hasMiniMessage()) {
+                    for (String message : stringList) {
+                        String toConvert = StringUtil.parseString(prefix + message, player.getPlayer(), plugin);
+                        String newString = MiniMessage.parseString(toConvert);
+                        player.sendMessage(newString);
+                    }
+                } else {
+                    for (String message : stringList) {
+                        player.sendMessage(StringUtil.parseString(prefix + message, player.getPlayer(), plugin));
+                    }
+                }
             } else {
-                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET + "You are running the latest version of " + plugin.getDescription().getName() + ".");
+                String string = plugin.getConfig("message.grave-plugin-version-latest", player)
+                        .getString("message.grave-plugin-version-latest");
+                if (plugin.getIntegrationManager().hasMiniMessage()) {
+                        String toConvert = StringUtil.parseString(prefix + string, player.getPlayer(), plugin);
+                        String newString = MiniMessage.parseString(toConvert);
+                        player.sendMessage(newString);
+                } else {
+                    player.sendMessage(StringUtil.parseString(prefix + string, player.getPlayer(), plugin));
+                }
             }
         } catch (NumberFormatException exception) {
-            //plugin.getLogger().severe("NumberFormatException: " + exception.getMessage());
-            if (!installedVersion.equalsIgnoreCase(latestVersion)) {
-                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "You are either running an outdated version of " + plugin.getDescription().getName() + " or a development version.");
-                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Installed Version: " + installedVersion);
-                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Latest Version:  " + latestVersion);
+            List<String> stringList = plugin.getConfig("message.grave-plugin-version-outdated", player)
+                    .getStringList("message.grave-plugin-version-outdated");
+            if (plugin.getIntegrationManager().hasMiniMessage()) {
+                for (String message : stringList) {
+                    String toConvert = StringUtil.parseString(prefix + message, player.getPlayer(), plugin);
+                    String newString = MiniMessage.parseString(toConvert);
+                    player.sendMessage(newString);
+                }
+            } else {
+                for (String message : stringList) {
+                    player.sendMessage(StringUtil.parseString(prefix + message, player.getPlayer(), plugin));
+                }
             }
         }
     }

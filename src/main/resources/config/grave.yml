@@ -770,6 +770,17 @@ settings:
         grave-protection-break-deny: "You can't break blocks near a grave site."
         grave-abandoned: "Your grave at &c%x%&rx, &c%y%&ry, &c%z%&rz in &c%world_formatted%&r has been abandoned with &c%item% &ritems and &c%experience% &rExperience."
         grave-oldest-replaced: "Your oldest grave has been removed since you have reached the max limit."
+        grave-plugin-version-latest: "You are running the latest version of %plugin_name%."
+        grave-plugin-version-outdated:
+          - "&cYou are using an outdated version of %plugin_name%."
+          - "&cInstalled Version: %plugin_version%"
+          - "&cLatest Version: %plugin_latest_version%"
+          - "&cGrav the latest release from https://www.spigotmc.org/resources/%spigot_id%/"
+        grave-plugin-version-development:
+          - "&cYou are running %plugin_name% version %plugin_version%, which is a development build and is not production safe."
+          - "&cTHERE WILL NOT BE SUPPORT IF YOU LOSE GRAVE DATA FROM DEVELOPMENT OR COMPILED BUILDS. THIS BUILD IS FOR TESTING PURPOSES ONLY"
+          - "&cKeep note that you are using a development version when you report bugs."
+          - "&cIf the same issue occurs in %plugin_version%, then let us know in https://discord.ranull.com/."
 
         world:
           # World names formatting.
