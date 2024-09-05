@@ -918,7 +918,8 @@ public final class DataManager {
      * Loads graveyards from the database into the provided map.
      */
     public void loadGraveyardsMap() {
-        String query = "SELECT * FROM graveyards";
+        String query = "SELECT * FROM graveyards";  // Select only required columns
+        plugin.getLogger().info("Loading graveyards from the database...");
 
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(query);
@@ -930,13 +931,15 @@ public final class DataManager {
                 String type = resultSet.getString("type");
                 String serializedLocations = resultSet.getString("serializedLocations");
 
-                // Handle potential null values for `world` and `type`
-                if (world == null || type == null) {
-                    plugin.getLogger().warning("Skipping graveyard with missing 'world' or 'type': " + name);
+                // Ensure the world is not null before attempting to use it
+                World serverWorld = plugin.getServer().getWorld(world);
+                if (serverWorld == null) {
+                    plugin.getLogger().warning("World not found for graveyard '" + name + "': " + world);
                     continue;
                 }
 
-                // Handle case insensitivity for the type
+                plugin.getLogger().info("Loading graveyard: " + name);
+
                 Graveyard.Type graveyardType;
                 try {
                     graveyardType = Graveyard.Type.valueOf(type.toUpperCase());
@@ -945,27 +948,43 @@ public final class DataManager {
                     continue;
                 }
 
-                // Ensure the world is not null before attempting to use it
-                World serverWorld = plugin.getServer().getWorld(world);
-                if (serverWorld == null) {
-                    plugin.getLogger().warning("World not found for graveyard '" + name + "': " + world);
-                    continue;
-                }
-
+                // Create the graveyard object
                 Graveyard graveyard = new Graveyard(name, serverWorld, graveyardType);
+
+                // Deserialize grave locations
                 Map<Location, BlockFace> locations = Graveyard.deserializeLocations(serializedLocations);
 
+                Location spawnLocation = null;
+
+                // Loop through the grave locations
                 for (Map.Entry<Location, BlockFace> entry : locations.entrySet()) {
-                    graveyard.addGraveLocation(entry.getKey(), entry.getValue());
+                    Location graveLocation = entry.getKey();
+                    BlockFace graveFacing = entry.getValue();
+
+                    // Set the first grave location as the spawn location (or apply custom logic)
+                    if (spawnLocation == null) {
+                        spawnLocation = graveLocation;
+                    }
+
+                    // Add the grave location to the graveyard
+                    graveyard.addGraveLocation(graveLocation, graveFacing);
                 }
 
+                // Set the spawn location if available
+                if (spawnLocation != null) {
+                    graveyard.setSpawnLocation(spawnLocation);
+                } else {
+                    plugin.getLogger().warning("No valid spawn location found for graveyard '" + name + "'.");
+                }
+
+                // Add to the cache
                 plugin.getCacheManager().getGraveyardsMap().put(name, graveyard);
+                plugin.getLogger().info("Graveyard '" + name + "' loaded with spawn location.");
             }
+
+            plugin.getLogger().info("All graveyards loaded.");
         } catch (SQLException e) {
             plugin.getLogger().severe("Failed to load graveyards: " + e.getMessage());
-            plugin.logStackTrace(e);
-        } catch (NullPointerException e) {
-            plugin.getLogger().severe("NullPointerException while loading graveyards: " + e.getMessage());
             plugin.logStackTrace(e);
         }
     }
@@ -976,19 +995,19 @@ public final class DataManager {
      * @param graveyard The graveyard to update.
      */
     public void updateGraveyardLocationData(Graveyard graveyard) {
-        String serializedLocation = Base64Util.objectToBase64(graveyard.getGraveLocationMap());
+        // Serialize graveyard locations as JSON
+        String serializedLocations = Graveyard.serializeLocations(graveyard.getGraveLocationMap());
         String query = "UPDATE graveyards SET serializedLocations = ? WHERE name = ? AND world = ?";
 
         // Prepare parameters for the query
         Object[] parameters = {
-                serializedLocation,
+                serializedLocations,
                 graveyard.getName(),
                 graveyard.getWorld().getName()
         };
 
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
-                // Use the custom executeUpdate method
                 executeUpdate(query, parameters);
             } catch (SQLException e) {
                 plugin.getLogger().severe("Failed to update graveyard location data: " + e.getMessage());
@@ -1352,7 +1371,8 @@ public final class DataManager {
      *
      * @param graveyard The graveyard to save.
      */
-    public void saveGraveyard(Graveyard graveyard, String serializedLocations) {
+    public void saveGraveyard(Graveyard graveyard) {
+        String serializedLocations = Graveyard.serializeLocations(graveyard.getGraveLocationMap());
         plugin.getLogger().info("Saving serialized locations: " + serializedLocations);
 
         if (graveyardExists(graveyard.getName())) {
@@ -1372,7 +1392,7 @@ public final class DataManager {
         String query = "SELECT COUNT(*) FROM graveyards WHERE name = ?";
 
         try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(query)) {
+             PreparedStatement statement = connection != null ? connection.prepareStatement(query) : null) {
 
             statement.setString(1, name);
 
@@ -1451,17 +1471,33 @@ public final class DataManager {
         String query = "SELECT * FROM graveyards WHERE name = ?";
 
         try (Connection connection = getConnection();
-             PreparedStatement statement = connection != null ? connection.prepareStatement(query) : null) {
-            if (statement != null) {
-                statement.setString(1, graveyardName);
-                try (ResultSet resultSet = statement.executeQuery()) {
-                    if (resultSet.next()) {
-                        String name = resultSet.getString("name");
-                        String world = resultSet.getString("world");
-                        String type = resultSet.getString("type");
-                        // Assumes there's a method to get World by its name
-                        return new Graveyard(name, plugin.getServer().getWorld(world), Graveyard.Type.valueOf(type.toUpperCase()));
+             PreparedStatement statement = connection.prepareStatement(query)) {
+
+            statement.setString(1, graveyardName);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    String name = resultSet.getString("name");
+                    String world = resultSet.getString("world");
+                    String type = resultSet.getString("type");
+                    String serializedLocations = resultSet.getString("serializedLocations");
+
+                    World serverWorld = plugin.getServer().getWorld(world);
+                    if (serverWorld == null) {
+                        plugin.getLogger().warning("World not found for graveyard '" + name + "': " + world);
+                        return null;
                     }
+
+                    Graveyard.Type graveyardType = Graveyard.Type.valueOf(type.toUpperCase());
+                    Graveyard graveyard = new Graveyard(name, serverWorld, graveyardType);
+
+                    // Deserialize locations
+                    Map<Location, BlockFace> locations = Graveyard.deserializeLocations(serializedLocations);
+                    for (Map.Entry<Location, BlockFace> entry : locations.entrySet()) {
+                        graveyard.addGraveLocation(entry.getKey(), entry.getValue());
+                    }
+
+                    return graveyard;
                 }
             }
         } catch (SQLException e) {

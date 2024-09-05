@@ -138,7 +138,7 @@ public final class GraveyardManager {
             String serializedLocations = Graveyard.serializeLocations(graveyard.getGraveLocationMap());
             plugin.getLogger().info("Serialized locations before saving: " + serializedLocations);
 
-            plugin.getDataManager().saveGraveyard(graveyard, serializedLocations);
+            plugin.getDataManager().saveGraveyard(graveyard);
         }
     }
 

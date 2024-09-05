@@ -611,32 +611,50 @@ public class EntityDeathListener implements Listener {
         event.getDrops().clear();
         event.getDrops().addAll(event.getDrops());
         event.setDroppedExp(0);
-        grave.setLocationDeath(safeLocation != null ? safeLocation : location);
-        grave.getLocationDeath().setYaw(grave.getYaw());
-        grave.getLocationDeath().setPitch(grave.getPitch());
 
         boolean isGraveyardEnabled = plugin.getConfig("graveyard.enabled", grave).getBoolean("graveyard.enabled");
 
         if (plugin.getIntegrationManager().hasWorldGuard()) {
             WorldGuard worldGuard = new WorldGuard(plugin);
 
-            if (isGraveyardEnabled && worldGuard.isInGraveyardRegion(livingEntity instanceof Player ? (Player) livingEntity : null)) {
+            if (isGraveyardEnabled && worldGuard.isInGraveyardRegion((Player) livingEntity)) {
                 Graveyard graveyard = plugin.getGraveyardManager().getClosestGraveyard(grave.getLocationDeath(), livingEntity);
                 if (graveyard != null) {
                     Map<Location, BlockFace> graveyardFreeSpaces = plugin.getGraveyardManager().getGraveyardFreeSpaces(graveyard);
                     if (!graveyardFreeSpaces.isEmpty()) {
                         for (Map.Entry<Location, BlockFace> entry : graveyardFreeSpaces.entrySet()) {
                             Location graveyardLocation = entry.getKey();
-                            if (!plugin.getDataManager().hasGraveAtLocation(graveyardLocation)) {
+                            if (graveyardLocation != null && !plugin.getDataManager().hasGraveAtLocation(graveyardLocation)) {
+                                plugin.debugMessage("Graveyard Location found at " + graveyardLocation, 1);
+                                grave.setLocationDeath(graveyardLocation);
+                                grave.getLocationDeath().setYaw(grave.getYaw());
+                                grave.getLocationDeath().setPitch(grave.getPitch());
                                 graveyardLocation.setYaw(plugin.getConfig().getBoolean("settings.graveyard.facing") ? BlockFaceUtil.getBlockFaceYaw(entry.getValue()) : grave.getYaw());
                                 graveyardLocation.setPitch(grave.getPitch());
                                 locationMap.put(graveyardLocation, BlockData.BlockType.GRAVEYARD);
                                 break;
+                            } else {
+                                plugin.debugMessage("Graveyard Location is null", 1);
+                                grave.setLocationDeath(safeLocation != null ? safeLocation : location);
+                                grave.getLocationDeath().setYaw(grave.getYaw());
+                                grave.getLocationDeath().setPitch(grave.getPitch());
                             }
                         }
                     }
+                } else {
+                    grave.setLocationDeath(safeLocation != null ? safeLocation : location);
+                    grave.getLocationDeath().setYaw(grave.getYaw());
+                    grave.getLocationDeath().setPitch(grave.getPitch());
                 }
+            } else {
+                grave.setLocationDeath(safeLocation != null ? safeLocation : location);
+                grave.getLocationDeath().setYaw(grave.getYaw());
+                grave.getLocationDeath().setPitch(grave.getPitch());
             }
+        } else {
+            grave.setLocationDeath(safeLocation != null ? safeLocation : location);
+            grave.getLocationDeath().setYaw(grave.getYaw());
+            grave.getLocationDeath().setPitch(grave.getPitch());
         }
 
         if (locationMap.isEmpty()) {

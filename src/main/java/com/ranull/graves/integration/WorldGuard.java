@@ -105,20 +105,36 @@ public final class WorldGuard {
     public boolean isInGraveyardRegion(Player player) {
         RegionContainer container = worldGuard.getPlatform().getRegionContainer();
         RegionManager regionManager = container.get(BukkitAdapter.adapt(player.getWorld()));
+
         if (regionManager != null) {
             ApplicableRegionSet regionSet = regionManager.getApplicableRegions(BukkitAdapter.asBlockVector(player.getLocation()));
             StateFlag gravesGraveyardFlag = (StateFlag) worldGuard.getFlagRegistry().get("graves-graveyard");
 
             if (gravesGraveyardFlag != null) {
+                boolean foundGraveyardRegion = false;
+
                 for (ProtectedRegion region : regionSet) {
                     StateFlag.State flagState = region.getFlag(gravesGraveyardFlag);
-                    if (flagState == StateFlag.State.DENY) {
-                        return false;
+
+                    // If we find a graveyard region, set the flag
+                    if (flagState != null) {
+                        foundGraveyardRegion = true;
+
+                        // If the flag is DENY, the player is NOT in a valid graveyard region
+                        if (flagState == StateFlag.State.DENY) {
+                            return false;
+                        }
+                    } else {
+                        foundGraveyardRegion = true;
                     }
                 }
+
+                // Return true only if a graveyard region was found and none had a DENY flag
+                return foundGraveyardRegion;
             }
         }
-        return true; // Allow by default if no region denies it
+
+        return false; // Return false if no graveyard region exists or no graveyard flag was found
     }
 
     /**
