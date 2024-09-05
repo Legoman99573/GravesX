@@ -259,6 +259,7 @@ public final class EntityManager extends EntityDataManager {
                                     public void run() {
                                         if (player.isOnline() && player.getLocation().equals(initialLocation)) {
                                             player.teleport(finalLocationTeleport);
+                                            plugin.getEntityManager().sendMessage("message.teleport", player, player.getLocation(), grave);
                                         } else {
                                             plugin.getEntityManager().sendMessage("message.teleport-cancelled", player, player.getLocation(), grave);
                                         }
@@ -267,6 +268,7 @@ public final class EntityManager extends EntityDataManager {
                             } else {
                                 if (player.isOnline() && player.getLocation().equals(initialLocation)) {
                                     player.teleport(locationTeleport);
+                                    plugin.getEntityManager().sendMessage("message.teleport", player, player.getLocation(), grave);
                                 } else {
                                     plugin.getEntityManager().sendMessage("message.teleport-cancelled", player, player.getLocation(), grave);
                                 }
@@ -285,12 +287,14 @@ public final class EntityManager extends EntityDataManager {
                                 public void run() {
                                     if (entity.isValid()) {
                                         entity.teleport(finalLocationTeleport2);
+                                        plugin.getEntityManager().sendMessage("message.teleport", entity, entity.getLocation(), grave);
                                     }
                                 }
                             }.runTaskLater(plugin, delayTicks * 20L);
                         } else {
                             if (entity.isValid()) {
                                 entity.teleport(locationTeleport);
+                                plugin.getEntityManager().sendMessage("message.teleport", entity, entity.getLocation(), grave);
                             }
                         }
                     }
