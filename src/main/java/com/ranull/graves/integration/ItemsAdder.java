@@ -57,14 +57,18 @@ public final class ItemsAdder extends EntityDataManager {
                 plugin.debugMessage("Saving " + itemsAdderPlugin.getName() + " data.", 1);
             }
         } else {
-            deleteOldItemsAdderData(plugin.getPluginsFolder() + "/" + itemsAdderPlugin.getName() + "/data/items_packs/graves");
-            deleteOldItemsAdderData(plugin.getPluginsFolder() + "/" + itemsAdderPlugin.getName() + "/data/resource_pack/assets/graves");
+            deleteOldItemsAdderData(plugin.getPluginsFolder() + "/" + itemsAdderPlugin.getName() + "/data/items_packs/graves/data");
+            deleteOldItemsAdderData(plugin.getPluginsFolder() + "/" + itemsAdderPlugin.getName() + "/data/resource_pack/assets/graves/grave.json");
 
             if (plugin.getConfig().getBoolean("settings.integration.itemsadder.write")) {
                 ResourceUtil.copyResources("data/plugin/" + itemsAdderPlugin.getName().toLowerCase() + "/data",
                         plugin.getPluginsFolder() + "/" + itemsAdderPlugin.getName() + "/contents/graves/configs", plugin);
                 ResourceUtil.copyResources("data/model/grave.json", plugin.getPluginsFolder() + "/"
-                        + itemsAdderPlugin.getName() + "/contents/graves/resourcepack/graves/models/items/graves/grave.json", plugin);
+                        + itemsAdderPlugin.getName() + "/contents/graves/resourcepack/graves/models/graves/grave.json", plugin);
+                ResourceUtil.copyResources("data/textures/block/nether_wart_block.png", plugin.getPluginsFolder() + "/"
+                        + itemsAdderPlugin.getName() + "/contents/graves/resourcepack/graves/textures/block/nether_wart_block.png", plugin);
+                ResourceUtil.copyResources("data/textures/block/mossy_stone_bricks.png", plugin.getPluginsFolder() + "/"
+                        + itemsAdderPlugin.getName() + "/contents/graves/resourcepack/graves/textures/block/mossy_stone_bricks.png", plugin);
                 plugin.debugMessage("Saving " + itemsAdderPlugin.getName() + " data.", 1);
             }
         }
