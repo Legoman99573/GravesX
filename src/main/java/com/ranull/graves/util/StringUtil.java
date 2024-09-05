@@ -14,6 +14,7 @@ import org.bukkit.entity.EntityType;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -159,9 +160,7 @@ public final class StringUtil {
 
         if (location != null && location.getWorld() != null && grave != null) {
             string = string.replace("%world_formatted%",
-                    location.getWorld() != null ? plugin.getConfig("message.world."
-                            + location.getWorld().getName(), grave).getString("message.world."
-                            + location.getWorld().getName(), StringUtil.format(location.getWorld().getName())) : "");
+                    location.getWorld() != null ? getWorldFormatted(location.getWorld().getName(), plugin) : "");
         } else {
             string = string.replace("%world_formatted%", "");
         }
@@ -204,6 +203,26 @@ public final class StringUtil {
         }
 
         return string.replace("&", "§");
+    }
+
+    /**
+     * Retrieves the formatted world name from the configuration.
+     *
+     * @param worldName the world name to look for.
+     * @param plugin    the plugin instance.
+     * @return the formatted world name or the original if no match is found.
+     */
+    private static String getWorldFormatted(String worldName, Graves plugin) {
+        List<String> worlds = plugin.getConfig().getStringList("message.world");
+
+        for (String worldEntry : worlds) {
+            if (worldEntry.startsWith(worldName + ":")) {
+                return worldEntry.split(":", 2)[1].trim();
+            }
+        }
+
+        // Fallback if no specific formatting is found
+        return StringUtil.format(worldName);
     }
 
     /**

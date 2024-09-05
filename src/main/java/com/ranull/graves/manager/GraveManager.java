@@ -1232,8 +1232,17 @@ public final class GraveManager {
      * @return the damage reason.
      */
     public String getDamageReason(EntityDamageEvent.DamageCause damageCause, Grave grave) {
-        return plugin.getConfig("message.death-reason." + damageCause.name(), grave)
-                .getString("message.death-reason." + damageCause.name(), StringUtil.format(damageCause.name()));
+        List<String> reasons = plugin.getConfig("message.death-reason", grave).getStringList("message.death-reason");
+        String causeName = damageCause.name();
+
+        for (String reason : reasons) {
+            if (reason.startsWith(causeName + ":")) {
+                return reason.split(":", 2)[1].trim();
+            }
+        }
+
+        // Fallback if no specific reason is found
+        return StringUtil.format(causeName);
     }
 
     /**
