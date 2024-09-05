@@ -69,21 +69,34 @@ public class PlayerRespawnListener implements Listener {
      * @param grave The grave associated with the player.
      */
     private void applyPotionEffectIfWithinTime(Player player, List<String> permissionList, Grave grave) {
-        if (!plugin.getConfig("respawn.potion-effect", player, permissionList)
-                .getBoolean("respawn.potion-effect") && plugin.hasGrantedPermission("graves.potion-effect", player.getPlayer())) return;
+        // Schedule the task to run after the player has respawned
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            // Check if potion effect is enabled and player has the appropriate permission
+            boolean isPotionEffectEnabled = plugin.getConfig("respawn.potion-effect", player, permissionList)
+                    .getBoolean("respawn.potion-effect");
+            boolean hasPotionEffectPermission = plugin.hasGrantedPermission("graves.potion-effect", player.getPlayer());
 
-        long respawnTimeLimit = plugin.getConfig("respawn.potion-effect-time-limit", player, permissionList)
-                .getInt("respawn.potion-effect-time-limit") * 1000L;
+            if (!isPotionEffectEnabled || !hasPotionEffectPermission) {
+                return;
+            }
 
-        if (grave.getLivedTime() <= respawnTimeLimit) {
-            int effectDuration = plugin.getConfig("respawn.potion-effect-duration", player, permissionList)
-                    .getInt("respawn.potion-effect-duration") * 20; // Duration in ticks (20 ticks = 1 second)
+            // Get the respawn time limit
+            long respawnTimeLimit = plugin.getConfig("respawn.potion-effect-time-limit", player, permissionList)
+                    .getInt("respawn.potion-effect-time-limit") * 1000L;
 
-            PotionEffect potionEffect = new PotionEffect(PotionEffectType.RESISTANCE, effectDuration, 4);
-            PotionEffect potionEffect2 = new PotionEffect(PotionEffectType.FIRE_RESISTANCE, effectDuration, 0);
-            player.addPotionEffect(potionEffect);
-            player.addPotionEffect(potionEffect2);
-        }
+            // Check if the grave's lived time is within the respawn time limit
+            if (grave.getLivedTime() <= respawnTimeLimit) {
+                // Get the potion effect duration
+                int effectDuration = plugin.getConfig("respawn.potion-effect-duration", player, permissionList)
+                        .getInt("respawn.potion-effect-duration") * 20; // Duration in ticks (20 ticks = 1 second)
+
+                // Create and apply potion effects
+                PotionEffect potionEffect = new PotionEffect(PotionEffectType.RESISTANCE, effectDuration, 4);
+                PotionEffect potionEffect2 = new PotionEffect(PotionEffectType.FIRE_RESISTANCE, effectDuration, 0);
+                player.addPotionEffect(potionEffect);
+                player.addPotionEffect(potionEffect2);
+            }
+        }, 1L); // Run 1 tick after respawn
     }
 
     /**
