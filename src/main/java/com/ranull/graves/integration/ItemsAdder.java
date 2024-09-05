@@ -64,7 +64,7 @@ public final class ItemsAdder extends EntityDataManager {
                 ResourceUtil.copyResources("data/plugin/" + itemsAdderPlugin.getName().toLowerCase() + "/data",
                         plugin.getPluginsFolder() + "/" + itemsAdderPlugin.getName() + "/contents/graves/configs", plugin);
                 ResourceUtil.copyResources("data/model/grave.json", plugin.getPluginsFolder() + "/"
-                        + itemsAdderPlugin.getName() + "/contents/graves/resource_pack/graves/models/items/graves/grave.json", plugin);
+                        + itemsAdderPlugin.getName() + "/contents/graves/resourcepack/graves/models/items/graves/grave.json", plugin);
                 plugin.debugMessage("Saving " + itemsAdderPlugin.getName() + " data.", 1);
             }
         }
