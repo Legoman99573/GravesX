@@ -122,10 +122,16 @@ settings:
           y: -0.28
           # Hologram offset Z.
           z: 0
+          # Placeholders for the hologram include 
+          # %item% for the item amount
+          # %level% for the amount of levels dropped
+          # %owner_name_display% for the grave owner's name
+          # %time_alive_remaining_formatted% for the time remaining on the grave
+          # %killer_name_display% for the cause of death
         line:
-          - "&c%owner_name_display%'s &rGrave"
-          - "&r%item%&a♯&c/&r%level%&e♦ &c| %time_alive_remaining_formatted%"
-          - "&cDeath: &f%killer_name_display% &c☠"
+          - "&7%owner_name_display%&r's Grave &c☠"
+          - "&7%time_alive_remaining_formatted%"
+          - "&fKilled By &c%killer_name_display%"
 
       ##############
       # Protection #
@@ -159,7 +165,7 @@ settings:
       #############
       graveyard:
         # Enable the graveyard feature.
-        enabled: true
+        enabled: false
         # If a suitable graveyard is found, should we still spawn the grave where the entity died.
         death: false
 
@@ -171,13 +177,13 @@ settings:
         # Can the entity teleport to their grave from the Graves GUI.
         enabled: true
         # How much it costs to teleport to a grave, you need Vault for this.
-        cost: 5
+        cost: 0
         # How long should it be before a player is teleported to a grave in seconds? Set to 0 to make teleportation instant.
         delay: 0
         # Extra cost added on top of cost if the grave is in a different world.
-        cost-different-world: 20
+        cost-different-world: 0
         # Increase the price the further away the grave is.
-        cost-distance-increase: true
+        cost-distance-increase: false
         # Should entities be allowed to always teleport to a grave even if unsafe.
         unsafe: false
         # If the grave is in an unsafe location, should the entity be teleported to the top.
@@ -298,7 +304,7 @@ settings:
           - "    Z: %z%"
         # Lore of the obituary.
         lore:
-          - "Date: %time_creation_formatted%"
+          - "&7Date: %time_creation_formatted%"
 
       ########
       # Head #
@@ -312,10 +318,11 @@ settings:
         # Custom model data, -1 is none.
         model-data: -1
         # Name of the head.
-        name: "%owner_name%'s Head"
+        name: "&e%owner_name%'s Head"
         # Lore of the head.
         lore:
-          - "Killed by %killer_name%"
+          - "&7Killed by %killer_name%"
+          - '&7Date: %time_creation_formatted%'
 
       ##########
       # Zombie #
@@ -738,7 +745,7 @@ settings:
       # Messages and formats for various interactions and events.
       message:
         # Prefix for messages.
-        prefix: "&c☠ &8» &r"
+        prefix: "&c☠ &r"
         # Messages for different interactions.
         looted: "You looted &c%owner_name%&r's grave at &c%x%&rx, &c%y%&ry, &c%z%&rz in &c%world_formatted%&r."
         experience: "Looted &c%level% &rlevels from grave."
@@ -766,8 +773,8 @@ settings:
         protection: "This grave is protected for %time_protection_remaining_formatted%."
         region-create-deny: "A grave was not created because grave creation is disabled in this region."
         region-teleport-deny: "Grave teleportation is disabled in this region."
-        grave-protection-build-deny: "You can't build blocks near a grave site."
-        grave-protection-break-deny: "You can't break blocks near a grave site."
+        grave-protection-build-deny: "You can't build blocks next to a grave."
+        grave-protection-break-deny: "You can't break blocks next to a grave."
         grave-abandoned: "Your grave at &c%x%&rx, &c%y%&ry, &c%z%&rz in &c%world_formatted%&r has been abandoned with &c%item% &ritems and &c%experience% &rExperience."
         grave-oldest-replaced: "Your oldest grave has been removed since you have reached the max limit."
         grave-plugin-version-latest: "You are running the latest version of %plugin_name%."
@@ -838,11 +845,11 @@ settings:
       ########
       # Time formatting for various durations.
       time:
-        second: "&c%second%&fs "
-        minute: "&c%minute%&fm "
-        hour: "&c%hour%&fh "
-        day: "&c%day%&fd "
-        infinite: "&cForever"
+        second: "&7%second%&fs "
+        minute: "&7%minute%&fm "
+        hour: "&7%hour%&fh "
+        day: "&7%day%&fd "
+        infinite: "&7Forever"
         date: "dd-MM-yyyy"
 
       #######
@@ -868,7 +875,7 @@ settings:
             model-data: -1
             empty: "You don't have any graves."
             lore:
-              - "Created &f%time_lived_formatted% &cago"
+              - "&7Created %time_lived_formatted% &7ago"
 
           grave:
             # Title for the individual grave menu.
