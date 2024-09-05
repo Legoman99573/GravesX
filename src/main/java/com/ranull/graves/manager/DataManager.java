@@ -892,8 +892,9 @@ public final class DataManager {
      */
     public void loadGraveMap() {
         plugin.getCacheManager().getGraveMap().clear();
-
+        plugin.getLogger().info("Loading grave maps...");
         String query = "SELECT * FROM grave;";
+        int graveCount = 0;
 
         try (Connection connection = getConnection();
              Statement statement = connection.createStatement();
@@ -903,7 +904,13 @@ public final class DataManager {
                 Grave grave = resultSetToGrave(resultSet);
                 if (grave != null) {
                     plugin.getCacheManager().getGraveMap().put(grave.getUUID(), grave);
+                    graveCount++;
                 }
+            }
+            if (graveCount == 0) {
+                plugin.getLogger().info("Found 0 grave maps to load into cache.");
+            } else {
+                plugin.getLogger().info("Loaded " + graveCount + " grave maps into cache.");
             }
         } catch (SQLException exception) {
             plugin.getLogger().severe("Error occurred while loading Grave Map: " + exception.getMessage());
@@ -1023,6 +1030,9 @@ public final class DataManager {
         String query = "SELECT * FROM block;";
 
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            plugin.getLogger().info("Loading Block Map cache...");
+            int blockCount = 0;
+
             try (Connection connection = getConnection();
                  PreparedStatement statement = connection != null ? connection.prepareStatement(query) : null;
                  ResultSet resultSet = statement != null ? statement.executeQuery() : null) {
@@ -1042,9 +1052,16 @@ public final class DataManager {
                     // Ensure required fields are valid
                     if (replaceMaterial != null && replaceData != null) {
                         getChunkData(location).addBlockData(new BlockData(location, uuidGrave, replaceMaterial, replaceData));
+                        blockCount++;
                     } else {
                         plugin.getLogger().warning("Data is missing or invalid in result set for location: " + location);
                     }
+                }
+
+                if (blockCount == 0) {
+                    plugin.getLogger().info("Loaded 0 Blocks into Block Map Cache.");
+                } else {
+                    plugin.getLogger().info("Loaded " + blockCount + " Blocks into the Block Map Cache.");
                 }
             } catch (SQLException exception) {
                 plugin.getLogger().severe("Error occurred while loading Block Map: " + exception.getMessage());
@@ -1063,6 +1080,9 @@ public final class DataManager {
         String query = "SELECT * FROM " + table + ";";
 
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            plugin.getLogger().info("Loading Entity Map Cache for " + table + "...");
+            int entityCount = 0;
+
             try (Connection connection = getConnection();
                  PreparedStatement statement = connection.prepareStatement(query);
                  ResultSet resultSet = statement.executeQuery()) {
@@ -1090,12 +1110,19 @@ public final class DataManager {
                             UUID uuidGrave = UUID.fromString(uuidGraveString);
 
                             getChunkData(location).addEntityData(new EntityData(location, uuidEntity, uuidGrave, type));
+                            entityCount++;
                         } else {
                             plugin.getLogger().warning("Missing UUIDs in result set for location: " + location);
                         }
                     } else {
                         plugin.getLogger().warning("Invalid location data in result set.");
                     }
+                }
+
+                if (entityCount == 0) {
+                    plugin.getLogger().info("Loaded 0 entities into Entity Map Cache for " + table + ".");
+                } else {
+                    plugin.getLogger().info("Loaded " + entityCount + " entities into Entity Map Cache for " + table + ".");
                 }
             } catch (SQLException exception) {
                 plugin.getLogger().severe("Error occurred while loading Entity Map: " + exception.getMessage());
@@ -1111,6 +1138,9 @@ public final class DataManager {
         String query = "SELECT * FROM hologram;";
 
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            plugin.getLogger().info("Loading Holograms into Hologram Map Cache...");
+            int hologramCount = 0;
+
             try (Connection connection = getConnection();
                  PreparedStatement statement = connection.prepareStatement(query);
                  ResultSet resultSet = statement.executeQuery()) {
@@ -1136,6 +1166,7 @@ public final class DataManager {
                             int line = resultSet.getInt("line");
 
                             getChunkData(location).addEntityData(new HologramData(location, uuidEntity, uuidGrave, line));
+                            hologramCount++;  // Increment hologram count
                         } else {
                             plugin.getLogger().warning("Missing UUIDs in result set for location: " + location);
                         }
@@ -1143,6 +1174,12 @@ public final class DataManager {
                         plugin.getLogger().warning("Invalid location data in result set.");
                     }
                 }
+                if (hologramCount == 0) {
+                    plugin.getLogger().info("Loaded 0 Holograms into Hologram Map Cache.");
+                } else {
+                    plugin.getLogger().info("Loaded " + hologramCount + " Holograms into Hologram Map Cache.");
+                }
+
             } catch (SQLException exception) {
                 plugin.getLogger().severe("Error occurred while loading Hologram Map: " + exception.getMessage());
                 plugin.logStackTrace(exception);
@@ -1160,6 +1197,9 @@ public final class DataManager {
         String query = "SELECT * FROM " + table + ";";
 
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            plugin.getLogger().info("Loading Entity Data Map Cache for " + table + "...");
+            int entityCount = 0;
+
             try (Connection connection = getConnection();
                  PreparedStatement statement = connection.prepareStatement(query);
                  ResultSet resultSet = statement.executeQuery()) {
@@ -1174,7 +1214,7 @@ public final class DataManager {
                         location = LocationUtil.stringToLocation(locationString);
                     } else {
                         plugin.getLogger().warning("Invalid location for result set entry");
-                        return;
+                        continue; // Continue processing remaining entries
                     }
 
                     // Retrieve and validate UUIDs
@@ -1187,9 +1227,16 @@ public final class DataManager {
 
                         // Add entity data to the chunk data map
                         getChunkData(location).addEntityData(new EntityData(location, uuidEntity, uuidGrave, type));
+                        entityCount++;  // Increment entity count
                     } else {
                         plugin.getLogger().warning("Missing UUIDs for location: " + location);
                     }
+                }
+
+                if (entityCount == 0) {
+                    plugin.getLogger().info("Loaded 0 entities into Entity Data Map Cache for " + table + ".");
+                } else {
+                    plugin.getLogger().info("Loaded " + entityCount + " entities into Entity Data Map Cache for " + table + ".");
                 }
             } catch (SQLException exception) {
                 plugin.getLogger().severe("Error occurred while loading Entity Data Map: " + exception.getMessage());
