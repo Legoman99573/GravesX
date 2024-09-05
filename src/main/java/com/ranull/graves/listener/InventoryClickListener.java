@@ -108,21 +108,26 @@ public class InventoryClickListener implements Listener {
      */
     private void handleGraveMenuClick(InventoryClickEvent event, Player player, GraveMenu graveMenu) {
         Grave grave = graveMenu.getGrave();
+        try {
+            if (grave != null) {
+                if (event.getClick() == ClickType.SHIFT_LEFT) {
+                    event.setCancelled(true); // Prevents items from being put in inventory
+                    return;
+                }
 
-        if (grave != null) {
-            if (event.getClick() == ClickType.SHIFT_LEFT) {
-                event.setCancelled(true); // Prevents items from being put in inventory
-                return;
+                // Run function associated with the clicked slot in GraveMenu
+                plugin.getEntityManager().runFunction(player,
+                        plugin.getConfig("gui.menu.grave.slot." + event.getSlot() + ".function", grave)
+                                .getString("gui.menu.grave.slot." + event.getSlot()
+                                        + ".function", "none"), grave);
+                plugin.getGUIManager().setGraveMenuItems(graveMenu.getInventory(), grave);
             }
 
-            // Run function associated with the clicked slot in GraveMenu
-            plugin.getEntityManager().runFunction(player,
-                    plugin.getConfig("gui.menu.grave.slot." + event.getSlot() + ".function", grave)
-                            .getString("gui.menu.grave.slot." + event.getSlot()
-                                    + ".function", "none"), grave);
-            plugin.getGUIManager().setGraveMenuItems(graveMenu.getInventory(), grave);
+            event.setCancelled(true);
+        } catch (NullPointerException | IllegalArgumentException ignored) {
+            // Likely grave doesn't exist. Ignore this.
+            event.getWhoClicked().closeInventory();
+            event.setCancelled(true);
         }
-
-        event.setCancelled(true);
     }
 }
