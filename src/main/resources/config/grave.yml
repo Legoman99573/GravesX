@@ -122,15 +122,16 @@ settings:
           y: -0.28
           # Hologram offset Z.
           z: 0
-          # Placeholders for the hologram include 
-          # %item% for the item amount
-          # %level% for the amount of levels dropped
-          # %owner_name_display% for the grave owner's name
-          # %time_alive_remaining_formatted% for the time remaining on the grave
-          # %killer_name_display% for the cause of death
+        # Placeholders for the hologram include 
+        # %item% - for the item amount
+        # %level% - for the amount of levels dropped
+        # %owner_name_display% - for the grave owner's name
+        # %time_alive_remaining_formatted% - for the time remaining on the grave
+        # %killer_name_display% - for the cause of death
+        # %state_protection% - State of grave protection
         line:
           - "&7%owner_name_display%&r's Grave &c☠"
-          - "&7%time_alive_remaining_formatted%"
+          - "&7%time_alive_remaining_formatted% &r| %state_protection%"
           - "&fKilled By &c%killer_name_display%"
 
       ##############
@@ -164,7 +165,7 @@ settings:
       # Graveyard #
       #############
       graveyard:
-        # Enable the graveyard feature.
+        # Enable the graveyard feature. Currently unstable for production. Do not use unless you know what you are doing.
         enabled: false
         # If a suitable graveyard is found, should we still spawn the grave where the entity died.
         death: false
@@ -177,7 +178,7 @@ settings:
         # Can the entity teleport to their grave from the Graves GUI.
         enabled: true
         # How much it costs to teleport to a grave, you need Vault for this.
-        cost: 0
+        cost: 2
         # How long should it be before a player is teleported to a grave in seconds? Set to 0 to make teleportation instant.
         delay: 0
         # Extra cost added on top of cost if the grave is in a different world.
@@ -197,7 +198,7 @@ settings:
         # COMPACT - stacks all items and puts them into a small as possible inventory
         # EXACT - matches the player's inventory exactly.
         # CHESTSORT - Automatically sorts all items in graves in a neat fashion. This will not have the same behavior as EXACT. Acts more like COMPACT, but sorts it all if needed. (ChestSort must be installed)
-        mode: COMPACT
+        mode: EXACT
 
       ##############
       # Experience #
