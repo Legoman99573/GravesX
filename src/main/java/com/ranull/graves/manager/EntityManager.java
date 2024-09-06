@@ -213,43 +213,46 @@ public final class EntityManager extends EntityDataManager {
 
                     if (plugin.getIntegrationManager().hasVault() && plugin.getIntegrationManager().hasVaultEconomy()) {
                         double teleportCost = getTeleportCost(entity.getLocation(), locationTeleport, grave);
+                        GraveTeleportEvent graveTeleportEvent = new GraveTeleportEvent(grave, entity);
 
-                        if (plugin.getIntegrationManager().getVault().hasBalance(player, teleportCost)
-                                && plugin.getIntegrationManager().getVault().withdrawBalance(player, teleportCost)) {
-                            GraveTeleportEvent graveTeleportEvent = new GraveTeleportEvent(grave, entity);
-
-                            plugin.getServer().getPluginManager().callEvent(graveTeleportEvent);
-                            if (!graveTeleportEvent.isCancelled()) {
-                                if (delayTicks > 0) {
-                                    Location finalLocationTeleport1 = locationTeleport;
-                                    new BukkitRunnable() {
-                                        @Override
-                                        public void run() {
-                                            if (player.isOnline() && player.getLocation().equals(initialLocation)) {
+                        plugin.getServer().getPluginManager().callEvent(graveTeleportEvent);
+                        if (!graveTeleportEvent.isCancelled()) {
+                            if (delayTicks > 0) {
+                                Location finalLocationTeleport1 = locationTeleport;
+                                new BukkitRunnable() {
+                                    @Override
+                                    public void run() {
+                                        if (player.isOnline() && player.getLocation().equals(initialLocation)) {
+                                            if (plugin.getIntegrationManager().getVault().hasBalance(player, teleportCost)
+                                                    && plugin.getIntegrationManager().getVault().withdrawBalance(player, teleportCost)) {
                                                 player.teleport(finalLocationTeleport1);
                                                 plugin.getEntityManager().sendMessage("message.teleport", player, finalLocationTeleport1, grave);
                                                 plugin.getEntityManager().playPlayerSound("sound.teleport", player, finalLocationTeleport1, grave);
                                             } else {
-                                                plugin.getEntityManager().sendMessage("message.teleport-cancelled", player, player.getLocation(), grave);
+                                                plugin.getEntityManager().sendMessage("message.no-money", player, player.getLocation(), grave);
                                             }
+                                        } else {
+                                            plugin.getEntityManager().sendMessage("message.teleport-cancelled", player, player.getLocation(), grave);
                                         }
-                                    }.runTaskLater(plugin, delayTicks * 20L);
-                                } else {
-                                    if (player.isOnline() && player.getLocation().equals(initialLocation)) {
+                                    }
+                                }.runTaskLater(plugin, delayTicks * 20L);
+                            } else {
+                                if (player.isOnline() && player.getLocation().equals(initialLocation)) {
+                                    if (plugin.getIntegrationManager().getVault().hasBalance(player, teleportCost)
+                                            && plugin.getIntegrationManager().getVault().withdrawBalance(player, teleportCost)) {
                                         player.teleport(locationTeleport);
                                         plugin.getEntityManager().sendMessage("message.teleport", player, locationTeleport, grave);
                                         plugin.getEntityManager().playPlayerSound("sound.teleport", player, locationTeleport, grave);
                                     } else {
-                                        plugin.getEntityManager().sendMessage("message.teleport-cancelled", player, player.getLocation(), grave);
+                                        plugin.getEntityManager().sendMessage("message.no-money", player, player.getLocation(), grave);
                                     }
+                                } else {
+                                    plugin.getEntityManager().sendMessage("message.teleport-cancelled", player, player.getLocation(), grave);
                                 }
                             }
-                        } else {
-                            plugin.getEntityManager().sendMessage("message.no-money", player, player.getLocation(), grave);
                         }
                     } else {
                         GraveTeleportEvent graveTeleportEvent = new GraveTeleportEvent(grave, entity);
-
                         plugin.getServer().getPluginManager().callEvent(graveTeleportEvent);
                         if (!graveTeleportEvent.isCancelled()) {
                             if (delayTicks > 0) {
