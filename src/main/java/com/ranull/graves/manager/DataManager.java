@@ -905,6 +905,8 @@ public final class DataManager {
                 if (grave != null) {
                     plugin.getCacheManager().getGraveMap().put(grave.getUUID(), grave);
                     graveCount++;
+                } else {
+                    plugin.getLogger().severe("Failed to load grave from result set at row " + resultSet.getRow());
                 }
             }
             if (graveCount == 0) {
@@ -1752,49 +1754,47 @@ public final class DataManager {
      */
     public Grave resultSetToGrave(ResultSet resultSet) {
         try {
-            if (resultSet.next()) {
-                Grave grave = new Grave(UUID.fromString(resultSet.getString("uuid")));
+            Grave grave = new Grave(UUID.fromString(resultSet.getString("uuid")));
 
-                grave.setOwnerType(resultSet.getString("owner_type") != null
-                        ? EntityType.valueOf(resultSet.getString("owner_type")) : null);
-                grave.setOwnerName(resultSet.getString("owner_name"));
-                grave.setOwnerNameDisplay(resultSet.getString("owner_name_display"));
-                grave.setOwnerUUID(resultSet.getString("owner_uuid") != null
-                        ? UUID.fromString(resultSet.getString("owner_uuid")) : null);
-                grave.setOwnerTexture(resultSet.getString("owner_texture"));
-                grave.setOwnerTextureSignature(resultSet.getString("owner_texture_signature"));
-                grave.setKillerType(resultSet.getString("killer_type") != null
-                        ? EntityType.valueOf(resultSet.getString("killer_type")) : null);
-                grave.setKillerName(resultSet.getString("killer_name"));
-                grave.setKillerNameDisplay(resultSet.getString("killer_name_display"));
-                grave.setKillerUUID(resultSet.getString("killer_uuid") != null
-                        ? UUID.fromString(resultSet.getString("killer_uuid")) : null);
-                grave.setLocationDeath(resultSet.getString("location_death") != null
-                        ? LocationUtil.stringToLocation(resultSet.getString("location_death")) : null);
-                grave.setYaw(resultSet.getFloat("yaw"));
-                grave.setPitch(resultSet.getFloat("pitch"));
-                grave.setExperience(resultSet.getInt("experience"));
-                grave.setProtection(resultSet.getInt("protection") == 1);
-                grave.setAbandoned(resultSet.getInt("is_abandoned") == 1);
-                grave.setTimeAlive(resultSet.getLong("time_alive"));
-                grave.setTimeProtection(resultSet.getLong("time_protection"));
-                grave.setTimeCreation(resultSet.getLong("time_creation"));
-                grave.setPermissionList(resultSet.getString("permissions") != null
-                        ? new ArrayList<>(Arrays.asList(resultSet.getString("permissions").split("\\|"))) : new ArrayList<>());
-                grave.setInventory(InventoryUtil.stringToInventory(grave, resultSet.getString("inventory"),
-                        StringUtil.parseString(plugin.getConfig("gui.grave.title", grave.getOwnerType(),
-                                        grave.getPermissionList())
-                                .getString("gui.grave.title"), grave.getLocationDeath(), grave, plugin), plugin));
+            grave.setOwnerType(resultSet.getString("owner_type") != null
+                    ? EntityType.valueOf(resultSet.getString("owner_type")) : null);
+            grave.setOwnerName(resultSet.getString("owner_name"));
+            grave.setOwnerNameDisplay(resultSet.getString("owner_name_display"));
+            grave.setOwnerUUID(resultSet.getString("owner_uuid") != null
+                    ? UUID.fromString(resultSet.getString("owner_uuid")) : null);
+            grave.setOwnerTexture(resultSet.getString("owner_texture"));
+            grave.setOwnerTextureSignature(resultSet.getString("owner_texture_signature"));
+            grave.setKillerType(resultSet.getString("killer_type") != null
+                    ? EntityType.valueOf(resultSet.getString("killer_type")) : null);
+            grave.setKillerName(resultSet.getString("killer_name"));
+            grave.setKillerNameDisplay(resultSet.getString("killer_name_display"));
+            grave.setKillerUUID(resultSet.getString("killer_uuid") != null
+                    ? UUID.fromString(resultSet.getString("killer_uuid")) : null);
+            grave.setLocationDeath(resultSet.getString("location_death") != null
+                    ? LocationUtil.stringToLocation(resultSet.getString("location_death")) : null);
+            grave.setYaw(resultSet.getFloat("yaw"));
+            grave.setPitch(resultSet.getFloat("pitch"));
+            grave.setExperience(resultSet.getInt("experience"));
+            grave.setProtection(resultSet.getInt("protection") == 1);
+            grave.setAbandoned(resultSet.getInt("is_abandoned") == 1);
+            grave.setTimeAlive(resultSet.getLong("time_alive"));
+            grave.setTimeProtection(resultSet.getLong("time_protection"));
+            grave.setTimeCreation(resultSet.getLong("time_creation"));
+            grave.setPermissionList(resultSet.getString("permissions") != null
+                    ? new ArrayList<>(Arrays.asList(resultSet.getString("permissions").split("\\|"))) : new ArrayList<>());
+            grave.setInventory(InventoryUtil.stringToInventory(grave, resultSet.getString("inventory"),
+                    StringUtil.parseString(plugin.getConfig("gui.grave.title", grave.getOwnerType(),
+                                    grave.getPermissionList())
+                            .getString("gui.grave.title"), grave.getLocationDeath(), grave, plugin), plugin));
 
-                if (resultSet.getString("equipment") != null) {
-                    @SuppressWarnings("unchecked")
-                    Map<EquipmentSlot, ItemStack> equipmentMap = (Map<EquipmentSlot, ItemStack>) Base64Util
-                            .base64ToObject(resultSet.getString("equipment"));
-                    grave.setEquipmentMap(equipmentMap != null ? equipmentMap : new HashMap<>());
-                }
-
-                return grave;
+            if (resultSet.getString("equipment") != null) {
+                @SuppressWarnings("unchecked")
+                Map<EquipmentSlot, ItemStack> equipmentMap = (Map<EquipmentSlot, ItemStack>) Base64Util
+                        .base64ToObject(resultSet.getString("equipment"));
+                grave.setEquipmentMap(equipmentMap != null ? equipmentMap : new HashMap<>());
             }
+
+            return grave;
         } catch (SQLException exception) {
             plugin.getLogger().severe("Error occurred while converting a ResultSet to a Grave object: " + exception.getMessage());
             plugin.logStackTrace(exception);
