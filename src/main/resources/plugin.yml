@@ -21,6 +21,7 @@ libraries:
 
 loadbefore:
   - XItemsRemover
+  - ExplodeAny
 
 softdepend:
   - Vault

@@ -33,7 +33,7 @@ public class EntityExplodeListener implements Listener {
      *
      * @param event The EntityExplodeEvent to handle.
      */
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityExplode(EntityExplodeEvent event) {
         List<Block> affectedBlocks = event.blockList();
         Iterator<Block> iterator = affectedBlocks.iterator();
