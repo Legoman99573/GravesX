@@ -2419,36 +2419,116 @@ public final class DataManager {
     }
 
     /**
-     * Checks if the SQLite database is locked and attempts to unlock it by running COMMIT or ROLLBACK.
+     * Checks if the Database is locked and attempts to unlock the database.
      */
     private void checkAndUnlockDatabase() {
-        if (type != Type.SQLITE) return;
-        String checkQuery = "SELECT 1";
-        try (Connection connection = getConnection();
-             Statement statement = connection != null ? connection.createStatement() : null) {
+        String checkQuery = "Select 1";
+
+        try (Connection connection = dataSource.getConnection();
+            Statement statement = connection != null ? connection.createStatement() : null) {
+
             if (statement != null) {
                 statement.executeQuery(checkQuery);
+            } else {
+                throw new NullPointerException();
             }
         } catch (NullPointerException | SQLException e) {
             if (e.getMessage().contains("database is locked")) {
                 plugin.getLogger().severe("Database is locked. Attempting to unlock...");
-                try (Connection connection = getConnection()) {
-                    if (connection != null) {
-                        connection.setAutoCommit(false);
-                        connection.commit();
-                        plugin.getLogger().info("Database unlocked successfully using COMMIT.");
-                    }
-                } catch (SQLException commitException) {
-                    plugin.getLogger().severe("Failed to unlock database using COMMIT: " + commitException.getMessage());
-                    try (Connection connection = getConnection()) {
-                        if (connection != null) {
-                            connection.rollback();
-                            plugin.getLogger().info("Database unlocked successfully using ROLLBACK.");
-                        }
-                    } catch (SQLException rollbackException) {
-                        plugin.getLogger().severe("Failed to unlock database using ROLLBACK: " + rollbackException.getMessage());
-                    }
+
+                switch (type) {
+                    case SQLITE:
+                        handleUnlockSQLite();
+                        break;
+                    case MYSQL:
+                    case MARIADB:
+                        handleUnlockMySQL();
+                        break;
+                    case POSTGRESQL:
+                    case H2:
+                        handleUnlockPostgreSQLandH2();
+                        break;
+                    case INVALID:
+                    default:
+                        plugin.getLogger().warning("Server is using an invalid database type. No attempts to fix database locking will be attempted.");
                 }
+            }
+        }
+    }
+
+    /**
+     * Handles unlocking for SQLite databases using COMMIT or Rollback.
+     */
+    private void handleUnlockSQLite() {
+        try (Connection connection = dataSource.getConnection()) {
+            if (connection != null) {
+                connection.setAutoCommit(false);
+                connection.commit();
+                plugin.getLogger().info("SQLite database unlocked successfully using COMMIT.");
+            } else {
+                throw new NullPointerException();
+            }
+        } catch (NullPointerException | SQLException e) {
+            plugin.getLogger().severe("Failed to unlock SQLite database using COMMIT");
+            plugin.logStackTrace(e);
+            try (Connection connection = dataSource.getConnection()) {
+                if (connection != null) {
+                    connection.rollback();
+                    plugin.getLogger().info("SQLite database unlocked successfully using ROLLBACK.");
+                } else {
+                    throw new NullPointerException();
+                }
+            } catch (NullPointerException | SQLException rollbackException) {
+                plugin.getLogger().severe("Failed to unlock SQLite database using ROLLBACK");
+                plugin.logStackTrace(rollbackException);
+            }
+        }
+    }
+
+    /**
+     * Handles unlocking for MySQL and MariaDB databases.
+     */
+    private void handleUnlockMySQL() {
+        try (Connection connection = dataSource.getConnection()) {
+            if (connection != null) {
+                plugin.getLogger().info("Attempting to unlock MySQL/MariaDB database.");
+                connection.setAutoCommit(false);
+                connection.commit();
+                plugin.getLogger().info("MySQL/MariaDB database unlocked successfully using COMMIT.");
+            } else {
+                throw new NullPointerException();
+            }
+        } catch (NullPointerException | SQLException e) {
+            plugin.getLogger().severe("Failed to unlock MySQL/MariaDB database using COMMIT");
+            plugin.logStackTrace(e);
+        }
+    }
+
+    /**
+     * Handles unlocking for PostgreSQL/H2 databases using COMMIT or Rollback.
+     */
+    private void handleUnlockPostgreSQLandH2() {
+        try (Connection connection = dataSource.getConnection()) {
+            if (connection != null) {
+                connection.setAutoCommit(false);
+                connection.commit();
+                plugin.getLogger().info("PostgreSQL/H2 database unlocked successfully using COMMIT.");
+            } else {
+                throw new NullPointerException();
+            }
+        } catch (NullPointerException | SQLException e) {
+            plugin.getLogger().severe("Failed to unlock PostgreSQL/H2 database using COMMIT");
+            plugin.logStackTrace(e);
+            try (Connection connection = dataSource.getConnection()) {
+                if (connection != null) {
+                    connection.rollback();
+                    plugin.getLogger().info("PostgreSQL/H2 database unlocked successfully using ROLLBACK.");
+                } else {
+                    throw new NullPointerException();
+                }
+            } catch (NullPointerException | SQLException rollbackException) {
+                plugin.getLogger().severe("Failed to unlock PostgreSQL/H2 database using ROLLBACK");
+                plugin.logStackTrace(rollbackException);
             }
         }
     }
