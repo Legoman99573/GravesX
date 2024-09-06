@@ -10,6 +10,9 @@ import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.*;
 import org.bukkit.*;
 import org.bukkit.block.BlockFace;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
+import org.bukkit.boss.BossBar;
 import org.bukkit.command.CommandSender;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.*;
@@ -217,12 +220,36 @@ public final class EntityManager extends EntityDataManager {
 
                         plugin.getServer().getPluginManager().callEvent(graveTeleportEvent);
                         if (!graveTeleportEvent.isCancelled()) {
-                            if (delayTicks > 0) {
+                            if (!plugin.hasGrantedPermission("graves.teleport.delay-bypass", player.getPlayer()) && delayTicks > 0) {
                                 Location finalLocationTeleport1 = locationTeleport;
+                                BossBar bossBar;
+                                if (plugin.getIntegrationManager().hasMiniMessage()) {
+                                    String legacyBossBar = StringUtil.parseString(plugin.getConfig("message.teleport-waiting", grave)
+                                            .getString("message.teleport-waiting"), location, grave, plugin);
+                                    bossBar = plugin.getServer().createBossBar(MiniMessage.parseString(legacyBossBar), BarColor.RED, BarStyle.SOLID);
+                                } else {
+                                    bossBar = plugin.getServer().createBossBar(StringUtil.parseString(plugin.getConfig("message.teleport-waiting", grave)
+                                            .getString("message.teleport-waiting"), location, grave, plugin), BarColor.RED, BarStyle.SOLID);
+                                }
+                                bossBar.addPlayer(player);
+
                                 new BukkitRunnable() {
+                                    int ticksRemaining = (int) delayTicks;
+
                                     @Override
                                     public void run() {
-                                        if (player.isOnline() && player.getLocation().equals(initialLocation)) {
+                                        if (!player.isOnline() || !player.getLocation().equals(initialLocation)) {
+                                            bossBar.removeAll();
+                                            plugin.getEntityManager().sendMessage("message.teleport-cancelled", player, player.getLocation(), grave);
+                                            this.cancel();
+                                            return;
+                                        }
+
+                                        if (ticksRemaining > 0) {
+                                            double progress = (double) ticksRemaining / delayTicks;
+                                            bossBar.setProgress(Math.max(0, Math.min(1, progress)));  // Clamp the progress between 0 and 1
+                                            ticksRemaining--;
+                                        } else {
                                             if (plugin.getIntegrationManager().getVault().hasBalance(player, teleportCost)
                                                     && plugin.getIntegrationManager().getVault().withdrawBalance(player, teleportCost)) {
                                                 player.teleport(finalLocationTeleport1);
@@ -231,12 +258,13 @@ public final class EntityManager extends EntityDataManager {
                                             } else {
                                                 plugin.getEntityManager().sendMessage("message.no-money", player, player.getLocation(), grave);
                                             }
-                                        } else {
-                                            plugin.getEntityManager().sendMessage("message.teleport-cancelled", player, player.getLocation(), grave);
+                                            bossBar.removeAll();
+                                            this.cancel();
                                         }
                                     }
-                                }.runTaskLater(plugin, delayTicks * 20L);
+                                }.runTaskTimer(plugin, 0, 20L);  // Runs every second (20 ticks)
                             } else {
+                                // Immediate teleportation, no delay
                                 if (player.isOnline() && player.getLocation().equals(initialLocation)) {
                                     if (plugin.getIntegrationManager().getVault().hasBalance(player, teleportCost)
                                             && plugin.getIntegrationManager().getVault().withdrawBalance(player, teleportCost)) {
@@ -255,23 +283,47 @@ public final class EntityManager extends EntityDataManager {
                         GraveTeleportEvent graveTeleportEvent = new GraveTeleportEvent(grave, entity);
                         plugin.getServer().getPluginManager().callEvent(graveTeleportEvent);
                         if (!graveTeleportEvent.isCancelled()) {
-                            if (delayTicks > 0) {
+                            if (!plugin.hasGrantedPermission("graves.teleport.delay-bypass", player.getPlayer()) && delayTicks > 0) {
                                 Location finalLocationTeleport = locationTeleport;
+                                BossBar bossBar;
+                                if (plugin.getIntegrationManager().hasMiniMessage()) {
+                                    String legacyBossBar = StringUtil.parseString(plugin.getConfig("message.teleport-waiting", grave)
+                                            .getString("message.teleport-waiting"), location, grave, plugin);
+                                    bossBar = plugin.getServer().createBossBar(MiniMessage.parseString(legacyBossBar), BarColor.RED, BarStyle.SOLID);
+                                } else {
+                                    bossBar = plugin.getServer().createBossBar(StringUtil.parseString(plugin.getConfig("message.teleport-waiting", grave)
+                                            .getString("message.teleport-waiting"), location, grave, plugin), BarColor.RED, BarStyle.SOLID);
+                                }
+                                bossBar.addPlayer(player);
+
                                 new BukkitRunnable() {
+                                    int ticksRemaining = (int) delayTicks;
+
                                     @Override
                                     public void run() {
-                                        if (player.isOnline() && player.getLocation().equals(initialLocation)) {
-                                            player.teleport(finalLocationTeleport);
-                                            plugin.getEntityManager().sendMessage("message.teleport", player, player.getLocation(), grave);
-                                        } else {
+                                        if (!player.isOnline() || !player.getLocation().equals(initialLocation)) {
+                                            bossBar.removeAll();
                                             plugin.getEntityManager().sendMessage("message.teleport-cancelled", player, player.getLocation(), grave);
+                                            this.cancel();
+                                            return;
+                                        }
+
+                                        if (ticksRemaining > 0) {
+                                            double progress = (double) ticksRemaining / delayTicks;
+                                            bossBar.setProgress(Math.max(0, Math.min(1, progress)));
+                                            ticksRemaining--;
+                                        } else {
+                                            player.teleport(finalLocationTeleport);
+                                            plugin.getEntityManager().sendMessage("message.teleport", player, finalLocationTeleport, grave);
+                                            bossBar.removeAll();
+                                            this.cancel();
                                         }
                                     }
-                                }.runTaskLater(plugin, delayTicks * 20L);
+                                }.runTaskTimer(plugin, 0, 20L);
                             } else {
                                 if (player.isOnline() && player.getLocation().equals(initialLocation)) {
                                     player.teleport(locationTeleport);
-                                    plugin.getEntityManager().sendMessage("message.teleport", player, player.getLocation(), grave);
+                                    plugin.getEntityManager().sendMessage("message.teleport", player, locationTeleport, grave);
                                 } else {
                                     plugin.getEntityManager().sendMessage("message.teleport-cancelled", player, player.getLocation(), grave);
                                 }

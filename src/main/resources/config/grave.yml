@@ -764,6 +764,7 @@ settings:
         distance: "You are &c%distance% &rblocks away."
         distance-world: "Can't measure distance, wrong world."
         teleport: "You teleported to your grave."
+        teleport-waiting: "Teleporting to grave..."
         teleport-top: "Grave is in an unsafe location, you have been teleported nearby."
         teleport-failure: "Teleport failed, teleport location is unsafe."
         teleport-disabled: "Grave teleportation is disabled."

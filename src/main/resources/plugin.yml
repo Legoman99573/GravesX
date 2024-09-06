@@ -121,6 +121,10 @@ permissions:
     default: true
     description: Can teleport to grave
 
+  graves.teleport.delay-bypass:
+    default: op
+    description: Allows the player to bypass grave teleport delay restrictions
+
   graves.teleport.world.*:
     default: true
     description: Allows teleportation to graves in specific worlds.
