@@ -181,6 +181,8 @@ settings:
         cost: 2
         # How long should it be before a player is teleported to a grave in seconds? Set to 0 to make teleportation instant.
         delay: 0
+        # Should we detect yaw and pitch when delay is enabled? Recommend leaving this as false as this may affect players who are on Vivecraft or using Mods that allows controllers (Stick Drift)
+        strict: false
         # Extra cost added on top of cost if the grave is in a different world.
         cost-different-world: 0
         # Increase the price the further away the grave is.

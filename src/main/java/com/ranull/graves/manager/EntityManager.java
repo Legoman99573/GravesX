@@ -238,7 +238,14 @@ public final class EntityManager extends EntityDataManager {
 
                                     @Override
                                     public void run() {
-                                        if (!player.isOnline() || !player.getLocation().equals(initialLocation)) {
+                                        Location currentLocation = player.getLocation();
+
+                                        // Check if player has moved (excluding yaw/pitch unless teleport.strict is true)
+                                        boolean hasMoved = plugin.getConfig().getBoolean("teleport.strict")
+                                                ? !currentLocation.equals(initialLocation)  // Compare full location if strict
+                                                : !currentLocation.getBlock().equals(initialLocation.getBlock());  // Compare block location only
+
+                                        if (!player.isOnline() || hasMoved) {
                                             bossBar.removeAll();
                                             plugin.getEntityManager().sendMessage("message.teleport-cancelled", player, player.getLocation(), grave);
                                             this.cancel();
@@ -301,7 +308,14 @@ public final class EntityManager extends EntityDataManager {
 
                                     @Override
                                     public void run() {
-                                        if (!player.isOnline() || !player.getLocation().equals(initialLocation)) {
+                                        Location currentLocation = player.getLocation();
+
+                                        // Check if player has moved (excluding yaw/pitch unless teleport.strict is true)
+                                        boolean hasMoved = plugin.getConfig().getBoolean("teleport.strict")
+                                                ? !currentLocation.equals(initialLocation)  // Compare full location if strict
+                                                : !currentLocation.getBlock().equals(initialLocation.getBlock());  // Compare block location only
+
+                                        if (!player.isOnline() || hasMoved) {
                                             bossBar.removeAll();
                                             plugin.getEntityManager().sendMessage("message.teleport-cancelled", player, player.getLocation(), grave);
                                             this.cancel();
@@ -310,16 +324,17 @@ public final class EntityManager extends EntityDataManager {
 
                                         if (ticksRemaining > 0) {
                                             double progress = (double) ticksRemaining / delayTicks;
-                                            bossBar.setProgress(Math.max(0, Math.min(1, progress)));
+                                            bossBar.setProgress(Math.max(0, Math.min(1, progress)));  // Clamp the progress between 0 and 1
                                             ticksRemaining--;
                                         } else {
                                             player.teleport(finalLocationTeleport);
                                             plugin.getEntityManager().sendMessage("message.teleport", player, finalLocationTeleport, grave);
+                                            plugin.getEntityManager().playPlayerSound("sound.teleport", player, finalLocationTeleport, grave);
                                             bossBar.removeAll();
                                             this.cancel();
                                         }
                                     }
-                                }.runTaskTimer(plugin, 0, 20L);
+                                }.runTaskTimer(plugin, 0, 20L);  // Runs every second (20 ticks)
                             } else {
                                 if (player.isOnline() && player.getLocation().equals(initialLocation)) {
                                     player.teleport(locationTeleport);
