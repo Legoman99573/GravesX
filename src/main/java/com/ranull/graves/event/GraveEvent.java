@@ -253,6 +253,13 @@ public abstract class GraveEvent extends Event implements Cancellable {
     }
 
     /**
+     * Sets the experience points associated with the grave.
+     */
+    public void setBlockExp(int experience) {
+        grave.setExperience(experience);
+    }
+
+    /**
      * Checks whether items should drop upon breaking the grave block.
      *
      * @return True if items should drop, false otherwise.

@@ -59,6 +59,7 @@ public class SkriptImpl {
             Skript.registerExpression(ExprEventInventoryView.class, InventoryView.class, ExpressionType.SIMPLE, "[the] event[-]inventory[-]view");
             Skript.registerExpression(ExprEventLivingEntity.class, LivingEntity.class, ExpressionType.SIMPLE, "[the] event[-]living[-]entity");
             Skript.registerExpression(ExprEventBlockType.class, BlockData.BlockType.class, ExpressionType.SIMPLE, "[the] event[-]block[-]type");
+            Skript.registerExpression(ExprEventBlockExp.class, Integer.class, ExpressionType.SIMPLE, "[the] event[-]blockexp");
             Skript.registerExpression(ExprEventBlock.class, Block.class, ExpressionType.SIMPLE, "[the] event[-]block");
             Skript.registerExpression(ExprEventPlayer.class, Player.class, ExpressionType.SIMPLE, "[the] event[-]player");
             plugin.integrationMessage("Skript integration loaded successfully.");

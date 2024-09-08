@@ -10,7 +10,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import com.ranull.graves.event.GraveBreakEvent;
 import com.ranull.graves.type.Grave;
-import com.ranull.graves.data.BlockData;
 import ch.njol.skript.Skript;
 import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
@@ -23,7 +22,7 @@ import ch.njol.skript.util.Getter;
 @Description("Triggered when a grave block is broken. Provides access to the grave, player, block, and block type.")
 @Examples({
         "on grave break:",
-        "\tbroadcast \"%event-player% broke grave %event-grave% at block %event-block%\"",
+        "\tbroadcast \"%event-player% broke grave %event-grave% at block %event-block% with experience %event-blockexp%\"",
 })
 public class EvtGraveBreak extends SkriptEvent {
 
@@ -49,11 +48,18 @@ public class EvtGraveBreak extends SkriptEvent {
                 return e.getBlock();
             }
         }, 0);
+        EventValues.registerEventValue(GraveBreakEvent.class, Integer.class, new Getter<Integer, GraveBreakEvent>() {
+            @Override
+            public Integer get(GraveBreakEvent e) {
+                return e.getBlockExp();
+            }
+        }, 0);
     }
 
     private Literal<Player> player;
     private Literal<Grave> grave;
     private Literal<Block> block;
+    private Literal<Integer> blockExp;
 
     @SuppressWarnings("unchecked")
     @Override
@@ -61,6 +67,7 @@ public class EvtGraveBreak extends SkriptEvent {
         //player = (Literal<Player>) args[0];
         //grave = (Literal<Grave>) args[0];
         //block = (Literal<Block>) args[0];
+        //blockExp = (Literal<Integer>) args[0];
         return true;
     }
 
@@ -68,6 +75,8 @@ public class EvtGraveBreak extends SkriptEvent {
     public boolean check(Event e) {
         if (e instanceof GraveBreakEvent) {
             GraveBreakEvent event = (GraveBreakEvent) e;
+
+            // Check for player
             if (player != null && !player.check(event, new Checker<Player>() {
                 @Override
                 public boolean check(Player p) {
@@ -76,6 +85,8 @@ public class EvtGraveBreak extends SkriptEvent {
             })) {
                 return false;
             }
+
+            // Check for grave
             if (grave != null && !grave.check(event, new Checker<Grave>() {
                 @Override
                 public boolean check(Grave g) {
@@ -84,6 +95,8 @@ public class EvtGraveBreak extends SkriptEvent {
             })) {
                 return false;
             }
+
+            // Check for block
             if (block != null && !block.check(event, new Checker<Block>() {
                 @Override
                 public boolean check(Block b) {
@@ -92,6 +105,17 @@ public class EvtGraveBreak extends SkriptEvent {
             })) {
                 return false;
             }
+
+            // Check for block
+            if (blockExp != null && !blockExp.check(event, new Checker<Integer>() {
+                @Override
+                public boolean check(Integer be) {
+                    return be.equals(event.getBlockExp());
+                }
+            })) {
+                return false;
+            }
+
             return true;
         }
         return false;
@@ -102,6 +126,7 @@ public class EvtGraveBreak extends SkriptEvent {
         return "Grave break event " +
                 (player != null ? " with player " + player.toString(e, debug) : "") +
                 (grave != null ? " with grave " + grave.toString(e, debug) : "") +
-                (block != null ? " with block " + block.toString(e, debug) : "");
+                (block != null ? " with block " + block.toString(e, debug) : "") +
+                (blockExp != null ? " with block experience " + blockExp.toString(e, debug) : "");
     }
 }
