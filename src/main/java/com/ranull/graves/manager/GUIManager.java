@@ -219,7 +219,10 @@ public final class GUIManager {
             for (String string : configurationSection.getKeys(false)) {
                 try {
                     int slot = Integer.parseInt(string);
-                    inventory.setItem(slot, plugin.getItemStackManager().createGraveMenuItemStack(slot, grave));
+                    if (plugin.getConfig("gui.menu.grave.slot." + slot + ".enabled", grave)
+                            .getBoolean("gui.menu.grave.slot." + slot + ".enabled")) {
+                        inventory.setItem(slot, plugin.getItemStackManager().createGraveMenuItemStack(slot, grave));
+                    }
                 } catch (NumberFormatException exception) {
                     plugin.debugMessage(string + " is not an int", 1);
                 }

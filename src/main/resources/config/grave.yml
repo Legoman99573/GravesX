@@ -886,6 +886,7 @@ settings:
             title: "Grave"
             slot:
               0:
+                enabled: true
                 material: "PAPER"
                 function: "distance"
                 name: "Information"
@@ -897,6 +898,7 @@ settings:
                   - "Death Location: &f%world_formatted%, %x%x, %y%y, %z%z"
 
               1:
+                enabled: true
                 material: "ENDER_PEARL"
                 function: "teleportation"
                 name: "Teleport"
@@ -905,32 +907,36 @@ settings:
                 lore:
                   - "Teleport to your grave"
 
-              #2: # Toggle protection on and off.
-              #  material: "TRIPWIRE_HOOK"
-              #  function: "protection"
-              #  name: "Toggle Protection %state_protection%"
-              #  glow: false
-              #  model-data: -1
-              #  lore:
-              #    - "Toggle grave protection"
+              2: # Toggle protection on and off.
+                enabled: false
+                material: "TRIPWIRE_HOOK"
+                function: "protection"
+                name: "Toggle Protection %state_protection%"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Toggle grave protection"
 
-              #3: # Open your grave remotely.
-              #  material: "CHEST"
-              #  function: "virtual"
-              #  name: "open grave"
-              #  glow: false
-              #  model-data: -1
-              #  lore:
-              #    - "Open your grave remotely"
+              3: # Open your grave remotely.
+                enabled: false
+                material: "CHEST"
+                function: "virtual"
+                name: "open grave"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Open your grave remotely"
 
-              #4: # Abandon your grave.
-              #  material: "COMPASS"
-              #  function: "abandoned"
-              #  name: "abandon grave"
-              #  glow: false
-              #  model-data: -1
-              #  lore:
-              #    - "Toggle Abandoned %state_abandoned%"
+              4: # Abandon your grave.
+                enabled: false
+                material: "COMPASS"
+                function: "abandoned"
+                name: "abandon grave"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Toggle Abandoned %state_abandoned%"
+
           graveyard:
             # Title for the graveyard menu.
             title: "Graveyards"

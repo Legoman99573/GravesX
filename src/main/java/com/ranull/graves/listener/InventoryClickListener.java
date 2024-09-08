@@ -116,11 +116,13 @@ public class InventoryClickListener implements Listener {
                 }
 
                 // Run function associated with the clicked slot in GraveMenu
-                plugin.getEntityManager().runFunction(player,
-                        plugin.getConfig("gui.menu.grave.slot." + event.getSlot() + ".function", grave)
-                                .getString("gui.menu.grave.slot." + event.getSlot()
-                                        + ".function", "none"), grave);
-                plugin.getGUIManager().setGraveMenuItems(graveMenu.getInventory(), grave);
+                if (plugin.getConfig("gui.menu.grave.slot." + event.getSlot() + ".enabled", grave).getBoolean("gui.menu.grave.slot." + event.getSlot() + ".enabled")) {
+                    plugin.getEntityManager().runFunction(player,
+                            plugin.getConfig("gui.menu.grave.slot." + event.getSlot() + ".function", grave)
+                                    .getString("gui.menu.grave.slot." + event.getSlot()
+                                            + ".function", "none"), grave);
+                    plugin.getGUIManager().setGraveMenuItems(graveMenu.getInventory(), grave);
+                }
             }
 
             event.setCancelled(true);
