@@ -937,6 +937,496 @@ settings:
                 lore:
                   - "Toggle Abandoned %state_abandoned%"
 
+              5:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              6:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              7:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              8:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              9:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              10:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              11:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              12:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              13:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              14:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              15:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              16:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              17:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              18:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              19:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              20:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              21:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              22:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              23:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              24:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              25:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              26:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              27:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              28:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              29:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              30:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              31:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              32:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              33:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              34:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              35:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              36:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              37:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              38:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              39:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              40:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              41:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              42:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              43:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              44:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              45:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              46:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              47:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              48:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              49:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              50:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              51:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              52:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
+              53:
+                enabled: false
+                material: "PAPER"
+                function: ""
+                name: "Example Item"
+                glow: false
+                model-data: -1
+                lore:
+                  - "Example Lore"
+
           graveyard:
             # Title for the graveyard menu.
             title: "Graveyards"
