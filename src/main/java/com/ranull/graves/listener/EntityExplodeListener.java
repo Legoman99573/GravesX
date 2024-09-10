@@ -10,6 +10,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityExplodeEvent;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -36,46 +37,52 @@ public class EntityExplodeListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityExplode(EntityExplodeEvent event) {
         List<Block> affectedBlocks = event.blockList();
-        Iterator<Block> iterator = affectedBlocks.iterator();
         boolean cancelEvent = false;
 
-        while (iterator.hasNext()) {
-            Block block = iterator.next();
-            Location blockLocation = block.getLocation();
+        // Temporary list to store blocks that need to be removed
+        List<Block> blocksToRemove = new ArrayList<>();
 
+        // Check if any affected blocks are within the protection radius
+        for (Block block : affectedBlocks) {
+            Location blockLocation = block.getLocation();
             Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
+
             if (grave != null) {
-                if (isNewGrave(grave)) {
-                    if (isNearGrave(blockLocation, block)) {
-                        cancelEvent = true;
-                        iterator.remove();
+                Location graveLocation = plugin.getGraveManager().getGraveLocation(blockLocation, grave);
+                if (graveLocation != null) {
+                    double distance = blockLocation.distance(graveLocation);
+                    int protectionRadius = plugin.getConfig("grave.protection-radius", grave).getInt("grave.protection-radius");
+                    if (protectionRadius != 0 && distance <= protectionRadius) {
+                        blocksToRemove.add(block); // Add blocks within protection radius to the list
                     }
-                } else if (shouldExplode(grave)) {
-                    handleGraveExplosion(event, iterator, block, grave, blockLocation);
-                } else if (isNearGrave(blockLocation, block)) {
-                    cancelEvent = true;
-                    iterator.remove();
-                } else {
-                    cancelEvent = true;
-                    iterator.remove();
                 }
             }
         }
 
+        if (!blocksToRemove.isEmpty()) {
+            cancelEvent = true;
+            affectedBlocks.removeAll(blocksToRemove); // Remove protected blocks from the affected blocks list
+        }
+
         if (cancelEvent) {
             event.setCancelled(true);
-            event.blockList().clear();
-        }
-    }
+        } else {
+            // Handle blocks that are not within the protection radius
+            Iterator<Block> iterator = affectedBlocks.iterator();
+            while (iterator.hasNext()) {
+                Block block = iterator.next();
+                Location blockLocation = block.getLocation();
 
-    /**
-     * Checks if the grave is newly created.
-     *
-     * @param grave The grave to check.
-     * @return True if the grave is newly created, false otherwise.
-     */
-    private boolean isNewGrave(Grave grave) {
-        return (System.currentTimeMillis() - grave.getTimeCreation()) < 1000;
+                Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
+                if (grave != null) {
+                    if (shouldExplode(grave)) {
+                        handleGraveExplosion(event, iterator, block, grave, blockLocation);
+                    } else {
+                        iterator.remove();
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -118,28 +125,5 @@ public class EntityExplodeListener implements Listener {
         } else {
             iterator.remove();
         }
-    }
-
-    /**
-     * Checks if the given location is within 15 blocks of any grave.
-     *
-     * @param location The location to check.
-     * @return True if the location is within 15 blocks of any grave, false otherwise.
-     */
-    private boolean isNearGrave(Location location, Block block) {
-        try {
-            for (Grave grave : plugin.getCacheManager().getGraveMap().values()) {
-                Location graveLocation = plugin.getGraveManager().getGraveLocation(block.getLocation(), grave);
-                if (graveLocation != null) {
-                    double distance = location.distance(graveLocation);
-                    if (plugin.getConfig("grave.protection-radius", grave).getInt("grave.protection-radius") != 0 && distance <= plugin.getConfig("grave.protection-radius", grave).getInt("grave.protection-radius")) {
-                        return true;
-                    }
-                }
-            }
-        } catch (Exception ignored) {
-            // ignore
-        }
-        return false;
     }
 }
