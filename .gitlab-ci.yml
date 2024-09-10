@@ -31,7 +31,7 @@ build-job:       # This job runs in the build stage, which runs first.
     - java -version
     - apt-get -y install maven
     - echo "Including custom authlib library."
-    - mvn install:install-file -Dfile=libs/authlib-5.0.47-graves.jar -DgroupId=com.mojang -DartifactId=authlib -Dversion=5.0.47-graves -Dpackaging=jar
+    - mvn install:install-file -Dfile=libs/authlib-6.0.55-graves.jar -DgroupId=com.mojang -DartifactId=authlib -Dversion=6.0.55-graves -Dpackaging=jar
   script:
     - echo "Compiling the code..."
     - mvn package -Dmaven.test.skip.exec=true
@@ -50,8 +50,8 @@ pages-job:
     - java -version
     - apt-get -y install maven
     - echo "Including custom authlib library."
-    - mvn install:install-file -Dfile=libs/authlib-5.0.47-graves.jar
-      -DgroupId=com.mojang -DartifactId=authlib -Dversion=5.0.47-graves
+    - mvn install:install-file -Dfile=libs/authlib-6.0.55-graves.jar
+      -DgroupId=com.mojang -DartifactId=authlib -Dversion=6.0.55-graves
       -Dpackaging=jar
   script:
     - mvn site:site -Dmaven.test.skip.exec=true
