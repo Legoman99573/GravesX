@@ -261,7 +261,7 @@ public final class CitizensNPC extends EntityDataManager {
      * @param grave The grave whose associated NPC corpse should be removed.
      */
     public void removeCorpse(Grave grave) {
-        Location location = grave.getLocation();
+        Location location = grave.getLocationDeath();
         if (location != null) {
             String npcName = getNPCNameFromLocation(location);
             NPC npc = getNPCByName(npcName);

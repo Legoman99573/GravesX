@@ -660,6 +660,10 @@ public class Grave implements InventoryHolder, Serializable {
     }
 
     /**
+     * @deprecated
+     * This method is deprecated and will be removed in future versions.
+     * Use {@link #getLocationDeath()} instead for accurate location data.
+     *
      * Retrieves the location associated with this instance.
      * <p>
      * This method returns the location as a {@link Location} object.
@@ -667,11 +671,16 @@ public class Grave implements InventoryHolder, Serializable {
      *
      * @return The location associated with this instance.
      */
+    @Deprecated
     public Location getLocation() {
-        return location;
+        return locationDeath != null ? locationDeath.getLocation() : null;
     }
 
     /**
+     * @deprecated
+     * This method is deprecated and will be removed in future versions.
+     * Use {@link #setLocationDeath(Location)} instead for accurate location data.
+     *
      * Sets the location associated with this instance.
      * <p>
      * This method sets the location to the specified {@link Location}.
@@ -679,8 +688,9 @@ public class Grave implements InventoryHolder, Serializable {
      *
      * @param location The location to set.
      */
+    @Deprecated
     public void setLocation(Location location) {
-        this.location = location;
+        this.locationDeath = new LocationData(location);
     }
 
     /**

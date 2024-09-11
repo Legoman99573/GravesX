@@ -86,7 +86,7 @@ public class EvtGraveTeleport extends SkriptEvent {
             if (location != null && !location.check(event, new Checker<Location>() {
                 @Override
                 public boolean check(Location loc) {
-                    return loc.equals(event.getGrave().getLocation());
+                    return loc.equals(event.getGrave().getLocationDeath());
                 }
             })) {
                 return false;

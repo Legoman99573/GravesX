@@ -31,7 +31,7 @@ public class GraveTeleportEvent extends GraveEvent {
      * @param entity   The entity who is teleporting to the grave.
      */
     public GraveTeleportEvent(Grave grave, Entity entity) {
-        super(grave, entity, grave.getLocation(), null, null, null, null, null, null);
+        super(grave, entity, grave.getLocationDeath(), null, null, null, null, null, null);
     }
 
     /**
