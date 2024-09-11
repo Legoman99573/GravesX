@@ -1,4 +1,5 @@
 package com.ranull.graves.util;
+
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import com.mojang.authlib.properties.PropertyMap;
