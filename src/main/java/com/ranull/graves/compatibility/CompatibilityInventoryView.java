@@ -35,7 +35,7 @@ public class CompatibilityInventoryView {
      * In API versions 1.20.6 and earlier, InventoryView is a class.
      * In versions 1.21 and later, it is an interface.
      * This method uses reflection to get the top Inventory object from the
-     * InventoryView associated with an InventoryEvent, to avoid runtime errors.
+     * InventoryView, to avoid runtime errors.
      * @param inventoryView The InventoryView to inspect.
      * @return The top Inventory object from the event's InventoryView.
      */
