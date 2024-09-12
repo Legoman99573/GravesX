@@ -1758,7 +1758,7 @@ public final class DataManager {
 
             grave.setOwnerType(resultSet.getString("owner_type") != null
                     ? EntityType.valueOf(resultSet.getString("owner_type")) : null);
-            grave.setOwnerName(resultSet.getString("owner_name"));
+            grave.setOwnerName(resultSet.getString("owner_name").replace(" ", "_"));
             grave.setOwnerNameDisplay(resultSet.getString("owner_name_display"));
             grave.setOwnerUUID(resultSet.getString("owner_uuid") != null
                     ? UUID.fromString(resultSet.getString("owner_uuid")) : null);
@@ -1766,8 +1766,8 @@ public final class DataManager {
             grave.setOwnerTextureSignature(resultSet.getString("owner_texture_signature"));
             grave.setKillerType(resultSet.getString("killer_type") != null
                     ? EntityType.valueOf(resultSet.getString("killer_type")) : null);
-            grave.setKillerName(resultSet.getString("killer_name"));
-            grave.setKillerNameDisplay(resultSet.getString("killer_name_display"));
+            grave.setKillerName(resultSet.getString("killer_name").replace(" ", "_"));
+            grave.setKillerNameDisplay(resultSet.getString("killer_name_display").replace(" ", "_"));
             grave.setKillerUUID(resultSet.getString("killer_uuid") != null
                     ? UUID.fromString(resultSet.getString("killer_uuid")) : null);
             grave.setLocationDeath(resultSet.getString("location_death") != null
