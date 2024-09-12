@@ -1,6 +1,7 @@
 package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
+import com.ranull.graves.compatibility.CompatibilityInventoryView;
 import com.ranull.graves.event.GraveOpenEvent;
 import com.ranull.graves.type.Grave;
 import org.bukkit.entity.Entity;
@@ -9,6 +10,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryOpenEvent;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryView;
 
 /**
  * Listener for handling InventoryOpenEvent to manage interactions with grave inventories.
@@ -55,16 +58,21 @@ public class InventoryOpenListener implements Listener {
      * @param event The InventoryOpenEvent.
      */
     private void handleGraveInventoryOpen(InventoryOpenEvent event) {
-        Grave grave = (Grave) event.getInventory().getHolder();
-        Player player = (Player) event.getPlayer();
-        Entity entity = event.getPlayer();
+        InventoryView inventoryView = event.getView();
+        Inventory topInventory = CompatibilityInventoryView.getTopInventory(inventoryView);
 
-        GraveOpenEvent graveOpenEvent = new GraveOpenEvent(event.getView(), grave, player);
+        if (topInventory.getHolder() instanceof Grave) {
+            Grave grave = (Grave) topInventory.getHolder();
+            Player player = (Player) event.getPlayer();
+            Entity entity = event.getPlayer();
 
-        // Call the custom GraveOpenEvent
-        plugin.getServer().getPluginManager().callEvent(graveOpenEvent);
+            GraveOpenEvent graveOpenEvent = new GraveOpenEvent(event.getView(), grave, player);
 
-        // Cancel the inventory open event if the GraveOpenEvent was cancelled
-        event.setCancelled(graveOpenEvent.isCancelled());
+            // Call the custom GraveOpenEvent
+            plugin.getServer().getPluginManager().callEvent(graveOpenEvent);
+
+            // Cancel the inventory open event if the GraveOpenEvent was cancelled
+            event.setCancelled(graveOpenEvent.isCancelled());
+        }
     }
 }

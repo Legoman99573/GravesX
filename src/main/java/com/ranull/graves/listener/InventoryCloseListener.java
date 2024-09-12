@@ -1,6 +1,7 @@
 package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
+import com.ranull.graves.compatibility.CompatibilityInventoryView;
 import com.ranull.graves.event.GraveCloseEvent;
 import com.ranull.graves.type.Grave;
 import org.bukkit.entity.Entity;
@@ -9,6 +10,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.inventory.Inventory;
 
 /**
  * Listener for handling InventoryCloseEvent to manage actions when a grave inventory is closed.
@@ -36,7 +38,8 @@ public class InventoryCloseListener implements Listener {
         if (isGraveInventory(event) && isPlayer(event.getPlayer())) {
             Player player = (Player) event.getPlayer();
             Entity entity = event.getPlayer();
-            Grave grave = (Grave) event.getInventory().getHolder();
+            Inventory topInventory = CompatibilityInventoryView.getTopInventory(event);
+            Grave grave = (Grave) topInventory.getHolder();
 
             // Call the custom GraveCloseEvent
             callGraveCloseEvent(event, grave, player, entity);
@@ -57,7 +60,8 @@ public class InventoryCloseListener implements Listener {
      * @return True if the inventory holder is a grave, false otherwise.
      */
     private boolean isGraveInventory(InventoryCloseEvent event) {
-        return event.getInventory().getHolder() instanceof Grave;
+        Inventory topInventory = CompatibilityInventoryView.getTopInventory(event);
+        return topInventory.getHolder() instanceof Grave;
     }
 
     /**

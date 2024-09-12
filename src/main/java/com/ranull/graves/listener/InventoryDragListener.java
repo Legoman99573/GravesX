@@ -1,6 +1,7 @@
 package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
+import com.ranull.graves.compatibility.CompatibilityInventoryView;
 import com.ranull.graves.inventory.GraveList;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.InventoryUtil;
@@ -8,7 +9,9 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.inventory.InventoryView;
 
 /**
  * Listener for handling InventoryClickEvent to manage interactions with grave inventories
@@ -35,7 +38,10 @@ public class InventoryDragListener implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onInventoryClick(InventoryClickEvent event) {
-        InventoryHolder inventoryHolder = event.getInventory().getHolder();
+        InventoryView inventoryView = event.getView();
+        Inventory topInventory = CompatibilityInventoryView.getTopInventory(inventoryView);
+
+        InventoryHolder inventoryHolder = topInventory.getHolder();
 
         if (isGraveInventory(inventoryHolder)) {
             handleGraveInventoryInteraction((Grave) inventoryHolder);

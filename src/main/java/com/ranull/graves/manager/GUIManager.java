@@ -1,6 +1,7 @@
 package com.ranull.graves.manager;
 
 import com.ranull.graves.Graves;
+import com.ranull.graves.compatibility.CompatibilityInventoryView;
 import com.ranull.graves.integration.MiniMessage;
 import com.ranull.graves.inventory.GraveList;
 import com.ranull.graves.inventory.GraveMenu;
@@ -10,6 +11,7 @@ import com.ranull.graves.util.StringUtil;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 
@@ -79,7 +81,7 @@ public final class GUIManager {
             for (Player player : plugin.getServer().getOnlinePlayers()) {
                 InventoryView openInventory = player.getOpenInventory();
                 if (openInventory != null) { // Mohist might return null even when Bukkit shouldn't.
-                    Inventory topInventory = openInventory.getTopInventory();
+                    Inventory topInventory = CompatibilityInventoryView.getTopInventory(openInventory);
 
                     if (topInventory.getHolder() instanceof GraveList) {
                         setGraveListItems(topInventory, ((GraveList) topInventory.getHolder()).getUUID());
