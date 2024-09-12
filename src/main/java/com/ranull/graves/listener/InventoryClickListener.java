@@ -1,17 +1,28 @@
 package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
+import com.ranull.graves.integration.MiniMessage;
 import com.ranull.graves.inventory.GraveList;
 import com.ranull.graves.inventory.GraveMenu;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.InventoryUtil;
+import com.ranull.graves.util.StringUtil;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
+
+import java.util.UUID;
 
 /**
  * Listener for handling InventoryClickEvent to manage grave-related inventory interactions.
@@ -43,7 +54,133 @@ public class InventoryClickListener implements Listener {
             } else if (event.getWhoClicked() instanceof Player) {
                 handlePlayerInventoryClick(event, (Player) event.getWhoClicked(), inventoryHolder);
             }
+            ClickType clickType = event.getClick();
+            if (clickType == ClickType.SHIFT_LEFT || clickType == ClickType.SHIFT_RIGHT) {
+                handleShiftClick(event);
+            }
+            isCompassItem(event);
         }
+    }
+
+    /**
+     * Checks if a specific type of compass (e.g., RECOVERY_COMPASS) was clicked in the player's inventory.
+     * Also checks if the clicked inventory involves XP-granting inventories like FURNACE, ANVIL, etc.
+     *
+     * @param event The InventoryClickEvent to check.
+     */
+    private void isCompassItem(InventoryClickEvent event) {
+        Inventory clickedInventory = event.getClickedInventory();
+        if (clickedInventory == null) return;
+
+
+        ItemStack item = event.getCursor();
+        if (item == null || !item.hasItemMeta()) return;
+
+        ItemMeta itemMeta = item.getItemMeta();
+        if (itemMeta == null || !itemMeta.hasDisplayName()) return;
+
+        if (item.getType() == Material.valueOf(String.valueOf(plugin.getVersionManager().getMaterialForVersion("RECOVERY_COMPASS")))) {
+            UUID graveUUID = getGraveUUIDFromItemStack(item);
+            if (graveUUID != null) {
+                Grave grave = plugin.getCacheManager().getGraveMap().get(graveUUID);
+                if (grave != null) {
+
+                    String compassName;
+                    if (plugin.getIntegrationManager().hasMiniMessage()) {
+                        String compassNameNew = StringUtil.parseString("&f" + plugin
+                                .getConfig("compass.name", grave).getString("compass.name"), grave, plugin);
+                        compassName = MiniMessage.parseString(compassNameNew);
+                    } else {
+                        compassName = StringUtil.parseString("&f" + plugin
+                                .getConfig("compass.name", grave).getString("compass.name"), grave, plugin);
+                    }
+
+                    if (itemMeta.getDisplayName().equals(compassName)) {
+                        InventoryType inventoryType = event.getInventory().getType();
+                        if (checkIfXPGivingInventory(inventoryType)) {
+                            event.setCancelled(true);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Handle shift-clicking logic, preventing players from shift-clicking the compass into a restricted inventory.
+     *
+     * @param event The InventoryClickEvent triggered by the player shift-clicking.
+     */
+    private void handleShiftClick(InventoryClickEvent event) {
+        Inventory clickedInventory = event.getClickedInventory();
+        if (clickedInventory == null) return;
+
+        ItemStack item = event.getCurrentItem();
+        if (item == null || !item.hasItemMeta()) return;
+
+        ItemMeta itemMeta = item.getItemMeta();
+        if (itemMeta == null || !itemMeta.hasDisplayName()) return;
+
+        if (item.getType() == Material.valueOf(String.valueOf(plugin.getVersionManager().getMaterialForVersion("RECOVERY_COMPASS")))) {
+            UUID graveUUID = getGraveUUIDFromItemStack(item);
+            if (graveUUID != null) {
+                Grave grave = plugin.getCacheManager().getGraveMap().get(graveUUID);
+                if (grave != null) {
+
+                    String compassName;
+                    if (plugin.getIntegrationManager().hasMiniMessage()) {
+                        String compassNameNew = StringUtil.parseString("&f" + plugin
+                                .getConfig("compass.name", grave).getString("compass.name"), grave, plugin);
+                        compassName = MiniMessage.parseString(compassNameNew);
+                    } else {
+                        compassName = StringUtil.parseString("&f" + plugin
+                                .getConfig("compass.name", grave).getString("compass.name"), grave, plugin);
+                    }
+
+                    if (itemMeta.getDisplayName().equals(compassName)) {
+                        InventoryType inventoryType = event.getInventory().getType();
+                        if (checkIfXPGivingInventory(inventoryType)) {
+                            event.setCancelled(true);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Checks if the inventory type is one that grants XP (e.g., Furnace, Anvil, Grindstone).
+     *
+     * @param inventoryType The type of the inventory.
+     * @return true if the inventory grants XP, false otherwise.
+     */
+    private boolean checkIfXPGivingInventory(InventoryType inventoryType) {
+        switch (inventoryType) {
+            case FURNACE:
+            case BLAST_FURNACE:
+            case SMOKER:
+            case ANVIL:
+            case GRINDSTONE:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * Retrieves the Grave UUID from the item stack.
+     *
+     * @param itemStack The item stack to check.
+     * @return The UUID of the grave associated with the item stack, or null if not found.
+     */
+    private UUID getGraveUUIDFromItemStack(ItemStack itemStack) {
+        if (itemStack.hasItemMeta()) {
+            if (itemStack.getItemMeta() == null) return null;
+            String uuidString = itemStack.getItemMeta().getPersistentDataContainer()
+                    .get(new NamespacedKey(plugin, "graveUUID"), PersistentDataType.STRING);
+            return uuidString != null ? UUID.fromString(uuidString) : null;
+        }
+        return null;
     }
 
     /**
