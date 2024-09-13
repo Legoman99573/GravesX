@@ -64,7 +64,6 @@ public class InventoryOpenListener implements Listener {
         if (topInventory.getHolder() instanceof Grave) {
             Grave grave = (Grave) topInventory.getHolder();
             Player player = (Player) event.getPlayer();
-            Entity entity = event.getPlayer();
 
             GraveOpenEvent graveOpenEvent = new GraveOpenEvent(event.getView(), grave, player);
 
