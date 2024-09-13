@@ -162,6 +162,7 @@ public class InventoryClickListener implements Listener {
             case SMOKER:
             case ANVIL:
             case GRINDSTONE:
+            case HOPPER:
                 return true;
             default:
                 return false;
