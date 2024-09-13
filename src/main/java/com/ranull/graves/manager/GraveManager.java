@@ -1,6 +1,7 @@
 package com.ranull.graves.manager;
 
 import com.ranull.graves.Graves;
+import com.ranull.graves.compatibility.CompatibilityInventoryView;
 import com.ranull.graves.data.BlockData;
 import com.ranull.graves.data.ChunkData;
 import com.ranull.graves.data.EntityData;
@@ -26,7 +27,6 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.*;
@@ -618,7 +618,8 @@ public final class GraveManager {
 
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             if (player.getOpenInventory() != null) { // Mohist, might return null even when Bukkit shouldn't.
-                InventoryHolder inventoryHolder = player.getOpenInventory().getTopInventory().getHolder();
+                Inventory topInventory = CompatibilityInventoryView.getTopInventory(player.getOpenInventory());
+                InventoryHolder inventoryHolder = topInventory.getHolder();
 
                 if (inventoryHolder instanceof GraveMenu) {
                     GraveMenu graveMenu = (GraveMenu) inventoryHolder;
