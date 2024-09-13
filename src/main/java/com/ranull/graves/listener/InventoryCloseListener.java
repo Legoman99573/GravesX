@@ -3,6 +3,7 @@ package com.ranull.graves.listener;
 import com.ranull.graves.Graves;
 import com.ranull.graves.compatibility.CompatibilityInventoryView;
 import com.ranull.graves.event.GraveCloseEvent;
+import com.ranull.graves.event.GraveLootedEvent;
 import com.ranull.graves.type.Grave;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -45,6 +46,7 @@ public class InventoryCloseListener implements Listener {
             callGraveCloseEvent(event, grave, player, entity);
 
             if (grave != null && isEmptyGrave(grave)) {
+                callGraveLootedEvent(event, grave, player, entity);
                 handleEmptyGrave(player, grave);
             }
 
@@ -84,6 +86,18 @@ public class InventoryCloseListener implements Listener {
     private void callGraveCloseEvent(InventoryCloseEvent event, Grave grave, Player player, Entity entity) {
         GraveCloseEvent graveCloseEvent = new GraveCloseEvent(event.getView(), grave, player);
         plugin.getServer().getPluginManager().callEvent(graveCloseEvent);
+    }
+
+    /**
+     * Calls the custom GraveCloseEvent.
+     *
+     * @param event  The InventoryCloseEvent.
+     * @param grave  The grave associated with the inventory.
+     * @param player The player who closed the inventory.
+     */
+    private void callGraveLootedEvent(InventoryCloseEvent event, Grave grave, Player player, Entity entity) {
+        GraveLootedEvent graveLootedEvent = new GraveLootedEvent(event.getView(), grave, player);
+        plugin.getServer().getPluginManager().callEvent(graveLootedEvent);
     }
 
     /**
