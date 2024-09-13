@@ -337,6 +337,7 @@ public class Graves extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new InventoryCloseListener(this), this);
         getServer().getPluginManager().registerEvents(new InventoryOpenListener(this), this);
         getServer().getPluginManager().registerEvents(new CreatureSpawnListener(this), this);
+        getServer().getPluginManager().registerEvents(new ExplosionPrimeListener(this), this);
 
         if (!versionManager.is_v1_7()) {
             getServer().getPluginManager().registerEvents(new PlayerInteractAtEntityListener(this), this);
@@ -454,8 +455,6 @@ public class Graves extends JavaPlugin {
             updateConfigFile("entity.yml", currentConfigVersion, false);
             updateConfigFile("grave.yml", currentConfigVersion, false);
             updateConfigFile("graveyard.yml", currentConfigVersion, false);
-            updateConfigFile("permission.yml", currentConfigVersion, false);
-            updateConfigFile("token.yml", currentConfigVersion, false);
 
             // Reload the main config after all updates
             reloadConfig();
@@ -464,7 +463,7 @@ public class Graves extends JavaPlugin {
 
     private void backupOutdatedConfigs(double configVersion) {
         File configFolder = new File(getDataFolder(), "config");
-        String[] configFiles = {"config.yml", "entity.yml", "grave.yml", "graveyard.yml", "permission.yml", "token.yml"};
+        String[] configFiles = {"config.yml", "entity.yml", "grave.yml", "graveyard.yml"};
 
         File outdatedFolder = new File(getDataFolder(), "outdated");
         outdatedFolder.mkdirs(); // Ensure the directory exists
@@ -953,8 +952,13 @@ public class Graves extends JavaPlugin {
             hasPermission = getIntegrationManager().getVault().hasPermission(offlinePlayer, permission);
             debugMessage("[Vault] Offline Player: " + offlinePlayer.getName() + " | Permission: " + permission + " | Has Permission: " + hasPermission, 4);
         } else if (offlinePlayer.isOnline()) {
-            hasPermission = offlinePlayer.getPlayer().hasPermission(permission);
-            debugMessage("[Bukkit] Offline Player: " + offlinePlayer.getName() + " | Permission: " + permission + " | Has Permission: " + hasPermission, 4);
+            if (offlinePlayer.getPlayer() != null) {
+                hasPermission = offlinePlayer.getPlayer().hasPermission(permission);
+                debugMessage("[Bukkit] Offline Player: " + offlinePlayer.getName() + " | Permission: " + permission + " | Has Permission: " + hasPermission, 4);
+            } else {
+                debugMessage("[Bukkit] Failed to get offline player. Assuming player doesn't have permission.", 4);
+                debugMessage("[Bukkit] Offline Player: " + offlinePlayer.getName() + " | Permission: " + permission + " | Has Permission: " + hasPermission, 4);
+            }
         }
 
         return hasPermission;

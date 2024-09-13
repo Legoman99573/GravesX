@@ -12,7 +12,6 @@ import org.bukkit.event.block.BlockExplodeEvent;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.ArrayList;
 
 /**
  * Listens for BlockExplodeEvent to handle interactions with grave blocks when they are affected by block explosions.
@@ -37,49 +36,44 @@ public class BlockExplodeListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockExplode(BlockExplodeEvent event) {
         List<Block> affectedBlocks = event.blockList();
-        boolean cancelEvent = false;
 
-        // Temporary list to store blocks that need to be removed
-        List<Block> blocksToRemove = new ArrayList<>();
-
-        // Check if any affected blocks are within the protection radius
-        for (Block block : affectedBlocks) {
+        Iterator<Block> iterator = affectedBlocks.iterator();
+        while (iterator.hasNext()) {
+            Block block = iterator.next();
             Location blockLocation = block.getLocation();
+
             Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
-
             if (grave != null) {
-                Location graveLocation = plugin.getGraveManager().getGraveLocation(blockLocation, grave);
-                if (graveLocation != null) {
-                    double distance = blockLocation.distance(graveLocation);
-                    int protectionRadius = plugin.getConfig("grave.protection-radius", grave).getInt("grave.protection-radius");
-                    if (protectionRadius != 0 && distance <= protectionRadius) {
-                        blocksToRemove.add(block); // Add blocks within protection radius to the list
+                if (plugin.getConfig("grave.explode-protection", grave).getBoolean("grave.explode-protection")){
+                    for (Block blocks : affectedBlocks) {
+                        Location blockLocations = block.getLocation();
+                        Grave graves = plugin.getBlockManager().getGraveFromBlock(blocks);
+
+                        if (graves != null) {
+                            Location graveLocation = plugin.getGraveManager().getGraveLocation(blockLocations, graves);
+                            if (graveLocation != null) {
+                                try {
+                                    double distance = blockLocation.distance(graveLocation);
+                                    int protectionRadius = plugin.getConfig("grave.protection-radius", grave).getInt("grave.protection-radius");
+                                    if (protectionRadius != 0 && distance + 15 <= protectionRadius + 15) {
+                                        event.blockList().clear();
+                                        event.setCancelled(true);
+                                    }
+                                } catch (IllegalArgumentException ignored) {
+
+                                }
+                            }
+                        }
                     }
-                }
-            }
-        }
-
-        if (!blocksToRemove.isEmpty()) {
-            cancelEvent = true;
-            affectedBlocks.removeAll(blocksToRemove); // Remove protected blocks from the affected blocks list
-        }
-
-        if (cancelEvent) {
-            event.setCancelled(true);
-        } else {
-            // Handle blocks that are not within the protection radius
-            Iterator<Block> iterator = affectedBlocks.iterator();
-            while (iterator.hasNext()) {
-                Block block = iterator.next();
-                Location blockLocation = block.getLocation();
-
-                Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
-                if (grave != null) {
-                    if (shouldExplode(grave)) {
-                        handleGraveExplosion(event, iterator, block, grave, blockLocation);
-                    } else {
+                } else {
+                    Location graveHeadLocation = grave.getLocationDeath();
+                    if (graveHeadLocation.equals(blockLocation)) {
                         iterator.remove();
                     }
+                }
+
+                if (shouldExplode(grave)) {
+                    handleGraveExplosion(event, iterator, block, grave, blockLocation);
                 }
             }
         }
