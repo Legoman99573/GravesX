@@ -14,6 +14,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
@@ -89,8 +90,10 @@ public class InventoryDragListener implements Listener {
                         }
 
                         if (itemMeta.getDisplayName().equals(compassName)) {
-                            event.setCancelled(true);
-                            return;
+                            InventoryType inventoryType = event.getInventory().getType();
+                            if (checkIfXPGivingInventory(inventoryType)) {
+                                event.setCancelled(true);
+                            }
                         }
                     }
                 }
@@ -128,6 +131,26 @@ public class InventoryDragListener implements Listener {
             handleGraveListDrag(event, player, (GraveList) inventoryHolder);
         } else if (inventoryHolder instanceof GraveMenu) {
             handleGraveMenuDrag(event, player, (GraveMenu) inventoryHolder);
+        }
+    }
+
+    /**
+     * Checks if the inventory type is one that grants XP (e.g., Furnace, Anvil, Grindstone).
+     *
+     * @param inventoryType The type of the inventory.
+     * @return true if the inventory grants XP, false otherwise.
+     */
+    private boolean checkIfXPGivingInventory(InventoryType inventoryType) {
+        switch (inventoryType.name()) {
+            case "FURNACE":
+            case "BLAST_FURNACE":
+            case "SMOKER":
+            case "ANVIL":
+            case "GRINDSTONE":
+            case "HOPPER":
+                return true;
+            default:
+                return false;
         }
     }
 

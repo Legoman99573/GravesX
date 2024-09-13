@@ -156,13 +156,13 @@ public class InventoryClickListener implements Listener {
      * @return true if the inventory grants XP, false otherwise.
      */
     private boolean checkIfXPGivingInventory(InventoryType inventoryType) {
-        switch (inventoryType) {
-            case FURNACE:
-            case BLAST_FURNACE:
-            case SMOKER:
-            case ANVIL:
-            case GRINDSTONE:
-            case HOPPER:
+        switch (inventoryType.name()) {
+            case "FURNACE":
+            case "BLAST_FURNACE":
+            case "SMOKER":
+            case "ANVIL":
+            case "GRINDSTONE":
+            case "HOPPER":
                 return true;
             default:
                 return false;
