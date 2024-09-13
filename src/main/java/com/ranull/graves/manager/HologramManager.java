@@ -10,6 +10,7 @@ import com.ranull.graves.util.StringUtil;
 import org.bukkit.Location;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -137,7 +138,26 @@ public final class HologramManager extends EntityDataManager {
         List<EntityData> entityDataList = new ArrayList<>();
 
         for (Map.Entry<EntityData, Entity> entry : entityDataMap.entrySet()) {
-            entry.getValue().remove();
+            Entity entity = entry.getValue();
+            if (entity instanceof ArmorStand) {
+                ArmorStand armorStand = (ArmorStand) entity;
+
+                if (armorStand.isValid()) {
+                    armorStand.remove();
+                }
+
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        if (armorStand.isValid()) {
+                            armorStand.remove();
+                        }
+                    }
+                }.runTaskLater(plugin, 1L); // Run a tick later to ensure removal
+            } else {
+                entity.remove();
+            }
+
             entityDataList.add(entry.getKey());
         }
 
