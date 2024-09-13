@@ -1078,8 +1078,14 @@ public final class GraveManager {
 
                 return true;
             } else {
-                plugin.getEntityManager().sendMessage("message.protection", player, location, grave);
-                plugin.getEntityManager().playWorldSound("sound.protection", location, grave);
+                if (plugin.getConfig("protection.preview", grave).getBoolean("protection.preview", false)) {
+                    player.openInventory(grave.getInventory());
+                    plugin.getEntityManager().runCommands("event.command.open", player, location, grave);
+                    plugin.getEntityManager().playWorldSound("sound.open", location, grave);
+                } else {
+                    plugin.getEntityManager().sendMessage("message.protection", player, location, grave);
+                    plugin.getEntityManager().playWorldSound("sound.protection", location, grave);
+                }
             }
         }
 

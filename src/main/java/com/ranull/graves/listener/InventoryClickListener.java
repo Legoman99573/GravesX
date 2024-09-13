@@ -48,11 +48,12 @@ public class InventoryClickListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onInventoryClick(InventoryClickEvent event) {
         InventoryHolder inventoryHolder = event.getInventory().getHolder();
+        Player player = (Player) event.getWhoClicked();
         if (inventoryHolder != null) {
             if (inventoryHolder instanceof Grave) {
-                handleGraveInventoryClick(event, (Grave) inventoryHolder);
+                handleGraveInventoryClick(event, player, (Grave) inventoryHolder);
             } else if (event.getWhoClicked() instanceof Player) {
-                handlePlayerInventoryClick(event, (Player) event.getWhoClicked(), inventoryHolder);
+                handlePlayerInventoryClick(event, player, inventoryHolder);
             }
             ClickType clickType = event.getClick();
             if (clickType == ClickType.SHIFT_LEFT || clickType == ClickType.SHIFT_RIGHT) {
@@ -189,11 +190,15 @@ public class InventoryClickListener implements Listener {
      * @param event  The InventoryClickEvent.
      * @param grave  The Grave inventory holder.
      */
-    private void handleGraveInventoryClick(InventoryClickEvent event, Grave grave) {
-        // Schedule a task to update the grave's inventory in the data manager
-        plugin.getServer().getScheduler().runTaskLater(plugin, () ->
-                plugin.getDataManager().updateGrave(grave, "inventory",
-                        InventoryUtil.inventoryToString(grave.getInventory())), 1L);
+    private void handleGraveInventoryClick(InventoryClickEvent event, Player player, Grave grave) {
+        if (plugin.getEntityManager().canOpenGrave(player, grave)) {
+            // Schedule a task to update the grave's inventory in the data manager
+            plugin.getServer().getScheduler().runTaskLater(plugin, () ->
+                    plugin.getDataManager().updateGrave(grave, "inventory",
+                            InventoryUtil.inventoryToString(grave.getInventory())), 1L);
+        } else {
+            event.setCancelled(true);
+        }
     }
 
     /**

@@ -162,6 +162,8 @@ settings:
           protected: "&c✘"
           # Message for unprotected graves.
           unprotected: "&a✔"
+        # Should players be allowed to preview a grave in a protected state?
+        preview: false
 
       #############
       # Graveyard #
@@ -668,7 +670,7 @@ settings:
         entity: false
         # Create a grave if an entity dies to environmental causes.
         environmental: false
-        # Only create graves for entities that were killed for these reasons.
+        # Only create graves for entities that were killed for these reasons. If you use any reason, make sure to disable ALL as it will cause issues.
         reason:
           #- CONTACT
           #- ENTITY_ATTACK
