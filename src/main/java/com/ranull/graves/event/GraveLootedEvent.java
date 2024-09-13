@@ -11,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
  * Represents an event that occurs when an inventory associated with a grave is completely looted.
  * <p>
  * This event extends {@link GraveEvent} and provides information about the grave
- * and the player involved when the inventory is closed.
+ * and the player involved when the inventory is completely looted.
  * </p>
  */
 public class GraveLootedEvent extends GraveEvent {

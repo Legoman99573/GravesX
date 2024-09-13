@@ -4,6 +4,13 @@ import com.ranull.graves.type.Grave;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Represents an event that occurs when a grave is abandoned.
+ * <p>
+ * This event extends {@link GraveEvent} and provides information about the grave
+ * that is abandoned.
+ * </p>
+ */
 public class GraveAbandonedEvent extends GraveEvent {
 
     /**
