@@ -760,8 +760,10 @@ public final class EntityManager extends EntityDataManager {
                         && (plugin.hasGrantedPermission("graves.teleport", ((Player) entity).getPlayer())
                         || plugin.getConfig("teleport.enabled", grave).getBoolean("teleport.enabled")
                         && plugin.hasGrantedPermission("graves.teleport.world." + grave.getLocationDeath().getWorld().getName(), ((Player) entity).getPlayer())
-                        || plugin.hasGrantedPermission("graves.bypass", ((Player) entity).getPlayer()))) {
-                    if (plugin.hasGrantedPermission("graves.bypass", ((Player) entity).getPlayer()) && grave.getOwnerUUID() != entity.getUniqueId()) {
+                        || plugin.hasGrantedPermission("graves.bypass", ((Player) entity).getPlayer()))
+                        || plugin.hasGrantedPermission("graves.teleport.bypass", ((Player) entity).getPlayer())) {
+                    if (plugin.hasGrantedPermission("graves.bypass", ((Player) entity).getPlayer()) && grave.getOwnerUUID() != entity.getUniqueId()
+                        || plugin.hasGrantedPermission("graves.teleport.bypass", ((Player) entity).getPlayer()) && grave.getOwnerUUID() != entity.getUniqueId()) {
                         GraveTeleportEvent graveTeleportEvent = new GraveTeleportEvent(grave, entity);
 
                         plugin.getServer().getPluginManager().callEvent(graveTeleportEvent);
