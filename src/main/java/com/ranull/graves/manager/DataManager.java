@@ -1094,12 +1094,9 @@ public final class DataManager {
 
                     // Handle possible null values for location and chunk
                     String locationString = resultSet.getString("location");
-                    String chunkString = resultSet.getString("chunk");
 
                     if (locationString != null) {
                         location = LocationUtil.stringToLocation(locationString);
-                    } else if (chunkString != null) {
-                        location = LocationUtil.chunkStringToLocation(chunkString);
                     }
 
                     if (location != null) {
