@@ -11,6 +11,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.InventoryView;
 
 /**
@@ -58,11 +59,11 @@ public class InventoryOpenListener implements Listener {
      * @param event The InventoryOpenEvent.
      */
     private void handleGraveInventoryOpen(InventoryOpenEvent event) {
-        InventoryView inventoryView = event.getView();
-        Inventory topInventory = CompatibilityInventoryView.getTopInventory(inventoryView);
+        Inventory topInventory = CompatibilityInventoryView.getTopInventory(event);
+        InventoryHolder inventoryHolder = topInventory.getHolder();
 
-        if (topInventory.getHolder() instanceof Grave) {
-            Grave grave = (Grave) topInventory.getHolder();
+        if (inventoryHolder instanceof Grave) {
+            Grave grave = (Grave) inventoryHolder;
             Player player = (Player) event.getPlayer();
 
             GraveOpenEvent graveOpenEvent = new GraveOpenEvent(event.getView(), grave, player);
