@@ -131,7 +131,7 @@ public final class VersionManager {
 
     private boolean isPaper;
 
-    private boolean isPost1_20_5;
+    private final boolean isPost1_20_5;
 
     /**
      * Indicates whether the server is older than 1.20.5/1.20.6.
@@ -504,6 +504,10 @@ public final class VersionManager {
      */
     public boolean is_v1_21() {
         return version.matches("(?i)v1_21_R1");
+    }
+
+    public boolean isPost1_20_5() {
+        return isPost1_20_5;
     }
 
     /**
