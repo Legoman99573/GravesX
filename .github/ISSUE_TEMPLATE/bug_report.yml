@@ -65,6 +65,12 @@ body:
       label: Screenshots
       description: If applicable, add screenshots to help explain your problem
 
+  - type: textarea
+    id: additional_info
+    attributes:
+      label: Additional Information
+      description: Add any other context about the problem here
+
   - type: checkboxes
     id: version_confirmation
     attributes:
@@ -81,9 +87,3 @@ body:
           required: true
         - label: I am not just clicking checkboxes randomly without reading them. If I don't check this, then I did read everything.
           required: false
-
-  - type: textarea
-    id: additional_info
-    attributes:
-      label: Additional Information
-      description: Add any other context about the problem here
