@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Create a report to help us improve
+about: Create a report to help us improve GravesX
 title: "[Bug]"
 labels: bug
 assignees: Legoman99573
