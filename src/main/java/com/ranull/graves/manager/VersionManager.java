@@ -129,6 +129,10 @@ public final class VersionManager {
      */
     private boolean isMohist;
 
+    private boolean isPaper;
+
+    private boolean isPost1_20_5;
+
     /**
      * Indicates whether the server is older than 1.20.5/1.20.6.
      * <p>
@@ -160,6 +164,8 @@ public final class VersionManager {
         this.hasSecondHand = !is_v1_7() && !is_v1_8();
         this.hasEnchantmentCurse = !is_v1_7() && !is_v1_8() && !is_v1_9() && !is_v1_10();
         this.hasParticle = !is_v1_7() && !is_v1_8();
+        this.isPost1_20_5 = !is_v1_7() && !is_v1_8() && !is_v1_9() && !is_v1_10() && !is_v1_11() && !is_v1_12()
+                && !is_v1_13() && !is_v1_14() && !is_v1_15() && !is_v1_16() && !is_v1_17() && !is_v1_18() && !is_v1_19() && !is_v1_20();
 
         try {
             Class.forName("org.spigotmc.SpigotConfig", false, getClass().getClassLoader());
@@ -173,6 +179,13 @@ public final class VersionManager {
             this.isMohist = true;
         } catch (ClassNotFoundException ignored) {
             this.isMohist = false;
+        }
+
+        try {
+            Class.forName("io.papermc.paper.ServerVersion", false, getClass().getClassLoader());
+            this.isPaper = true;
+        } catch (ClassNotFoundException ignored) {
+            this.isPaper = false;
         }
     }
 
@@ -211,6 +224,10 @@ public final class VersionManager {
      */
     public boolean isBukkit() {
         return isBukkit;
+    }
+
+    public boolean isPaper() {
+        return isPaper;
     }
 
     /**
@@ -462,13 +479,31 @@ public final class VersionManager {
     }
 
     /**
-     * Checks if the server version is 1.18.
+     * Checks if the server version is 1.20.
      *
-     * @return True if the server version is 1.18, otherwise false.
+     * @return True if the server version is 1.20, otherwise false.
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean is_v1_20() {
         return version.matches("(?i)v1_20_R1|v1_20_R2|v1_20_R3");
+    }
+
+    /**
+     * Checks if the server version is 1.20.5/6.
+     *
+     * @return True if the server version is 1.20.5/6, otherwise false.
+     */
+    public boolean is_v1_20_5() {
+        return version.matches("(?i)v1_20_R4");
+    }
+
+    /**
+     * Checks if the server version is 1.21/1.21.1.
+     *
+     * @return True if the server version is 1.21/1.21.1, otherwise false.
+     */
+    public boolean is_v1_21() {
+        return version.matches("(?i)v1_21_R1");
     }
 
     /**
