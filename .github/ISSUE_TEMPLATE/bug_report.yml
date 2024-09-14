@@ -1,6 +1,6 @@
 name: Bug report
 description: Create a report to help us improve GravesX
-title: "[Bug] "
+title: "[Bug]"
 labels:
   - bug
 assignees:
