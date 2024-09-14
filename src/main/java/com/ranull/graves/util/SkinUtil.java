@@ -5,11 +5,9 @@ import com.mojang.authlib.properties.Property;
 import com.mojang.authlib.properties.PropertyMap;
 import com.ranull.skulltextureapi.SkullTextureAPI;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.block.Skull;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.plugin.Plugin;
 
@@ -32,19 +30,22 @@ public final class SkinUtil {
      * @param name   The name associated with the texture.
      * @param base64 The Base64 encoded texture.
      */
+
     public static void setSkullBlockTexture(Skull skull, String name, String base64) {
+        GameProfile gameProfile = new GameProfile(UUID.randomUUID(), name);
+
+        gameProfile.getProperties().put("textures", new Property("textures", base64));
+
         try {
-            GameProfile profile = new GameProfile(UUID.randomUUID(), null);
-            profile.getProperties().put("textures", new Property("textures", base64));
             Field profileField = skull.getClass().getDeclaredField("profile");
+
             profileField.setAccessible(true);
-            profileField.set(skull, profile);
-        } catch (Exception e) {
-            Bukkit.getLogger().warning("Failed to set the skull texture. Falling back to the player who died.");
-            skull.setOwningPlayer(Bukkit.getOfflinePlayer(name));
-            skull.update();
+            profileField.set(skull, gameProfile);
+        } catch (NoSuchFieldException | IllegalAccessException exception) {
+            exception.printStackTrace();
         }
     }
+
 
     /**
      * Sets the texture of a Skull item stack.
@@ -85,7 +86,7 @@ public final class SkinUtil {
                     try {
                         return !propertyCollection.isEmpty()
                                 ? propertyCollection.stream().findFirst().get().value() : null;
-                    } catch (NoSuchMethodError blah) {
+                    } catch(NoSuchMethodError blah) {
                         return !propertyCollection.isEmpty()
                                 ? propertyCollection.stream().findFirst().get().getValue() : null;
                     }
@@ -110,6 +111,7 @@ public final class SkinUtil {
         return null;
     }
 
+
     /**
      * Retrieves the texture signature of an Entity.
      *
@@ -129,7 +131,8 @@ public final class SkinUtil {
                     try {
                         return !propertyCollection.isEmpty()
                                 ? propertyCollection.stream().findFirst().get().signature() : null;
-                    } catch (NoSuchMethodError blah) {
+
+                    } catch(NoSuchMethodError blah) {
                         return !propertyCollection.isEmpty()
                                 ? propertyCollection.stream().findFirst().get().getSignature() : null;
                     }
@@ -139,6 +142,7 @@ public final class SkinUtil {
 
         return null;
     }
+
 
     /**
      * Retrieves the GameProfile of a Player.
@@ -156,7 +160,9 @@ public final class SkinUtil {
 
             if (GAMEPROFILE_METHOD != null && !GAMEPROFILE_METHOD.equals("")) {
                 Method gameProfile = playerObject.getClass().getMethod(GAMEPROFILE_METHOD);
+
                 gameProfile.setAccessible(true);
+
                 return (GameProfile) gameProfile.invoke(playerObject);
             }
         } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException ignored) {
@@ -174,10 +180,12 @@ public final class SkinUtil {
         for (Method method : playerObject.getClass().getMethods()) {
             if (method.getReturnType().getName().endsWith("GameProfile")) {
                 GAMEPROFILE_METHOD = method.getName();
+
                 return;
             }
         }
 
         GAMEPROFILE_METHOD = "";
     }
+
 }

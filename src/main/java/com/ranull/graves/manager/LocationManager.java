@@ -12,6 +12,7 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 
 import java.util.List;
+import java.util.Random;
 
 /**
  * Manages location-related operations for graves.
@@ -110,18 +111,44 @@ public final class LocationManager {
         if (location.getWorld() != null) {
             Block block = location.getBlock();
 
+            // Check if the location is valid and doesn't have a grave
             if (!hasGrave(location) && isLocationSafeGrave(location)) {
-                return location;
+                return getGround(location, livingEntity, grave); // Ensure placement is on the ground
             } else {
+                // If there is a grave at the location, move it randomly in the x or z direction
+                Random random = new Random();
+                int attempts = 10; // Limit the number of random attempts
+
+                while (attempts > 0) {
+                    // Randomly choose to move in x or z direction
+                    int randomX = random.nextInt(3) - 1; // Generates -1, 0, or 1
+                    int randomZ = random.nextInt(3) - 1; // Generates -1, 0, or 1
+
+                    // Only move if there's an actual shift in position
+                    if (randomX != 0 || randomZ != 0) {
+                        Location newLocation = location.clone().add(randomX, 0, randomZ);
+                        newLocation = LocationUtil.roundLocation(newLocation);
+
+                        // Ensure the new location is on the ground (find ground below)
+                        newLocation = findGround(newLocation);
+
+                        if (!hasGrave(newLocation) && isLocationSafeGrave(newLocation)) {
+                            return newLocation;
+                        }
+                    }
+
+                    attempts--;
+                }
+
+                // If random attempts fail, proceed with the default logic
                 if (isVoid(location) || !isInsideBorder(location)) {
                     return getVoid(location, livingEntity, grave);
                 } else if (MaterialUtil.isLava(block.getType())) {
                     return getLavaTop(location, livingEntity, grave);
                 } else {
-                    Location graveLocation = (MaterialUtil.isAir(block.getType())
-                            || MaterialUtil.isWater(block.getType()))
-                            ? (plugin.getConfig("placement.ground", grave)
-                            .getBoolean("placement.ground") ? getGround(location, livingEntity, grave) : null)
+                    Location graveLocation = (MaterialUtil.isAir(block.getType()) || MaterialUtil.isWater(block.getType()))
+                            ? (plugin.getConfig("placement.ground", grave).getBoolean("placement.ground")
+                            ? getGround(location, livingEntity, grave) : null)
                             : getRoof(location, livingEntity, grave);
 
                     if (graveLocation != null) {
@@ -132,6 +159,34 @@ public final class LocationManager {
         }
 
         return getVoid(location, livingEntity, grave);
+    }
+
+    /**
+     * Finds the nearest ground below the given location.
+     *
+     * @param location The starting location.
+     * @return The location on solid ground or the original location if ground is not found.
+     */
+    private Location findGround(Location location) {
+        Location groundLocation = location.clone();
+        int counter = 0;
+        int maxSearchDistance = 256; // Limit the search to a reasonable height range
+
+        while (counter < maxSearchDistance) {
+            Block blockBelow = groundLocation.getBlock().getRelative(BlockFace.DOWN);
+
+            // Check if the block below is solid (ground)
+            if (MaterialUtil.isSafeSolid(blockBelow.getType())) {
+                return groundLocation; // Found solid ground, return this location
+            }
+
+            // Move the location downward and increment the counter
+            groundLocation.subtract(0, 1, 0);
+            counter++;
+        }
+
+        // If no ground is found within the limit, return the original location
+        return location;
     }
 
     /**

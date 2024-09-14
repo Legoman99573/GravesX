@@ -1,9 +1,7 @@
 package com.ranull.graves.util;
 
 import com.ranull.graves.Graves;
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.Sound;
+import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
@@ -198,31 +196,15 @@ public final class InventoryUtil {
     public static String inventoryToString(Inventory inventory) {
         List<String> stringList = new ArrayList<>();
 
-        for (int i = 0; i < inventory.getSize(); i++) {
-            ItemStack itemStack = inventory.getItem(i);
+        for (ItemStack itemStack : inventory.getContents()) {
+            String base64 = Base64Util.objectToBase64(itemStack != null ? itemStack : new ItemStack(Material.AIR));
 
-            if (itemStack != null) {
-                try {
-                    String base64 = Base64Util.objectToBase64(itemStack);
-
-                    if (base64 != null) {
-                        stringList.add(base64);
-                    }
-                } catch (NullPointerException e) {
-                    Bukkit.getLogger().warning("Exception during Base64 conversion for item at slot " + i + ": " + itemStack.getType() + " - " + e.getMessage());
-                    Bukkit.getLogger().severe("NBT Data: " + itemStack);
-                    Bukkit.getLogger().warning("Removed problematic item " + itemStack.getType() + " from slot " + i + ". While the grave will still generate. This is likely a Spigot/Paper bug.");
-                    inventory.setItem(i, null);  // Removing the problematic item from the inventory
-                    Bukkit.getLogger().warning("Stack Trace:");
-                    e.printStackTrace();
-                }
-            } else {
-                inventory.setItem(i, null);  // Removing the null item from the inventory
-            }
+            stringList.add(base64);
         }
 
         return String.join("|", stringList);
     }
+
 
     /**
      * Converts a string representation of an inventory to an Inventory object.
@@ -247,12 +229,15 @@ public final class InventoryUtil {
                 if (object instanceof ItemStack) {
                     inventory.setItem(counter, (ItemStack) object);
                     counter++;
+                } else {
+                    inventory.setItem(counter, (ItemStack) Base64Util.base64ToObject(String.valueOf(Material.AIR)));
+                    counter++;
                 }
             }
 
             return inventory;
         }
 
-        return plugin.getServer().createInventory(inventoryHolder, 9, title);
+        return plugin.getServer().createInventory(inventoryHolder, strings.length, title);
     }
 }
