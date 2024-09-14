@@ -5,9 +5,11 @@ import com.mojang.authlib.properties.Property;
 import com.mojang.authlib.properties.PropertyMap;
 import com.ranull.skulltextureapi.SkullTextureAPI;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.block.Skull;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.plugin.Plugin;
 
@@ -31,15 +33,16 @@ public final class SkinUtil {
      * @param base64 The Base64 encoded texture.
      */
     public static void setSkullBlockTexture(Skull skull, String name, String base64) {
-        GameProfile gameProfile = new GameProfile(UUID.randomUUID(), name);
-        gameProfile.getProperties().put("textures", new Property("textures", base64));
-
         try {
+            GameProfile profile = new GameProfile(UUID.randomUUID(), null);
+            profile.getProperties().put("textures", new Property("textures", base64));
             Field profileField = skull.getClass().getDeclaredField("profile");
             profileField.setAccessible(true);
-            profileField.set(skull, gameProfile);
-        } catch (NoSuchFieldException | IllegalAccessException exception) {
-            exception.printStackTrace();
+            profileField.set(skull, profile);
+        } catch (Exception e) {
+            Bukkit.getLogger().warning("Failed to set the skull texture. Falling back to the player who died.");
+            skull.setOwningPlayer(Bukkit.getOfflinePlayer(name));
+            skull.update();
         }
     }
 
@@ -58,8 +61,9 @@ public final class SkinUtil {
             Field profileField = skullMeta.getClass().getDeclaredField("profile");
             profileField.setAccessible(true);
             profileField.set(skullMeta, gameProfile);
-        } catch (NoSuchFieldException | IllegalAccessException exception) {
-            exception.printStackTrace();
+        } catch (Exception exception) {
+            Bukkit.getLogger().warning("Failed to set the SkullMeta texture. Falling back to the player who died.");
+            skullMeta.setOwningPlayer(Bukkit.getOfflinePlayer(name));
         }
     }
 
