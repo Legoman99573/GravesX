@@ -22,8 +22,8 @@ body:
   - type: input
     id: graves_dump
     attributes:
-      label: `/graves dump` output
-      description: Provide the output of the `/graves dump` command. We will accept mclo.gs or other log based.
+      label: "`/graves dump` output"
+      description: "Provide the output of the `/graves dump` command. We will accept mclo.gs or other log based."
     validations:
       required: true
 
@@ -85,4 +85,5 @@ body:
           required: true
         - label: I am not running an outdated version of GravesX when reporting
           required: true
-        - label: I am not just clicking checkboxes randomly without reading them. If I don't check this, then I did read everything.
+        - label: "I am not just clicking checkboxes randomly without reading them. If I don't check this, then I did read everything."
+          required: false
