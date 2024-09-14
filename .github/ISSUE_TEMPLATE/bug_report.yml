@@ -1,0 +1,89 @@
+name: Bug report
+description: Create a report to help us improve GravesX
+title: "[Bug] "
+labels:
+  - bug
+assignees:
+  - Legoman99573
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Bug Report
+
+  - type: input
+    id: mc_server_version
+    attributes:
+      label: Minecraft Server Version
+      description: Provide the version of Minecraft server you are using
+    validations:
+      required: true
+
+  - type: input
+    id: graves_dump
+    attributes:
+      label: `/graves dump` output
+      description: Provide the output of the `/graves dump` command. We will accept mclo.gs or other log based.
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary of the bug
+      description: A brief description of the issue
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps_to_reproduce
+    attributes:
+      label: Steps to Reproduce
+      description: List all steps to reproduce the issue
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_result
+    attributes:
+      label: Expected Result
+      description: Describe what you expected to happen
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual_result
+    attributes:
+      label: Actual Result
+      description: Describe what actually happened
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: If applicable, add screenshots to help explain your problem
+
+  - type: checkboxes
+    id: version_confirmation
+    attributes:
+      label: Version Confirmation
+      description: Confirm that the issue is with the latest GravesX spigot release or development build only and not an outdated version.
+      options:
+        - label: I confirm that the issue is present in the latest GravesX Spigot Release or Development Builds.
+          required: true
+        - label: If I use development builds in a production environment, I am aware that I will not receive support if I lose data.
+          required: true
+        - label: If the issue is caused by another fork or Graves 4.9, then I expect to not get support here and my issue will be closed.
+          required: true
+        - label: I am not running an outdated version of GravesX when reporting
+          required: true
+        - label: I am not just clicking checkboxes randomly without reading them. If I don't check this, then I did read everything.
+          required: false
+
+  - type: textarea
+    id: additional_info
+    attributes:
+      label: Additional Information
+      description: Add any other context about the problem here

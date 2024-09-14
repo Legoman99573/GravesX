@@ -1,0 +1,53 @@
+name: Feature request
+description: Suggest an idea for GravesX
+title: "[Feature Request]"
+labels:
+  - enhancement
+assignees:
+  - Legoman99573
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Feature Request
+
+  - type: textarea
+    id: problem_statement
+    attributes:
+      label: Is your feature request related to a problem in GravesX? Please describe.
+      description: A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Describe the solution you'd like
+      description: A clear and concise description of what you want to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternative_solutions
+    attributes:
+      label: Describe alternatives you've considered
+      description: A clear and concise description of any alternative solutions or features you've considered.
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional context
+      description: Add any other context or screenshots about the feature request here.
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Confirmation
+      description: Confirm that the feature request doesn't already exist
+      options:
+        - label: I confirm that the feature request doesn't already exist on the latest version or development build of GravesX.
+          required: true
+        - label: If the issue is caused by another fork, then I expect to not get support here and my issue will be closed.
+          required: true
+        - label: I am not just clicking checkboxes randomly without reading them. If I don't check this, then I did read everything.
+          required: false
