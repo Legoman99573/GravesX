@@ -1,6 +1,6 @@
 name: Bug report
 description: Create a report to help us improve GravesX
-title: "[Bug]"
+title: "[Bug] "
 labels:
   - bug
 assignees:
@@ -86,4 +86,3 @@ body:
         - label: I am not running an outdated version of GravesX when reporting
           required: true
         - label: I am not just clicking checkboxes randomly without reading them. If I don't check this, then I did read everything.
-          required: false
