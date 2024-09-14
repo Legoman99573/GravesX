@@ -46,8 +46,7 @@ public class InventoryCloseListener implements Listener {
             callGraveCloseEvent(event, grave, player, entity);
 
             if (grave != null && isEmptyGrave(grave)) {
-                callGraveLootedEvent(event, grave, player, entity);
-                handleEmptyGrave(player, grave);
+                handleEmptyGrave(event, player, grave, entity);
             }
 
             // Play a sound effect related to closing the inventory
@@ -116,7 +115,8 @@ public class InventoryCloseListener implements Listener {
      * @param player The player who closed the inventory.
      * @param grave  The empty grave.
      */
-    private void handleEmptyGrave(Player player, Grave grave) {
+    private void handleEmptyGrave(InventoryCloseEvent event, Player player, Grave grave, Entity entity) {
+        callGraveLootedEvent(event, grave, player, entity);
         // Remove the player from the grave's viewers
         grave.getInventory().getViewers().remove(player);
 
