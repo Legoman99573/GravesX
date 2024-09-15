@@ -27,7 +27,7 @@ import ch.njol.skript.util.Getter;
 public class EvtGraveLooted extends SkriptEvent {
 
     static {
-        Skript.registerEvent("Grave Looted", EvtGraveClose.class, GraveLootedEvent.class, "[grave] loo(t|ting|ted)");
+        Skript.registerEvent("Grave Looted", EvtGraveLooted.class, GraveLootedEvent.class, "[grave] loo(t|ting|ted)");
 
         // Registering event values
         EventValues.registerEventValue(GraveLootedEvent.class, Player.class, new Getter<Player, GraveLootedEvent>() {
