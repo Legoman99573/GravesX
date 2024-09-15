@@ -3,10 +3,7 @@ package com.ranull.graves.listener;
 import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.type.Graveyard;
-import org.bukkit.ChatColor;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
-import org.bukkit.Material;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -207,6 +204,9 @@ public class PlayerInteractListener implements Listener {
                             player.getInventory().setItem(player.getInventory().getHeldItemSlot(),
                                     graveCompass);
                             plugin.getEntityManager().runFunction(player, plugin.getConfig("compass.function", grave).getString("compass.function"), grave);
+                            if (plugin.getConfig("compass.particles.enabled", grave).getBoolean("compass.particles.enabled")) {
+                                plugin.getParticleManager().startParticleTrail(player.getLocation(), grave.getLocationDeath(), Particle.valueOf(Objects.requireNonNull(plugin.getConfig("compass.particles.particle", grave).getString("compass.particles.particle")).toUpperCase()), plugin.getConfig("compass.particles.count", grave).getInt("compass.particles.count", 5), plugin.getConfig("compass.particles.speed", grave).getDouble("compass.particles.speed", 0.3), plugin.getConfig("compass.particles.duration", grave).getInt("compass.particles.duration"));
+                            }
                         } else {
                             player.getInventory().remove(itemStack);
                         }

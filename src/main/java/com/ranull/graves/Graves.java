@@ -54,6 +54,7 @@ public class Graves extends JavaPlugin {
     private LocationManager locationManager;
     private GraveManager graveManager;
     private GraveyardManager graveyardManager;
+    private ParticleManager particleManager;
     private Compatibility compatibility;
     private FileConfiguration fileConfiguration;
     private boolean wasReloaded = false;
@@ -103,6 +104,7 @@ public class Graves extends JavaPlugin {
         locationManager = new LocationManager(this);
         graveManager = new GraveManager(this);
         graveyardManager = new GraveyardManager(this);
+        particleManager = new ParticleManager(this);
 
         registerCommands();
         registerListeners();
@@ -704,6 +706,10 @@ public class Graves extends JavaPlugin {
 
     public EntityManager getEntityManager() {
         return entityManager;
+    }
+
+    public ParticleManager getParticleManager() {
+        return particleManager;
     }
 
     public Compatibility getCompatibility() {

@@ -278,6 +278,19 @@ settings:
         lore:
           - "%world_formatted%, %x%x, %y%y, %z%z"
 
+        # Handling for Particles
+        particles:
+          # Should right-clicking a compass spawn particles leading to the grave site?
+          enabled: false
+          # What particle should we use? Valid Particle Types: https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Particle.html
+          particle: "FLAME"
+          # How many particles should spawn? Keep note that setting this at a very high value can decrease performance on clients and server
+          count: 5
+          # How fast should the particles go from the player to the grave location?
+          speed: 0.3
+          # How long, in milliseconds, should the particle animation last for?
+          duration: 100
+
       ############
       # Obituary #
       ############
