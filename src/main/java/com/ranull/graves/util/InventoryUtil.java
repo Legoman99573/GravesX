@@ -1,11 +1,20 @@
 package com.ranull.graves.util;
 
 import com.ranull.graves.Graves;
+import com.ranull.graves.manager.VersionManager;
+import de.Ste3et_C0st.FurnitureLib.NBT.NBTTagCompound;
+import de.tr7zw.nbtapi.NBT;
+import de.tr7zw.nbtapi.NBTCompound;
+import de.tr7zw.nbtapi.NBTContainer;
+import de.tr7zw.nbtapi.NBTItem;
+import de.tr7zw.nbtapi.iface.ReadWriteNBT;
+import de.tr7zw.nbtapi.utils.DataFixerUtil;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
 
 import java.util.*;
 
@@ -195,25 +204,50 @@ public final class InventoryUtil {
      */
     public static String inventoryToString(Inventory inventory) {
         List<String> stringList = new ArrayList<>();
+        Plugin nbtAPI = Bukkit.getPluginManager().getPlugin("NBTAPI");
+        if (nbtAPI != null && nbtAPI.isEnabled()) {
+            for (ItemStack itemStack : inventory.getContents()) {
+                try {
+                    if (itemStack != null && itemStack.getType() != Material.AIR) {
+                        NBTItem nbtItem = new NBTItem(itemStack);
 
-        for (ItemStack itemStack : inventory.getContents()) {
-            try {
-                String base64 = Base64Util.objectToBase64(itemStack != null ? itemStack : new ItemStack(Material.AIR));
+                        itemStack = nbtItem.getItem();
 
-                stringList.add(base64);
-            } catch (Exception e) {
-                stringList.add(Base64Util.objectToBase64(new ItemStack(Material.AIR)));
-                Bukkit.getLogger().warning("Exception during Base64 conversion for : " + itemStack + " - " + e.getMessage());
-                Bukkit.getLogger().severe("NBT Data: " + itemStack);
-                Bukkit.getLogger().warning("Removed problematic item " + itemStack + " from grave. While the grave will still generate. This is likely a Spigot/Paper bug.");
-                Bukkit.getLogger().warning("Stack Trace:");
-                e.printStackTrace();
+                        String base64 = Base64Util.objectToBase64(nbtItem.getItem());
+                        stringList.add(base64);
+                    } else {
+                        // Handle empty or air item stacks
+                        stringList.add(Base64Util.objectToBase64(new ItemStack(Material.AIR)));
+                    }
+                } catch (Exception e) {
+                    // Handle exceptions
+                    stringList.add(Base64Util.objectToBase64(new ItemStack(Material.AIR)));
+                    Bukkit.getLogger().warning("Exception during Base64 conversion for: " + itemStack + " - " + e.getMessage());
+                    Bukkit.getLogger().severe("NBT Data: " + itemStack);
+                    Bukkit.getLogger().warning("Removed problematic item " + itemStack + " from grave. While the grave will still generate, this is likely a Spigot/Paper bug.");
+                    Bukkit.getLogger().warning("Stack Trace:");
+                    e.printStackTrace();
+                }
+            }
+        } else {
+            for (ItemStack itemStack : inventory.getContents()) {
+                try {
+                    String base64 = Base64Util.objectToBase64(itemStack != null ? itemStack : new ItemStack(Material.AIR));
+
+                    stringList.add(base64);
+                } catch (Exception e) {
+                    stringList.add(Base64Util.objectToBase64(new ItemStack(Material.AIR)));
+                    Bukkit.getLogger().warning("Exception during Base64 conversion for : " + itemStack + " - " + e.getMessage());
+                    Bukkit.getLogger().severe("NBT Data: " + itemStack);
+                    Bukkit.getLogger().warning("Removed problematic item " + itemStack + " from grave. While the grave will still generate. This is likely a Spigot/Paper bug.");
+                    Bukkit.getLogger().warning("Stack Trace:");
+                    e.printStackTrace();
+                }
             }
         }
 
         return String.join("|", stringList);
     }
-
 
     /**
      * Converts a string representation of an inventory to an Inventory object.
@@ -232,25 +266,55 @@ public final class InventoryUtil {
                     InventoryUtil.getInventorySize(strings.length), title);
 
             int counter = 0;
-            for (String itemString : strings) {
-                try {
-                    Object object = Base64Util.base64ToObject(itemString);
+            Plugin nbtAPI = Bukkit.getPluginManager().getPlugin("NBTAPI");
+            if (nbtAPI != null && nbtAPI.isEnabled()) {
+                for (String itemString : strings) {
+                    try {
+                        ItemStack itemStack = (ItemStack) Base64Util.base64ToObject(itemString);
 
-                    if (object instanceof ItemStack) {
-                        inventory.setItem(counter, (ItemStack) object);
+                        if (itemStack != null) {
+                            NBTItem nbtItem = new NBTItem(itemStack);
+
+                            itemStack = nbtItem.getItem();
+
+                            inventory.setItem(counter, itemStack);
+                        } else {
+                            inventory.setItem(counter, (ItemStack) Base64Util.base64ToObject(String.valueOf(Material.AIR)));
+                        }
                         counter++;
-                    } else {
+                    } catch (Exception e) {
+                        if (e.getMessage() != null && !e.getMessage().contains("ItemStack can't be null/air/amount of 0!"))
+                        {
+                            Bukkit.getLogger().warning("Exception during Base64 conversion for item at slot " + counter + ": " + itemString + " - " + e.getMessage());
+                            Bukkit.getLogger().severe("NBT Data: " + itemString);
+                            Bukkit.getLogger().warning("Removed problematic item " + itemString + " from slot " + counter + ". While the grave will still generate. This is likely a Spigot/Paper bug.");
+                            Bukkit.getLogger().warning("Stack Trace:");
+                            e.printStackTrace();
+                        }
                         inventory.setItem(counter, (ItemStack) Base64Util.base64ToObject(String.valueOf(Material.AIR)));
                         counter++;
                     }
-                } catch (Exception e) {
-                    Bukkit.getLogger().warning("Exception during Base64 conversion for item at slot " + counter + ": " + itemString + " - " + e.getMessage());
-                    Bukkit.getLogger().severe("NBT Data: " + itemString);
-                    Bukkit.getLogger().warning("Removed problematic item " + itemString + " from slot " + counter + ". While the grave will still generate. This is likely a Spigot/Paper bug.");
-                    Bukkit.getLogger().warning("Stack Trace:");
-                    e.printStackTrace();
-                    inventory.setItem(counter, (ItemStack) Base64Util.base64ToObject(String.valueOf(Material.AIR)));
-                    counter++;
+                }
+            } else {
+                for (String itemString : strings) {
+                    try {
+                        Object object = Base64Util.base64ToObject(itemString);
+
+                        if (object instanceof ItemStack) {
+                            inventory.setItem(counter, (ItemStack) object);
+                        } else {
+                            inventory.setItem(counter, (ItemStack) Base64Util.base64ToObject(String.valueOf(Material.AIR)));
+                        }
+                        counter++;
+                    } catch (Exception e) {
+                        Bukkit.getLogger().warning("Exception during Base64 conversion for item at slot " + counter + ": " + itemString + " - " + e.getMessage());
+                        Bukkit.getLogger().severe("NBT Data: " + itemString);
+                        Bukkit.getLogger().warning("Removed problematic item " + itemString + " from slot " + counter + ". While the grave will still generate. This is likely a Spigot/Paper bug.");
+                        Bukkit.getLogger().warning("Stack Trace:");
+                        e.printStackTrace();
+                        inventory.setItem(counter, (ItemStack) Base64Util.base64ToObject(String.valueOf(Material.AIR)));
+                        counter++;
+                    }
                 }
             }
 

@@ -47,6 +47,7 @@ softdepend:
   - Towny
   - LuckPerms
   - CoreProtect
+  - NBTAPI
 
 commands:
   graves:

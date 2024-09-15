@@ -258,6 +258,7 @@ public final class IntegrationManager {
         loadCompatibilityWarnings();
         loadLuckPerms();
         loadCoreProtect();
+        loadNBTAPI();
     }
 
     /**
@@ -1191,6 +1192,17 @@ public final class IntegrationManager {
             }
         } else {
             luckPermsHandler = null;
+        }
+    }
+
+    /**
+     * Prints in console if NBTAPI is loaded to let the user know that NBT API will handle inventory storage.
+     */
+    private void loadNBTAPI() {
+        Plugin nbtAPI = plugin.getServer().getPluginManager().getPlugin("NBTAPI");
+
+        if (nbtAPI != null && nbtAPI.isEnabled()) {
+            plugin.integrationMessage("Hooked into " + nbtAPI.getName() + " " + nbtAPI.getDescription().getVersion() + ". Using " + nbtAPI.getName() + " "  + nbtAPI.getDescription().getVersion() +  " for handling Inventory NBT Data.");
         }
     }
 
