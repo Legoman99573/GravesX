@@ -1056,6 +1056,19 @@ public final class GraveManager {
      * @return true if the grave was opened successfully, false otherwise.
      */
     public boolean openGrave(Entity entity, Location location, Grave grave) {
+        openGrave(entity, location, grave, false);
+        return false;
+    }
+
+    /**
+     * Opens a grave for a player.
+     *
+     * @param entity   the entity attempting to open the grave.
+     * @param location the location of the grave.
+     * @param grave    the grave to be opened.
+     * @return true if the grave was opened successfully, false otherwise.
+     */
+    public boolean openGrave(Entity entity, Location location, Grave grave, boolean preview) {
         if (entity instanceof Player) {
             Player player = (Player) entity;
 
@@ -1071,6 +1084,11 @@ public final class GraveManager {
                     if (!graveAutoLootEvent.isCancelled())
                         autoLootGrave(player, location, grave);
                 } else if (plugin.hasGrantedPermission("graves.open", player.getPlayer())) {
+                    if (plugin.getConfig("grave.preview", grave).getBoolean("grave.preview", false)) {
+                        grave.setGravePreview(preview);
+                    } else {
+                        grave.setGravePreview(false);
+                    }
                     player.openInventory(grave.getInventory());
                     plugin.getEntityManager().runCommands("event.command.open", player, location, grave);
                     plugin.getEntityManager().playWorldSound("sound.open", location, grave);
@@ -1079,6 +1097,11 @@ public final class GraveManager {
                 return true;
             } else {
                 if (plugin.getConfig("protection.preview", grave).getBoolean("protection.preview", false)) {
+                    if (plugin.getConfig("grave.preview", grave).getBoolean("grave.preview", false)) {
+                        grave.setGravePreview(preview);
+                    } else {
+                        grave.setGravePreview(false);
+                    }
                     player.openInventory(grave.getInventory());
                     plugin.getEntityManager().runCommands("event.command.open", player, location, grave);
                     plugin.getEntityManager().playWorldSound("sound.open", location, grave);

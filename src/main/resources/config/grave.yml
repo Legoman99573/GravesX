@@ -23,6 +23,8 @@ settings:
         explode-protection: true
         # Should we replace the oldest graves with a new one when a player his the max limit? This will remove abandoned graves as well and all contents will be lost.
         replace-oldest: false
+        # Should a player be allowed to preview a grave?
+        preview: false
 
       #############
       # Placement #
@@ -985,14 +987,14 @@ settings:
                   - "Example Lore"
 
               8:
-                enabled: false
-                material: "PAPER"
-                function: ""
-                name: "Example Item"
+                enabled: true
+                material: "BARRIER"
+                function: "list"
+                name: "Back"
                 glow: false
                 model-data: -1
                 lore:
-                  - "Example Lore"
+                  - "Return back to the list"
 
               9:
                 enabled: false

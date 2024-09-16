@@ -138,6 +138,11 @@ public class Grave implements InventoryHolder, Serializable {
     private Location location;
 
     /**
+     * Is the grave in a preview only state?
+     */
+    private boolean isPreview;
+
+    /**
      * Constructs a new Grave with the specified UUID.
      *
      * @param uuid The UUID of the grave.
@@ -674,6 +679,22 @@ public class Grave implements InventoryHolder, Serializable {
     @Deprecated
     public Location getLocation() {
         return locationDeath != null ? locationDeath.getLocation() : null;
+    }
+
+    /**
+     * Sets the Preview state of a specific grave.
+     *
+     * @param isPreview Sets the grave preview state.
+     */
+    public void setGravePreview(boolean isPreview) {
+        this.isPreview = isPreview;
+    }
+
+    /**
+     * Gets the Preview state of a specific grave.
+     */
+    public boolean getGravePreview() {
+        return isPreview;
     }
 
     /**

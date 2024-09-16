@@ -192,11 +192,15 @@ public class InventoryClickListener implements Listener {
      * @param grave  The Grave inventory holder.
      */
     private void handleGraveInventoryClick(InventoryClickEvent event, Player player, Grave grave) {
-        if (plugin.getEntityManager().canOpenGrave(player, grave)) {
-            // Schedule a task to update the grave's inventory in the data manager
-            plugin.getServer().getScheduler().runTaskLater(plugin, () ->
-                    plugin.getDataManager().updateGrave(grave, "inventory",
-                            InventoryUtil.inventoryToString(grave.getInventory())), 1L);
+        if (!grave.getGravePreview()) {
+            if (plugin.getEntityManager().canOpenGrave(player, grave)) {
+                // Schedule a task to update the grave's inventory in the data manager
+                plugin.getServer().getScheduler().runTaskLater(plugin, () ->
+                        plugin.getDataManager().updateGrave(grave, "inventory",
+                                InventoryUtil.inventoryToString(grave.getInventory())), 1L);
+            } else {
+                event.setCancelled(true);
+            }
         } else {
             event.setCancelled(true);
         }

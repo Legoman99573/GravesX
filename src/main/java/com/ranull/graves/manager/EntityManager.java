@@ -864,6 +864,16 @@ public final class EntityManager extends EntityDataManager {
                 }
                 return true;
             }
+            case "preview":
+            case "sneekpeak": {
+                Location location = plugin.getGraveManager().getGraveLocation(entity.getLocation(), grave);
+                if (location != null && entity.getLocation().getWorld() == grave.getLocationDeath().getWorld()) {
+                    if (plugin.getConfig("grave.preview", grave).getBoolean("grave.preview")) {
+                        plugin.getGraveManager().openGrave(entity, entity.getLocation(), grave, true);
+                    }
+                }
+                return true;
+            }
         }
 
         return false;
