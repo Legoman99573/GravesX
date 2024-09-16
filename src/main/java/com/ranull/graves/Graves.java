@@ -28,6 +28,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.permissions.PermissionAttachmentInfo;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
@@ -209,7 +210,7 @@ public class Graves extends JavaPlugin {
     }
 
     private void registerMetrics() {
-        Metrics metrics = new Metrics(this, getMetricsID());
+        Metrics metrics = new Metrics((Plugin) this, getMetricsID());
 
         metrics.addCustomChart(new SingleLineChart("graves", new Callable<Integer>() {
             @Override
@@ -262,7 +263,7 @@ public class Graves extends JavaPlugin {
     }
 
     private void registerMetricsLegacy() {
-        Metrics metricsLegacy = new Metrics(this, getMetricsIDLegacy());
+        Metrics metricsLegacy = new Metrics((Plugin) this, getMetricsIDLegacy());
 
         metricsLegacy.addCustomChart(new SingleLineChart("graves", new Callable<Integer>() {
             @Override

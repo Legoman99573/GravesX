@@ -68,7 +68,7 @@
           <relocations>
             <relocation>
               <pattern>org.bstats</pattern>
-              <shadedPattern>${project.groupId}.${project.artifactId}.bstats</shadedPattern>
+              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.bstats</shadedPattern>
             </relocation>
             <relocation>
               <pattern>com.github.puregero.multilib</pattern>
@@ -93,6 +93,14 @@
             <relocation>
               <pattern>me.imdanix.text</pattern>
               <shadedPattern>${project.groupId}.${project.artifactId}.libraries.imdanix</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>com.google</pattern>
+              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.google</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>org.slf4j</pattern>
+              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.slf4j</shadedPattern>
             </relocation>
           </relocations>
         </configuration>
@@ -467,7 +475,7 @@
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-resolver-provider</artifactId>
-      <version>3.9.6</version>
+      <version>3.9.9</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -479,7 +487,7 @@
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-transport-http</artifactId>
-      <version>1.9.18</version>
+      <version>1.9.22</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
