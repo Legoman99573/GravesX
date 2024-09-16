@@ -579,7 +579,7 @@
         <dependency>
             <groupId>org.apache.maven.resolver</groupId>
             <artifactId>maven-resolver-transport-http</artifactId>
-            <version>1.9.18</version>
+            <version>1.9.22</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
