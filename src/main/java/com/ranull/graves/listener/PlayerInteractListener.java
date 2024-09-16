@@ -1,7 +1,7 @@
 package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
-import com.ranull.graves.event.GraveCompassParticleEvent;
+import com.ranull.graves.event.GraveParticleEvent;
 import com.ranull.graves.event.GraveCompassUseEvent;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.type.Graveyard;
@@ -211,9 +211,9 @@ public class PlayerInteractListener implements Listener {
                                         graveCompass);
                                 plugin.getEntityManager().runFunction(player, plugin.getConfig("compass.function", grave).getString("compass.function"), grave);
                                 if (plugin.getConfig("compass.particles.enabled", grave).getBoolean("compass.particles.enabled")) {
-                                    GraveCompassParticleEvent graveCompassParticleEvent = new GraveCompassParticleEvent(player, grave);
-                                    plugin.getServer().getPluginManager().callEvent(graveCompassParticleEvent);
-                                    if (!graveCompassParticleEvent.isCancelled()) {
+                                    GraveParticleEvent graveParticleEvent = new GraveParticleEvent(player, grave);
+                                    plugin.getServer().getPluginManager().callEvent(graveParticleEvent);
+                                    if (!graveParticleEvent.isCancelled()) {
                                         plugin.getParticleManager().startParticleTrail(player.getLocation(), grave.getLocationDeath(), Particle.valueOf(Objects.requireNonNull(plugin.getConfig("compass.particles.particle", grave).getString("compass.particles.particle")).toUpperCase()), plugin.getConfig("compass.particles.count", grave).getInt("compass.particles.count", 5), plugin.getConfig("compass.particles.speed", grave).getDouble("compass.particles.speed", 0.3), plugin.getConfig("compass.particles.duration", grave).getInt("compass.particles.duration"));
                                     }
                                 }

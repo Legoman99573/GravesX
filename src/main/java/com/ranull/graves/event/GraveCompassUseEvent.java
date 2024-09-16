@@ -1,14 +1,13 @@
 package com.ranull.graves.event;
 
 import com.ranull.graves.type.Grave;
-import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Represents an event that occurs when a grave is created for an entity.
+ * Represents an event that occurs when a grave compass is used.
  * <p>
  * This event extends {@link GraveEvent} and is cancellable, allowing event listeners
  * to prevent the creation of the grave if necessary.
@@ -32,6 +31,18 @@ public class GraveCompassUseEvent extends GraveEvent {
      */
     public GraveCompassUseEvent(Player player, Grave grave) {
         super(grave, null, grave.getLocationDeath(), null, null, null, null, null, player);
+    }
+
+    /**
+     * @deprecated Use {@link #GraveCompassUseEvent(Player, Grave)} instead.
+     * Constructs a new {@code GraveCompassUseEvent}.
+     *
+     * @param entity The entity for which is using the compass.
+     * @param grave  The grave being created.
+     */
+    @Deprecated
+    public GraveCompassUseEvent(Entity entity, Grave grave) {
+        this(entity instanceof Player ? (Player) entity : null, grave);
     }
 
     /**

@@ -3,11 +3,11 @@ package com.ranull.graves.event.integration.skript;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
+import com.ranull.graves.event.GraveParticleEvent;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import com.ranull.graves.event.GraveCompassParticleEvent;
 import com.ranull.graves.type.Grave;
 import ch.njol.skript.Skript;
 import ch.njol.skript.lang.Literal;
@@ -17,27 +17,27 @@ import ch.njol.skript.registrations.EventValues;
 import ch.njol.util.Checker;
 import ch.njol.skript.util.Getter;
 
-@Name("Grave Compass Particle Event")
-@Description("Triggered when a grave compass's particles are fired.")
+@Name("Grave Particle Event")
+@Description("Triggered when a particle is targeted to a grave location.")
 @Examples({
-        "on grave compass particle:",
-        "\tbroadcast \"%event-player% grave compass for %event-grave% fired particles to grave location %event-location%\"",
+        "on grave particle:",
+        "\tbroadcast \"%event-player% fired particles to grave location %event-location%\"",
 })
-public class EvtGraveCompassParticle extends SkriptEvent {
+public class EvtGraveParticle extends SkriptEvent {
 
     static {
-        Skript.registerEvent("Grave Compass Use", EvtGraveCompassParticle.class, GraveCompassParticleEvent.class, "[grave] compas(s|ses) particl(e|es)");
+        Skript.registerEvent("Grave Compass Use", EvtGraveParticle.class, GraveParticleEvent.class, "[grave] particl(e|es)");
 
         // Registering event values
-        EventValues.registerEventValue(GraveCompassParticleEvent.class, Player.class, new Getter<Player, GraveCompassParticleEvent>() {
+        EventValues.registerEventValue(GraveParticleEvent.class, Player.class, new Getter<Player, GraveParticleEvent>() {
             @Override
-            public Player get(GraveCompassParticleEvent e) {
+            public Player get(GraveParticleEvent e) {
                 return e.getPlayer();
             }
         }, 0);
-        EventValues.registerEventValue(GraveCompassParticleEvent.class, Grave.class, new Getter<Grave, GraveCompassParticleEvent>() {
+        EventValues.registerEventValue(GraveParticleEvent.class, Grave.class, new Getter<Grave, GraveParticleEvent>() {
             @Override
-            public Grave get(GraveCompassParticleEvent e) {
+            public Grave get(GraveParticleEvent e) {
                 return e.getGrave();
             }
         }, 0);
@@ -56,8 +56,8 @@ public class EvtGraveCompassParticle extends SkriptEvent {
 
     @Override
     public boolean check(Event e) {
-        if (e instanceof GraveCompassParticleEvent) {
-            GraveCompassParticleEvent event = (GraveCompassParticleEvent) e;
+        if (e instanceof GraveParticleEvent) {
+            GraveParticleEvent event = (GraveParticleEvent) e;
 
             // Check for player
             if (player != null && !player.check(event, new Checker<Player>() {
@@ -86,7 +86,7 @@ public class EvtGraveCompassParticle extends SkriptEvent {
 
     @Override
     public String toString(@Nullable Event e, boolean debug) {
-        return "Grave compass particle event " +
+        return "Grave particle event " +
                 (player != null ? " with player " + player.toString(e, debug) : "") +
                 (grave != null ? " with grave " + grave.toString(e, debug) : "");
     }

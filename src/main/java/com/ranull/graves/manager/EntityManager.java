@@ -2,9 +2,7 @@ package com.ranull.graves.manager;
 
 import com.ranull.graves.Graves;
 import com.ranull.graves.data.EntityData;
-import com.ranull.graves.event.GraveAutoLootEvent;
-import com.ranull.graves.event.GraveTeleportEvent;
-import com.ranull.graves.event.GraveZombieSpawnEvent;
+import com.ranull.graves.event.*;
 import com.ranull.graves.integration.MiniMessage;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.*;
@@ -794,7 +792,6 @@ public final class EntityManager extends EntityDataManager {
                 }
                 return true;
             }
-
             case "abandoned": {
                 Location location = plugin.getGraveManager().getGraveLocation(entity.getLocation(), grave);
                 if (location != null) {
@@ -805,12 +802,17 @@ public final class EntityManager extends EntityDataManager {
                 break;
             }
             case "distance": {
-                Location location = plugin.getGraveManager().getGraveLocation(entity.getLocation(), grave);
-                if (location != null) {
-                    if (entity.getWorld().equals(location.getWorld())) {
-                        plugin.getEntityManager().sendMessage("message.distance", entity, location, grave);
-                    } else {
-                        plugin.getEntityManager().sendMessage("message.distance-world", entity, location, grave);
+                GraveCompassUseEvent graveCompassUseEvent = new GraveCompassUseEvent(entity instanceof Player ? (Player) entity : null, grave);
+                plugin.getServer().getPluginManager().callEvent(graveCompassUseEvent);
+
+                if (!graveCompassUseEvent.isCancelled()) {
+                    Location location = plugin.getGraveManager().getGraveLocation(entity.getLocation(), grave);
+                    if (location != null) {
+                        if (entity.getWorld().equals(location.getWorld())) {
+                            plugin.getEntityManager().sendMessage("message.distance", entity, location, grave);
+                        } else {
+                            plugin.getEntityManager().sendMessage("message.distance-world", entity, location, grave);
+                        }
                     }
                 }
                 return true;
@@ -843,6 +845,20 @@ public final class EntityManager extends EntityDataManager {
                 plugin.getServer().getPluginManager().callEvent(graveAutoLootEvent);
                 if (!graveAutoLootEvent.isCancelled()) {
                     plugin.getGraveManager().autoLootGrave(entity, entity.getLocation(), grave);
+                }
+                return true;
+            }
+            case "particle":
+            case "particles": {
+                GraveParticleEvent graveParticleEvent = new GraveParticleEvent(entity instanceof Player ? (Player) entity : null, grave);
+
+                plugin.getServer().getPluginManager().callEvent(graveParticleEvent);
+                if (!graveParticleEvent.isCancelled()) {
+                    Location location = plugin.getGraveManager().getGraveLocation(entity.getLocation(), grave);
+
+                    if (location != null && entity.getLocation().getWorld() == grave.getLocationDeath().getWorld()) {
+                        plugin.getParticleManager().startParticleTrail(entity.getLocation(), grave.getLocationDeath(), Particle.valueOf(Objects.requireNonNull(plugin.getConfig("compass.particles.particle", grave).getString("compass.particles.particle")).toUpperCase()), plugin.getConfig("compass.particles.count", grave).getInt("compass.particles.count", 5), plugin.getConfig("compass.particles.speed", grave).getDouble("compass.particles.speed", 0.3), plugin.getConfig("compass.particles.duration", grave).getInt("compass.particles.duration"));
+                    }
                 }
                 return true;
             }
