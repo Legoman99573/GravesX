@@ -1,6 +1,5 @@
 package com.ranull.graves;
 
-import com.google.common.base.Charsets;
 import com.ranull.graves.command.GravesCommand;
 import com.ranull.graves.command.GraveyardsCommand;
 import com.ranull.graves.compatibility.Compatibility;
@@ -39,6 +38,8 @@ import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.concurrent.Callable;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 public class Graves extends JavaPlugin {
     private VersionManager versionManager;
     private IntegrationManager integrationManager;
@@ -62,6 +63,7 @@ public class Graves extends JavaPlugin {
     private boolean isDevelopmentBuild = false;
     private boolean isOutdatedBuild = false;
     private boolean isUnknownBuild = false;
+    private LibraryLoaderUtil libraryLoaderUtil;
 
     @Override
     public void onLoad() {
@@ -86,9 +88,11 @@ public class Graves extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        loadLibraries();
         if (wasReloaded()) {
             compatibilityMessage("Server was reloaded with the /reload command. No support will be given if something breaks.");
         }
+
         integrationManager.load();
         integrationManager.loadNoReload();
 
@@ -143,6 +147,39 @@ public class Graves extends JavaPlugin {
         if (recipeManager != null) {
             recipeManager.unload();
         }
+    }
+
+    private void loadLibraries() {
+        getLogger().info("Loading Libraries for GravesX");
+
+        libraryLoaderUtil = new LibraryLoaderUtil(this);
+
+        libraryLoaderUtil.loadLibrary("com{}zaxxer", "HikariCP", "5.0.1", "com{}zaxxer{}hikari", "com{}ranull{}graves{}libraries{}hikari", false);
+        libraryLoaderUtil.loadLibrary("org{}xerial", "sqlite-jdbc", "3.46.1.0", "org{}sqlite", "com{}ranull{}graves{}libraries{}sqlite", false);
+        libraryLoaderUtil.loadLibrary("org{}json", "json", "20240303", "org{}json", "com{}ranull{}graves{}libraries{}json", false);
+        libraryLoaderUtil.loadLibrary("com{}google{}code{}gson", "gson", "2.10.1", "com{}google", "com{}ranull{}graves{}libraries{}google", false);
+        libraryLoaderUtil.loadLibrary("com{}google{}guava", "guava", "33.3.0-jre", "com{}google", "com{}ranull{}graves{}libraries{}google", false);
+        libraryLoaderUtil.loadLibrary("org{}postgresql", "postgresql", "42.7.4", "org{}postgresql", "com{}ranull{}graves{}libraries{}postgresql", false);
+        libraryLoaderUtil.loadLibrary("org{}mariadb{}jdbc", "mariadb-java-client", "3.4.1", "org{}mariadb", "com{}ranull{}graves{}libraries{}mariadb", false);
+        libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.0.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
+        libraryLoaderUtil.loadLibrary("com{}h2database", "h2", "2.3.230", "org{}h2", "com{}ranull{}graves{}libraries{}h2", false);
+        //libraryLoaderUtil.loadLibrary("org{}slf4j", "slf4j-simple", "2.0.16", false);
+        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-minimessage", "4.17.0", "net{}kyori", "com{}ranull{}graves{}libraries{}slf4j", false);
+        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-api", "4.17.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
+        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-key", "4.17.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
+        libraryLoaderUtil.loadLibrary("net{}kyori", "examination-api", "1.3.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
+        libraryLoaderUtil.loadLibrary("net{}kyori", "examination-string", "1.3.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
+        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-platform-bukkit", "4.3.3", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
+        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-platform-api", "4.3.3", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
+        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-serializer-bungeecord", "4.3.3", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
+        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-serializer-legacy", "4.13.1", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
+        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-nbt", "4.17.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
+        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-serializer-gson", "4.17.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
+        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-serializer-gson-legacy-impl", "4.17.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
+        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-platform-facet", "4.3.3", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
+        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-platform-viaversion", "4.3.3", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
+
+        getLogger().info("Finished Loading Libraries for GravesX.");
     }
 
     @Override
@@ -780,7 +817,7 @@ public class Graves extends JavaPlugin {
 
         if (inputStream != null) {
             fileConfiguration.addDefaults(YamlConfiguration
-                    .loadConfiguration(new InputStreamReader(inputStream, Charsets.UTF_8)));
+                    .loadConfiguration(new InputStreamReader(inputStream, UTF_8)));
         }
     }
 

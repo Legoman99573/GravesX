@@ -1,14 +1,7 @@
 package com.ranull.graves.util;
 
 import com.ranull.graves.Graves;
-import com.ranull.graves.manager.VersionManager;
-import de.Ste3et_C0st.FurnitureLib.NBT.NBTTagCompound;
-import de.tr7zw.nbtapi.NBT;
-import de.tr7zw.nbtapi.NBTCompound;
-import de.tr7zw.nbtapi.NBTContainer;
 import de.tr7zw.nbtapi.NBTItem;
-import de.tr7zw.nbtapi.iface.ReadWriteNBT;
-import de.tr7zw.nbtapi.utils.DataFixerUtil;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;

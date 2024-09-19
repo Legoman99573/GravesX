@@ -95,12 +95,32 @@
               <shadedPattern>${project.groupId}.${project.artifactId}.libraries.imdanix</shadedPattern>
             </relocation>
             <relocation>
+              <pattern>net.byteflux.libby</pattern>
+              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.libby</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>org.json</pattern>
+              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.json</shadedPattern>
+            </relocation>
+            <relocation>
               <pattern>com.google</pattern>
               <shadedPattern>${project.groupId}.${project.artifactId}.libraries.google</shadedPattern>
             </relocation>
             <relocation>
-              <pattern>org.slf4j</pattern>
-              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.slf4j</shadedPattern>
+              <pattern>org.h2</pattern>
+              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.h2</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>org.postgresql</pattern>
+              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.postgresql</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>org.sqlite</pattern>
+              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.sqlite</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>com.mariadb</pattern>
+              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.mariadb</shadedPattern>
             </relocation>
           </relocations>
         </configuration>
@@ -256,6 +276,12 @@
       <groupId>net.coreprotect</groupId>
       <artifactId>coreprotect</artifactId>
       <version>22.4</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.zaxxer</groupId>
+      <artifactId>HikariCP</artifactId>
+      <version>5.0.1</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -446,6 +472,24 @@
       <groupId>com.github.jojodmo</groupId>
       <artifactId>ItemBridge</artifactId>
       <version>b0054538c1</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.kyori</groupId>
+      <artifactId>adventure-text-minimessage</artifactId>
+      <version>4.17.0</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.kyori</groupId>
+      <artifactId>adventure-text-serializer-gson</artifactId>
+      <version>4.17.0</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.kyori</groupId>
+      <artifactId>adventure-platform-bukkit</artifactId>
+      <version>4.3.4</version>
       <scope>provided</scope>
     </dependency>
     <dependency>

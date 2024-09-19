@@ -315,7 +315,7 @@ public final class DataManager {
                 config.addDataSourceProperty("sslcert", sslcert);
                 config.addDataSourceProperty("sslkey", sslkey);
             }
-            config.setDriverClassName("org.postgresql.Driver");
+            config.setDriverClassName("com.ranull.graves.libraries.postgresql.Driver");
             config.setMaximumPoolSize(maxConnections);
             config.setMaxLifetime(maxLifetime);
             config.setMinimumIdle(2);
@@ -391,9 +391,9 @@ public final class DataManager {
             config.setLeakDetectionThreshold(15000); // Detect connection leaks
 
             if (type == Type.MARIADB) {
-                config.setDriverClassName("org.mariadb.jdbc.Driver");
+                config.setDriverClassName("com.ranull.graves.libraries.mariadb.jdbc.Driver");
             } else {
-                config.setDriverClassName("com.mysql.cj.jdbc.Driver");
+                config.setDriverClassName("com.ranull.graves.libraries.mysql.cj.jdbc.Driver");
             }
 
             dataSource = new HikariDataSource(config);
@@ -420,7 +420,7 @@ public final class DataManager {
         config.setConnectionInitSql("PRAGMA journal_mode=" + journal_mode + "; PRAGMA synchronous=" + synchronous + ";");
         config.setPoolName("Graves SQLite");
         config.addDataSourceProperty("autoReconnect", "true");
-        config.setDriverClassName("org.sqlite.JDBC");
+        config.setDriverClassName("com.ranull.graves.libraries.sqlite.JDBC");
     }
 
     /**
@@ -452,7 +452,7 @@ public final class DataManager {
         config.addDataSourceProperty("alwaysSendSetIsolation", "false");
         config.addDataSourceProperty("cacheCallableStmts", "true");
 
-        config.setDriverClassName("org.h2.Driver");
+        config.setDriverClassName("com.ranull.graves.libraries.h2.Driver");
         config.setMaximumPoolSize(maxConnections);
         config.setMaxLifetime(maxLifetime);
         config.setMinimumIdle(2);
