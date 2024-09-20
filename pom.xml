@@ -85,24 +85,12 @@
                             <shadedPattern>${project.groupId}.${project.artifactId}.libraries.libby</shadedPattern>
                         </relocation>
                         <relocation>
-                            <pattern>org.json</pattern>
-                            <shadedPattern>${project.groupId}.${project.artifactId}.libraries.json</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>com.google</pattern>
-                            <shadedPattern>${project.groupId}.${project.artifactId}.libraries.google</shadedPattern>
-                        </relocation>
-                        <relocation>
                             <pattern>org.h2</pattern>
                             <shadedPattern>${project.groupId}.${project.artifactId}.libraries.h2</shadedPattern>
                         </relocation>
                         <relocation>
                             <pattern>org.postgresql</pattern>
                             <shadedPattern>${project.groupId}.${project.artifactId}.libraries.postgresql</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>org.sqlite</pattern>
-                            <shadedPattern>${project.groupId}.${project.artifactId}.libraries.sqlite</shadedPattern>
                         </relocation>
                         <relocation>
                             <pattern>com.mariadb</pattern>

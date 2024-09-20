@@ -4,6 +4,7 @@ import com.alessiodp.libby.BukkitLibraryManager;
 import com.alessiodp.libby.Library;
 import com.alessiodp.libby.LibraryManager;
 import com.ranull.graves.Graves;
+import org.bukkit.Bukkit;
 
 
 /**
@@ -23,6 +24,34 @@ public class LibraryLoaderUtil {
      */
     public LibraryLoaderUtil(Graves plugin) {
         this.plugin = plugin;
+    }
+
+    /**
+     * Loads a library with the specified group ID, artifact ID, and version.
+     * <p>
+     * Uses default settings for relocation, ID, and isolation.
+     * </p>
+     *
+     * @param groupID    The group ID of the library.
+     * @param artifactID The artifact ID of the library.
+     * @param version    The version of the library.
+     */
+    public void loadLibrary(String groupID, String artifactID, String version) {
+        loadLibrary(groupID, artifactID, version, null, null, null, false, null);
+    }
+    /**
+     * Loads a library with the specified group ID, artifact ID, version, and isolation setting.
+     * <p>
+     * Uses default settings for relocation and ID.
+     * </p>
+     *
+     * @param groupID    The group ID of the library.
+     * @param artifactID The artifact ID of the library.
+     * @param version    The version of the library.
+     * @param isIsolated Whether to load the library in an isolated class loader.
+     */
+    public void loadLibrary(String groupID, String artifactID, String version, boolean isIsolated) {
+        loadLibrary(groupID, artifactID, version, null, null, null, isIsolated, null);
     }
 
     /**
@@ -88,6 +117,7 @@ public class LibraryLoaderUtil {
             }
             libraryManager.getRepositories();
             if (ID != null) {
+                plugin.getLogger().info("Loading library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + " with ID " + ID + ".");
                 if (relocatePattern != null) {
                     libraryManager.loadLibrary(Library.builder()
                             .groupId(groupID)
@@ -98,7 +128,20 @@ public class LibraryLoaderUtil {
                             .isolatedLoad(isIsolated)
                             .build()
                     );
-                    plugin.getLogger().info("Loaded library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + " and shaded successfully with ID " + ID + ".");
+                    if (isIsolated) {
+                        try {
+                            Class<?> clazz = Class.forName(relocateRelocatedPattern.replace("{}", "."));
+                            clazz.getClassLoader();
+                            plugin.getLogger().info("Loaded library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + " and shaded successfully with ID " + ID + ".");
+                        } catch (ClassNotFoundException e) {
+                            Bukkit.getLogger().severe("Shaded library could not be loaded.");
+                        } catch (Exception e) {
+                            Bukkit.getLogger().severe("Shaded library could not be loaded.");
+                            e.printStackTrace();
+                        }
+                    } else {
+                        plugin.getLogger().info("Loaded library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + " and shaded successfully with ID " + ID + ".");
+                    }
                 } else {
                     libraryManager.loadLibrary(Library.builder()
                             .groupId(groupID)
@@ -109,9 +152,23 @@ public class LibraryLoaderUtil {
                             .resolveTransitiveDependencies(true)
                             .build()
                     );
-                    plugin.getLogger().info("Loaded library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + " successfully with ID " + ID + ".");
+                    if (isIsolated) {
+                        try {
+                            Class<?> clazz = Class.forName(relocateRelocatedPattern.replace("{}", "."));
+                            clazz.getClassLoader();
+                            plugin.getLogger().info("Loaded library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + " successfully with ID " + ID + ".");
+                        } catch (ClassNotFoundException e) {
+                            Bukkit.getLogger().severe("Shaded library could not be loaded.");
+                        } catch (Exception e) {
+                            Bukkit.getLogger().severe("Shaded library could not be loaded.");
+                            e.printStackTrace();
+                        }
+                    } else {
+                        plugin.getLogger().info("Loaded library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + " successfully with ID " + ID + ".");
+                    }
                 }
             } else {
+                plugin.getLogger().info("Loading library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + ".");
                 if (relocatePattern != null) {
                     libraryManager.loadLibrary(Library.builder()
                             .groupId(groupID)
@@ -122,7 +179,20 @@ public class LibraryLoaderUtil {
                             .resolveTransitiveDependencies(true)
                             .build()
                     );
-                    plugin.getLogger().info("Loaded library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + " and shaded successfully.");
+                    if (isIsolated) {
+                        try {
+                            Class<?> clazz = Class.forName(relocateRelocatedPattern.replace("{}", "."));
+                            clazz.getClassLoader();
+                            plugin.getLogger().info("Loaded library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + " and shaded successfully.");
+                        } catch (ClassNotFoundException e) {
+                            Bukkit.getLogger().severe("Shaded library could not be loaded.");
+                        } catch (Exception e) {
+                            Bukkit.getLogger().severe("Shaded library could not be loaded.");
+                            e.printStackTrace();
+                        }
+                    } else {
+                        plugin.getLogger().info("Loaded library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + " and shaded successfully.");
+                    }
                 } else {
                     libraryManager.loadLibrary(Library.builder()
                             .groupId(groupID)
@@ -132,7 +202,20 @@ public class LibraryLoaderUtil {
                             .resolveTransitiveDependencies(true)
                             .build()
                     );
-                    plugin.getLogger().info("Loaded library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + " successfully.");
+                    if (isIsolated) {
+                        try {
+                            Class<?> clazz = Class.forName(relocateRelocatedPattern.replace("{}", "."));
+                            clazz.getClassLoader();
+                            plugin.getLogger().info("Loaded library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + " successfully.");
+                        } catch (ClassNotFoundException e) {
+                            Bukkit.getLogger().severe("Shaded library could not be loaded.");
+                        } catch (Exception e) {
+                            Bukkit.getLogger().severe("Shaded library could not be loaded.");
+                            e.printStackTrace();
+                        }
+                    } else {
+                        plugin.getLogger().info("Loaded library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + " successfully.");
+                    }
                 }
             }
         } catch (Exception e) {

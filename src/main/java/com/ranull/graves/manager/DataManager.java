@@ -393,7 +393,7 @@ public final class DataManager {
             if (type == Type.MARIADB) {
                 config.setDriverClassName("com.ranull.graves.libraries.mariadb.jdbc.Driver");
             } else {
-                config.setDriverClassName("com.ranull.graves.libraries.mysql.cj.jdbc.Driver");
+                config.setDriverClassName("com.mysql.cj.jdbc.Driver");
             }
 
             dataSource = new HikariDataSource(config);
@@ -420,7 +420,7 @@ public final class DataManager {
         config.setConnectionInitSql("PRAGMA journal_mode=" + journal_mode + "; PRAGMA synchronous=" + synchronous + ";");
         config.setPoolName("Graves SQLite");
         config.addDataSourceProperty("autoReconnect", "true");
-        config.setDriverClassName("com.ranull.graves.libraries.sqlite.JDBC");
+        config.setDriverClassName("org.sqlite.JDBC");
     }
 
     /**

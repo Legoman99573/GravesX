@@ -155,29 +155,36 @@ public class Graves extends JavaPlugin {
         libraryLoaderUtil = new LibraryLoaderUtil(this);
 
         libraryLoaderUtil.loadLibrary("com{}zaxxer", "HikariCP", "5.0.1", "com{}zaxxer{}hikari", "com{}ranull{}graves{}libraries{}hikari", false);
-        libraryLoaderUtil.loadLibrary("org{}xerial", "sqlite-jdbc", "3.46.1.0", "org{}sqlite", "com{}ranull{}graves{}libraries{}sqlite", false);
-        libraryLoaderUtil.loadLibrary("org{}json", "json", "20240303", "org{}json", "com{}ranull{}graves{}libraries{}json", false);
-        libraryLoaderUtil.loadLibrary("com{}google{}code{}gson", "gson", "2.10.1", "com{}google", "com{}ranull{}graves{}libraries{}google", false);
-        libraryLoaderUtil.loadLibrary("com{}google{}guava", "guava", "33.3.0-jre", "com{}google", "com{}ranull{}graves{}libraries{}google", false);
+        libraryLoaderUtil.loadLibrary("org{}xerial", "sqlite-jdbc", "3.46.0.0", false);
+        try {
+            Class.forName("org.json.JSONObject");
+        } catch (ClassNotFoundException e) {
+            libraryLoaderUtil.loadLibrary("org{}json", "json", "20240303");
+        }
+
+        try {
+            Class.forName("com.google.gson.Gson");
+        } catch (ClassNotFoundException e) {
+            libraryLoaderUtil.loadLibrary("com{}google{}code{}gson", "gson", "2.10.1", false);
+        }
+
+        try {
+            Class.forName("com.google.common.collect.ImmutableList");
+        } catch (ClassNotFoundException e) {
+            libraryLoaderUtil.loadLibrary("com{}google{}guava", "guava", "33.3.0-jre", false);
+        }
         libraryLoaderUtil.loadLibrary("org{}postgresql", "postgresql", "42.7.4", "org{}postgresql", "com{}ranull{}graves{}libraries{}postgresql", false);
         libraryLoaderUtil.loadLibrary("org{}mariadb{}jdbc", "mariadb-java-client", "3.4.1", "org{}mariadb", "com{}ranull{}graves{}libraries{}mariadb", false);
-        libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.0.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
+        libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.0.0", false);
         libraryLoaderUtil.loadLibrary("com{}h2database", "h2", "2.3.230", "org{}h2", "com{}ranull{}graves{}libraries{}h2", false);
         //libraryLoaderUtil.loadLibrary("org{}slf4j", "slf4j-simple", "2.0.16", false);
         libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-minimessage", "4.17.0", "net{}kyori", "com{}ranull{}graves{}libraries{}slf4j", false);
         libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-api", "4.17.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
-        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-key", "4.17.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
-        libraryLoaderUtil.loadLibrary("net{}kyori", "examination-api", "1.3.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
-        libraryLoaderUtil.loadLibrary("net{}kyori", "examination-string", "1.3.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
         libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-platform-bukkit", "4.3.3", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
-        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-platform-api", "4.3.3", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
         libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-serializer-bungeecord", "4.3.3", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
         libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-serializer-legacy", "4.13.1", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
-        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-nbt", "4.17.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
         libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-serializer-gson", "4.17.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
         libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-serializer-gson-legacy-impl", "4.17.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
-        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-platform-facet", "4.3.3", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
-        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-platform-viaversion", "4.3.3", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
         libraryLoaderUtil.loadLibrary("de{}themoep", "minedown-adventure", "1.7.3", "de{}themoep{}minedown", "com{}ranull{}graves{}libraries{}minedown", false, "https://repo.cwhead.dev/repository/maven-public/");
         libraryLoaderUtil.loadLibrary("com{}github{}imDaniX", "MiniTranslator", "v2.1", "me{}imdanix{}text", "com{}ranull{}graves{}libraries{}text", false);
         libraryLoaderUtil.loadLibrary("com{}github{}puregero", "multilib", "1.2.4", "com{}github{}puregero{}multilib", "com{}ranull{}graves{}libraries{}multilib", false, "https://repo.clojars.org/");
