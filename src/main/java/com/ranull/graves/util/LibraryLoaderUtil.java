@@ -26,48 +26,20 @@ public class LibraryLoaderUtil {
     }
 
     /**
-     * Loads a library with the specified group ID, artifact ID, and version.
+     * Loads a library with the specified group ID, artifact ID, version, relocation patterns, and isolation setting.
      * <p>
-     * Uses default settings for relocation, ID, and isolation.
-     * </p>
-     *
-     * @param groupID    The group ID of the library.
-     * @param artifactID The artifact ID of the library.
-     * @param version    The version of the library.
-     */
-    public void loadLibrary(String groupID, String artifactID, String version) {
-        loadLibrary(groupID, artifactID, version, null, null, null, true);
-    }
-
-    /**
-     * Loads a library with the specified group ID, artifact ID, version, and isolation setting.
-     * <p>
-     * Uses default settings for relocation and ID.
-     * </p>
-     *
-     * @param groupID    The group ID of the library.
-     * @param artifactID The artifact ID of the library.
-     * @param version    The version of the library.
-     * @param isIsolated Whether to load the library in an isolated class loader.
-     */
-    public void loadLibrary(String groupID, String artifactID, String version, boolean isIsolated) {
-        loadLibrary(groupID, artifactID, version, null, null, null, isIsolated);
-    }
-
-    /**
-     * Loads a library with the specified group ID, artifact ID, version, and relocation patterns.
-     * <p>
-     * Uses default settings for ID and isolation.
+     * Uses default settings for ID.
      * </p>
      *
      * @param groupID                   The group ID of the library.
      * @param artifactID                The artifact ID of the library.
      * @param version                   The version of the library.
      * @param relocatePattern           The package pattern to relocate.
-     * @param relocateRelocatedPattern The relocated package pattern.
+     * @param relocateRelocatedPattern  The relocated package pattern.
+     * @param isIsolated                Whether to load the library in an isolated class loader.
      */
-    public void loadLibrary(String groupID, String artifactID, String version, String relocatePattern, String relocateRelocatedPattern) {
-        loadLibrary(groupID, artifactID, version, null, relocatePattern, relocateRelocatedPattern, true);
+    public void loadLibrary(String groupID, String artifactID, String version, String relocatePattern, String relocateRelocatedPattern, boolean isIsolated) {
+        loadLibrary(groupID, artifactID, version, null, relocatePattern, relocateRelocatedPattern, isIsolated, null);
     }
 
     /**
@@ -80,11 +52,12 @@ public class LibraryLoaderUtil {
      * @param artifactID                The artifact ID of the library.
      * @param version                   The version of the library.
      * @param relocatePattern           The package pattern to relocate.
-     * @param relocateRelocatedPattern The relocated package pattern.
+     * @param relocateRelocatedPattern  The relocated package pattern.
      * @param isIsolated                Whether to load the library in an isolated class loader.
+     * @param libraryURL                Points to an external library URL to a repository.
      */
-    public void loadLibrary(String groupID, String artifactID, String version, String relocatePattern, String relocateRelocatedPattern, boolean isIsolated) {
-        loadLibrary(groupID, artifactID, version, null, relocatePattern, relocateRelocatedPattern, isIsolated);
+    public void loadLibrary(String groupID, String artifactID, String version, String relocatePattern, String relocateRelocatedPattern, boolean isIsolated, String libraryURL) {
+        loadLibrary(groupID, artifactID, version, null, relocatePattern, relocateRelocatedPattern, isIsolated, libraryURL);
     }
 
     /**
@@ -96,19 +69,23 @@ public class LibraryLoaderUtil {
      * @param groupID                   The group ID of the library.
      * @param artifactID                The artifact ID of the library.
      * @param version                   The version of the library.
-     * @param ID                       Optional ID for the library.
+     * @param ID                        Optional ID for the library.
      * @param relocatePattern           Optional package pattern to relocate.
-     * @param relocateRelocatedPattern Optional relocated package pattern.
+     * @param relocateRelocatedPattern  Optional relocated package pattern.
      * @param isIsolated                Whether to load the library in an isolated class loader.
+     * @param libraryURL                Points to an external library URL to a repository.
      */
-    public void loadLibrary(String groupID, String artifactID, String version, String ID, String relocatePattern, String relocateRelocatedPattern, boolean isIsolated) {
+    public void loadLibrary(String groupID, String artifactID, String version, String ID, String relocatePattern, String relocateRelocatedPattern, boolean isIsolated, String libraryURL) {
         try {
             LibraryManager libraryManager = new BukkitLibraryManager(plugin);
-            libraryManager.addMavenCentral();
-            libraryManager.addSonatype();
-            libraryManager.addJCenter();
-            libraryManager.addJitPack();
-            libraryManager.addRepository("https://repo1.maven.org/maven2");
+            if (libraryURL != null) {
+                libraryManager.addRepository(libraryURL);
+            } else {
+                libraryManager.addMavenCentral();
+                libraryManager.addSonatype();
+                libraryManager.addJCenter();
+                libraryManager.addJitPack();
+            }
             libraryManager.setLogLevel(LogLevel.DEBUG);
             Library lib;
             if (ID != null) {

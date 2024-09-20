@@ -178,6 +178,9 @@ public class Graves extends JavaPlugin {
         libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-serializer-gson-legacy-impl", "4.17.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
         libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-platform-facet", "4.3.3", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
         libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-platform-viaversion", "4.3.3", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
+        libraryLoaderUtil.loadLibrary("de{}themoep", "minedown-adventure", "1.7.3", "de{}themoep{}minedown", "com{}ranull{}graves{}libraries{}minedown", false, "https://repo.cwhead.dev/repository/maven-public/");
+        libraryLoaderUtil.loadLibrary("com{}github{}imDaniX", "MiniTranslator", "v2.1", "me{}imdanix{}text", "com{}ranull{}graves{}libraries{}text", false);
+        libraryLoaderUtil.loadLibrary("com{}github{}puregero", "multilib", "1.2.4", "com{}github{}puregero{}multilib", "com{}ranull{}graves{}libraries{}multilib", false, "https://repo.clojars.org/");
 
         getLogger().info("Finished Loading Libraries for GravesX.");
     }

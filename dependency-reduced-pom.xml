@@ -315,6 +315,12 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>com.github.puregero</groupId>
+      <artifactId>multilib</artifactId>
+      <version>1.2.4</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>com.mojang</groupId>
       <artifactId>authlib</artifactId>
       <version>6.0.55-graves</version>
@@ -490,6 +496,18 @@
       <groupId>net.kyori</groupId>
       <artifactId>adventure-platform-bukkit</artifactId>
       <version>4.3.4</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.github.imDaniX</groupId>
+      <artifactId>MiniTranslator</artifactId>
+      <version>v2.1</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>de.themoep</groupId>
+      <artifactId>minedown-adventure</artifactId>
+      <version>1.7.3-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
