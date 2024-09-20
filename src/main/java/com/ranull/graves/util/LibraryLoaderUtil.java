@@ -1,10 +1,10 @@
 package com.ranull.graves.util;
 
+import com.alessiodp.libby.BukkitLibraryManager;
+import com.alessiodp.libby.Library;
+import com.alessiodp.libby.LibraryManager;
 import com.ranull.graves.Graves;
-import net.byteflux.libby.BukkitLibraryManager;
-import net.byteflux.libby.Library;
-import net.byteflux.libby.LibraryManager;
-import net.byteflux.libby.logging.LogLevel;
+
 
 /**
  * Utility class for loading external libraries dynamically using BukkitLibraryManager.
@@ -86,47 +86,55 @@ public class LibraryLoaderUtil {
                 libraryManager.addJCenter();
                 libraryManager.addJitPack();
             }
-            libraryManager.setLogLevel(LogLevel.DEBUG);
-            Library lib;
+            libraryManager.getRepositories();
             if (ID != null) {
                 if (relocatePattern != null) {
-                    lib = Library.builder()
+                    libraryManager.loadLibrary(Library.builder()
                             .groupId(groupID)
                             .artifactId(artifactID)
                             .version(version)
-                            .id(ID)
+                            .loaderId(ID)
                             .relocate(relocatePattern, relocateRelocatedPattern)
                             .isolatedLoad(isIsolated)
-                            .build();
+                            .build()
+                    );
+                    plugin.getLogger().info("Loaded library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + " and shaded successfully with ID " + ID + ".");
                 } else {
-                    lib = Library.builder()
+                    libraryManager.loadLibrary(Library.builder()
                             .groupId(groupID)
                             .artifactId(artifactID)
                             .version(version)
-                            .id(ID)
+                            .loaderId(ID)
                             .isolatedLoad(isIsolated)
-                            .build();
+                            .resolveTransitiveDependencies(true)
+                            .build()
+                    );
+                    plugin.getLogger().info("Loaded library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + " successfully with ID " + ID + ".");
                 }
             } else {
                 if (relocatePattern != null) {
-                    lib = Library.builder()
+                    libraryManager.loadLibrary(Library.builder()
                             .groupId(groupID)
                             .artifactId(artifactID)
                             .version(version)
                             .relocate(relocatePattern, relocateRelocatedPattern)
                             .isolatedLoad(isIsolated)
-                            .build();
+                            .resolveTransitiveDependencies(true)
+                            .build()
+                    );
+                    plugin.getLogger().info("Loaded library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + " and shaded successfully.");
                 } else {
-                    lib = Library.builder()
+                    libraryManager.loadLibrary(Library.builder()
                             .groupId(groupID)
                             .artifactId(artifactID)
                             .version(version)
                             .isolatedLoad(isIsolated)
-                            .build();
+                            .resolveTransitiveDependencies(true)
+                            .build()
+                    );
+                    plugin.getLogger().info("Loaded library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + " successfully.");
                 }
             }
-            libraryManager.loadLibrary(lib);
-            plugin.getLogger().info("Loaded library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + " successfully.");
         } catch (Exception e) {
             plugin.getLogger().severe("Failed to download or load library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + ". Cause: " + e.getCause());
             plugin.logStackTrace(e);
