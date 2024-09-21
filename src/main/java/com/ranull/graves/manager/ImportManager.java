@@ -127,7 +127,6 @@ public final class ImportManager {
                 Player player = plugin.getServer().getPlayer(grave.getOwnerUUID());
 
                 grave.setOwnerTexture(SkinUtil.getTexture(player));
-                grave.setOwnerTextureSignature(SkinUtil.getSignature(player));
             }
 
             //grave.setTimeCreation(angelChest.getLong("created", System.currentTimeMillis()));
