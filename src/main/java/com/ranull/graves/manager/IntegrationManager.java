@@ -4,6 +4,7 @@ import ch.njol.skript.SkriptAddon;
 import com.ranull.graves.Graves;
 import com.ranull.graves.integration.*;
 import com.ranull.graves.listener.integration.coreprotect.CoreProtectListener;
+import com.ranull.graves.listener.integration.itemsadder.FurnitureBreakListener;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.permission.Permission;
 import org.bukkit.Bukkit;
@@ -1006,6 +1007,7 @@ public final class IntegrationManager {
 
             if (itemsAdderPlugin != null && itemsAdderPlugin.isEnabled()) {
                 itemsAdder = new ItemsAdder(plugin, itemsAdderPlugin);
+                plugin.getServer().getPluginManager().registerEvents(new FurnitureBreakListener(plugin), plugin);
 
                 plugin.integrationMessage("Hooked into " + itemsAdderPlugin.getName() + " " + itemsAdderPlugin.getDescription().getVersion() + ".");
             }
@@ -1037,8 +1039,8 @@ public final class IntegrationManager {
     private void loadMiniMessage() {
         if (plugin.getConfig().getBoolean("settings.integration.minimessage.enabled", true)) {
             try {
-                Class.forName("net.kyori.adventure.text.minimessage.MiniMessage", false, getClass().getClassLoader());
-                Class.forName("net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer", false, getClass().getClassLoader());
+                Class.forName("com.ranull.graves.libraries.kyori.adventure.text.minimessage.MiniMessage", false, getClass().getClassLoader());
+                Class.forName("com.ranull.graves.libraries.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer", false, getClass().getClassLoader());
 
                 miniMessage = new MiniMessage();
 
@@ -1054,13 +1056,15 @@ public final class IntegrationManager {
      * Loads the MineDown integration if enabled in the configuration.
      */
     private void loadMineDown() {
+        if (miniMessage == null) return;
         if (plugin.getConfig().getBoolean("settings.integration.minedown.enabled", true)) {
-            Plugin mineDownPlugin = plugin.getServer().getPluginManager().getPlugin("MineDownPlugin");
-
-            if (mineDownPlugin != null && mineDownPlugin.isEnabled()) {
+            try {
+                Class.forName("com.ranull.graves.libraries.minedown.adventure.MineDown", true, getClass().getClassLoader());
+                Class.forName("com.ranull.graves.libraries.minedown.adventure.MineDownParser", true, getClass().getClassLoader());
                 mineDown = new MineDown();
 
-                plugin.integrationMessage("Hooked into " + mineDownPlugin.getName() + " " + mineDownPlugin.getDescription().getVersion() + ".");
+                plugin.integrationMessage("Hooked into Minedown Adventure.");
+            } catch (ClassNotFoundException ignored) {
             }
         } else {
             mineDown = null;
