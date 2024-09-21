@@ -10,11 +10,14 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.profile.PlayerProfile;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -30,7 +33,6 @@ public final class SkinUtil {
      * @param name   The name associated with the texture.
      * @param base64 The Base64 encoded texture.
      */
-
     public static void setSkullBlockTexture(Skull skull, String name, String base64) {
         GameProfile gameProfile = new GameProfile(UUID.randomUUID(), name);
 
@@ -40,8 +42,17 @@ public final class SkinUtil {
             Field profileField = skull.getClass().getDeclaredField("profile");
 
             profileField.setAccessible(true);
-            profileField.set(skull, gameProfile);
-        } catch (NoSuchFieldException | IllegalAccessException exception) {
+            if (profileField.getType().getSimpleName().contains("ResolvableProfile")) {
+                Constructor<?> resolvableProfileConstructor = Class.forName("net.minecraft.world.item.component.ResolvableProfile")
+                        .getDeclaredConstructor(GameProfile.class);
+                resolvableProfileConstructor.setAccessible(true);
+                Object resolvableProfileInstance = resolvableProfileConstructor.newInstance(gameProfile);
+                profileField.set(skull, resolvableProfileInstance);
+            } else {
+                profileField.set(skull, gameProfile);
+            }
+        } catch (Exception exception) {
+            Bukkit.getLogger().warning("Failed to set the Skull texture. Cause: " + exception.getCause());
             exception.printStackTrace();
         }
     }
@@ -61,10 +72,18 @@ public final class SkinUtil {
         try {
             Field profileField = skullMeta.getClass().getDeclaredField("profile");
             profileField.setAccessible(true);
-            profileField.set(skullMeta, gameProfile);
+            if (profileField.getType().getSimpleName().contains("ResolvableProfile")) {
+                Constructor<?> resolvableProfileConstructor = Class.forName("net.minecraft.world.item.component.ResolvableProfile")
+                        .getDeclaredConstructor(GameProfile.class);
+                resolvableProfileConstructor.setAccessible(true);
+                Object resolvableProfileInstance = resolvableProfileConstructor.newInstance(gameProfile);
+                profileField.set(skullMeta, resolvableProfileInstance);
+            } else {
+                profileField.set(skullMeta, gameProfile);
+            }
         } catch (Exception exception) {
-            Bukkit.getLogger().warning("Failed to set the SkullMeta texture. Falling back to the player who died.");
-            skullMeta.setOwningPlayer(Bukkit.getOfflinePlayer(name));
+            Bukkit.getLogger().warning("Failed to set the SkullMeta texture. Cause: " + exception.getCause());
+            exception.printStackTrace();
         }
     }
 
@@ -104,38 +123,6 @@ public final class SkinUtil {
                         return base64;
                     }
                 } catch (NoSuchMethodError ignored) {
-                }
-            }
-        }
-
-        return null;
-    }
-
-
-    /**
-     * Retrieves the texture signature of an Entity.
-     *
-     * @param entity The entity from which to get the texture signature.
-     * @return The texture signature string, or null if not found.
-     */
-    public static String getSignature(Entity entity) {
-        if (entity instanceof Player) {
-            GameProfile gameProfile = getPlayerGameProfile((Player) entity);
-
-            if (gameProfile != null) {
-                PropertyMap propertyMap = gameProfile.getProperties();
-
-                if (propertyMap.containsKey("textures")) {
-                    Collection<Property> propertyCollection = propertyMap.get("textures");
-
-                    try {
-                        return !propertyCollection.isEmpty()
-                                ? propertyCollection.stream().findFirst().get().signature() : null;
-
-                    } catch(NoSuchMethodError blah) {
-                        return !propertyCollection.isEmpty()
-                                ? propertyCollection.stream().findFirst().get().getSignature() : null;
-                    }
                 }
             }
         }

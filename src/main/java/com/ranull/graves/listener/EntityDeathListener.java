@@ -517,7 +517,6 @@ public class EntityDeathListener implements Listener {
         grave.setTimeAlive(plugin.getConfig("grave.time", grave).getInt("grave.time") * 1000L);
         if (!plugin.getVersionManager().is_v1_7()) {
             grave.setOwnerTexture(SkinUtil.getTexture(livingEntity));
-            grave.setOwnerTextureSignature(SkinUtil.getSignature(livingEntity));
         }
     }
 
