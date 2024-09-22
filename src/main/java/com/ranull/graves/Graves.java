@@ -178,11 +178,12 @@ public class Graves extends JavaPlugin {
         libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.0.0", false);
         libraryLoaderUtil.loadLibrary("com{}h2database", "h2", "2.3.230", "org{}h2", "com{}ranull{}graves{}libraries{}h2", false);
         //libraryLoaderUtil.loadLibrary("org{}slf4j", "slf4j-simple", "2.0.16", false);
+        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-api", "4.17.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
         libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-minimessage", "4.17.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
         libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-serializer-gson", "4.17.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
         libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-platform-bukkit", "4.3.3", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
-        libraryLoaderUtil.loadLibrary("de{}themoep", "minedown-adventure", "1.7.3", "de{}themoep{}minedown", "com{}ranull{}graves{}libraries{}minedown", false, "https://repo.cwhead.dev/repository/maven-public/");
-        libraryLoaderUtil.loadLibrary("com{}github{}imDaniX", "MiniTranslator", "v2.1", "me{}imdanix{}text", "com{}ranull{}graves{}libraries{}text", false);
+        libraryLoaderUtil.loadLibrary("de{}themoep", "minedown-adventure", "1.7.3-graves", "de{}themoep{}minedown", "com{}ranull{}graves{}libraries{}minedown", false, "https://repo.cwhead.dev/repository/maven-public/");
+        libraryLoaderUtil.loadLibrary("com{}github{}imDaniX", "MiniTranslator", "v2.1", "me{}imdanix{}text", "com{}ranull{}graves{}libraries{}imdanix{}text", false, "https://repo.cwhead.dev/repository/maven-public/");
         libraryLoaderUtil.loadLibrary("com{}github{}puregero", "multilib", "1.2.4", "com{}github{}puregero{}multilib", "com{}ranull{}graves{}libraries{}multilib", false, "https://repo.clojars.org/");
 
         getLogger().info("Finished Loading Libraries for GravesX.");

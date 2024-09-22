@@ -1,7 +1,5 @@
 package com.ranull.graves.integration;
 
-import net.md_5.bungee.api.chat.BaseComponent;
-
 /**
  * Utility class for parsing strings with MineDown formatting.
  */
@@ -13,6 +11,6 @@ public final class MineDown {
      * @return The legacy text representation of the MineDown formatted string.
      */
     public String parseString(String string) {
-        return BaseComponent.toLegacyText((BaseComponent) de.themoep.minedown.adventure.MineDown.parse(string));
+        return new de.themoep.minedown.adventure.MineDown(string).message();
     }
 }

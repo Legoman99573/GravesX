@@ -1059,8 +1059,8 @@ public final class IntegrationManager {
         if (miniMessage == null) return;
         if (plugin.getConfig().getBoolean("settings.integration.minedown.enabled", true)) {
             try {
-                Class.forName("com.ranull.graves.libraries.minedown.adventure.MineDown", true, getClass().getClassLoader());
-                Class.forName("com.ranull.graves.libraries.minedown.adventure.MineDownParser", true, getClass().getClassLoader());
+                Class.forName("com.ranull.graves.libraries.minedown.adventure.MineDown", false, getClass().getClassLoader());
+                Class.forName("com.ranull.graves.libraries.minedown.adventure.MineDownParser", false, getClass().getClassLoader());
                 mineDown = new MineDown();
 
                 plugin.integrationMessage("Hooked into Minedown Adventure.");
