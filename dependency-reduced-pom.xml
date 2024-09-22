@@ -402,7 +402,7 @@
     <dependency>
       <groupId>com.palmergames.bukkit.towny</groupId>
       <artifactId>towny</artifactId>
-      <version>0.100.4.1</version>
+      <version>0.100.4.3</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -538,7 +538,7 @@
     <dependency>
       <groupId>org.jetbrains</groupId>
       <artifactId>annotations</artifactId>
-      <version>24.0.1</version>
+      <version>24.1.0</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
