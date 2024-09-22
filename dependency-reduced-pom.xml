@@ -430,9 +430,9 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>com.github.Ste3et</groupId>
+      <groupId>de.Ste3et_C0st</groupId>
       <artifactId>FurnitureLib</artifactId>
-      <version>3.2.2</version>
+      <version>3.2.3</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
