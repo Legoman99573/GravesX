@@ -36,8 +36,8 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.13.0</version>
         <configuration>
-          <source>${java.version}</source>
-          <target>${java.version}</target>
+          <source>1.8</source>
+          <target>21</target>
         </configuration>
       </plugin>
       <plugin>
@@ -92,7 +92,7 @@
             </relocation>
             <relocation>
               <pattern>me.imdanix.text</pattern>
-              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.imdanix</shadedPattern>
+              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.imdanix.text</shadedPattern>
             </relocation>
             <relocation>
               <pattern>com.alessiodp.libby</pattern>
@@ -532,7 +532,7 @@
     <dependency>
       <groupId>de.themoep</groupId>
       <artifactId>minedown-adventure</artifactId>
-      <version>1.7.3-SNAPSHOT</version>
+      <version>1.7.3-graves</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -608,7 +608,6 @@
     </plugins>
   </reporting>
   <properties>
-    <java.version>1.8</java.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 </project>
