@@ -583,6 +583,12 @@
       <version>2.13.2</version>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>com.github.oshi</groupId>
+      <artifactId>oshi-core</artifactId>
+      <version>6.6.4</version>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
   <reporting>
     <plugins>
