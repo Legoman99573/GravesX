@@ -4,6 +4,7 @@ import ch.njol.skript.SkriptAddon;
 import com.ranull.graves.Graves;
 import com.ranull.graves.integration.*;
 import com.ranull.graves.listener.integration.coreprotect.CoreProtectListener;
+import com.ranull.graves.listener.integration.itemsadder.CustomBlockBreakListener;
 import com.ranull.graves.listener.integration.itemsadder.FurnitureBreakListener;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.permission.Permission;
@@ -1008,6 +1009,7 @@ public final class IntegrationManager {
             if (itemsAdderPlugin != null && itemsAdderPlugin.isEnabled()) {
                 itemsAdder = new ItemsAdder(plugin, itemsAdderPlugin);
                 plugin.getServer().getPluginManager().registerEvents(new FurnitureBreakListener(plugin), plugin);
+                plugin.getServer().getPluginManager().registerEvents(new CustomBlockBreakListener(plugin), plugin);
 
                 plugin.integrationMessage("Hooked into " + itemsAdderPlugin.getName() + " " + itemsAdderPlugin.getDescription().getVersion() + ".");
             }
