@@ -63,7 +63,6 @@ public class Graves extends JavaPlugin {
     private boolean isDevelopmentBuild = false;
     private boolean isOutdatedBuild = false;
     private boolean isUnknownBuild = false;
-    private LibraryLoaderUtil libraryLoaderUtil;
 
     @Override
     public void onLoad() {
@@ -152,7 +151,7 @@ public class Graves extends JavaPlugin {
     private void loadLibraries() {
         getLogger().info("Loading Libraries for GravesX");
 
-        libraryLoaderUtil = new LibraryLoaderUtil(this);
+        LibraryLoaderUtil libraryLoaderUtil = new LibraryLoaderUtil(this);
 
         libraryLoaderUtil.loadLibrary("com{}zaxxer", "HikariCP", "5.0.1", "com{}zaxxer{}hikari", "com{}ranull{}graves{}libraries{}hikari", false);
         libraryLoaderUtil.loadLibrary("org{}xerial", "sqlite-jdbc", "3.46.0.0", false);
