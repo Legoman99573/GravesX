@@ -37,8 +37,9 @@ public class LibraryLoaderUtil {
      * @param version    The version of the library.
      */
     public void loadLibrary(String groupID, String artifactID, String version) {
-        loadLibrary(groupID, artifactID, version, null, null, null, false, null);
+        loadLibrary(groupID, artifactID, version, null, null, null, false, null, true);
     }
+
     /**
      * Loads a library with the specified group ID, artifact ID, version, and isolation setting.
      * <p>
@@ -51,7 +52,7 @@ public class LibraryLoaderUtil {
      * @param isIsolated Whether to load the library in an isolated class loader.
      */
     public void loadLibrary(String groupID, String artifactID, String version, boolean isIsolated) {
-        loadLibrary(groupID, artifactID, version, null, null, null, isIsolated, null);
+        loadLibrary(groupID, artifactID, version, null, null, null, isIsolated, null, true);
     }
 
     /**
@@ -68,7 +69,25 @@ public class LibraryLoaderUtil {
      * @param isIsolated                Whether to load the library in an isolated class loader.
      */
     public void loadLibrary(String groupID, String artifactID, String version, String relocatePattern, String relocateRelocatedPattern, boolean isIsolated) {
-        loadLibrary(groupID, artifactID, version, null, relocatePattern, relocateRelocatedPattern, isIsolated, null);
+        loadLibrary(groupID, artifactID, version, null, relocatePattern, relocateRelocatedPattern, isIsolated, null, true);
+    }
+
+    /**
+     * Loads a library with the specified group ID, artifact ID, version, relocation patterns, and isolation setting.
+     * <p>
+     * Uses default settings for ID.
+     * </p>
+     *
+     * @param groupID                       The group ID of the library.
+     * @param artifactID                    The artifact ID of the library.
+     * @param version                       The version of the library.
+     * @param relocatePattern               The package pattern to relocate.
+     * @param relocateRelocatedPattern      The relocated package pattern.
+     * @param isIsolated                    Whether to load the library in an isolated class loader.
+     * @param resolveTransitiveDependencies Determines whether to resolve Transitive Dependencies.
+     */
+    public void loadLibrary(String groupID, String artifactID, String version, String relocatePattern, String relocateRelocatedPattern, boolean isIsolated, boolean resolveTransitiveDependencies) {
+        loadLibrary(groupID, artifactID, version, null, relocatePattern, relocateRelocatedPattern, isIsolated, null, resolveTransitiveDependencies);
     }
 
     /**
@@ -86,8 +105,28 @@ public class LibraryLoaderUtil {
      * @param libraryURL                Points to an external library URL to a repository.
      */
     public void loadLibrary(String groupID, String artifactID, String version, String relocatePattern, String relocateRelocatedPattern, boolean isIsolated, String libraryURL) {
-        loadLibrary(groupID, artifactID, version, null, relocatePattern, relocateRelocatedPattern, isIsolated, libraryURL);
+        loadLibrary(groupID, artifactID, version, null, relocatePattern, relocateRelocatedPattern, isIsolated, libraryURL, true);
     }
+
+    /**
+     * Loads a library with the specified group ID, artifact ID, version, relocation patterns, and isolation setting.
+     * <p>
+     * Uses default settings for ID.
+     * </p>
+     *
+     * @param groupID                       The group ID of the library.
+     * @param artifactID                    The artifact ID of the library.
+     * @param version                       The version of the library.
+     * @param relocatePattern               The package pattern to relocate.
+     * @param relocateRelocatedPattern      The relocated package pattern.
+     * @param isIsolated                    Whether to load the library in an isolated class loader.
+     * @param libraryURL                    Points to an external library URL to a repository.
+     * @param resolveTransitiveDependencies Determines whether to resolve Transitive Dependencies.
+     */
+    public void loadLibrary(String groupID, String artifactID, String version, String relocatePattern, String relocateRelocatedPattern, boolean isIsolated, String libraryURL, boolean resolveTransitiveDependencies) {
+        loadLibrary(groupID, artifactID, version, null, relocatePattern, relocateRelocatedPattern, isIsolated, libraryURL, resolveTransitiveDependencies);
+    }
+
 
     /**
      * Loads a library with the specified group ID, artifact ID, version, ID, relocation patterns, and isolation setting.
@@ -95,16 +134,17 @@ public class LibraryLoaderUtil {
      * Configures the library with optional ID and relocation settings, and loads it using the BukkitLibraryManager.
      * </p>
      *
-     * @param groupID                   The group ID of the library.
-     * @param artifactID                The artifact ID of the library.
-     * @param version                   The version of the library.
-     * @param ID                        Optional ID for the library.
-     * @param relocatePattern           Optional package pattern to relocate.
-     * @param relocateRelocatedPattern  Optional relocated package pattern.
-     * @param isIsolated                Whether to load the library in an isolated class loader.
-     * @param libraryURL                Points to an external library URL to a repository.
+     * @param groupID                       The group ID of the library.
+     * @param artifactID                    The artifact ID of the library.
+     * @param version                       The version of the library.
+     * @param ID                            Optional ID for the library.
+     * @param relocatePattern               Optional package pattern to relocate.
+     * @param relocateRelocatedPattern      Optional relocated package pattern.
+     * @param isIsolated                    Whether to load the library in an isolated class loader.
+     * @param libraryURL                    Points to an external library URL to a repository.
+     * @param resolveTransitiveDependencies Determines whether to resolve Transitive Dependencies.
      */
-    public void loadLibrary(String groupID, String artifactID, String version, String ID, String relocatePattern, String relocateRelocatedPattern, boolean isIsolated, String libraryURL) {
+    public void loadLibrary(String groupID, String artifactID, String version, String ID, String relocatePattern, String relocateRelocatedPattern, boolean isIsolated, String libraryURL, boolean resolveTransitiveDependencies) {
         try {
             LibraryManager libraryManager = new BukkitLibraryManager(plugin);
             if (libraryURL != null) {
@@ -126,6 +166,7 @@ public class LibraryLoaderUtil {
                             .loaderId(ID)
                             .relocate(relocatePattern, relocateRelocatedPattern)
                             .isolatedLoad(isIsolated)
+                            .resolveTransitiveDependencies(resolveTransitiveDependencies)
                             .build()
                     );
                     if (isIsolated) {
@@ -149,7 +190,7 @@ public class LibraryLoaderUtil {
                             .version(version)
                             .loaderId(ID)
                             .isolatedLoad(isIsolated)
-                            .resolveTransitiveDependencies(true)
+                            .resolveTransitiveDependencies(resolveTransitiveDependencies)
                             .build()
                     );
                     if (isIsolated) {
@@ -176,7 +217,7 @@ public class LibraryLoaderUtil {
                             .version(version)
                             .relocate(relocatePattern, relocateRelocatedPattern)
                             .isolatedLoad(isIsolated)
-                            .resolveTransitiveDependencies(true)
+                            .resolveTransitiveDependencies(resolveTransitiveDependencies)
                             .build()
                     );
                     if (isIsolated) {
@@ -199,7 +240,7 @@ public class LibraryLoaderUtil {
                             .artifactId(artifactID)
                             .version(version)
                             .isolatedLoad(isIsolated)
-                            .resolveTransitiveDependencies(true)
+                            .resolveTransitiveDependencies(resolveTransitiveDependencies)
                             .build()
                     );
                     if (isIsolated) {
