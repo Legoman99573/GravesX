@@ -5,6 +5,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.configuration.file.FileConfiguration;
+import oshi.SystemInfo;
+import oshi.hardware.*;
 
 import java.io.*;
 import java.lang.reflect.Method;
@@ -30,7 +32,9 @@ public final class ServerUtil {
     public static String getServerDumpInfo(Graves plugin) {
         List<String> stringList = new ArrayList<>();
         // Add basic server information
+        stringList.add("=================");
         stringList.add("Java Information:");
+        stringList.add("=================");
         stringList.add("Java Version: " + getSystemProperty("java.version"));
         stringList.add("Java Vendor: " + getSystemProperty("java.vendor"));
         stringList.add("Java Vendor URL: " + getSystemProperty("java.vendor.url"));
@@ -43,7 +47,9 @@ public final class ServerUtil {
         stringList.add("Java VM Name: " + getSystemProperty("java.vm.name"));
         stringList.add("");
 
+        stringList.add("=============================");
         stringList.add("Operating System Information:");
+        stringList.add("=============================");
         stringList.add("OS Name: " + getOsName());
         stringList.add("OS Version: " + getSystemProperty("os.version"));
         stringList.add("OS Architecture: " + getSystemProperty("os.arch"));
@@ -63,22 +69,92 @@ public final class ServerUtil {
         }
         stringList.add("");
 
+        SystemInfo systemInfo = new SystemInfo();
+        CentralProcessor processor = systemInfo.getHardware().getProcessor();
+        String cpuName = processor.getProcessorIdentifier().getName();
+        String vendorName = processor.getProcessorIdentifier().getVendor();
+        CentralProcessor.ProcessorIdentifier identifier = processor.getProcessorIdentifier();
+
+        stringList.add("================");
+        stringList.add("CPU Information:");
+        stringList.add("================");
+        stringList.add("CPU: " + (cpuName != null ? cpuName : "Not available"));
+        stringList.add("Vendor: " + (vendorName != null ? vendorName : "Not available"));
+        stringList.add("CPU Identifier: " + (identifier.getIdentifier() != null ? identifier.getIdentifier() : "Not available"));
+        // Current frequency for each core
+        long[] currentFreqs = processor.getCurrentFreq();
+        if (currentFreqs != null && currentFreqs.length > 0) {
+            stringList.add("CPU Current Frequencies:");
+            for (int i = 0; i < currentFreqs.length; i++) {
+                stringList.add(" - Core " + i + ": " + formatFrequency(currentFreqs[i]));
+            }
+        } else {
+            stringList.add("CPU Current Frequencies: Not available");
+        }
+        double maxFreq = processor.getMaxFreq();
+        stringList.add("CPU Maximum Frequency: " + formatFrequency(maxFreq));
+        stringList.add("CPU Architecture: " + identifier.getMicroarchitecture());
+        stringList.add("CPU Stepping: " + identifier.getStepping());
+
+        List<CentralProcessor.ProcessorCache> cacheSizes = processor.getProcessorCaches();
+        if (cacheSizes != null && !cacheSizes.isEmpty()) {
+            stringList.add("CPU Cache Sizes: ");
+            for (CentralProcessor.ProcessorCache cache : cacheSizes) {
+                stringList.add(" - " + cache.getCacheSize() + " bytes, Level: " + cache.getLevel());
+            }
+        } else {
+            stringList.add("CPU Cache Sizes: Not available");
+        }
+        stringList.add("");
+
+
+        HardwareAbstractionLayer hal = systemInfo.getHardware();
+        ComputerSystem computerSystem = hal.getComputerSystem();
+        List<PhysicalMemory> ramList = hal.getMemory().getPhysicalMemory();
+        stringList.add("=======================");
         stringList.add("System RAM Information:");
-        Runtime runtime = Runtime.getRuntime();
-        stringList.add("Max Memory: " + formatBytes(runtime.maxMemory()));
-        stringList.add("Total Memory: " + formatBytes(runtime.totalMemory()));
-        stringList.add("Free Memory: " + formatBytes(runtime.freeMemory()));
-        stringList.add("Used Memory: " + formatBytes(runtime.totalMemory() - runtime.freeMemory()));
+        stringList.add("=======================");
+        stringList.add("Number of RAM Sticks: " + ramList.size());
+
+        for (PhysicalMemory ram : ramList) {
+            String vendor = ram.getManufacturer();
+            stringList.add("=======");
+            stringList.add(ramList + ":");
+            stringList.add("=======");
+            stringList.add("Vendor: " + (vendor != null ? vendor : "Unknown"));
+            stringList.add("Memory Size: " + formatBytes(ram.getCapacity()));
+            stringList.add("Speed: " + ram.getClockSpeed() + " MHz");
+            stringList.add("Memory Type: " + ram.getMemoryType());
+        }
+
+        GlobalMemory memory = hal.getMemory();
+        long totalMemory = memory.getTotal();
+        long availableMemory = memory.getAvailable();
+        long usedMemory = totalMemory - availableMemory;
+
+        stringList.add("Total Memory: " + formatBytes(totalMemory));
+        stringList.add("Free Memory: " + formatBytes(availableMemory));
+        stringList.add("Used Memory: " + formatBytes(usedMemory));
         stringList.add("");
 
+        stringList.add("==============================");
         stringList.add("System Disk Space Information:");
-        File serverRoot = new File(plugin.getServer().getWorldContainer(), "/");
-        stringList.add("Total Space: " + formatBytes(serverRoot.getTotalSpace()));
-        stringList.add("Free Space: " + formatBytes(serverRoot.getFreeSpace()));
-        stringList.add("Usable Space: " + formatBytes(serverRoot.getUsableSpace()));
+        stringList.add("==============================");
+        for (HWDiskStore disk : hal.getDiskStores()) {
+            stringList.add("Disk: " + disk.getName());
+            stringList.add("Model: " + (disk.getModel() != null ? disk.getModel() : "Not Available"));
+            stringList.add("Total Space: " + formatBytes(disk.getSize()));
+            stringList.add("Total Space: " + formatBytes(disk.getSize()));
+            stringList.add("Free Space: " + formatBytes(disk.getSize() - disk.getWriteBytes()));
+            stringList.add("Read Rate: " + formatBytes(disk.getReadBytes()));
+            stringList.add("Write Rate: " + formatBytes(disk.getWriteBytes()));
+            stringList.add("");
+        }
         stringList.add("");
 
+        stringList.add("=============================");
         stringList.add("Minecraft Server Information:");
+        stringList.add("=============================");
         stringList.add("Implementation Name: " + plugin.getServer().getName());
         stringList.add("Implementation Version: " + plugin.getServer().getVersion());
         stringList.add("Bukkit Version: " + plugin.getServer().getBukkitVersion());
@@ -94,7 +170,9 @@ public final class ServerUtil {
         stringList.add("Server used /reload: " + plugin.wasReloaded());
         stringList.add("");
 
+        stringList.add("===================");
         stringList.add("Graves Information:");
+        stringList.add("===================");
         // Add plugin-specific information
         stringList.add(plugin.getDescription().getName() + " Version: " + plugin.getDescription().getVersion());
 
@@ -143,6 +221,20 @@ public final class ServerUtil {
         return joinLines(stringList);
     }
 
+    private static String formatFrequency(double frequency) {
+        if (frequency >= 1_000_000_000_000.0) {
+            return String.format("%.2f THz", frequency / 1_000_000_000_000.0);
+        } else if (frequency >= 1_000_000_000) {
+            return String.format("%.2f GHz", frequency / 1_000_000_000);
+        } else if (frequency >= 1_000_000) {
+            return String.format("%.2f MHz", frequency / 1_000_000);
+        } else if (frequency >= 1_000) {
+            return String.format("%.2f kHz", frequency / 1_000);
+        } else {
+            return frequency + " Hz";
+        }
+    }
+
     /**
      * Reads a file into a string.
      *
@@ -179,10 +271,23 @@ public final class ServerUtil {
      * @return A string with the byte count formatted in B, KB, MB, GB, TB, or PB.
      */
     private static String formatBytes(long bytes) {
-        if (bytes < 1024) return bytes + " B";
-        int exp = (int) (Math.log(bytes) / Math.log(1024));
-        String pre = ("KMGTPE").charAt(exp-1) + "";
-        return String.format("%.1f %sB", bytes / Math.pow(1024, exp), pre);
+        boolean isNegative = bytes < 0; // Check if the value is negative
+        long absoluteBytes = Math.abs(bytes); // Use absolute value for formatting
+
+        StringBuilder result = new StringBuilder();
+        if (absoluteBytes < 1024) {
+            result.append(absoluteBytes).append(" B");
+        } else {
+            int exp = (int) (Math.log(absoluteBytes) / Math.log(1024));
+            String pre = ("KMGTPE").charAt(exp - 1) + "";
+            result.append(String.format("%.1f %sB", absoluteBytes / Math.pow(1024, exp), pre));
+        }
+
+        if (isNegative) {
+            result.insert(0, "-"); // Add the minus sign for negative values
+        }
+
+        return result.toString();
     }
 
     /**
@@ -357,7 +462,7 @@ public final class ServerUtil {
     private static String getPluginList() {
         StringBuilder sb = new StringBuilder();
         for (Plugin plugin : Bukkit.getPluginManager().getPlugins()) {
-            sb.append(plugin.getName()).append(" v.").append(plugin.getDescription().getVersion()).append(", ");
+            sb.append(plugin.getName()).append(" ").append(plugin.getDescription().getVersion()).append(", ");
         }
         return sb.length() > 0 ? sb.substring(0, sb.length() - 2) : "";
     }

@@ -173,6 +173,14 @@ public class Graves extends JavaPlugin {
         } catch (ClassNotFoundException e) {
             libraryLoaderUtil.loadLibrary("com{}google{}guava", "guava", "33.3.0-jre", false);
         }
+
+        try {
+            Class.forName("oshi.SystemInfo");
+            Class.forName("oshi.hardware.CentralProcessor");
+        } catch (ClassNotFoundException e) {
+            libraryLoaderUtil.loadLibrary("com{}github{}oshi", "oshi-core", "6.6.4", false);
+        }
+
         libraryLoaderUtil.loadLibrary("org{}postgresql", "postgresql", "42.7.4", "org{}postgresql", "com{}ranull{}graves{}libraries{}postgresql", false);
         libraryLoaderUtil.loadLibrary("org{}mariadb{}jdbc", "mariadb-java-client", "3.4.1", "org{}mariadb", "com{}ranull{}graves{}libraries{}mariadb", false);
         libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.0.0", false);
