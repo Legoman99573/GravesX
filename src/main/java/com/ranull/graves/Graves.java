@@ -502,7 +502,7 @@ public class Graves extends JavaPlugin {
 
             // Log a warning message
             warningMessage("Outdated config detected (v" + configVersion + "), current version is (v"
-                    + currentConfigVersion + "). Renaming outdated config files.");
+                    + currentConfigVersion + "). Moving old configs to outdated folder and generating new config files.");
 
             // Update each config file directly
             updateConfigFile("config.yml", currentConfigVersion, true);
