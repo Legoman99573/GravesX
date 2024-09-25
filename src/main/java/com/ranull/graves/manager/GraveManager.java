@@ -1148,10 +1148,12 @@ public final class GraveManager {
             }
 
             for (Location location : locationList) {
-                if (location.getWorld() != null && baseLocation.getWorld().equals(location.getWorld())) {
-                    locationMap.put(location.distanceSquared(baseLocation), location);
-                } else {
-                    otherWorldLocationList.add(location);
+                if (location != null) {
+                    if (location.getWorld() != null && baseLocation.getWorld().equals(location.getWorld())) {
+                        locationMap.put(location.distanceSquared(baseLocation), location);
+                    } else {
+                        otherWorldLocationList.add(location);
+                    }
                 }
             }
 
@@ -1171,6 +1173,7 @@ public final class GraveManager {
      * @return the nearest grave location.
      */
     public Location getGraveLocation(Location location, Grave grave) {
+        if (location == null) return null;
         List<Location> locationList = plugin.getGraveManager().getGraveLocationList(location, grave);
 
         return !locationList.isEmpty() ? locationList.get(0) : null;
