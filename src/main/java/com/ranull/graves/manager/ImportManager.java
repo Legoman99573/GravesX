@@ -3,7 +3,7 @@ package com.ranull.graves.manager;
 import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.SkinTextureUtil;
-import com.ranull.graves.util.SkinSignatureValueUtil;
+import com.ranull.graves.util.SkinSignatureUtil;
 import com.ranull.graves.util.StringUtil;
 import com.ranull.graves.util.UUIDUtil;
 import com.ranull.graves.util.YAMLUtil;
@@ -128,7 +128,7 @@ public final class ImportManager {
                 Player player = plugin.getServer().getPlayer(grave.getOwnerUUID());
 
                 grave.setOwnerTexture(SkinTextureUtil.getTexture(player));
-                grave.setOwnerTextureSignature(SkinSignatureValueUtil.getSignature(player));
+                grave.setOwnerTextureSignature(SkinSignatureUtil.getSignature(player));
             }
 
             //grave.setTimeCreation(angelChest.getLong("created", System.currentTimeMillis()));
