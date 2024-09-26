@@ -175,7 +175,9 @@ public final class FancyNPCs extends EntityDataManager {
         String uuid = grave.getUUID().toString().replace("-", "");
         NpcManager npcManager = FancyNpcsPlugin.get().getNpcManager();
         Npc npc = npcManager.getNpc(uuid);
-        npc.removeForAll();
-        npcManager.removeNpc(npc);
+        if (npc != null) {
+            npc.removeForAll();
+            npcManager.removeNpc(npc);
+        }
     }
 }
