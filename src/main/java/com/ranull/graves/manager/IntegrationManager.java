@@ -832,7 +832,7 @@ public final class IntegrationManager {
         hasVaultPermissions = true;
         hasVaultEconomy = false;
 
-        plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s economy. This is likely because you are missing an economy plugin. Economy will be disabled.");
+        plugin.integrationMessage("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s economy. This is likely because you are missing an economy plugin. Economy will be disabled.", "severe");
         plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions provider.");
     }
 
@@ -846,8 +846,8 @@ public final class IntegrationManager {
         hasVaultPermissions = false;
         hasVaultEconomy = false;
 
-        plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s economy. This is likely because you are missing an economy plugin. Economy will be disabled.");
-        plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions provider. Vault will not be used as a Permissions Provider.");
+        plugin.integrationMessage("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s economy. This is likely because you are missing an economy plugin. Economy will be disabled.", "severe");
+        plugin.integrationMessage("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions provider. Vault will not be used as a Permissions Provider.", "severe");
     }
 
     /**
@@ -931,7 +931,7 @@ public final class IntegrationManager {
 
                     plugin.integrationMessage("Hooked into " + worldEditPlugin.getName() + " " + worldEditPlugin.getDescription().getVersion() + ".");
                 } catch (ClassNotFoundException ignored) {
-                    plugin.integrationMessage(worldEditPlugin.getName() + " " + worldEditPlugin.getDescription().getVersion() + " detected, Only WorldEdit 7+ is supported. Disabling WorldEdit support.");
+                    plugin.integrationMessage(worldEditPlugin.getName() + " " + worldEditPlugin.getDescription().getVersion() + " detected, Only WorldEdit 7+ is supported. Disabling WorldEdit support.", "severe");
                 }
             }
         } else {
@@ -953,7 +953,7 @@ public final class IntegrationManager {
                     plugin.integrationMessage("Hooked into " + coreProtectPlugin.getName() + " " + coreProtectPlugin.getDescription().getVersion() + ".");
                 } catch (Exception e) {
                     coreProtectIntegration = null;
-                    plugin.integrationMessage("Failed to hook into " + coreProtectPlugin.getName() + " " + coreProtectPlugin.getDescription().getVersion() + ". Is CoreProtect installed and enabled?");
+                    plugin.integrationMessage("Failed to hook into " + coreProtectPlugin.getName() + " " + coreProtectPlugin.getDescription().getVersion() + ". Is CoreProtect installed and enabled?", "severe");
                     plugin.logStackTrace(e);
                 }
             }
@@ -1011,7 +1011,7 @@ public final class IntegrationManager {
 
                     plugin.integrationMessage("Hooked into " + furnitureEnginePlugin.getName() + " " + furnitureEnginePlugin.getDescription().getVersion() + ".");
                 } catch (ClassNotFoundException ignored) {
-                    plugin.integrationMessage(furnitureEnginePlugin.getName() + " " + furnitureEnginePlugin.getDescription().getVersion() + " detected, but FurnitureManager class not found, disabling integration.");
+                    plugin.integrationMessage(furnitureEnginePlugin.getName() + " " + furnitureEnginePlugin.getDescription().getVersion() + " detected, but FurnitureManager class not found, disabling integration.", "severe");
                 }
             }
         } else {
@@ -1143,6 +1143,10 @@ public final class IntegrationManager {
             playerNPC = null;
         }
     }
+
+    /**
+     * Loads the FancyNpcs integration if enabled in the configuration.
+     */
     private void loadFancyNpcs() {
         if (plugin.getConfig().getBoolean("settings.integration.fancynpcs.enabled")) {
             Plugin FancyNPCPlugin = plugin.getServer().getPluginManager().getPlugin("FancyNpcs");
@@ -1244,7 +1248,7 @@ public final class IntegrationManager {
                     plugin.integrationMessage("Hooked into " + luckPermsPlugin.getName() + " " + luckPermsPlugin.getDescription().getVersion() + ".");
                 }
             } catch (IllegalArgumentException exception) {
-                plugin.integrationMessage("Failed to Hook into " + luckPermsPlugin.getName() + " " + luckPermsPlugin.getDescription().getVersion() + ". LuckPerms will not be used as a Permissions Provider.");
+                plugin.integrationMessage("Failed to Hook into " + luckPermsPlugin.getName() + " " + luckPermsPlugin.getDescription().getVersion() + ". LuckPerms will not be used as a Permissions Provider.", "severe");
                 luckPermsHandler = null;
             }
         } else {
@@ -1252,10 +1256,31 @@ public final class IntegrationManager {
         }
     }
 
+    /**
+     * Loads the LuckPerms integration if enabled in the configuration.
+     */
     private void loadBedrockSupport() {
         Plugin floodgatePlugin = plugin.getServer().getPluginManager().getPlugin("floodgate");
+        Plugin geysermcPlugin = plugin.getServer().getPluginManager().getPlugin("Geyser-Spigot");
 
-        floodgate = floodgatePlugin != null && floodgatePlugin.isEnabled();
+        if (geysermcPlugin != null && geysermcPlugin.isEnabled()) {
+            if (floodgatePlugin != null && floodgatePlugin.isEnabled()) {
+                plugin.integrationMessage("Hooked into " + geysermcPlugin.getName() + " " + geysermcPlugin.getDescription().getVersion() + ".");
+                plugin.integrationMessage("Hooked into " + floodgatePlugin.getName() + " " + floodgatePlugin.getDescription().getVersion() + ".");
+                floodgate = true;
+            } else if (floodgatePlugin != null && !floodgatePlugin.isEnabled()) {
+                plugin.integrationMessage("Hooked into " + geysermcPlugin.getName() + " " + geysermcPlugin.getDescription().getVersion() + ".");
+                plugin.integrationMessage("Failed to Hook into " + floodgatePlugin.getName() + " " + floodgatePlugin.getDescription().getVersion() + ".", "severe");
+                floodgate = false;
+            } else {
+                floodgate = false;
+            }
+        } else if (geysermcPlugin == null || !geysermcPlugin.isEnabled()) {
+            plugin.integrationMessage("Failed to Hook into " + floodgatePlugin.getName() + " " + floodgatePlugin.getDescription().getVersion() + " because Geyser-Spigot is not enabled.", "severe");
+            floodgate = false;
+        } else {
+            floodgate = false;
+        }
     }
 
     /**
