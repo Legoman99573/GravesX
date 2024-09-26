@@ -2,7 +2,8 @@ package com.ranull.graves.manager;
 
 import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
-import com.ranull.graves.util.SkinUtil;
+import com.ranull.graves.util.SkinTextureUtil;
+import com.ranull.graves.util.SkinSignatureValueUtil;
 import com.ranull.graves.util.StringUtil;
 import com.ranull.graves.util.UUIDUtil;
 import com.ranull.graves.util.YAMLUtil;
@@ -126,7 +127,8 @@ public final class ImportManager {
             if (grave.getOwnerUUID() != null) {
                 Player player = plugin.getServer().getPlayer(grave.getOwnerUUID());
 
-                grave.setOwnerTexture(SkinUtil.getTexture(player));
+                grave.setOwnerTexture(SkinTextureUtil.getTexture(player));
+                grave.setOwnerTextureSignature(SkinSignatureValueUtil.getSignature(player));
             }
 
             //grave.setTimeCreation(angelChest.getLong("created", System.currentTimeMillis()));
@@ -147,7 +149,7 @@ public final class ImportManager {
 
             if (angelChest.contains("armorInv")) {
                 List<ItemStack> armorItemStackList = (List<ItemStack>) angelChest.getList("armorInv",
-                        new ArrayList<ItemStack>());
+                                new ArrayList<ItemStack>());
 
                 Collections.reverse(armorItemStackList);
                 itemStackList.addAll(armorItemStackList);

@@ -8,29 +8,17 @@ import org.bukkit.Bukkit;
 import org.bukkit.block.Skull;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.plugin.Plugin;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.UUID;
 
-/**
- * Utility class for handling player skins and textures.
- */
-public final class SkinUtil {
+public final class SkinSignatureValueUtil {
     private static String GAMEPROFILE_METHOD;
 
-    /**
-     * Sets the texture of a Skull block.
-     *
-     * @param skull  The Skull block.
-     * @param name   The name associated with the texture.
-     * @param base64 The Base64 encoded texture.
-     */
     public static void setSkullBlockTexture(Skull skull, String name, String base64) {
         GameProfile gameProfile = new GameProfile(UUID.randomUUID(), name);
 
@@ -40,57 +28,12 @@ public final class SkinUtil {
             Field profileField = skull.getClass().getDeclaredField("profile");
 
             profileField.setAccessible(true);
-            if (profileField.getType().getSimpleName().contains("ResolvableProfile")) {
-                Constructor<?> resolvableProfileConstructor = Class.forName("net.minecraft.world.item.component.ResolvableProfile")
-                        .getDeclaredConstructor(GameProfile.class);
-                resolvableProfileConstructor.setAccessible(true);
-                Object resolvableProfileInstance = resolvableProfileConstructor.newInstance(gameProfile);
-                profileField.set(skull, resolvableProfileInstance);
-            } else {
-                profileField.set(skull, gameProfile);
-            }
-        } catch (Exception exception) {
-            Bukkit.getLogger().warning("Failed to set the Skull texture. Cause: " + exception.getCause());
+            profileField.set(skull, gameProfile);
+        } catch (NoSuchFieldException | IllegalAccessException exception) {
             exception.printStackTrace();
         }
     }
 
-
-    /**
-     * Sets the texture of a Skull item stack.
-     *
-     * @param skullMeta The SkullMeta item meta.
-     * @param name      The name associated with the texture.
-     * @param base64    The Base64 encoded texture.
-     */
-    public static void setSkullBlockTexture(SkullMeta skullMeta, String name, String base64) {
-        GameProfile gameProfile = new GameProfile(UUID.randomUUID(), name);
-        gameProfile.getProperties().put("textures", new Property("textures", base64));
-
-        try {
-            Field profileField = skullMeta.getClass().getDeclaredField("profile");
-            profileField.setAccessible(true);
-            if (profileField.getType().getSimpleName().contains("ResolvableProfile")) {
-                Constructor<?> resolvableProfileConstructor = Class.forName("net.minecraft.world.item.component.ResolvableProfile")
-                        .getDeclaredConstructor(GameProfile.class);
-                resolvableProfileConstructor.setAccessible(true);
-                Object resolvableProfileInstance = resolvableProfileConstructor.newInstance(gameProfile);
-                profileField.set(skullMeta, resolvableProfileInstance);
-            } else {
-                profileField.set(skullMeta, gameProfile);
-            }
-        } catch (Exception exception) {
-            Bukkit.getLogger().warning("Failed to set the SkullMeta texture. Cause: " + exception.getCause());
-            exception.printStackTrace();
-        }
-    }
-
-    /**
-     * Retrieves the texture of an Entity.
-     *
-     * @param entity The entity from which to get the texture.
-     * @return The Base64 encoded texture string, or null if not found.
-     */
     public static String getTexture(Entity entity) {
         if (entity instanceof Player) {
             GameProfile gameProfile = getPlayerGameProfile((Player) entity);
@@ -128,13 +71,31 @@ public final class SkinUtil {
         return null;
     }
 
+    public static String getSignature(Entity entity) {
+        if (entity instanceof Player) {
+            GameProfile gameProfile = getPlayerGameProfile((Player) entity);
 
-    /**
-     * Retrieves the GameProfile of a Player.
-     *
-     * @param player The player from which to get the GameProfile.
-     * @return The GameProfile of the player, or null if not found.
-     */
+            if (gameProfile != null) {
+                PropertyMap propertyMap = gameProfile.getProperties();
+
+                if (propertyMap.containsKey("textures")) {
+                    Collection<Property> propertyCollection = propertyMap.get("textures");
+
+                    try {
+                        return !propertyCollection.isEmpty()
+                                ? propertyCollection.stream().findFirst().get().signature() : null;
+
+                    } catch(NoSuchMethodError blah) {
+                        return !propertyCollection.isEmpty()
+                                ? propertyCollection.stream().findFirst().get().getSignature() : null;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
     public static GameProfile getPlayerGameProfile(Player player) {
         try {
             Object playerObject = player.getClass().getMethod("getHandle").invoke(player);
@@ -156,11 +117,6 @@ public final class SkinUtil {
         return null;
     }
 
-    /**
-     * Finds and sets the method name for retrieving a GameProfile.
-     *
-     * @param playerObject The player object from which to find the method.
-     */
     private static void findGameProfileMethod(Object playerObject) {
         for (Method method : playerObject.getClass().getMethods()) {
             if (method.getReturnType().getName().endsWith("GameProfile")) {
@@ -172,5 +128,4 @@ public final class SkinUtil {
 
         GAMEPROFILE_METHOD = "";
     }
-
 }

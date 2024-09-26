@@ -7,7 +7,7 @@ import com.ranull.graves.data.BlockData;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.BlockFaceUtil;
 import com.ranull.graves.util.MaterialUtil;
-import com.ranull.graves.util.SkinUtil;
+import com.ranull.graves.util.SkinTextureUtil;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -187,12 +187,12 @@ public final class CompatibilityBlockData implements Compatibility {
             if (grave.getOwnerType() == EntityType.PLAYER) {
                 skull.setOwningPlayer(plugin.getServer().getOfflinePlayer(grave.getOwnerUUID()));
             } else if (grave.getOwnerTexture() != null) {
-                SkinUtil.setSkullBlockTexture(skull, grave.getOwnerName(), grave.getOwnerTexture());
+                SkinTextureUtil.setSkullBlockTexture(skull, grave.getOwnerName(), grave.getOwnerTexture());
             } else if (headBase64 != null && !headBase64.equals("")) {
-                SkinUtil.setSkullBlockTexture(skull, grave.getOwnerName(), headBase64);
+                SkinTextureUtil.setSkullBlockTexture(skull, grave.getOwnerName(), headBase64);
             }
         } else if (headType == 1 && headBase64 != null && !headBase64.equals("")) {
-            SkinUtil.setSkullBlockTexture(skull, grave.getOwnerName(), headBase64);
+            SkinTextureUtil.setSkullBlockTexture(skull, grave.getOwnerName(), headBase64);
         } else if (headType == 2 && headName != null && headName.length() <= 16) {
             skull.setOwningPlayer(plugin.getServer().getOfflinePlayer(headName));
         }
@@ -219,7 +219,7 @@ public final class CompatibilityBlockData implements Compatibility {
             } else if (grave.getOwnerType() != null) {
                 String entityTexture = getEntityTexture(grave.getOwnerType());
                 if (entityTexture != null) {
-                    SkinUtil.setSkullBlockTexture(skullMeta, grave.getOwnerName(), entityTexture);
+                    SkinTextureUtil.setSkullBlockTexture(skullMeta, grave.getOwnerName(), entityTexture);
                 }
             }
 
