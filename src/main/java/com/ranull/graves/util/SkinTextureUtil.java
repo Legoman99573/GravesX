@@ -21,7 +21,7 @@ import java.util.UUID;
 /**
  * Utility class for handling player skins and textures.
  */
-public final class SkinUtil {
+public final class SkinTextureUtil {
     private static String GAMEPROFILE_METHOD;
 
     /**

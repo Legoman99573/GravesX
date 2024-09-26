@@ -333,6 +333,14 @@ settings:
       # Should Citizens integration be enabled. Experimental
       enabled: false
 
+    ###############
+    # FancyNpcs #
+    ###############
+    # Source: https://www.spigotmc.org/resources/fancy-npcs.107306/
+    fancynpcs:
+      # Should FancyNpcs integration be enabled.
+      enabled: false
+
     ##############
     # ItemBridge #
     ##############

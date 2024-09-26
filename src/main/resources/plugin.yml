@@ -35,6 +35,9 @@ softdepend:
   - PlayerNPC
   - Skript
   - Citizens
+  - FancyNpcs
+  - Geyser-Spigot
+  - floodgate
   - Towny
   - LuckPerms
   - CoreProtect

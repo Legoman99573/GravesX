@@ -158,6 +158,20 @@ public final class IntegrationManager {
      * </p>
      */
     private ItemBridge itemBridge;
+    /**
+     * Integration with floodgate
+     * <p>
+     * This boolean is used to handle bedrock players
+     * </p>
+     */
+    private boolean floodgate;
+    /**
+     * Integration with FancyNPCs, a plugin for managing player-like NPCs.
+     * <p>
+     * This {@link FancyNPCs} instance represents the integration with the FancyNPCs plugin, used for creating and managing NPCs that mimic players.
+     * </p>
+     */
+    private FancyNPCs fancyNpcs;
 
     /**
      * Integration with PlayerNPC, a plugin for managing player-like NPCs.
@@ -261,6 +275,8 @@ public final class IntegrationManager {
         loadLuckPerms();
         loadCoreProtect();
         loadNBTAPI();
+        loadBedrockSupport();
+        loadFancyNpcs();
     }
 
     /**
@@ -472,6 +488,24 @@ public final class IntegrationManager {
      */
     public SkriptAddon getSkript() {
         return skriptImpl != null ? skriptImpl.getSkriptAddon() : null;
+    }
+
+    /**
+     * Returns whether you are using floodgate.
+     *
+     * @return The boolean value of floodgate var.
+     */
+    public boolean hasFloodgate() {
+        return floodgate;
+    }
+
+    /**
+     * Returns the instance of the FancyNPCs integration, if it is loaded.
+     *
+     * @return The {@code FancyNPCs} integration instance, or null if not loaded.
+     */
+    public FancyNPCs getFancyNpcs() {
+        return fancyNpcs;
     }
 
     /**
@@ -694,6 +728,9 @@ public final class IntegrationManager {
         return luckPermsHandler != null;
     }
 
+    public boolean hasFancyNpcs() {
+        return fancyNpcs != null;
+    }
     /**
      * Loads the MultiPaper integration if enabled in the configuration.
      */
@@ -795,7 +832,7 @@ public final class IntegrationManager {
         hasVaultPermissions = true;
         hasVaultEconomy = false;
 
-        plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s economy. This is likely because you are missing an economy plugin. Economy will be disabled.");
+        plugin.integrationMessage("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s economy. This is likely because you are missing an economy plugin. Economy will be disabled.", "severe");
         plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions provider.");
     }
 
@@ -809,8 +846,8 @@ public final class IntegrationManager {
         hasVaultPermissions = false;
         hasVaultEconomy = false;
 
-        plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s economy. This is likely because you are missing an economy plugin. Economy will be disabled.");
-        plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions provider. Vault will not be used as a Permissions Provider.");
+        plugin.integrationMessage("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s economy. This is likely because you are missing an economy plugin. Economy will be disabled.", "severe");
+        plugin.integrationMessage("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions provider. Vault will not be used as a Permissions Provider.", "severe");
     }
 
     /**
@@ -894,7 +931,7 @@ public final class IntegrationManager {
 
                     plugin.integrationMessage("Hooked into " + worldEditPlugin.getName() + " " + worldEditPlugin.getDescription().getVersion() + ".");
                 } catch (ClassNotFoundException ignored) {
-                    plugin.integrationMessage(worldEditPlugin.getName() + " " + worldEditPlugin.getDescription().getVersion() + " detected, Only WorldEdit 7+ is supported. Disabling WorldEdit support.");
+                    plugin.integrationMessage(worldEditPlugin.getName() + " " + worldEditPlugin.getDescription().getVersion() + " detected, Only WorldEdit 7+ is supported. Disabling WorldEdit support.", "severe");
                 }
             }
         } else {
@@ -916,7 +953,7 @@ public final class IntegrationManager {
                     plugin.integrationMessage("Hooked into " + coreProtectPlugin.getName() + " " + coreProtectPlugin.getDescription().getVersion() + ".");
                 } catch (Exception e) {
                     coreProtectIntegration = null;
-                    plugin.integrationMessage("Failed to hook into " + coreProtectPlugin.getName() + " " + coreProtectPlugin.getDescription().getVersion() + ". Is CoreProtect installed and enabled?");
+                    plugin.integrationMessage("Failed to hook into " + coreProtectPlugin.getName() + " " + coreProtectPlugin.getDescription().getVersion() + ". Is CoreProtect installed and enabled?", "severe");
                     plugin.logStackTrace(e);
                 }
             }
@@ -974,7 +1011,7 @@ public final class IntegrationManager {
 
                     plugin.integrationMessage("Hooked into " + furnitureEnginePlugin.getName() + " " + furnitureEnginePlugin.getDescription().getVersion() + ".");
                 } catch (ClassNotFoundException ignored) {
-                    plugin.integrationMessage(furnitureEnginePlugin.getName() + " " + furnitureEnginePlugin.getDescription().getVersion() + " detected, but FurnitureManager class not found, disabling integration.");
+                    plugin.integrationMessage(furnitureEnginePlugin.getName() + " " + furnitureEnginePlugin.getDescription().getVersion() + " detected, but FurnitureManager class not found, disabling integration.", "severe");
                 }
             }
         } else {
@@ -1108,6 +1145,24 @@ public final class IntegrationManager {
     }
 
     /**
+     * Loads the FancyNpcs integration if enabled in the configuration.
+     */
+    private void loadFancyNpcs() {
+        if (plugin.getConfig().getBoolean("settings.integration.fancynpcs.enabled")) {
+            Plugin FancyNPCPlugin = plugin.getServer().getPluginManager().getPlugin("FancyNpcs");
+
+            if (FancyNPCPlugin != null && FancyNPCPlugin.isEnabled()) {
+                fancyNpcs = new FancyNPCs(plugin);
+
+                plugin.integrationMessage("Hooked into " + FancyNPCPlugin.getName() + " "
+                        + FancyNPCPlugin.getDescription().getVersion() + ".");
+            }
+        } else {
+            fancyNpcs = null;
+        }
+    }
+
+    /**
      * Loads the CitizensNPC integration if enabled in the configuration.
      */
     private void loadCitizensNPC() {
@@ -1193,11 +1248,41 @@ public final class IntegrationManager {
                     plugin.integrationMessage("Hooked into " + luckPermsPlugin.getName() + " " + luckPermsPlugin.getDescription().getVersion() + ".");
                 }
             } catch (IllegalArgumentException exception) {
-                plugin.integrationMessage("Failed to Hook into " + luckPermsPlugin.getName() + " " + luckPermsPlugin.getDescription().getVersion() + ". LuckPerms will not be used as a Permissions Provider.");
+                plugin.integrationMessage("Failed to Hook into " + luckPermsPlugin.getName() + " " + luckPermsPlugin.getDescription().getVersion() + ". LuckPerms will not be used as a Permissions Provider.", "severe");
                 luckPermsHandler = null;
             }
         } else {
             luckPermsHandler = null;
+        }
+    }
+
+    /**
+     * Loads the LuckPerms integration if enabled in the configuration.
+     */
+    private void loadBedrockSupport() {
+        Plugin floodgatePlugin = plugin.getServer().getPluginManager().getPlugin("floodgate");
+        Plugin geysermcPlugin = plugin.getServer().getPluginManager().getPlugin("Geyser-Spigot");
+
+        if (geysermcPlugin != null && geysermcPlugin.isEnabled()) {
+            if (floodgatePlugin != null && floodgatePlugin.isEnabled()) {
+                plugin.integrationMessage("Hooked into " + geysermcPlugin.getName() + " " + geysermcPlugin.getDescription().getVersion() + ".");
+                plugin.integrationMessage("Hooked into " + floodgatePlugin.getName() + " " + floodgatePlugin.getDescription().getVersion() + ".");
+                floodgate = true;
+            } else if (floodgatePlugin != null && !floodgatePlugin.isEnabled()) {
+                plugin.integrationMessage("Hooked into " + geysermcPlugin.getName() + " " + geysermcPlugin.getDescription().getVersion() + ".");
+                plugin.integrationMessage("Failed to Hook into " + floodgatePlugin.getName() + " " + floodgatePlugin.getDescription().getVersion() + ".", "severe");
+                floodgate = false;
+            } else {
+                floodgate = false;
+            }
+        } else {
+            if (floodgatePlugin != null && floodgatePlugin.isEnabled()) {
+                plugin.integrationMessage("Failed to hook into Geyser-Spigot. Assuming the server runs behind a proxy.", "warning");
+                plugin.integrationMessage("Hooked into " + floodgatePlugin.getName() + " " + floodgatePlugin.getDescription().getVersion() + ".");
+                floodgate = true;
+            } else {
+                floodgate = false;
+            }
         }
     }
 

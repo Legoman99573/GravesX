@@ -481,7 +481,24 @@ public class Graves extends JavaPlugin {
     }
 
     public void integrationMessage(String string) {
-        getLogger().info("Integration: " + string);
+        integrationMessage(string, "info");
+    }
+
+    public void integrationMessage(String string, String messageType) {
+        switch (messageType) {
+            case "warn":
+                getLogger().warning("Integration: " + string);
+                break;
+            case "severe":
+            case "error":
+                getLogger().severe("Integration: " + string);
+                break;
+            case "info":
+            default:
+                getLogger().info("Integration: " + string);
+                break;
+        }
+
     }
 
     private void updateConfig() {

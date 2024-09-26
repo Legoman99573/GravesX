@@ -6,7 +6,7 @@ import com.ranull.graves.Graves;
 import com.ranull.graves.data.BlockData;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.BlockFaceUtil;
-import com.ranull.graves.util.SkinUtil;
+import com.ranull.graves.util.SkinTextureUtil;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.SkullType;
@@ -116,14 +116,14 @@ public final class CompatibilityMaterialData implements Compatibility {
                 skull.setOwner(grave.getOwnerName());
             } else {
                 if (!plugin.getVersionManager().is_v1_7()) {
-                    SkinUtil.setSkullBlockTexture(skull, grave.getOwnerName(), headBase64);
+                    SkinTextureUtil.setSkullBlockTexture(skull, grave.getOwnerName(), headBase64);
                 } else {
                     skull.setOwner(grave.getOwnerName());
                 }
             }
         } else if (headType == 1 && headBase64 != null && !headBase64.equals("")) {
             if (!plugin.getVersionManager().is_v1_7()) {
-                SkinUtil.setSkullBlockTexture(skull, grave.getOwnerName(), headBase64);
+                SkinTextureUtil.setSkullBlockTexture(skull, grave.getOwnerName(), headBase64);
             } else {
                 skull.setOwner(grave.getOwnerName());
             }
@@ -160,7 +160,7 @@ public final class CompatibilityMaterialData implements Compatibility {
 
                     String texture = grave.getOwnerTexture();
                     if (texture != null && !texture.isEmpty()) {
-                        SkinUtil.setSkullBlockTexture(skullMeta, grave.getOwnerName(), texture);
+                        SkinTextureUtil.setSkullBlockTexture(skullMeta, grave.getOwnerName(), texture);
                     }
                 }
             }
