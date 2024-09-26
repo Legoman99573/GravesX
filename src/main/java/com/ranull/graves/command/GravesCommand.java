@@ -33,7 +33,6 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
         this.plugin = plugin;
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     public boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command,
                              @NotNull String string, String[] args) {
@@ -54,6 +53,8 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
                 case "gui":
                     handleListGuiCommand(commandSender, args);
                     break;
+                case "teleport":
+                    handleTeleportCommand(commandSender, args);
                 case "givetoken":
                     handleGiveTokenCommand(commandSender, args);
                     break;
@@ -224,6 +225,50 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
 
                     if (!plugin.getGraveManager().getGraveList(otherPlayer).isEmpty()) {
                         plugin.getGUIManager().openGraveList(player, otherPlayer.getUniqueId());
+                    } else {
+                        commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » "
+                                + ChatColor.RESET + ChatColor.RED + args[1] + ChatColor.RESET + " has no graves.");
+                    }
+                } else {
+                    plugin.getEntityManager().sendMessage("message.permission-denied", player);
+                }
+            }
+        } else {
+            sendHelpMenu(commandSender);
+        }
+    }
+
+    private void handleTeleportCommand(CommandSender commandSender, String[] args) {
+        if (commandSender instanceof Player) {
+            Player player = (Player) commandSender;
+            if (args.length == 1 || args.length == 2 && args[1].equals(player.getName())) {
+                if (plugin.hasGrantedPermission("graves.teleport.command", player)) {
+                    if (!plugin.getGraveManager().getGraveList(player).isEmpty()) {
+                        Grave grave = plugin.getGraveManager().getGraveList(player).get(0);
+                        if (plugin.hasGrantedPermission("graves.teleport.command.free", player)) {
+                            player.teleport(grave.getLocationDeath());
+                        } else {
+                            plugin.getEntityManager().teleportEntity(player, plugin.getGraveManager()
+                                    .getGraveLocationList(player.getLocation(), grave).get(0), grave);
+                        }
+                    } else {
+                        commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET + "You have no graves.");
+                    }
+                } else {
+                    plugin.getEntityManager().sendMessage("message.permission-denied", player);
+                }
+            }
+            if (args.length == 2 && !args[1].equals(player.getName())) {
+                if (plugin.hasGrantedPermission("graves.teleport.command.others", player)) {
+                    OfflinePlayer offlinePlayer = plugin.getServer().getOfflinePlayer(args[1]);
+                    if (!plugin.getGraveManager().getGraveList(offlinePlayer).isEmpty()) {
+                        Grave grave = plugin.getGraveManager().getGraveList(offlinePlayer).get(0);
+                        if (plugin.hasGrantedPermission("graves.teleport.command.others.free", player)) {
+                            player.teleport(plugin.getGraveManager().getGraveLocation(grave.getLocationDeath().add(1,0,1), grave));
+                        } else {
+                            plugin.getEntityManager().teleportEntity(player, plugin.getGraveManager()
+                                    .getGraveLocationList(player.getLocation(), grave).get(0), grave);
+                        }
                     } else {
                         commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » "
                                 + ChatColor.RESET + ChatColor.RED + args[1] + ChatColor.RESET + " has no graves.");

@@ -120,6 +120,22 @@ permissions:
     default: true
     description: Can teleport to grave
 
+  graves.teleport.command:
+    default: op
+    description: teleport to your grave by command
+
+  graves.teleport.command.bypass:
+    default: op
+    description: bypass teleport command costs
+
+  graves.teleport.command.others:
+    default: op
+    description: teleport to other users graves with a command
+
+  graves.teleport.command.others.bypass:
+    default: op
+    description: bypass teleport command costs to other users graves
+
   graves.teleport.bypass:
     default: op
     description: Bypass cost to teleport to others graves
