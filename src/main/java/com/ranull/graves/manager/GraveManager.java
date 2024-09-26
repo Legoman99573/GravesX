@@ -28,6 +28,7 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitTask;
+import org.geysermc.floodgate.api.FloodgateApi;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -549,6 +550,9 @@ public final class GraveManager {
         if (plugin.getIntegrationManager().hasPlayerNPC()) {
             plugin.getIntegrationManager().getPlayerNPC().removeCorpse(grave);
         }
+        if (plugin.getIntegrationManager().hasFancyNpcs()) {
+            plugin.getIntegrationManager().getFancyNpcs().removeCorpse(grave);
+        }
 
         if (plugin.getIntegrationManager().hasCitizensNPC()) {
             plugin.getIntegrationManager().getCitizensNPC().removeCorpse(grave);
@@ -729,6 +733,16 @@ public final class GraveManager {
 
         if (plugin.getIntegrationManager().hasCitizensNPC()) {
             plugin.getIntegrationManager().getCitizensNPC().createCorpse(location, grave);
+        }
+        if (plugin.getIntegrationManager().hasFancyNpcs() && !plugin.getIntegrationManager().hasFloodgate()) {
+            plugin.getIntegrationManager().getFancyNpcs().createCorpse(grave.getUUID(),grave.getLocationDeath(),grave);
+        }
+        if (plugin.getIntegrationManager().hasFancyNpcs() && plugin.getIntegrationManager().hasFloodgate()) {
+            if (FloodgateApi.getInstance().isFloodgatePlayer(grave.getOwnerUUID())) {
+                plugin.getIntegrationManager().getFancyNpcs().createBedrockcompatCorpse(grave.getUUID(),grave.getLocationDeath(),grave);
+            } else {
+                plugin.getIntegrationManager().getFancyNpcs().createCorpse(grave.getUUID(),grave.getLocationDeath(),grave);
+            }
         }
     }
 

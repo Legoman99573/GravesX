@@ -510,11 +510,11 @@ settings:
           pose: "SLEEPING"
           # Corpse offset X.
           offset:
-            x: 0
+            x: -0.5
             # Corpse offset Y.
             y: 0
             # Corpse offset Z.
-            z: 0
+            z: -0.5
           # Should the corpse wear the player's armor?
           armor: true
           # Should the corpse hold the player's items?
@@ -528,6 +528,20 @@ settings:
             # Should corpses glow?
             enabled: false
 
+      #############
+      # FancyNpcs #
+      #############
+      # The option requires FancyNpcs, only supported on 1.19.4+.
+      fancynpcs:
+        corpse:
+          enabled: false
+          offset:
+            x: -0.5
+            y: 0
+            z: -0.5
+          armor: true
+          hand: true
+
       ############
       # Citizens #
       ############
@@ -540,11 +554,11 @@ settings:
           pose: "SLEEP"
           # Corpse offset X.
           offset:
-            x: 0
+            x: -0.5
             # Corpse offset Y.
             y: 0
             # Corpse offset Z.
-            z: 0
+            z: -0.5
           # Should the corpse wear the player's armor?
           armor: true
           # Should the corpse hold the player's items?

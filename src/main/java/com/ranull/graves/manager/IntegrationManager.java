@@ -158,6 +158,20 @@ public final class IntegrationManager {
      * </p>
      */
     private ItemBridge itemBridge;
+    /**
+     * Integration with floodgate
+     * <p>
+     * This boolean is used to handle bedrock players
+     * </p>
+     */
+    private boolean floodgate;
+    /**
+     * Integration with FancyNPCs, a plugin for managing player-like NPCs.
+     * <p>
+     * This {@link FancyNPCs} instance represents the integration with the FancyNPCs plugin, used for creating and managing NPCs that mimic players.
+     * </p>
+     */
+    private FancyNPCs fancyNpcs;
 
     /**
      * Integration with PlayerNPC, a plugin for managing player-like NPCs.
@@ -261,6 +275,8 @@ public final class IntegrationManager {
         loadLuckPerms();
         loadCoreProtect();
         loadNBTAPI();
+        loadBedrockSupport();
+        loadFancyNpcs();
     }
 
     /**
@@ -472,6 +488,24 @@ public final class IntegrationManager {
      */
     public SkriptAddon getSkript() {
         return skriptImpl != null ? skriptImpl.getSkriptAddon() : null;
+    }
+
+    /**
+     * Returns whether you are using floodgate.
+     *
+     * @return The boolean value of floodgate var.
+     */
+    public boolean hasFloodgate() {
+        return floodgate;
+    }
+
+    /**
+     * Returns the instance of the FancyNPCs integration, if it is loaded.
+     *
+     * @return The {@code FancyNPCs} integration instance, or null if not loaded.
+     */
+    public FancyNPCs getFancyNpcs() {
+        return fancyNpcs;
     }
 
     /**
@@ -694,6 +728,9 @@ public final class IntegrationManager {
         return luckPermsHandler != null;
     }
 
+    public boolean hasFancyNpcs() {
+        return fancyNpcs != null;
+    }
     /**
      * Loads the MultiPaper integration if enabled in the configuration.
      */
@@ -1106,6 +1143,20 @@ public final class IntegrationManager {
             playerNPC = null;
         }
     }
+    private void loadFancyNpcs() {
+        if (plugin.getConfig().getBoolean("settings.integration.fancynpcs.enabled")) {
+            Plugin FancyNPCPlugin = plugin.getServer().getPluginManager().getPlugin("FancyNpcs");
+
+            if (FancyNPCPlugin != null && FancyNPCPlugin.isEnabled()) {
+                fancyNpcs = new FancyNPCs(plugin);
+
+                plugin.integrationMessage("Hooked into " + FancyNPCPlugin.getName() + " "
+                        + FancyNPCPlugin.getDescription().getVersion() + ".");
+            }
+        } else {
+            fancyNpcs = null;
+        }
+    }
 
     /**
      * Loads the CitizensNPC integration if enabled in the configuration.
@@ -1199,6 +1250,12 @@ public final class IntegrationManager {
         } else {
             luckPermsHandler = null;
         }
+    }
+
+    private void loadBedrockSupport() {
+        Plugin floodgatePlugin = plugin.getServer().getPluginManager().getPlugin("floodgate");
+
+        floodgate = floodgatePlugin != null && floodgatePlugin.isEnabled();
     }
 
     /**
