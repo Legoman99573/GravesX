@@ -55,6 +55,7 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
                     break;
                 case "teleport":
                     handleTeleportCommand(commandSender, args);
+                    break;
                 case "givetoken":
                     handleGiveTokenCommand(commandSender, args);
                     break;
