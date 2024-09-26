@@ -1275,11 +1275,14 @@ public final class IntegrationManager {
             } else {
                 floodgate = false;
             }
-        } else if (geysermcPlugin == null || !geysermcPlugin.isEnabled()) {
-            plugin.integrationMessage("Failed to Hook into " + floodgatePlugin.getName() + " " + floodgatePlugin.getDescription().getVersion() + " because Geyser-Spigot is not enabled.", "severe");
-            floodgate = false;
         } else {
-            floodgate = false;
+            if (floodgatePlugin != null && floodgatePlugin.isEnabled()) {
+                plugin.integrationMessage("Failed to hook into Geyser-Spigot. Assuming the server runs behind a proxy.", "warning");
+                plugin.integrationMessage("Hooked into " + floodgatePlugin.getName() + " " + floodgatePlugin.getDescription().getVersion() + ".");
+                floodgate = true;
+            } else {
+                floodgate = false;
+            }
         }
     }
 
