@@ -13,9 +13,10 @@ settings:
   ###########
   # Data storage system.
   storage:
-    # Available options: SQLITE, MYSQL, MARIADB, POSTGRESQL, H2.
+    # SQLITE will be removed in a future release. Use H2 instead.
+    # Available options: MYSQL, MARIADB, POSTGRESQL, H2.
     # More storage types will be added in the future.
-    type: SQLITE
+    type: H2
 
     sqlite:
       # Unless you know what you're doing, leave the options under sqlite default.
