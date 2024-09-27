@@ -85,5 +85,7 @@ body:
           required: true
         - label: I am not running an outdated version of GravesX when reporting
           required: true
+        - label: If I use any sort of Plugin Manager/Management plugin that I will not receive support. (Plugin Managers causes alot of behavioral issues and causes more problems than it resolves)
+          required: true
         - label: "I am not just clicking checkboxes randomly without reading them. If I don't check this, then I did read everything."
           required: false
