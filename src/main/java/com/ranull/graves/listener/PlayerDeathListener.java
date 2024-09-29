@@ -34,7 +34,7 @@ public class PlayerDeathListener implements Listener {
      *
      * @param event The PlayerDeathEvent to handle.
      */
-    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerDeath(PlayerDeathEvent event) {
         List<ItemStack> itemStackList = event.getDrops();
         List<ItemStack> itemsToRemove = new ArrayList<>();

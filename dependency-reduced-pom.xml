@@ -411,13 +411,13 @@
     <dependency>
       <groupId>com.sk89q.worldedit</groupId>
       <artifactId>worldedit-bukkit</artifactId>
-      <version>7.3.0-SNAPSHOT</version>
+      <version>7.3.6-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>com.sk89q.worldguard</groupId>
       <artifactId>worldguard-bukkit</artifactId>
-      <version>7.1.0-SNAPSHOT</version>
+      <version>7.0.12-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -615,7 +615,7 @@
     <plugins>
       <plugin>
         <artifactId>maven-project-info-reports-plugin</artifactId>
-        <version>3.6.2</version>
+        <version>3.7.0</version>
       </plugin>
       <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
