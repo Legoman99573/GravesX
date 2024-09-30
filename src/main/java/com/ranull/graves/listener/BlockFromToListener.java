@@ -26,7 +26,7 @@ public class BlockFromToListener implements Listener {
      *
      * @param event The BlockFromToEvent to handle.
      */
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onBlockFromTo(BlockFromToEvent event) {
         // Check if the destination block of the fluid is a grave
         if (isGraveBlock(event) || event.getToBlock().getType().toString().toUpperCase().contains("SKULL")) {
