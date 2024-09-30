@@ -29,7 +29,7 @@ public class BlockFromToListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockFromTo(BlockFromToEvent event) {
         // Check if the destination block of the fluid is a grave
-        if (isGraveBlock(event) || plugin.getBlockManager().getGraveFromBlock(event.getToBlock().getLocation().add(0,1,0).getBlock()) != null) {
+        if (isGraveBlock(event)) {
             event.setCancelled(true);
         }
     }
@@ -41,6 +41,6 @@ public class BlockFromToListener implements Listener {
      * @return True if the destination block is a grave block, false otherwise.
      */
     private boolean isGraveBlock(BlockFromToEvent event) {
-        return plugin.getBlockManager().getGraveFromBlock(event.getToBlock()) != null;
+        return plugin.getBlockManager().getGraveFromBlock(event.getToBlock()) != null || plugin.getBlockManager().getGraveFromBlock(event.getToBlock().getLocation().add(0,1,0).getBlock()) != null;
     }
 }
