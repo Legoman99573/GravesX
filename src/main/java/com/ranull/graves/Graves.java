@@ -119,6 +119,7 @@ public class Graves extends JavaPlugin {
             compatibilityChecker();
             updateConfig();
             updateChecker();
+            RegisterSoftCrashHandler();
         });
 
         if (getConfig().getBoolean("settings.metrics.enabled", true)) {
@@ -133,19 +134,67 @@ public class Graves extends JavaPlugin {
     @Override
     public void onDisable() {
         wasReloaded = true;
-        dataManager.closeConnection();
-        graveManager.unload();
+        runShutdownTasks();
+    }
+
+    private void RegisterSoftCrashHandler() {
+        getLogger().info("Registering Crash Handler...");
+        try {
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                getLogger().severe("GravesX detected server went into a crashed state...");
+                runShutdownTasks();
+                getServer().getPluginManager().disablePlugin(this);
+            }));
+            getLogger().info("Registered Crash Handler. Server will handle crashes in a separate thread.");
+        } catch (Exception e) {
+            getLogger().severe("Failed to Register Crash Handler. Server will not listen to crashed states in a seperate thread.");
+        }
+    }
+
+    private void runShutdownTasks() {
+        getLogger().info("Shutting Down GravesX...");
+        try {
+            dataManager.closeConnection();
+        } catch (Exception e) {
+            getLogger().severe("Failed to close Database Connection. Cause:" + e.getCause());
+        }
+
+        getLogger().info("Unloading GraveManager...");
+        try {
+            graveManager.unload();
+            getLogger().info("Unloaded GraveManager Successfully.");
+        } catch (Exception e) {
+            getLogger().severe("Failed to unload GraveManager. Cause: " + e.getCause());
+        }
+
+        getLogger().info("Unloading GraveyardManager...");
         try {
             graveyardManager.unload();
-        } catch (InvocationTargetException e) {
-            throw new RuntimeException(e);
+            getLogger().info("Unloaded GraveyardManager Successfully.");
+        } catch (Exception e) {
+            getLogger().severe("Failed to unload GraveyardManager. Cause: " + e.getCause());
         }
-        integrationManager.unload();
-        integrationManager.unloadNoReload();
+
+        getLogger().info("Unloading IntegrationManager...");
+        try {
+            integrationManager.unload();
+            integrationManager.unloadNoReload();
+            getLogger().info("Unloaded IntegrationManager Successfully.");
+        } catch (Exception e) {
+            getLogger().severe("Failed to unload IntegrationManager. Cause: " + e.getCause());
+        }
+
 
         if (recipeManager != null) {
-            recipeManager.unload();
+            getLogger().info("Unloading RecipeManager...");
+            try {
+                recipeManager.unload();
+                getLogger().info("Unloaded RecipeManager Successfully.");
+            } catch (Exception e) {
+                getLogger().severe("Failed to unload RecipeManager. Cause: " + e.getCause());
+            }
         }
+        getLogger().info("Shutdown Completed :)");
     }
 
     private void loadLibraries() {
