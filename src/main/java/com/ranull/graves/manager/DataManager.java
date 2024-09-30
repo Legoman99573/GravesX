@@ -67,6 +67,7 @@ public final class DataManager {
 
         switch (this.type) {
             case SQLITE:
+                plugin.getLogger().warning("Database Option SQLITE is set for removal in a future release. Use H2 Database option instead for better reliance.");
                 loadType(Type.SQLITE);
                 load();
                 keepConnectionAlive(); // If we don't enable this, connection will close or time out :/
