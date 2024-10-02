@@ -28,6 +28,8 @@ public class ParticleManager {
     public void startParticleTrail(Location startLocation, Location endLocation, Particle particleType, int count, double speed, long durationTicks) {
 
         try {
+            startLocation.add(0.0, 2.0, 0.0);
+            endLocation.add(0.5, 0.0, 0.5);
             Vector direction = endLocation.clone().subtract(startLocation).toVector().normalize();
 
             new BukkitRunnable() {
