@@ -5,6 +5,7 @@ import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.LocationUtil;
 import com.ranull.graves.util.MaterialUtil;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
@@ -242,6 +243,12 @@ public final class LocationManager {
         location.setY(y);
 
         if (location.getWorld() != null) {
+            World world = location.getWorld();
+
+            if (world.getEnvironment() == World.Environment.NETHER && location.getY() > 126) {
+                location.setY(126);
+            }
+
             while (counter <= (getMinHeight(location) * -1) + location.getWorld().getMaxHeight()) {
                 if (MaterialUtil.isLava(location.getBlock().getType())) {
                     return getLavaTop(location, entity, grave);
