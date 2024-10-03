@@ -96,6 +96,10 @@
                             <pattern>com.mariadb</pattern>
                             <shadedPattern>${project.groupId}.${project.artifactId}.libraries.mariadb</shadedPattern>
                         </relocation>
+                        <relocation>
+                            <pattern>com.mariadb</pattern>
+                            <shadedPattern>${project.groupId}.${project.artifactId}.libraries.commonstext</shadedPattern>
+                        </relocation>
                     </relocations>
                 </configuration>
                 <executions>
@@ -677,6 +681,11 @@
             <version>6.6.4</version>
             <scope>provided</scope>
         </dependency>
-
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-text</artifactId>
+            <version>1.12.0</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 </project>

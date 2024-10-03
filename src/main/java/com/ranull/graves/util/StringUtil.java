@@ -6,7 +6,8 @@ import me.clip.placeholderapi.PlaceholderAPI;
 import me.imdanix.text.MiniTranslator;
 import net.md_5.bungee.api.ChatColor;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.text.WordUtils;
+
+import org.apache.commons.text.WordUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
@@ -15,7 +16,6 @@ import org.bukkit.entity.EntityType;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
