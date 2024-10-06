@@ -110,6 +110,28 @@ settings:
       # Only increase if your connection keeps timing out.
       connectionTimeout: 30000
 
+    mssql:
+      # The hostname or IP address of the MS SQL server.
+      host: "localhost"
+      # The port MS SQL is running on (default is 1433).
+      port: 1433
+      # The username for authenticating to the MS SQL server.
+      username: "username"
+      # The password for the specified username.
+      password: "password"
+      # The name of the database to use on the MS SQL server.
+      database: "graves"
+      # Maximum lifetime of a connection in milliseconds before it is closed (30 minutes).
+      maxLifetime: 1800000
+      # Maximum number of connections in the connection pool.
+      maxConnections: 20
+      # Timeout in milliseconds before a connection attempt fails (30 seconds).
+      connectionTimeout: 30000
+      # Whether to encrypt the connection to the MS SQL server.
+      encrypt: true
+      # Whether to trust the server certificate if SSL is enabled (useful for self-signed certificates).
+      trustServerCertificate: false
+
   #########
   # Cache #
   #########

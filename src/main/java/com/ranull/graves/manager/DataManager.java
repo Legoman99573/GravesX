@@ -18,6 +18,8 @@ import org.bukkit.inventory.ItemStack;
 import java.io.File;
 import java.sql.*;
 import java.sql.Date;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -104,6 +106,8 @@ public final class DataManager {
                 return "MariaDB";
             case POSTGRESQL:
                 return "PostgreSQL";
+            case MSSQL:
+                return "MS SQL";
             case INVALID:
             default:
                 return null;
@@ -154,6 +158,17 @@ public final class DataManager {
          * </p>
          */
         H2,
+
+        /**
+         * Microsoft SQL Server (MS SQL) database system.
+         * <p>
+         * This type represents a Microsoft SQL Server database, a robust, scalable, and enterprise-grade
+         * relational database system commonly used in production environments. MS SQL offers
+         * comprehensive features for transaction management, high availability, security, and
+         * performance optimization, making it suitable for large-scale applications.
+         * </p>
+         */
+        MSSQL,
 
         /**
          * Invalid or unsupported database type.
@@ -340,6 +355,38 @@ public final class DataManager {
             configureH2(config);
             dataSource = new HikariDataSource(config);
             checkAndUnlockDatabase(); // Check and unlock the database if needed
+        } else if (this.type == Type.MSSQL) {
+            // MS SQL configuration
+            String host = plugin.getConfig().getString("settings.storage.mssql.host", "localhost");
+            int port = plugin.getConfig().getInt("settings.storage.mssql.port", 1433);
+            String user = plugin.getConfig().getString("settings.storage.mssql.username", "username");
+            String password = plugin.getConfig().getString("settings.storage.mssql.password", "password");
+            String database = plugin.getConfig().getString("settings.storage.mssql.database", "graves");
+            long maxLifetime = plugin.getConfig().getLong("settings.storage.mssql.maxLifetime", 1800000);
+            int maxConnections = plugin.getConfig().getInt("settings.storage.mssql.maxConnections", 20);
+            long connectionTimeout = plugin.getConfig().getLong("settings.storage.mssql.connectionTimeout", 30000);
+            boolean encrypt = plugin.getConfig().getBoolean("settings.storage.mssql.encrypt", true);
+            boolean trustServerCertificate = plugin.getConfig().getBoolean("settings.storage.mssql.trustServerCertificate", false);
+
+            HikariConfig config = new HikariConfig();
+            config.setJdbcUrl("jdbc:sqlserver://" + host + ":" + port + ";databaseName=" + database);
+            config.setUsername(user);
+            config.setPassword(password);
+            config.addDataSourceProperty("encrypt", String.valueOf(encrypt));
+            config.addDataSourceProperty("trustServerCertificate", String.valueOf(trustServerCertificate));
+            config.setMaximumPoolSize(maxConnections);
+            config.setMaxLifetime(maxLifetime);
+            config.setMinimumIdle(2);
+            config.setPoolName("Graves MSSQL");
+            config.setConnectionTimeout(connectionTimeout);
+            config.setIdleTimeout(600000);
+            config.setConnectionTestQuery("SELECT 1");
+            config.setLeakDetectionThreshold(15000);
+
+            // Set MSSQL driver class
+            config.setDriverClassName("com.ranull.graves.libraries.microsoft.sqlserver.jdbc.SQLServerDriver");
+
+            dataSource = new HikariDataSource(config);
         } else {
             // MySQL or MariaDB configuration
             String host = plugin.getConfig().getString("settings.storage.mysql.host", "localhost");
@@ -600,6 +647,9 @@ public final class DataManager {
             case H2:
                 query = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '" + tableName + "';";
                 break;
+            case MSSQL:
+                query = "IF OBJECT_ID('" + tableName + "', 'U') IS NOT NULL SELECT 1 AS TableExists ELSE SELECT 0 AS TableExists;";
+                break;
             default:
                 plugin.getLogger().severe("Unsupported database type: " + type);
                 return false;
@@ -616,6 +666,8 @@ public final class DataManager {
                     return resultSet.getBoolean(1);
                 } else if (type == Type.H2) {
                     return resultSet.getInt(1) > 0;
+                } else if (type == Type.MSSQL) {
+                    return resultSet.getInt("TableExists") == 1; // Check the result for MS SQL
                 } else {
                     return true; // For MySQL, MariaDB, and SQLite, table exists if the result is returned
                 }
@@ -669,6 +721,12 @@ public final class DataManager {
                 case H2:
                     query = "ALTER TABLE " + tableName + " ADD COLUMN IF NOT EXISTS " + columnName + " " + columnDefinition + ";";
                     break;
+                case MSSQL:
+                    query = "IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '" + tableName + "' AND COLUMN_NAME = '" + columnName + "') " +
+                            "BEGIN " +
+                            "ALTER TABLE " + tableName + " ADD " + columnName + " " + columnDefinition + ";" +
+                            "END;";
+                    break;
                 default:
                     plugin.getLogger().severe("Unsupported database type: " + type);
                     return;
@@ -711,6 +769,32 @@ public final class DataManager {
                         "time_protection BIGINT,\n" +
                         "time_creation BIGINT,\n" +
                         "permissions TEXT);", new Object[0]);
+            } else if (type == Type.MSSQL) {
+                // MS SQL table creation logic
+                executeUpdate("CREATE TABLE IF NOT EXISTS " + name + " (" +
+                        "uuid NVARCHAR(255) UNIQUE,\n" +
+                        "owner_type NVARCHAR(255),\n" +
+                        "owner_name NVARCHAR(255),\n" +
+                        "owner_name_display NVARCHAR(255),\n" +
+                        "owner_uuid NVARCHAR(255),\n" +
+                        "owner_texture NVARCHAR(MAX),\n" +
+                        "owner_texture_signature NVARCHAR(MAX),\n" +
+                        "killer_type NVARCHAR(255),\n" +
+                        "killer_name NVARCHAR(255),\n" +
+                        "killer_name_display NVARCHAR(255),\n" +
+                        "killer_uuid NVARCHAR(255),\n" +
+                        "location_death NVARCHAR(255),\n" +
+                        "yaw FLOAT,\n" +
+                        "pitch FLOAT,\n" +
+                        "inventory NVARCHAR(MAX),\n" +
+                        "equipment NVARCHAR(MAX),\n" +
+                        "experience INT,\n" +
+                        "protection BIT,\n" +
+                        "is_abandoned BIT,\n" +
+                        "time_alive BIGINT,\n" +
+                        "time_protection BIGINT,\n" +
+                        "time_creation BIGINT,\n" +
+                        "permissions NVARCHAR(MAX));", new Object[0]);
             } else {
                 executeUpdate("CREATE TABLE IF NOT EXISTS " + name + " (" +
                         "uuid VARCHAR(255) UNIQUE,\n" +
@@ -739,40 +823,29 @@ public final class DataManager {
             }
         }
 
-        addColumnIfNotExists(name, "uuid", "VARCHAR(255) UNIQUE");
-        addColumnIfNotExists(name, "owner_type", "VARCHAR(255)");
-        addColumnIfNotExists(name, "owner_name", "VARCHAR(255)");
-        addColumnIfNotExists(name, "owner_name_display", "VARCHAR(255)");
-        addColumnIfNotExists(name, "owner_uuid", "VARCHAR(255)");
-        addColumnIfNotExists(name, "owner_texture", "TEXT");
-        addColumnIfNotExists(name, "owner_texture_signature", "TEXT");
-        addColumnIfNotExists(name, "killer_type", "VARCHAR(255)");
-        addColumnIfNotExists(name, "killer_name", "VARCHAR(255)");
-        addColumnIfNotExists(name, "killer_name_display", "VARCHAR(255)");
-        addColumnIfNotExists(name, "killer_uuid", "VARCHAR(255)");
-        addColumnIfNotExists(name, "location_death", "VARCHAR(255)");
-        if (type == Type.POSTGRESQL || type == Type.H2) {
-            addColumnIfNotExists(name, "yaw", "REAL");
-            addColumnIfNotExists(name, "pitch", "REAL");
-        } else {
-            addColumnIfNotExists(name, "yaw", "FLOAT(16)");
-            addColumnIfNotExists(name, "pitch", "FLOAT(16)");
-        }
-        addColumnIfNotExists(name, "inventory", "TEXT");
-        addColumnIfNotExists(name, "equipment", "TEXT");
-        if (type == Type.POSTGRESQL || type == Type.H2) {
-            addColumnIfNotExists(name, "experience", "INT");
-            addColumnIfNotExists(name, "protection", "INT");
-            addColumnIfNotExists(name, "is_abandoned", "INT");
-        } else {
-            addColumnIfNotExists(name, "experience", "INT(16)");
-            addColumnIfNotExists(name, "protection", "INT(1)");
-            addColumnIfNotExists(name, "is_abandoned", "INT(1)");
-        }
+        addColumnIfNotExists(name, "uuid", type == Type.MSSQL ? "NVARCHAR(255) UNIQUE" : "VARCHAR(255) UNIQUE");
+        addColumnIfNotExists(name, "owner_type", type == Type.MSSQL ? "NVARCHAR(255)" : "VARCHAR(255)");
+        addColumnIfNotExists(name, "owner_name", type == Type.MSSQL ? "NVARCHAR(255)" : "VARCHAR(255)");
+        addColumnIfNotExists(name, "owner_name_display", type == Type.MSSQL ? "NVARCHAR(255)" : "VARCHAR(255)");
+        addColumnIfNotExists(name, "owner_uuid", type == Type.MSSQL ? "NVARCHAR(255)" : "VARCHAR(255)");
+        addColumnIfNotExists(name, "owner_texture", type == Type.MSSQL ? "NVARCHAR(MAX)" : "TEXT");
+        addColumnIfNotExists(name, "owner_texture_signature", type == Type.MSSQL ? "NVARCHAR(MAX)" : "TEXT");
+        addColumnIfNotExists(name, "killer_type", type == Type.MSSQL ? "NVARCHAR(255)" : "VARCHAR(255)");
+        addColumnIfNotExists(name, "killer_name", type == Type.MSSQL ? "NVARCHAR(255)" : "VARCHAR(255)");
+        addColumnIfNotExists(name, "killer_name_display", type == Type.MSSQL ? "NVARCHAR(255)" : "VARCHAR(255)");
+        addColumnIfNotExists(name, "killer_uuid", type == Type.MSSQL ? "NVARCHAR(255)" : "VARCHAR(255)");
+        addColumnIfNotExists(name, "location_death", type == Type.MSSQL ? "NVARCHAR(255)" : "VARCHAR(255)");
+        addColumnIfNotExists(name, "yaw", type == Type.MSSQL ? "FLOAT" : "FLOAT(16)");
+        addColumnIfNotExists(name, "pitch", type == Type.MSSQL ? "FLOAT" : "FLOAT(16)");
+        addColumnIfNotExists(name, "inventory", type == Type.MSSQL ? "NVARCHAR(MAX)" : "TEXT");
+        addColumnIfNotExists(name, "equipment", type == Type.MSSQL ? "NVARCHAR(MAX)" : "TEXT");
+        addColumnIfNotExists(name, "experience", type == Type.MSSQL ? "INT" : "INT(16)");
+        addColumnIfNotExists(name, "protection", type == Type.MSSQL ? "BIT" : "INT(1)");
+        addColumnIfNotExists(name, "is_abandoned", type == Type.MSSQL ? "BIT" : "INT(1)");
         addColumnIfNotExists(name, "time_alive", "BIGINT");
         addColumnIfNotExists(name, "time_protection", "BIGINT");
         addColumnIfNotExists(name, "time_creation", "BIGINT");
-        addColumnIfNotExists(name, "permissions", "TEXT");
+        addColumnIfNotExists(name, "permissions", type == Type.MSSQL ? "NVARCHAR(MAX)" : "TEXT");
     }
 
     /**
@@ -801,6 +874,31 @@ public final class DataManager {
                         "location_death VARCHAR(255),\n" +
                         "yaw REAL,\n" +
                         "pitch REAL,\n" +
+                        "inventory TEXT,\n" +
+                        "equipment TEXT,\n" +
+                        "experience INT,\n" +
+                        "protection INT,\n" +
+                        "is_abandoned INT,\n" +
+                        "time_alive BIGINT,\n" +
+                        "time_protection BIGINT,\n" +
+                        "time_creation BIGINT,\n" +
+                        "permissions TEXT);", new Object[0]);
+            } else if (type == Type.MSSQL) {
+                executeUpdate("CREATE TABLE " + graveBackupTableName + " (" +
+                        "uuid VARCHAR(255) UNIQUE,\n" +
+                        "owner_type VARCHAR(255),\n" +
+                        "owner_name VARCHAR(255),\n" +
+                        "owner_name_display VARCHAR(255),\n" +
+                        "owner_uuid VARCHAR(255),\n" +
+                        "owner_texture TEXT,\n" +
+                        "owner_texture_signature TEXT,\n" +
+                        "killer_type VARCHAR(255),\n" +
+                        "killer_name VARCHAR(255),\n" +
+                        "killer_name_display VARCHAR(255),\n" +
+                        "killer_uuid VARCHAR(255),\n" +
+                        "location_death VARCHAR(255),\n" +
+                        "yaw FLOAT,\n" + // Using FLOAT for MS SQL
+                        "pitch FLOAT,\n" + // Using FLOAT for MS SQL
                         "inventory TEXT,\n" +
                         "equipment TEXT,\n" +
                         "experience INT,\n" +
@@ -851,16 +949,21 @@ public final class DataManager {
         addColumnIfNotExists(graveBackupTableName, "killer_name_display", "VARCHAR(255)");
         addColumnIfNotExists(graveBackupTableName, "killer_uuid", "VARCHAR(255)");
         addColumnIfNotExists(graveBackupTableName, "location_death", "VARCHAR(255)");
-        if (type == Type.POSTGRESQL || type == Type.H2) {
+
+        // Handle yaw and pitch columns based on database type
+        if (type == Type.POSTGRESQL || type == Type.H2 || type == Type.MSSQL) {
             addColumnIfNotExists(graveBackupTableName, "yaw", "REAL");
             addColumnIfNotExists(graveBackupTableName, "pitch", "REAL");
         } else {
             addColumnIfNotExists(graveBackupTableName, "yaw", "FLOAT(16)");
             addColumnIfNotExists(graveBackupTableName, "pitch", "FLOAT(16)");
         }
+
         addColumnIfNotExists(graveBackupTableName, "inventory", "TEXT");
         addColumnIfNotExists(graveBackupTableName, "equipment", "TEXT");
-        if (type == Type.POSTGRESQL || type == Type.H2) {
+
+        // Handle experience, protection, and is_abandoned columns based on database type
+        if (type == Type.POSTGRESQL || type == Type.H2 || type == Type.MSSQL) {
             addColumnIfNotExists(graveBackupTableName, "experience", "INT");
             addColumnIfNotExists(graveBackupTableName, "protection", "INT");
             addColumnIfNotExists(graveBackupTableName, "is_abandoned", "INT");
@@ -869,6 +972,7 @@ public final class DataManager {
             addColumnIfNotExists(graveBackupTableName, "protection", "INT(1)");
             addColumnIfNotExists(graveBackupTableName, "is_abandoned", "INT(1)");
         }
+
         addColumnIfNotExists(graveBackupTableName, "time_alive", "BIGINT");
         addColumnIfNotExists(graveBackupTableName, "time_protection", "BIGINT");
         addColumnIfNotExists(graveBackupTableName, "time_creation", "BIGINT");
@@ -885,14 +989,11 @@ public final class DataManager {
 
         // Check if the table exists and create it if it does not
         if (!tableExists(name)) {
-            String createTableQuery;
-
-            createTableQuery = "CREATE TABLE " + name + " (" +
+            String createTableQuery = "CREATE TABLE " + name + " (" +
                     "location VARCHAR(255),\n" +
                     "uuid_grave VARCHAR(255),\n" +
                     "replace_material VARCHAR(255),\n" +
                     "replace_data TEXT);";
-
             executeUpdate(createTableQuery, new Object[0]);
         }
 
@@ -926,6 +1027,8 @@ public final class DataManager {
      */
     public void setupHologramTable() throws SQLException {
         String name = "hologram";
+
+        // Check if the table exists and create it if it does not
         if (!tableExists(name)) {
             String createTableQuery;
 
@@ -942,7 +1045,7 @@ public final class DataManager {
                     createTableQuery = "CREATE TABLE IF NOT EXISTS " + name + " (" +
                             "uuid_entity VARCHAR(255),\n" +
                             "uuid_grave VARCHAR(255),\n" +
-                            "line INTEGER,\n" +  // SQLite uses INTEGER instead of INT
+                            "line INTEGER,\n" +  // SQLite uses INTEGER
                             "location VARCHAR(255));";
                     break;
                 case POSTGRESQL:
@@ -958,7 +1061,13 @@ public final class DataManager {
                     return;
             }
 
-            executeUpdate(createTableQuery);
+            // Execute the create table query
+            try {
+                executeUpdate(createTableQuery);
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Failed to create hologram table: " + e.getMessage());
+                throw e; // rethrowing the exception
+            }
         }
 
         // Ensure all columns exist with appropriate types
@@ -976,14 +1085,43 @@ public final class DataManager {
      */
     private void setupEntityTable(String name) throws SQLException {
         // Create table if it does not exist
-        String createTableQuery = "CREATE TABLE IF NOT EXISTS " + name + " (" +
-                "location VARCHAR(255), " +
-                "uuid_entity VARCHAR(255), " +
-                "uuid_grave VARCHAR(255));";
+        String createTableQuery;
 
-        executeUpdate(createTableQuery, new Object[0]);
+        switch (type) {
+            case MYSQL:
+            case MARIADB:
+                createTableQuery = "CREATE TABLE IF NOT EXISTS " + name + " (" +
+                        "location VARCHAR(255), " +
+                        "uuid_entity VARCHAR(255), " +
+                        "uuid_grave VARCHAR(255));";
+                break;
+            case SQLITE:
+                createTableQuery = "CREATE TABLE IF NOT EXISTS " + name + " (" +
+                        "location TEXT, " +  // Use TEXT for SQLite
+                        "uuid_entity TEXT, " +
+                        "uuid_grave TEXT);";
+                break;
+            case POSTGRESQL:
+            case H2:
+                createTableQuery = "CREATE TABLE IF NOT EXISTS " + name + " (" +
+                        "location VARCHAR(255), " +
+                        "uuid_entity VARCHAR(255), " +
+                        "uuid_grave VARCHAR(255));";
+                break;
+            default:
+                plugin.getLogger().severe("Unsupported database type: " + type);
+                return;
+        }
 
-        // Add columns if they do not exist
+        // Execute the create table query
+        try {
+            executeUpdate(createTableQuery, new Object[0]);
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Failed to create entity table: " + e.getMessage());
+            throw e; // rethrowing the exception
+        }
+
+        // Ensure all columns exist with appropriate types
         addColumnIfNotExists(name, "location", "VARCHAR(255)");
         addColumnIfNotExists(name, "uuid_entity", "VARCHAR(255)");
         addColumnIfNotExists(name, "uuid_grave", "VARCHAR(255)");
@@ -2078,104 +2216,65 @@ public final class DataManager {
      * @throws SQLException if a database access error occurs.
      */
     private void executeUpdate(String sql, Object[] parameters) throws SQLException {
-        Connection connection = null;
-        PreparedStatement statement = null;
-        try {
-            connection = getConnection();
-            if (connection != null) {
-                statement = connection.prepareStatement(sql);
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            if (parameters != null) {
                 for (int i = 0; i < parameters.length; i++) {
                     Object parameter = parameters[i];
                     if (parameter == null) {
-                        statement.setNull(i + 1, Types.NULL);
+                        // Use specific SQL types for null values
+                        statement.setNull(i + 1, Types.VARCHAR); // Adjust based on expected parameter type
+                    } else if (parameter instanceof String) {
+                        statement.setString(i + 1, (String) parameter);
+                    } else if (parameter instanceof Integer) {
+                        statement.setInt(i + 1, (Integer) parameter);
+                    } else if (parameter instanceof Long) {
+                        statement.setLong(i + 1, (Long) parameter);
+                    } else if (parameter instanceof Double) {
+                        statement.setDouble(i + 1, (Double) parameter);
+                    } else if (parameter instanceof Float) {
+                        statement.setFloat(i + 1, (Float) parameter);
+                    } else if (parameter instanceof Boolean) {
+                        statement.setBoolean(i + 1, (Boolean) parameter); // Use setBoolean for MSSQL
+                    } else if (parameter instanceof UUID) {
+                        statement.setObject(i + 1, parameter.toString(), Types.VARCHAR);
+                    } else if (parameter instanceof byte[]) {
+                        statement.setBytes(i + 1, (byte[]) parameter);
+                    } else if (parameter instanceof Date) {
+                        statement.setDate(i + 1, (Date) parameter);
+                    } else if (parameter instanceof Timestamp) {
+                        statement.setTimestamp(i + 1, (Timestamp) parameter);
+                    } else if (parameter instanceof LocalDate) {
+                        statement.setObject(i + 1, parameter, Types.DATE);
+                    } else if (parameter instanceof LocalDateTime) {
+                        statement.setObject(i + 1, parameter, Types.TIMESTAMP);
+                    } else if (parameter instanceof Clob) {
+                        statement.setClob(i + 1, (Clob) parameter);
+                    } else if (parameter instanceof Blob) {
+                        statement.setBlob(i + 1, (Blob) parameter);
+                    } else if (parameter instanceof EntityType) {
+                        statement.setString(i + 1, ((EntityType) parameter).name());
                     } else {
-                        switch (parameter.getClass().getSimpleName()) {
-                            case "String":
-                                statement.setString(i + 1, (String) parameter);
-                                break;
-                            case "Integer":
-                                statement.setInt(i + 1, (Integer) parameter);
-                                break;
-                            case "Long":
-                                statement.setLong(i + 1, (Long) parameter);
-                                break;
-                            case "Double":
-                                statement.setDouble(i + 1, (Double) parameter);
-                                break;
-                            case "Float":
-                                statement.setFloat(i + 1, (Float) parameter);
-                                break;
-                            case "Boolean":
-                                statement.setInt(i + 1, (Boolean) parameter ? 1 : 0);
-                                break;
-                            case "UUID":
-                                statement.setObject(i + 1, parameter.toString(), Types.VARCHAR); // Use VARCHAR for UUIDs in PostgreSQL
-                                break;
-                            case "byte[]":
-                                statement.setBytes(i + 1, (byte[]) parameter);
-                                break;
-                            case "Date":
-                                statement.setDate(i + 1, (Date) parameter);
-                                break;
-                            case "Timestamp":
-                                statement.setTimestamp(i + 1, (Timestamp) parameter);
-                                break;
-                            case "LocalDate":
-                                statement.setObject(i + 1, parameter, Types.DATE); // Java 8+ Date API
-                                break;
-                            case "LocalDateTime":
-                                statement.setObject(i + 1, parameter, Types.TIMESTAMP);
-                                break;
-                            case "Clob":
-                                statement.setClob(i + 1, (Clob) parameter);
-                                break;
-                            case "Blob":
-                                statement.setBlob(i + 1, (Blob) parameter);
-                                break;
-                            case "EntityType":
-                                statement.setString(i + 1, ((EntityType) parameter).name()); // Convert EntityType to String
-                                break;
-                            default:
-                                statement.setObject(i + 1, parameter);
-                                break;
-                        }
+                        statement.setObject(i + 1, parameter);
                     }
                 }
-                statement.executeUpdate();
             }
+
+            statement.executeUpdate();
         } catch (SQLException exception) {
             String sqlState = exception.getSQLState();
             String message = exception.getMessage().toLowerCase();
             // Ignore errors related to existing tables or columns
-            if ("42701".equals(sqlState) || "42P07".equals(sqlState) || "42S01".equals(sqlState) || "X0Y32".equals(sqlState)
-                    || (message.contains("duplicate column name") && "SQLITE_ERROR".equals(sqlState))) { // SQLite doesn't natively support these checks. Just ignore the messages.
-                // plugin.getLogger().info("Skipping statement due to already existing table/column: " + sql);
-                // Table and/or column already exists. Ignore it all together.
+            if ("42701".equals(sqlState) || "42P07".equals(sqlState) || "42S01".equals(sqlState)
+                    || "X0Y32".equals(sqlState)
+                    || (message.contains("duplicate column name") && "SQLITE_ERROR".equals(sqlState))) {
+                // Ignore already existing table/column errors
             } else {
                 // Log the SQL statement and exception message for other errors
                 plugin.getLogger().severe("Error executing SQL update: " + exception.getMessage());
                 plugin.getLogger().severe("Failed SQL statement: " + sql);
                 plugin.logStackTrace(exception);
-            }
-        } finally {
-            // Ensure statement and connection are closed properly
-            if (statement != null) {
-                try {
-                    statement.close();
-                } catch (SQLException exception) {
-                    plugin.getLogger().severe("Error occurred while closing statement: " + exception.getMessage());
-                    plugin.getLogger().severe("Failed closing statement: " + statement);
-                    plugin.logStackTrace(exception);
-                }
-            }
-            if (connection != null) {
-                try {
-                    connection.close();
-                } catch (SQLException exception) {
-                    plugin.getLogger().severe("Error occurred while closing connection: " + exception.getMessage());
-                    plugin.getLogger().severe("Failed closing connection: " + connection);
-                    plugin.logStackTrace(exception);
-                }
             }
         }
     }
@@ -2318,7 +2417,7 @@ public final class DataManager {
     }
 
     /**
-     * Migrates data from SQLite to the target database (MySQL, MariaDB, PostgreSQL, or H2).
+     * Migrates data from SQLite to the target database (MySQL, MariaDB, PostgreSQL, H2, or MSSQL).
      */
     private void migrate() {
         File dataFolder = new File(plugin.getDataFolder(), "data");
@@ -2435,7 +2534,7 @@ public final class DataManager {
     }
 
     /**
-     * Maps SQLite data types to target database data types (MySQL/MariaDB, PostgreSQL, or H2).
+     * Maps SQLite data types to target database data types (MySQL/MariaDB, PostgreSQL, H2, or MSSQL).
      *
      * @param sqliteType the SQLite data type.
      * @param columnName the column name.
@@ -2450,6 +2549,8 @@ public final class DataManager {
                 return mapSQLiteTypeToPostgreSQL(sqliteType, columnName);
             case H2:
                 return mapSQLiteTypeToH2(sqliteType, columnName);
+            case MSSQL:
+                return mapSQLiteTypeToMSSQL(sqliteType, columnName);
             default:
                 plugin.getLogger().warning("Unhandled database type: " + this.type);
                 return null; // Ignore unhandled types
@@ -2562,18 +2663,63 @@ public final class DataManager {
     }
 
     /**
-     * Adjusts the grave table for the target database if necessary.
+     * Maps SQLite data types to Microsoft SQL Server data types.
+     *
+     * @param sqliteType the SQLite data type.
+     * @param columnName the column name.
+     * @return the MSSQL data type.
+     */
+    private String mapSQLiteTypeToMSSQL(String sqliteType, String columnName) {
+        switch (sqliteType.toUpperCase()) {
+            case "INT":
+            case "BIGINT":
+            case "INTEGER":
+                if ("protection".equals(columnName))
+                    return "BIT"; // BOOLEAN in MSSQL
+                if ("time_protection".equals(columnName) || "time_creation".equals(columnName) || "time_alive".equals(columnName))
+                    return "BIGINT";
+                return "INT";
+            case "VARCHAR":
+                return "NVARCHAR(255)";
+            case "FLOAT":
+                return "FLOAT";
+            case "TEXT":
+                return "NVARCHAR(MAX)";
+            case "BLOB":
+                return "VARBINARY(MAX)";
+            case "REAL":
+                return "FLOAT";
+            case "NUMERIC":
+                return "DECIMAL(10, 5)";
+            default:
+                plugin.getLogger().warning("Unhandled SQLite type: " + sqliteType + " for column: " + columnName);
+                return null; // Ignore unhandled types
+        }
+    }
+
+    /**
+     * Adjusts the grave table for the target database if necessary for MSSQL.
      */
     private void adjustGraveTableForTargetDB() throws SQLException {
-        if (this.type == Type.MYSQL || this.type == Type.MARIADB) {
-            plugin.getLogger().info("Altering table grave to ensure column sizes are correct.");
-            executeUpdate("ALTER TABLE grave MODIFY owner_texture TEXT", new Object[0]);
-            executeUpdate("ALTER TABLE grave MODIFY owner_texture_signature TEXT", new Object[0]);
+        // Ensure column sizes and types are correct for MSSQL
+        if (this.type == Type.MSSQL) {
+            plugin.getLogger().info("Altering table grave to ensure column sizes are correct for MSSQL.");
+
+            // Example SQL commands to alter column types for MSSQL
+            executeUpdate("ALTER TABLE grave ALTER COLUMN owner_texture NVARCHAR(MAX)", new Object[0]);
+            executeUpdate("ALTER TABLE grave ALTER COLUMN owner_texture_signature NVARCHAR(MAX)", new Object[0]);
+            executeUpdate("ALTER TABLE grave ALTER COLUMN time_creation BIGINT", new Object[0]);
+            executeUpdate("ALTER TABLE grave ALTER COLUMN time_protection BIGINT", new Object[0]);
+            executeUpdate("ALTER TABLE grave ALTER COLUMN time_alive BIGINT", new Object[0]);
+        } else if (this.type == Type.MYSQL || this.type == Type.MARIADB) {
+            plugin.getLogger().info("Altering table grave to ensure column sizes are correct for MySQL/MariaDB.");
+            executeUpdate("ALTER TABLE grave MODIFY owner_texture NVARCHAR(MAX)", new Object[0]);
+            executeUpdate("ALTER TABLE grave MODIFY owner_texture_signature NVARCHAR(MAX)", new Object[0]);
             executeUpdate("ALTER TABLE grave MODIFY time_creation BIGINT", new Object[0]);
             executeUpdate("ALTER TABLE grave MODIFY time_protection BIGINT", new Object[0]);
             executeUpdate("ALTER TABLE grave MODIFY time_alive BIGINT", new Object[0]);
         } else if (this.type == Type.POSTGRESQL || this.type == Type.H2) {
-            plugin.getLogger().info("Altering table grave to ensure column sizes are correct.");
+            plugin.getLogger().info("Altering table grave to ensure column sizes are correct for PostgreSQL/H2.");
             executeUpdate("ALTER TABLE grave ALTER COLUMN owner_texture TYPE TEXT", new Object[0]);
             executeUpdate("ALTER TABLE grave ALTER COLUMN owner_texture_signature TYPE TEXT", new Object[0]);
             executeUpdate("ALTER TABLE grave ALTER COLUMN time_creation TYPE BIGINT", new Object[0]);
@@ -2605,10 +2751,10 @@ public final class DataManager {
      * Checks if the Database is locked and attempts to unlock the database.
      */
     private void checkAndUnlockDatabase() {
-        String checkQuery = "Select 1";
+        String checkQuery = "SELECT 1";
 
         try (Connection connection = dataSource.getConnection();
-            Statement statement = connection != null ? connection.createStatement() : null) {
+             Statement statement = connection != null ? connection.createStatement() : null) {
 
             if (statement != null) {
                 statement.executeQuery(checkQuery);
@@ -2630,6 +2776,9 @@ public final class DataManager {
                     case POSTGRESQL:
                     case H2:
                         handleUnlockPostgreSQLandH2();
+                        break;
+                    case MSSQL:
+                        handleUnlockMSSQL();
                         break;
                     case INVALID:
                     default:
@@ -2713,6 +2862,25 @@ public final class DataManager {
                 plugin.getLogger().severe("Failed to unlock PostgreSQL/H2 database using ROLLBACK");
                 plugin.logStackTrace(rollbackException);
             }
+        }
+    }
+
+    /**
+     * Handles unlocking for Microsoft SQL Server databases using COMMIT.
+     */
+    private void handleUnlockMSSQL() {
+        try (Connection connection = dataSource.getConnection()) {
+            if (connection != null) {
+                plugin.getLogger().info("Attempting to unlock MSSQL database.");
+                connection.setAutoCommit(false);
+                connection.commit();
+                plugin.getLogger().info("MSSQL database unlocked successfully using COMMIT.");
+            } else {
+                throw new NullPointerException();
+            }
+        } catch (NullPointerException | SQLException e) {
+            plugin.getLogger().severe("Failed to unlock MSSQL database using COMMIT");
+            plugin.logStackTrace(e);
         }
     }
 }
