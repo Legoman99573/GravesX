@@ -107,7 +107,7 @@ public final class DataManager {
             case POSTGRESQL:
                 return "PostgreSQL";
             case MSSQL:
-                return "MS SQL";
+                return "Microsoft SQL Server";
             case INVALID:
             default:
                 return null;
@@ -2125,6 +2125,9 @@ public final class DataManager {
         } else if (type == Type.POSTGRESQL) {
             versionInfo.put(version, 1);
             versionData.put("PostgreSQL", versionInfo);
+        } else if (type == Type.MSSQL) {
+            versionInfo.put(version, 1);
+            versionData.put("Microsoft SQL Server", versionInfo);
         } else {
             versionData.put("Other", Collections.singletonMap("Unknown", 1));
         }
