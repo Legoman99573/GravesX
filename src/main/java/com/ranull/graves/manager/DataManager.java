@@ -21,6 +21,7 @@ import java.sql.Date;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -73,6 +74,7 @@ public final class DataManager {
                 loadType(Type.SQLITE);
                 load();
                 keepConnectionAlive(); // If we don't enable this, connection will close or time out :/
+                plugin.getServer().getScheduler().runTaskTimer(plugin, this::deleteOldBackups, 0L, 1200L);
                 break;
             case H2:
             case POSTGRESQL:
@@ -83,11 +85,18 @@ public final class DataManager {
                     migrate();
                     load();
                     keepConnectionAlive(); // If we don't enable this, connection will close or time out :/
+                    plugin.getServer().getScheduler().runTaskTimer(plugin, this::deleteOldBackups, 0L, 1200L);
                 } else {
                     plugin.getLogger().severe("Failed to connect to " + this.type + " database. Disabling plugin...");
                     plugin.getServer().getPluginManager().disablePlugin(this.plugin);
                 }
                 break;
+            case MSSQL:
+                loadType(Type.MSSQL);
+                migrate();
+                load();
+                keepConnectionAlive();
+                plugin.getServer().getScheduler().runTaskTimer(plugin, this::deleteOldBackups, 0L, 1200L);
             default:
                 plugin.getLogger().severe("Database Type is invalid. Only valid options: SQLITE, H2, POSTGRESQL, MARIADB, and MYSQL. Disabling plugin...");
                 plugin.getServer().getPluginManager().disablePlugin(this.plugin);
@@ -1920,63 +1929,107 @@ public final class DataManager {
         removeGrave(grave.getUUID());
     }
 
-    /**
-     * Removes a grave from the database by UUID.
-     *
-     * @param uuid the UUID of the grave to remove.
-     */
     public void removeGrave(UUID uuid) {
         plugin.getCacheManager().getGraveMap().remove(uuid);
 
         String selectQuery = "SELECT * FROM grave WHERE uuid = ?";
+        String deleteQuery = "DELETE FROM grave WHERE uuid = ?";
+        Object[] deleteParams = { uuid };
+
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                plugin.debugMessage("Attempting to remove grave for UUID: " + uuid, 1);
+
+                // Select the grave data
+                try (ResultSet rs = executeQuery(selectQuery, new Object[]{uuid})) {
+                    if (rs != null && rs.next()) {
+                        backupGrave(rs);
+                    } else {
+                        plugin.debugMessage("No grave found for UUID: " + uuid, 1);
+                    }
+
+                    // Remove the grave from the main table
+                    executeUpdate(deleteQuery, deleteParams);
+                    plugin.debugMessage("Grave successfully removed for UUID: " + uuid, 1);
+                }
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Failed to remove and backup grave: " + e.getMessage());
+                plugin.logStackTrace(e);
+            }
+        });
+    }
+
+    /**
+     * Backs up the grave data to the grave_backup table.
+     *
+     * @param rs the ResultSet containing the grave data to back up.
+     * @throws SQLException if a database access error occurs.
+     */
+    private void backupGrave(ResultSet rs) throws SQLException {
         String insertBackupQuery = "INSERT INTO grave_backup (" +
                 "uuid, owner_type, owner_name, owner_name_display, owner_uuid, owner_texture, " +
                 "owner_texture_signature, killer_type, killer_name, killer_name_display, killer_uuid, " +
                 "location_death, yaw, pitch, inventory, equipment, experience, protection, " +
                 "is_abandoned, time_alive, time_protection, time_creation, permissions) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        String deleteQuery = "DELETE FROM grave WHERE uuid = ?";
-        Object[] deleteParams = { uuid };
+
+        Object[] backupParams = {
+                rs.getString("uuid"),
+                rs.getString("owner_type"),
+                rs.getString("owner_name"),
+                rs.getString("owner_name_display"),
+                rs.getString("owner_uuid"),
+                rs.getString("owner_texture"),
+                rs.getString("owner_texture_signature"),
+                rs.getString("killer_type"),
+                rs.getString("killer_name"),
+                rs.getString("killer_name_display"),
+                rs.getString("killer_uuid"),
+                rs.getString("location_death"),
+                rs.getFloat("yaw"),
+                rs.getFloat("pitch"),
+                rs.getString("inventory"),
+                rs.getString("equipment"),
+                rs.getInt("experience"),
+                rs.getInt("protection"),
+                rs.getInt("is_abandoned"),
+                rs.getLong("time_alive"),
+                rs.getLong("time_protection"),
+                System.currentTimeMillis(),  // Use current time for backup creation
+                rs.getString("permissions"),
+        };
+
+        // Create a new database connection for the backup
+        try {
+            plugin.debugMessage("Backing up grave data for UUID: " + rs.getString("uuid"), 1);
+            executeUpdate(insertBackupQuery, backupParams);
+            plugin.debugMessage("Grave successfully backed up for UUID: " + rs.getString("uuid"), 1);
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Failed to back up grave: " + e.getMessage());
+            throw e;  // Rethrow the exception to be handled in the calling method
+        }
+    }
+
+    /**
+     * Deletes all grave backups older than 30 days.
+     */
+    public void deleteOldBackups() {
+        String deleteOldBackupsQuery = "DELETE FROM grave_backup WHERE time_creation < ?";
+
+        // Calculate the timestamp of 30 days ago
+        long thirtyDaysAgo = System.currentTimeMillis() - (30L * 24 * 60 * 60 * 1000);
+
+        Object[] params = { thirtyDaysAgo };
 
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
-                // Select the grave data
-                ResultSet rs = executeQuery(selectQuery, new Object[]{uuid});
-                if (rs.next()) {
-                    // Extract the data from the result set
-                    Object[] backupParams = {
-                            rs.getString("uuid"),
-                            rs.getString("owner_type"),
-                            rs.getString("owner_name"),
-                            rs.getString("owner_name_display"),
-                            rs.getString("owner_uuid"),
-                            rs.getString("owner_texture"),
-                            rs.getString("owner_texture_signature"),
-                            rs.getString("killer_type"), rs.getString("killer_name"),
-                            rs.getString("killer_name_display"),
-                            rs.getString("killer_uuid"),
-                            rs.getString("location_death"),
-                            rs.getFloat("yaw"),
-                            rs.getFloat("pitch"),
-                            rs.getString("inventory"),
-                            rs.getString("equipment"),
-                            rs.getInt("experience"),
-                            rs.getInt("protection"),
-                            rs.getInt("is_abandoned"),
-                            rs.getLong("time_alive"),
-                            rs.getLong("time_protection"),
-                            System.currentTimeMillis(),
-                            rs.getString("permissions"),
-                    };
+                // Execute the deletion without returning the number of rows deleted
+                executeUpdate(deleteOldBackupsQuery, params);
 
-                    // Insert the grave data into the backup table
-                    executeUpdate(insertBackupQuery, backupParams);
-                }
-
-                // Remove the grave from the main table
-                executeUpdate(deleteQuery, deleteParams);
+                // Log a success message (optional)
+                plugin.getLogger().info("Deleted backups older than 30 days.");
             } catch (SQLException e) {
-                plugin.getLogger().severe("Failed to remove and backup grave: " + e.getMessage());
+                plugin.getLogger().severe("Failed to delete old grave backups: " + e.getMessage());
                 plugin.logStackTrace(e);
             }
         });
@@ -2219,67 +2272,69 @@ public final class DataManager {
      * @throws SQLException if a database access error occurs.
      */
     private void executeUpdate(String sql, Object[] parameters) throws SQLException {
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try (Connection connection = getConnection();
+                 PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            if (parameters != null) {
-                for (int i = 0; i < parameters.length; i++) {
-                    Object parameter = parameters[i];
-                    if (parameter == null) {
-                        // Use specific SQL types for null values
-                        statement.setNull(i + 1, Types.VARCHAR); // Adjust based on expected parameter type
-                    } else if (parameter instanceof String) {
-                        statement.setString(i + 1, (String) parameter);
-                    } else if (parameter instanceof Integer) {
-                        statement.setInt(i + 1, (Integer) parameter);
-                    } else if (parameter instanceof Long) {
-                        statement.setLong(i + 1, (Long) parameter);
-                    } else if (parameter instanceof Double) {
-                        statement.setDouble(i + 1, (Double) parameter);
-                    } else if (parameter instanceof Float) {
-                        statement.setFloat(i + 1, (Float) parameter);
-                    } else if (parameter instanceof Boolean) {
-                        statement.setBoolean(i + 1, (Boolean) parameter); // Use setBoolean for MSSQL
-                    } else if (parameter instanceof UUID) {
-                        statement.setObject(i + 1, parameter.toString(), Types.VARCHAR);
-                    } else if (parameter instanceof byte[]) {
-                        statement.setBytes(i + 1, (byte[]) parameter);
-                    } else if (parameter instanceof Date) {
-                        statement.setDate(i + 1, (Date) parameter);
-                    } else if (parameter instanceof Timestamp) {
-                        statement.setTimestamp(i + 1, (Timestamp) parameter);
-                    } else if (parameter instanceof LocalDate) {
-                        statement.setObject(i + 1, parameter, Types.DATE);
-                    } else if (parameter instanceof LocalDateTime) {
-                        statement.setObject(i + 1, parameter, Types.TIMESTAMP);
-                    } else if (parameter instanceof Clob) {
-                        statement.setClob(i + 1, (Clob) parameter);
-                    } else if (parameter instanceof Blob) {
-                        statement.setBlob(i + 1, (Blob) parameter);
-                    } else if (parameter instanceof EntityType) {
-                        statement.setString(i + 1, ((EntityType) parameter).name());
-                    } else {
-                        statement.setObject(i + 1, parameter);
+                if (parameters != null) {
+                    for (int i = 0; i < parameters.length; i++) {
+                        Object parameter = parameters[i];
+                        if (parameter == null) {
+                            // Use specific SQL types for null values
+                            statement.setNull(i + 1, Types.VARCHAR); // Adjust based on expected parameter type
+                        } else if (parameter instanceof String) {
+                            statement.setString(i + 1, (String) parameter);
+                        } else if (parameter instanceof Integer) {
+                            statement.setInt(i + 1, (Integer) parameter);
+                        } else if (parameter instanceof Long) {
+                            statement.setLong(i + 1, (Long) parameter);
+                        } else if (parameter instanceof Double) {
+                            statement.setDouble(i + 1, (Double) parameter);
+                        } else if (parameter instanceof Float) {
+                            statement.setFloat(i + 1, (Float) parameter);
+                        } else if (parameter instanceof Boolean) {
+                            statement.setBoolean(i + 1, (Boolean) parameter); // Use setBoolean for MSSQL
+                        } else if (parameter instanceof UUID) {
+                            statement.setObject(i + 1, parameter.toString(), Types.VARCHAR);
+                        } else if (parameter instanceof byte[]) {
+                            statement.setBytes(i + 1, (byte[]) parameter);
+                        } else if (parameter instanceof Date) {
+                            statement.setDate(i + 1, (Date) parameter);
+                        } else if (parameter instanceof Timestamp) {
+                            statement.setTimestamp(i + 1, (Timestamp) parameter);
+                        } else if (parameter instanceof LocalDate) {
+                            statement.setObject(i + 1, parameter, Types.DATE);
+                        } else if (parameter instanceof LocalDateTime) {
+                            statement.setObject(i + 1, parameter, Types.TIMESTAMP);
+                        } else if (parameter instanceof Clob) {
+                            statement.setClob(i + 1, (Clob) parameter);
+                        } else if (parameter instanceof Blob) {
+                            statement.setBlob(i + 1, (Blob) parameter);
+                        } else if (parameter instanceof EntityType) {
+                            statement.setString(i + 1, ((EntityType) parameter).name());
+                        } else {
+                            statement.setObject(i + 1, parameter);
+                        }
                     }
                 }
-            }
 
-            statement.executeUpdate();
-        } catch (SQLException exception) {
-            String sqlState = exception.getSQLState();
-            String message = exception.getMessage().toLowerCase();
-            // Ignore errors related to existing tables or columns
-            if ("42701".equals(sqlState) || "42P07".equals(sqlState) || "42S01".equals(sqlState)
-                    || "X0Y32".equals(sqlState)
-                    || (message.contains("duplicate column name") && "SQLITE_ERROR".equals(sqlState))) {
-                // Ignore already existing table/column errors
-            } else {
-                // Log the SQL statement and exception message for other errors
-                plugin.getLogger().severe("Error executing SQL update: " + exception.getMessage());
-                plugin.getLogger().severe("Failed SQL statement: " + sql);
-                plugin.logStackTrace(exception);
+                statement.executeUpdate();
+            } catch (SQLException exception) {
+                String sqlState = exception.getSQLState();
+                String message = exception.getMessage().toLowerCase();
+                // Ignore errors related to existing tables or columns
+                if ("42701".equals(sqlState) || "42P07".equals(sqlState) || "42S01".equals(sqlState)
+                        || "X0Y32".equals(sqlState)
+                        || (message.contains("duplicate column name") && "SQLITE_ERROR".equals(sqlState))) {
+                    // Ignore already existing table/column errors
+                } else {
+                    // Log the SQL statement and exception message for other errors
+                    plugin.getLogger().severe("Error executing SQL update: " + exception.getMessage());
+                    plugin.getLogger().severe("Failed SQL statement: " + sql);
+                    plugin.logStackTrace(exception);
+                }
             }
-        }
+        });
     }
 
     /**
@@ -2326,38 +2381,40 @@ public final class DataManager {
      * @throws SQLException if an SQL error occurs.
      */
     private ResultSet executeQuery(String sql, Object[] params) throws SQLException {
-        ResultSet resultSet = null;
-        PreparedStatement preparedStatement = null;
-        try (Connection connection = getConnection()) {
-            if (connection != null) {
-                preparedStatement = connection.prepareStatement(sql);
+        AtomicReference<ResultSet> resultSet = new AtomicReference<>();
+        AtomicReference<PreparedStatement> preparedStatement = new AtomicReference<>();
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try (Connection connection = getConnection()) {
+                if (connection != null) {
+                    preparedStatement.set(connection.prepareStatement(sql));
 
-                // Set the parameters in the PreparedStatement
-                for (int i = 0; i < params.length; i++) {
-                    preparedStatement.setObject(i + 1, params[i]);
-                }
+                    // Set the parameters in the PreparedStatement
+                    for (int i = 0; i < params.length; i++) {
+                        preparedStatement.get().setObject(i + 1, params[i]);
+                    }
 
-                resultSet = preparedStatement.executeQuery();
-            }
-        } catch (SQLException exception) {
-            plugin.logStackTrace(exception);
-        } finally {
-            if (resultSet != null) {
-                try {
-                    resultSet.close();
-                } catch (SQLException exception) {
-                    plugin.logStackTrace(exception);
+                    resultSet.set(preparedStatement.get().executeQuery());
+                }
+            } catch (SQLException exception) {
+                plugin.logStackTrace(exception);
+            } finally {
+                if (resultSet.get() != null) {
+                    try {
+                        resultSet.get().close();
+                    } catch (SQLException exception) {
+                        plugin.logStackTrace(exception);
+                    }
+                }
+                if (preparedStatement.get() != null) {
+                    try {
+                        preparedStatement.get().close();
+                    } catch (SQLException exception) {
+                        plugin.logStackTrace(exception);
+                    }
                 }
             }
-            if (preparedStatement != null) {
-                try {
-                    preparedStatement.close();
-                } catch (SQLException exception) {
-                    plugin.logStackTrace(exception);
-                }
-            }
-        }
-        return resultSet;
+        });
+        return resultSet.get();
     }
 
     /**
@@ -2423,117 +2480,127 @@ public final class DataManager {
      * Migrates data from SQLite to the target database (MySQL, MariaDB, PostgreSQL, H2, or MSSQL).
      */
     private void migrate() {
-        File dataFolder = new File(plugin.getDataFolder(), "data");
-        File sqliteFile = new File(dataFolder, "data.db");
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            File dataFolder = new File(plugin.getDataFolder(), "data");
+            File sqliteFile = new File(dataFolder, "data.db");
 
-        if (!sqliteFile.exists() || !dataFolder.exists()) {
-            plugin.getLogger().warning("SQLite database file or folder does not exist in \"" + dataFolder.getPath() + "\". Skipping database migration.");
-            return;
-        }
+            if (!sqliteFile.exists() || !dataFolder.exists()) {
+                plugin.getLogger().warning("SQLite database file or folder does not exist in \"" + dataFolder.getPath() + "\". Skipping database migration.");
+                return;
+            }
 
-        HikariConfig config = new HikariConfig();
-        String journalMode = plugin.getConfig().getString("settings.storage.sqlite.journal-mode", "WAL");
-        String synchronous = plugin.getConfig().getString("settings.storage.sqlite.synchronous", "OFF");
+            HikariConfig config = new HikariConfig();
+            String journalMode = plugin.getConfig().getString("settings.storage.sqlite.journal-mode", "WAL");
+            String synchronous = plugin.getConfig().getString("settings.storage.sqlite.synchronous", "OFF");
 
-        config.setJdbcUrl("jdbc:sqlite:" + sqliteFile.getPath());
-        config.setConnectionTimeout(30000); // 30 seconds
-        config.setIdleTimeout(600000); // 10 minutes
-        config.setMaxLifetime(1800000); // 30 minutes
-        config.setMaximumPoolSize(50);
-        config.addDataSourceProperty("dataSource.journalMode", journalMode);
-        config.addDataSourceProperty("dataSource.synchronous", synchronous);
-        config.setConnectionInitSql("PRAGMA busy_timeout = 30000; PRAGMA journal_mode=" + journalMode + "; PRAGMA synchronous=" + synchronous + ";");
-        config.setPoolName("Graves SQLite to " + type + " Migration");
-        config.addDataSourceProperty("autoReconnect", "true");
-        config.setDriverClassName("org.sqlite.JDBC");
+            config.setJdbcUrl("jdbc:sqlite:" + sqliteFile.getPath());
+            config.setConnectionTimeout(30000); // 30 seconds
+            config.setIdleTimeout(600000); // 10 minutes
+            config.setMaxLifetime(1800000); // 30 minutes
+            config.setMaximumPoolSize(50);
+            config.addDataSourceProperty("dataSource.journalMode", journalMode);
+            config.addDataSourceProperty("dataSource.synchronous", synchronous);
+            config.setConnectionInitSql("PRAGMA busy_timeout = 30000; PRAGMA journal_mode=" + journalMode + "; PRAGMA synchronous=" + synchronous + ";");
+            config.setPoolName("Graves SQLite to " + type + " Migration");
+            config.addDataSourceProperty("autoReconnect", "true");
+            config.setDriverClassName("org.sqlite.JDBC");
 
-        try (HikariDataSource dataSourceMigrate = new HikariDataSource(config);
-             Connection sqliteConnection = dataSourceMigrate.getConnection()) {
+            // Use a try-with-resources to ensure that HikariDataSource is closed after use
+            try (HikariDataSource dataSourceMigrate = new HikariDataSource(config);
+                 Connection sqliteConnection = dataSourceMigrate.getConnection()) {
 
-            DatabaseMetaData metaData = sqliteConnection.getMetaData();
-            try (ResultSet tables = metaData.getTables(null, null, "%", new String[]{"TABLE"})) {
-                boolean migrationSuccess = true;
+                DatabaseMetaData metaData = sqliteConnection.getMetaData();
+                try (ResultSet tables = metaData.getTables(null, null, "%", new String[]{"TABLE"})) {
+                    boolean migrationSuccess = true;
 
-                while (tables.next()) {
-                    String tableName = tables.getString("TABLE_NAME");
-                    StringBuilder createTableQuery = new StringBuilder();
-                    List<String> columns = new ArrayList<>();
+                    while (tables.next()) {
+                        String tableName = tables.getString("TABLE_NAME");
+                        StringBuilder createTableQuery = new StringBuilder();
+                        List<String> columns = new ArrayList<>();
 
-                    try (Statement sqliteStatement = sqliteConnection.createStatement();
-                         ResultSet tableData = sqliteStatement.executeQuery("SELECT * FROM " + tableName)) {
+                        // Using try-with-resources for the statement
+                        try (Statement sqliteStatement = sqliteConnection.createStatement();
+                             ResultSet tableData = sqliteStatement.executeQuery("SELECT * FROM " + tableName)) {
 
-                        ResultSetMetaData tableMetaData = tableData.getMetaData();
-                        createTableQuery.append("CREATE TABLE IF NOT EXISTS ").append(tableName).append(" (");
-                        for (int i = 1; i <= tableMetaData.getColumnCount(); i++) {
-                            String columnName = tableMetaData.getColumnName(i);
-                            String sqliteType = tableMetaData.getColumnTypeName(i);
-                            String targetType = mapSQLiteTypeToTargetDB(sqliteType, columnName);
+                            ResultSetMetaData tableMetaData = tableData.getMetaData();
+                            createTableQuery.append("CREATE TABLE IF NOT EXISTS ").append(tableName).append(" (");
+                            for (int i = 1; i <= tableMetaData.getColumnCount(); i++) {
+                                String columnName = tableMetaData.getColumnName(i);
+                                String sqliteType = tableMetaData.getColumnTypeName(i);
+                                String targetType = mapSQLiteTypeToTargetDB(sqliteType, columnName);
 
-                            if (targetType != null) {
-                                createTableQuery.append(columnName).append(" ").append(targetType);
-                                if (i < tableMetaData.getColumnCount()) {
-                                    createTableQuery.append(", ");
-                                } else {
-                                    createTableQuery.append(")");
-                                }
-                                columns.add(columnName);
-                            }
-                        }
-
-                        if (columns.isEmpty()) {
-                            plugin.getLogger().warning("No valid columns found for table " + tableName + ". Skipping table creation.");
-                            continue;
-                        }
-
-                        plugin.getLogger().info("Creating table with query: " + createTableQuery.toString());
-                        executeUpdate(createTableQuery.toString(), new Object[0]);
-
-                        if ("grave".equals(tableName)) {
-                            adjustGraveTableForTargetDB();
-                        }
-
-                        String insertQueryTemplate = "INSERT INTO " + tableName + " (" + String.join(", ", columns) + ") VALUES (" + String.join(", ", Collections.nCopies(columns.size(), "?")) + ")";
-                        try (PreparedStatement insertStatement = getConnection().prepareStatement(insertQueryTemplate)) {
-                            while (tableData.next()) {
-                                for (int i = 1; i <= tableMetaData.getColumnCount(); i++) {
-                                    String columnName = tableMetaData.getColumnName(i);
-                                    if (columns.contains(columnName)) {
-                                        String data = tableData.getString(i);
-                                        if (data != null) {
-                                            data = data.replace("'", "''");
-                                        }
-                                        insertStatement.setString(columns.indexOf(columnName) + 1, data != null ? data : null);
+                                if (targetType != null) {
+                                    createTableQuery.append(columnName).append(" ").append(targetType);
+                                    if (i < tableMetaData.getColumnCount()) {
+                                        createTableQuery.append(", ");
+                                    } else {
+                                        createTableQuery.append(")");
                                     }
+                                    columns.add(columnName);
                                 }
-                                plugin.getLogger().info("Inserting data with query: " + insertQueryTemplate);
-                                insertStatement.executeUpdate();
+                            }
+
+                            if (columns.isEmpty()) {
+                                plugin.getLogger().warning("No valid columns found for table " + tableName + ". Skipping table creation.");
+                                continue;
+                            }
+
+                            plugin.getLogger().info("Creating table with query: " + createTableQuery.toString());
+                            executeUpdate(createTableQuery.toString(), new Object[0]);
+
+                            if ("grave".equals(tableName)) {
+                                adjustGraveTableForTargetDB();
+                            }
+
+                            String insertQueryTemplate = "INSERT INTO " + tableName + " (" + String.join(", ", columns) + ") VALUES (" + String.join(", ", Collections.nCopies(columns.size(), "?")) + ")";
+                            try (PreparedStatement insertStatement = getConnection().prepareStatement(insertQueryTemplate)) {
+                                while (tableData.next()) {
+                                    for (int i = 1; i <= tableMetaData.getColumnCount(); i++) {
+                                        String columnName = tableMetaData.getColumnName(i);
+                                        if (columns.contains(columnName)) {
+                                            String data = tableData.getString(i);
+                                            if (data != null) {
+                                                data = data.replace("'", "''");
+                                            }
+                                            insertStatement.setString(columns.indexOf(columnName) + 1, data != null ? data : null);
+                                        }
+                                    }
+                                    plugin.getLogger().info("Inserting data with query: " + insertQueryTemplate);
+                                    insertStatement.executeUpdate();
+                                }
+                            } catch (SQLException e) {
+                                plugin.getLogger().severe("Error inserting data into table " + tableName + ": " + e.getMessage());
+                                plugin.getLogger().severe("Failed query template: " + insertQueryTemplate);
+                                migrationSuccess = false;
                             }
                         } catch (SQLException e) {
-                            plugin.getLogger().severe("Error inserting data into table " + tableName + ": " + e.getMessage());
-                            plugin.getLogger().severe("Failed query template: " + insertQueryTemplate);
+                            plugin.getLogger().severe("Error migrating table " + tableName + ": " + e.getMessage());
+                            plugin.getLogger().severe("Failed query: " + createTableQuery);
                             migrationSuccess = false;
                         }
-                    } catch (SQLException e) {
-                        plugin.getLogger().severe("Error migrating table " + tableName + ": " + e.getMessage());
-                        plugin.getLogger().severe("Failed query: " + createTableQuery);
-                        migrationSuccess = false;
                     }
+
+                    if (migrationSuccess) {
+                        File renamedFile = new File(dataFolder, "data.old.db");
+                        if (sqliteFile.renameTo(renamedFile)) {
+                            plugin.getLogger().info("SQLite database successfully renamed to data.old.db");
+                        } else {
+                            plugin.getLogger().severe("Failed to rename SQLite database to data.old.db");
+                        }
+                    }
+                } catch (SQLException e) {
+                    plugin.getLogger().severe("Error retrieving tables from SQLite: " + e.getMessage());
                 }
 
-                if (migrationSuccess) {
-                    File renamedFile = new File(dataFolder, "data.old.db");
-                    if (sqliteFile.renameTo(renamedFile)) {
-                        plugin.getLogger().info("SQLite database successfully renamed to data.old.db");
-                    } else {
-                        plugin.getLogger().severe("Failed to rename SQLite database to data.old.db");
-                    }
+                try {
+                    sqliteConnection.close();
+                } catch (SQLException e) {
+                    plugin.getLogger().severe("Error closing SQLite connection: " + e.getMessage());
                 }
             } catch (SQLException e) {
-                plugin.getLogger().severe("Error retrieving tables from SQLite: " + e.getMessage());
+                plugin.getLogger().severe("Error migrating SQLite to target DB: " + e.getMessage());
             }
-        } catch (SQLException e) {
-            plugin.getLogger().severe("Error migrating SQLite to target DB: " + e.getMessage());
-        }
+        });
     }
 
     /**
