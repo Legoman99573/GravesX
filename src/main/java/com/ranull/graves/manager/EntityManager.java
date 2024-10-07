@@ -858,7 +858,7 @@ public final class EntityManager extends EntityDataManager {
                         Location location = plugin.getGraveManager().getGraveLocation(entity.getLocation(), grave);
 
                         if (location != null && entity.getLocation().getWorld() == grave.getLocationDeath().getWorld()) {
-                            plugin.getParticleManager().startParticleTrail(entity.getLocation(), grave.getLocationDeath(), Particle.valueOf(Objects.requireNonNull(plugin.getConfig("compass.particles.particle", grave).getString("compass.particles.particle")).toUpperCase()), plugin.getConfig("compass.particles.count", grave).getInt("compass.particles.count", 5), plugin.getConfig("compass.particles.speed", grave).getDouble("compass.particles.speed", 0.3), plugin.getConfig("compass.particles.duration", grave).getInt("compass.particles.duration"));
+                            plugin.getParticleManager().startParticleTrail(entity.getLocation(), grave.getLocationDeath(), Particle.valueOf(Objects.requireNonNull(plugin.getConfig("compass.particles.particle", grave).getString("compass.particles.particle")).toUpperCase()), plugin.getConfig("compass.particles.count", grave).getInt("compass.particles.count", 5), plugin.getConfig("compass.particles.speed", grave).getDouble("compass.particles.speed", 0.3), plugin.getConfig("compass.particles.duration", grave).getInt("compass.particles.duration"), entity.getUniqueId());
                         }
                     }
                 }
