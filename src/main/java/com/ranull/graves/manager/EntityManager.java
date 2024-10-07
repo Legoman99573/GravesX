@@ -74,71 +74,76 @@ public final class EntityManager extends EntityDataManager {
      * @return the created compass item stack.
      */
     public ItemStack createGraveCompass(Player player, Location location, Grave grave) {
-        if (plugin.getVersionManager().hasPersistentData()) {
-            Material material = Material.COMPASS;
+        GraveCompassAddEvent graveCompassAddEvent = new GraveCompassAddEvent(player, grave);
+        plugin.getServer().getPluginManager().callEvent(graveCompassAddEvent);
 
-            if (plugin.getConfig("compass.recovery", grave).getBoolean("compass.recovery")) {
-                try {
-                    material = Material.valueOf("RECOVERY_COMPASS");
-                } catch (IllegalArgumentException ignored) {
-                }
-            }
+        if (!graveCompassAddEvent.isCancelled()) {
+            if (plugin.getVersionManager().hasPersistentData()) {
+                Material material = Material.COMPASS;
 
-            ItemStack itemStack = new ItemStack(material);
-            ItemMeta itemMeta = itemStack.getItemMeta();
-
-            if (itemMeta != null) {
-                if (plugin.getVersionManager().hasCompassMeta() && itemMeta instanceof CompassMeta) {
-                    CompassMeta compassMeta = (CompassMeta) itemMeta;
-
-                    compassMeta.setLodestoneTracked(false);
-                    compassMeta.setLodestone(location);
-                } else if (itemStack.getType().name().equals("RECOVERY_COMPASS")) {
+                if (plugin.getConfig("compass.recovery", grave).getBoolean("compass.recovery")) {
                     try {
-                        player.setLastDeathLocation(location);
-                    } catch (NoSuchMethodError ignored) {
+                        material = Material.valueOf("RECOVERY_COMPASS");
+                    } catch (IllegalArgumentException ignored) {
                     }
                 }
 
-                List<String> loreList = new ArrayList<>();
-                int customModelData = plugin.getConfig("compass.model-data", grave).getInt("compass.model-data", -1);
+                ItemStack itemStack = new ItemStack(material);
+                ItemMeta itemMeta = itemStack.getItemMeta();
 
-                if (customModelData > -1) {
-                    itemMeta.setCustomModelData(customModelData);
-                }
+                if (itemMeta != null) {
+                    if (plugin.getVersionManager().hasCompassMeta() && itemMeta instanceof CompassMeta) {
+                        CompassMeta compassMeta = (CompassMeta) itemMeta;
 
-                if (plugin.getConfig("compass.glow", grave).getBoolean("compass.glow")) {
-                    Enchantment enchantment = plugin.getVersionManager().getEnchantmentForVersion("DURABILITY");
-                    itemMeta.addEnchant(enchantment, 1, true);
-                    itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-                }
-                if (plugin.getIntegrationManager().hasMiniMessage()) {
-                    String compass_name = StringUtil.parseString("&f" + plugin
-                            .getConfig("compass.name", grave).getString("compass.name"), grave, plugin);
-                    itemMeta.setDisplayName(MiniMessage.parseString(compass_name));
-                    itemMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "graveUUID"),
-                            PersistentDataType.STRING, grave.getUUID().toString());
-
-                    for (String string : plugin.getConfig("compass.lore", grave).getStringList("compass.lore")) {
-                        String compass_lore = StringUtil.parseString("&7" + string, location, grave, plugin);
-                        loreList.add(MiniMessage.parseString(compass_lore));
+                        compassMeta.setLodestoneTracked(false);
+                        compassMeta.setLodestone(location);
+                    } else if (itemStack.getType().name().equals("RECOVERY_COMPASS")) {
+                        try {
+                            player.setLastDeathLocation(location);
+                        } catch (NoSuchMethodError ignored) {
+                        }
                     }
-                } else {
-                    itemMeta.setDisplayName(ChatColor.WHITE + StringUtil.parseString(plugin
-                            .getConfig("compass.name", grave).getString("compass.name"), grave, plugin));
-                    itemMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "graveUUID"),
-                            PersistentDataType.STRING, grave.getUUID().toString());
 
-                    for (String string : plugin.getConfig("compass.lore", grave).getStringList("compass.lore")) {
-                        loreList.add(ChatColor.GRAY + StringUtil.parseString(string, location, grave, plugin));
+                    List<String> loreList = new ArrayList<>();
+                    int customModelData = plugin.getConfig("compass.model-data", grave).getInt("compass.model-data", -1);
+
+                    if (customModelData > -1) {
+                        itemMeta.setCustomModelData(customModelData);
                     }
+
+                    if (plugin.getConfig("compass.glow", grave).getBoolean("compass.glow")) {
+                        Enchantment enchantment = plugin.getVersionManager().getEnchantmentForVersion("DURABILITY");
+                        itemMeta.addEnchant(enchantment, 1, true);
+                        itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+                    }
+                    if (plugin.getIntegrationManager().hasMiniMessage()) {
+                        String compass_name = StringUtil.parseString("&f" + plugin
+                                .getConfig("compass.name", grave).getString("compass.name"), grave, plugin);
+                        itemMeta.setDisplayName(MiniMessage.parseString(compass_name));
+                        itemMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "graveUUID"),
+                                PersistentDataType.STRING, grave.getUUID().toString());
+
+                        for (String string : plugin.getConfig("compass.lore", grave).getStringList("compass.lore")) {
+                            String compass_lore = StringUtil.parseString("&7" + string, location, grave, plugin);
+                            loreList.add(MiniMessage.parseString(compass_lore));
+                        }
+                    } else {
+                        itemMeta.setDisplayName(ChatColor.WHITE + StringUtil.parseString(plugin
+                                .getConfig("compass.name", grave).getString("compass.name"), grave, plugin));
+                        itemMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "graveUUID"),
+                                PersistentDataType.STRING, grave.getUUID().toString());
+
+                        for (String string : plugin.getConfig("compass.lore", grave).getStringList("compass.lore")) {
+                            loreList.add(ChatColor.GRAY + StringUtil.parseString(string, location, grave, plugin));
+                        }
+                    }
+
+                    itemMeta.setLore(loreList);
+                    itemStack.setItemMeta(itemMeta);
                 }
 
-                itemMeta.setLore(loreList);
-                itemStack.setItemMeta(itemMeta);
+                return itemStack;
             }
-
-            return itemStack;
         }
 
         return null;
