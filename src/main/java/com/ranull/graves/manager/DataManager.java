@@ -2338,6 +2338,7 @@ public final class DataManager {
                 if ("42701".equals(sqlState)
                         || "42P07".equals(sqlState)
                         || "42S01".equals(sqlState)
+                        || "42S04".equals(sqlState)
                         || "X0Y32".equals(sqlState)
                         || "42000".equals(sqlState)
                         || (message.contains("duplicate column name") && "SQLITE_ERROR".equals(sqlState))) {
