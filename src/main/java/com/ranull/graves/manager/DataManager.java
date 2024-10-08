@@ -597,6 +597,9 @@ public final class DataManager {
             case POSTGRESQL:
                 query = "SELECT column_name FROM information_schema.columns WHERE table_name = '" + tableName + "';";
                 break;
+            case MSSQL:
+                query = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '" + tableName + "' AND TABLE_SCHEMA = 'dbo';";
+                break;
             case H2:
                 query = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '" + tableName + "';";
                 break;
@@ -605,7 +608,7 @@ public final class DataManager {
                 return columnList;
         }
 
-        try (Connection connection = getConnection(); // Ensure you get a connection
+        try (Connection connection = getConnection();
              Statement statement = connection != null ? connection.createStatement() : null;
              ResultSet resultSet = statement != null ? statement.executeQuery(query) : null) {
 
@@ -615,7 +618,7 @@ public final class DataManager {
                     if (type == Type.MYSQL || type == Type.MARIADB) {
                         columnName = resultSet.getString("Field");
                     } else if (type == Type.SQLITE) {
-                        columnName = resultSet.getString("name"); // Corrected column name for SQLite
+                        columnName = resultSet.getString("name");
                     } else {
                         columnName = resultSet.getString("COLUMN_NAME");
                     }
