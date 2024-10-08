@@ -2323,12 +2323,13 @@ public final class DataManager {
                 String sqlState = exception.getSQLState();
                 String message = exception.getMessage().toLowerCase();
                 // Ignore errors related to existing tables or columns
-                if ("42701".equals(sqlState) || "42P07".equals(sqlState) || "42S01".equals(sqlState)
+                if ("42701".equals(sqlState)
+                        || "42P07".equals(sqlState)
+                        || "42S01".equals(sqlState)
                         || "X0Y32".equals(sqlState)
+                        || "42000".equals(sqlState)
                         || (message.contains("duplicate column name") && "SQLITE_ERROR".equals(sqlState))) {
-                    // Ignore already existing table/column errors
                 } else {
-                    // Log the SQL statement and exception message for other errors
                     plugin.getLogger().severe("Error executing SQL update: " + exception.getMessage());
                     plugin.getLogger().severe("Failed SQL statement: " + sql);
                     plugin.logStackTrace(exception);
