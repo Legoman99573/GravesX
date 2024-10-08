@@ -2027,10 +2027,9 @@ public final class DataManager {
                 executeUpdate(deleteOldBackupsQuery, params);
 
                 // Log a success message (optional)
-                plugin.getLogger().info("Deleted backups older than 30 days.");
+                plugin.debugMessage("Deleted backups older than 30 days.", 5);
             } catch (SQLException e) {
-                plugin.getLogger().severe("Failed to delete old grave backups: " + e.getMessage());
-                plugin.logStackTrace(e);
+                plugin.debugMessage("Failed to delete old grave backups: " + e.getMessage(), 5);
             }
         });
     }
