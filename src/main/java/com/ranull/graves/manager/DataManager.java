@@ -835,29 +835,43 @@ public final class DataManager {
             }
         }
 
-        addColumnIfNotExists(name, "uuid", type == Type.MSSQL ? "NVARCHAR(255) UNIQUE" : "VARCHAR(255) UNIQUE");
-        addColumnIfNotExists(name, "owner_type", type == Type.MSSQL ? "NVARCHAR(255)" : "VARCHAR(255)");
-        addColumnIfNotExists(name, "owner_name", type == Type.MSSQL ? "NVARCHAR(255)" : "VARCHAR(255)");
-        addColumnIfNotExists(name, "owner_name_display", type == Type.MSSQL ? "NVARCHAR(255)" : "VARCHAR(255)");
-        addColumnIfNotExists(name, "owner_uuid", type == Type.MSSQL ? "NVARCHAR(255)" : "VARCHAR(255)");
-        addColumnIfNotExists(name, "owner_texture", type == Type.MSSQL ? "NVARCHAR(MAX)" : "TEXT");
-        addColumnIfNotExists(name, "owner_texture_signature", type == Type.MSSQL ? "NVARCHAR(MAX)" : "TEXT");
-        addColumnIfNotExists(name, "killer_type", type == Type.MSSQL ? "NVARCHAR(255)" : "VARCHAR(255)");
-        addColumnIfNotExists(name, "killer_name", type == Type.MSSQL ? "NVARCHAR(255)" : "VARCHAR(255)");
-        addColumnIfNotExists(name, "killer_name_display", type == Type.MSSQL ? "NVARCHAR(255)" : "VARCHAR(255)");
-        addColumnIfNotExists(name, "killer_uuid", type == Type.MSSQL ? "NVARCHAR(255)" : "VARCHAR(255)");
-        addColumnIfNotExists(name, "location_death", type == Type.MSSQL ? "NVARCHAR(255)" : "VARCHAR(255)");
-        addColumnIfNotExists(name, "yaw", type == Type.MSSQL ? "FLOAT" : "FLOAT(16)");
-        addColumnIfNotExists(name, "pitch", type == Type.MSSQL ? "FLOAT" : "FLOAT(16)");
-        addColumnIfNotExists(name, "inventory", type == Type.MSSQL ? "NVARCHAR(MAX)" : "TEXT");
-        addColumnIfNotExists(name, "equipment", type == Type.MSSQL ? "NVARCHAR(MAX)" : "TEXT");
-        addColumnIfNotExists(name, "experience", type == Type.MSSQL ? "INT" : "INT(16)");
-        addColumnIfNotExists(name, "protection", type == Type.MSSQL ? "BIT" : "INT(1)");
-        addColumnIfNotExists(name, "is_abandoned", type == Type.MSSQL ? "BIT" : "INT(1)");
+        addColumnIfNotExists(name, "uuid", "VARCHAR(255) UNIQUE");
+        addColumnIfNotExists(name, "owner_type", "VARCHAR(255)");
+        addColumnIfNotExists(name, "owner_name", "VARCHAR(255)");
+        addColumnIfNotExists(name, "owner_name_display", "VARCHAR(255)");
+        addColumnIfNotExists(name, "owner_uuid", "VARCHAR(255)");
+        addColumnIfNotExists(name, "owner_texture", "TEXT");
+        addColumnIfNotExists(name, "owner_texture_signature", "TEXT");
+        addColumnIfNotExists(name, "killer_type", "VARCHAR(255)");
+        addColumnIfNotExists(name, "killer_name", "VARCHAR(255)");
+        addColumnIfNotExists(name, "killer_name_display", "VARCHAR(255)");
+        addColumnIfNotExists(name, "killer_uuid", "VARCHAR(255)");
+        addColumnIfNotExists(name, "location_death", "VARCHAR(255)");
+        if (type == Type.POSTGRESQL || type == Type.H2) {
+            addColumnIfNotExists(name, "yaw", "REAL");
+            addColumnIfNotExists(name, "pitch", "REAL");
+        } else if (type == Type.MSSQL) {
+            addColumnIfNotExists(name, "yaw", "FLOAT");
+            addColumnIfNotExists(name, "pitch", "FLOAT");
+        } else {
+            addColumnIfNotExists(name, "yaw", "FLOAT(16)");
+            addColumnIfNotExists(name, "pitch", "FLOAT(16)");
+        }
+        addColumnIfNotExists(name, "inventory", "TEXT");
+        addColumnIfNotExists(name, "equipment", "TEXT");
+        if (type == Type.POSTGRESQL || type == Type.H2) {
+            addColumnIfNotExists(name, "experience", "INT");
+            addColumnIfNotExists(name, "protection", "INT");
+            addColumnIfNotExists(name, "is_abandoned", "INT");
+        } else {
+            addColumnIfNotExists(name, "experience", "INT(16)");
+            addColumnIfNotExists(name, "protection", "INT(1)");
+            addColumnIfNotExists(name, "is_abandoned", "INT(1)");
+        }
         addColumnIfNotExists(name, "time_alive", "BIGINT");
         addColumnIfNotExists(name, "time_protection", "BIGINT");
         addColumnIfNotExists(name, "time_creation", "BIGINT");
-        addColumnIfNotExists(name, "permissions", type == Type.MSSQL ? "NVARCHAR(MAX)" : "TEXT");
+        addColumnIfNotExists(name, "permissions", "TEXT");
     }
 
     /**
@@ -948,7 +962,6 @@ public final class DataManager {
             }
         }
 
-        // Add additional columns if they do not exist in the grave table
         addColumnIfNotExists(graveBackupTableName, "uuid", "VARCHAR(255) UNIQUE");
         addColumnIfNotExists(graveBackupTableName, "owner_type", "VARCHAR(255)");
         addColumnIfNotExists(graveBackupTableName, "owner_name", "VARCHAR(255)");
@@ -961,21 +974,19 @@ public final class DataManager {
         addColumnIfNotExists(graveBackupTableName, "killer_name_display", "VARCHAR(255)");
         addColumnIfNotExists(graveBackupTableName, "killer_uuid", "VARCHAR(255)");
         addColumnIfNotExists(graveBackupTableName, "location_death", "VARCHAR(255)");
-
-        // Handle yaw and pitch columns based on database type
-        if (type == Type.POSTGRESQL || type == Type.H2 || type == Type.MSSQL) {
+        if (type == Type.POSTGRESQL || type == Type.H2) {
             addColumnIfNotExists(graveBackupTableName, "yaw", "REAL");
             addColumnIfNotExists(graveBackupTableName, "pitch", "REAL");
+        } else if (type == Type.MSSQL) {
+            addColumnIfNotExists(graveBackupTableName, "yaw", "FLOAT");
+            addColumnIfNotExists(graveBackupTableName, "pitch", "FLOAT");
         } else {
             addColumnIfNotExists(graveBackupTableName, "yaw", "FLOAT(16)");
             addColumnIfNotExists(graveBackupTableName, "pitch", "FLOAT(16)");
         }
-
         addColumnIfNotExists(graveBackupTableName, "inventory", "TEXT");
         addColumnIfNotExists(graveBackupTableName, "equipment", "TEXT");
-
-        // Handle experience, protection, and is_abandoned columns based on database type
-        if (type == Type.POSTGRESQL || type == Type.H2 || type == Type.MSSQL) {
+        if (type == Type.POSTGRESQL || type == Type.H2) {
             addColumnIfNotExists(graveBackupTableName, "experience", "INT");
             addColumnIfNotExists(graveBackupTableName, "protection", "INT");
             addColumnIfNotExists(graveBackupTableName, "is_abandoned", "INT");
@@ -984,7 +995,6 @@ public final class DataManager {
             addColumnIfNotExists(graveBackupTableName, "protection", "INT(1)");
             addColumnIfNotExists(graveBackupTableName, "is_abandoned", "INT(1)");
         }
-
         addColumnIfNotExists(graveBackupTableName, "time_alive", "BIGINT");
         addColumnIfNotExists(graveBackupTableName, "time_protection", "BIGINT");
         addColumnIfNotExists(graveBackupTableName, "time_creation", "BIGINT");
@@ -2331,6 +2341,7 @@ public final class DataManager {
                         || "X0Y32".equals(sqlState)
                         || "42000".equals(sqlState)
                         || (message.contains("duplicate column name") && "SQLITE_ERROR".equals(sqlState))) {
+                    // ignore
                 } else {
                     plugin.getLogger().severe("Error executing SQL update: " + exception.getMessage());
                     plugin.getLogger().severe("Failed SQL statement: " + sql);
