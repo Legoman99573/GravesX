@@ -1177,8 +1177,21 @@ public final class DataManager {
                 plugin.getLogger().info("Loaded " + graveCount + " grave maps into cache.");
             }
         } catch (SQLException exception) {
-            plugin.getLogger().severe("Error occurred while loading Grave Map: " + exception.getMessage());
-            plugin.logStackTrace(exception);
+            String sqlState = exception.getSQLState();
+            String message = exception.getMessage().toLowerCase();
+            // Ignore errors related to existing tables or columns
+            if ("42701".equals(sqlState)
+                    || "42P07".equals(sqlState)
+                    || "42S01".equals(sqlState)
+                    || "42S04".equals(sqlState)
+                    || "X0Y32".equals(sqlState)
+                    || "42000".equals(sqlState)
+                    || (message.contains("duplicate column name") && "SQLITE_ERROR".equals(sqlState))) {
+                plugin.getLogger().info("Found 0 grave maps to load into cache.");
+            } else {
+                plugin.getLogger().severe("Error occurred while loading Grave Map: " + exception.getMessage());
+                plugin.logStackTrace(exception);
+            }
         } catch (NullPointerException exception) {
             plugin.getLogger().severe("A null pointer exception occurred while loading Grave Map: " + exception.getMessage());
             plugin.logStackTrace(exception);
@@ -1255,8 +1268,21 @@ public final class DataManager {
 
             plugin.getLogger().info("All graveyards loaded.");
         } catch (SQLException e) {
-            plugin.getLogger().severe("Failed to load graveyards: " + e.getMessage());
-            plugin.logStackTrace(e);
+            String sqlState = e.getSQLState();
+            String message = e.getMessage().toLowerCase();
+            // Ignore errors related to existing tables or columns
+            if ("42701".equals(sqlState)
+                    || "42P07".equals(sqlState)
+                    || "42S01".equals(sqlState)
+                    || "42S04".equals(sqlState)
+                    || "X0Y32".equals(sqlState)
+                    || "42000".equals(sqlState)
+                    || (message.contains("duplicate column name") && "SQLITE_ERROR".equals(sqlState))) {
+                plugin.getLogger().info("All graveyards loaded.");
+            } else {
+                plugin.getLogger().severe("Failed to load graveyards: " + e.getMessage());
+                plugin.logStackTrace(e);
+            }
         }
     }
 
@@ -1328,8 +1354,20 @@ public final class DataManager {
                     plugin.getLogger().info("Loaded " + blockCount + " Blocks into the Block Map Cache.");
                 }
             } catch (SQLException exception) {
-                plugin.getLogger().severe("Error occurred while loading Block Map: " + exception.getMessage());
-                plugin.logStackTrace(exception);
+                String sqlState = exception.getSQLState();
+                String message = exception.getMessage().toLowerCase();
+                if ("42701".equals(sqlState)
+                        || "42P07".equals(sqlState)
+                        || "42S01".equals(sqlState)
+                        || "42S04".equals(sqlState)
+                        || "X0Y32".equals(sqlState)
+                        || "42000".equals(sqlState)
+                        || (message.contains("duplicate column name") && "SQLITE_ERROR".equals(sqlState))) {
+                    plugin.getLogger().info("Loaded 0 Blocks into Block Map Cache.");
+                } else {
+                    plugin.getLogger().severe("Error occurred while loading Block Map: " + exception.getMessage());
+                    plugin.logStackTrace(exception);
+                }
             }
         });
     }
@@ -2338,6 +2376,7 @@ public final class DataManager {
                 if ("42701".equals(sqlState)
                         || "42P07".equals(sqlState)
                         || "42S01".equals(sqlState)
+                        || "42S02".equals(sqlState)
                         || "42S04".equals(sqlState)
                         || "X0Y32".equals(sqlState)
                         || "42000".equals(sqlState)
