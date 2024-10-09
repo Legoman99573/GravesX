@@ -74,7 +74,6 @@ public final class DataManager {
                 loadType(Type.SQLITE);
                 load();
                 keepConnectionAlive(); // If we don't enable this, connection will close or time out :/
-                plugin.getServer().getScheduler().runTaskTimer(plugin, this::deleteOldBackups, 0L, 1200L);
                 break;
             case H2:
             case POSTGRESQL:
@@ -85,7 +84,6 @@ public final class DataManager {
                     migrate();
                     load();
                     keepConnectionAlive(); // If we don't enable this, connection will close or time out :/
-                    plugin.getServer().getScheduler().runTaskTimer(plugin, this::deleteOldBackups, 0L, 1200L);
                 } else {
                     plugin.getLogger().severe("Failed to connect to " + this.type + " database. Disabling plugin...");
                     plugin.getServer().getPluginManager().disablePlugin(this.plugin);
@@ -96,7 +94,6 @@ public final class DataManager {
                 migrate();
                 load();
                 keepConnectionAlive();
-                plugin.getServer().getScheduler().runTaskTimer(plugin, this::deleteOldBackups, 0L, 1200L);
             default:
                 plugin.getLogger().severe("Database Type is invalid. Only valid options: SQLITE, H2, POSTGRESQL, MARIADB, and MYSQL. Disabling plugin...");
                 plugin.getServer().getPluginManager().disablePlugin(this.plugin);
@@ -240,7 +237,6 @@ public final class DataManager {
      */
     private void loadTables() throws SQLException {
         setupGraveTable();
-        setupGraveBackupTable();
         setupBlockTable();
         setupHologramTable();
         setupGraveyardsTable();
@@ -872,133 +868,6 @@ public final class DataManager {
         addColumnIfNotExists(name, "time_protection", "BIGINT");
         addColumnIfNotExists(name, "time_creation", "BIGINT");
         addColumnIfNotExists(name, "permissions", "TEXT");
-    }
-
-    /**
-     * Sets up the grave table in the database.
-     *
-     * @throws SQLException if an SQL error occurs.
-     */
-    public void setupGraveBackupTable() throws SQLException {
-        String graveBackupTableName = "grave_backup";
-
-        // Create grave table if it doesn't exist
-        if (!tableExists(graveBackupTableName)) {
-            if (type == Type.H2 || type == Type.POSTGRESQL) {
-                executeUpdate("CREATE TABLE IF NOT EXISTS " + graveBackupTableName + " (" +
-                        "uuid VARCHAR(255) UNIQUE,\n" +
-                        "owner_type VARCHAR(255),\n" +
-                        "owner_name VARCHAR(255),\n" +
-                        "owner_name_display VARCHAR(255),\n" +
-                        "owner_uuid VARCHAR(255),\n" +
-                        "owner_texture TEXT,\n" +
-                        "owner_texture_signature TEXT,\n" +
-                        "killer_type VARCHAR(255),\n" +
-                        "killer_name VARCHAR(255),\n" +
-                        "killer_name_display VARCHAR(255),\n" +
-                        "killer_uuid VARCHAR(255),\n" +
-                        "location_death VARCHAR(255),\n" +
-                        "yaw REAL,\n" +
-                        "pitch REAL,\n" +
-                        "inventory TEXT,\n" +
-                        "equipment TEXT,\n" +
-                        "experience INT,\n" +
-                        "protection INT,\n" +
-                        "is_abandoned INT,\n" +
-                        "time_alive BIGINT,\n" +
-                        "time_protection BIGINT,\n" +
-                        "time_creation BIGINT,\n" +
-                        "permissions TEXT);", new Object[0]);
-            } else if (type == Type.MSSQL) {
-                executeUpdate("CREATE TABLE " + graveBackupTableName + " (" +
-                        "uuid VARCHAR(255) UNIQUE,\n" +
-                        "owner_type VARCHAR(255),\n" +
-                        "owner_name VARCHAR(255),\n" +
-                        "owner_name_display VARCHAR(255),\n" +
-                        "owner_uuid VARCHAR(255),\n" +
-                        "owner_texture TEXT,\n" +
-                        "owner_texture_signature TEXT,\n" +
-                        "killer_type VARCHAR(255),\n" +
-                        "killer_name VARCHAR(255),\n" +
-                        "killer_name_display VARCHAR(255),\n" +
-                        "killer_uuid VARCHAR(255),\n" +
-                        "location_death VARCHAR(255),\n" +
-                        "yaw FLOAT,\n" + // Using FLOAT for MS SQL
-                        "pitch FLOAT,\n" + // Using FLOAT for MS SQL
-                        "inventory TEXT,\n" +
-                        "equipment TEXT,\n" +
-                        "experience INT,\n" +
-                        "protection INT,\n" +
-                        "is_abandoned INT,\n" +
-                        "time_alive BIGINT,\n" +
-                        "time_protection BIGINT,\n" +
-                        "time_creation BIGINT,\n" +
-                        "permissions TEXT);", new Object[0]);
-            } else {
-                executeUpdate("CREATE TABLE IF NOT EXISTS " + graveBackupTableName + " (" +
-                        "uuid VARCHAR(255) UNIQUE,\n" +
-                        "owner_type VARCHAR(255),\n" +
-                        "owner_name VARCHAR(255),\n" +
-                        "owner_name_display VARCHAR(255),\n" +
-                        "owner_uuid VARCHAR(255),\n" +
-                        "owner_texture TEXT,\n" +
-                        "owner_texture_signature TEXT,\n" +
-                        "killer_type VARCHAR(255),\n" +
-                        "killer_name VARCHAR(255),\n" +
-                        "killer_name_display VARCHAR(255),\n" +
-                        "killer_uuid VARCHAR(255),\n" +
-                        "location_death VARCHAR(255),\n" +
-                        "yaw FLOAT(16),\n" +
-                        "pitch FLOAT(16),\n" +
-                        "inventory TEXT,\n" +
-                        "equipment TEXT,\n" +
-                        "experience INT(16),\n" +
-                        "protection INT(1),\n" +
-                        "is_abandoned INT(1),\n" +
-                        "time_alive BIGINT,\n" +
-                        "time_protection BIGINT,\n" +
-                        "time_creation BIGINT,\n" +
-                        "permissions TEXT);", new Object[0]);
-            }
-        }
-
-        addColumnIfNotExists(graveBackupTableName, "uuid", "VARCHAR(255) UNIQUE");
-        addColumnIfNotExists(graveBackupTableName, "owner_type", "VARCHAR(255)");
-        addColumnIfNotExists(graveBackupTableName, "owner_name", "VARCHAR(255)");
-        addColumnIfNotExists(graveBackupTableName, "owner_name_display", "VARCHAR(255)");
-        addColumnIfNotExists(graveBackupTableName, "owner_uuid", "VARCHAR(255)");
-        addColumnIfNotExists(graveBackupTableName, "owner_texture", "TEXT");
-        addColumnIfNotExists(graveBackupTableName, "owner_texture_signature", "TEXT");
-        addColumnIfNotExists(graveBackupTableName, "killer_type", "VARCHAR(255)");
-        addColumnIfNotExists(graveBackupTableName, "killer_name", "VARCHAR(255)");
-        addColumnIfNotExists(graveBackupTableName, "killer_name_display", "VARCHAR(255)");
-        addColumnIfNotExists(graveBackupTableName, "killer_uuid", "VARCHAR(255)");
-        addColumnIfNotExists(graveBackupTableName, "location_death", "VARCHAR(255)");
-        if (type == Type.POSTGRESQL || type == Type.H2) {
-            addColumnIfNotExists(graveBackupTableName, "yaw", "REAL");
-            addColumnIfNotExists(graveBackupTableName, "pitch", "REAL");
-        } else if (type == Type.MSSQL) {
-            addColumnIfNotExists(graveBackupTableName, "yaw", "FLOAT");
-            addColumnIfNotExists(graveBackupTableName, "pitch", "FLOAT");
-        } else {
-            addColumnIfNotExists(graveBackupTableName, "yaw", "FLOAT(16)");
-            addColumnIfNotExists(graveBackupTableName, "pitch", "FLOAT(16)");
-        }
-        addColumnIfNotExists(graveBackupTableName, "inventory", "TEXT");
-        addColumnIfNotExists(graveBackupTableName, "equipment", "TEXT");
-        if (type == Type.POSTGRESQL || type == Type.H2) {
-            addColumnIfNotExists(graveBackupTableName, "experience", "INT");
-            addColumnIfNotExists(graveBackupTableName, "protection", "INT");
-            addColumnIfNotExists(graveBackupTableName, "is_abandoned", "INT");
-        } else {
-            addColumnIfNotExists(graveBackupTableName, "experience", "INT(16)");
-            addColumnIfNotExists(graveBackupTableName, "protection", "INT(1)");
-            addColumnIfNotExists(graveBackupTableName, "is_abandoned", "INT(1)");
-        }
-        addColumnIfNotExists(graveBackupTableName, "time_alive", "BIGINT");
-        addColumnIfNotExists(graveBackupTableName, "time_protection", "BIGINT");
-        addColumnIfNotExists(graveBackupTableName, "time_creation", "BIGINT");
-        addColumnIfNotExists(graveBackupTableName, "permissions", "TEXT");
     }
 
     /**
@@ -1983,7 +1852,6 @@ public final class DataManager {
     public void removeGrave(UUID uuid) {
         plugin.getCacheManager().getGraveMap().remove(uuid);
 
-        String selectQuery = "SELECT * FROM grave WHERE uuid = ?";
         String deleteQuery = "DELETE FROM grave WHERE uuid = ?";
         Object[] deleteParams = { uuid };
 
@@ -1991,96 +1859,11 @@ public final class DataManager {
             try {
                 plugin.debugMessage("Attempting to remove grave for UUID: " + uuid, 1);
 
-                // Select the grave data
-                try (ResultSet rs = executeQuery(selectQuery, new Object[]{uuid})) {
-                    if (rs != null && rs.next()) {
-                        backupGrave(rs);
-                    } else {
-                        plugin.debugMessage("No grave found for UUID: " + uuid, 1);
-                    }
-
-                    // Remove the grave from the main table
-                    executeUpdate(deleteQuery, deleteParams);
-                    plugin.debugMessage("Grave successfully removed for UUID: " + uuid, 1);
-                }
+                executeUpdate(deleteQuery, deleteParams);
+                plugin.debugMessage("Grave successfully removed for UUID: " + uuid, 1);
             } catch (SQLException e) {
-                plugin.getLogger().severe("Failed to remove and backup grave: " + e.getMessage());
+                plugin.getLogger().severe("Failed to remove grave: " + e.getMessage());
                 plugin.logStackTrace(e);
-            }
-        });
-    }
-
-    /**
-     * Backs up the grave data to the grave_backup table.
-     *
-     * @param rs the ResultSet containing the grave data to back up.
-     * @throws SQLException if a database access error occurs.
-     */
-    private void backupGrave(ResultSet rs) throws SQLException {
-        String insertBackupQuery = "INSERT INTO grave_backup (" +
-                "uuid, owner_type, owner_name, owner_name_display, owner_uuid, owner_texture, " +
-                "owner_texture_signature, killer_type, killer_name, killer_name_display, killer_uuid, " +
-                "location_death, yaw, pitch, inventory, equipment, experience, protection, " +
-                "is_abandoned, time_alive, time_protection, time_creation, permissions) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-        Object[] backupParams = {
-                rs.getString("uuid"),
-                rs.getString("owner_type"),
-                rs.getString("owner_name"),
-                rs.getString("owner_name_display"),
-                rs.getString("owner_uuid"),
-                rs.getString("owner_texture"),
-                rs.getString("owner_texture_signature"),
-                rs.getString("killer_type"),
-                rs.getString("killer_name"),
-                rs.getString("killer_name_display"),
-                rs.getString("killer_uuid"),
-                rs.getString("location_death"),
-                rs.getFloat("yaw"),
-                rs.getFloat("pitch"),
-                rs.getString("inventory"),
-                rs.getString("equipment"),
-                rs.getInt("experience"),
-                rs.getInt("protection"),
-                rs.getInt("is_abandoned"),
-                rs.getLong("time_alive"),
-                rs.getLong("time_protection"),
-                System.currentTimeMillis(),  // Use current time for backup creation
-                rs.getString("permissions"),
-        };
-
-        // Create a new database connection for the backup
-        try {
-            plugin.debugMessage("Backing up grave data for UUID: " + rs.getString("uuid"), 1);
-            executeUpdate(insertBackupQuery, backupParams);
-            plugin.debugMessage("Grave successfully backed up for UUID: " + rs.getString("uuid"), 1);
-        } catch (SQLException e) {
-            plugin.getLogger().severe("Failed to back up grave: " + e.getMessage());
-            throw e;  // Rethrow the exception to be handled in the calling method
-        }
-    }
-
-    /**
-     * Deletes all grave backups older than 30 days.
-     */
-    public void deleteOldBackups() {
-        String deleteOldBackupsQuery = "DELETE FROM grave_backup WHERE time_creation < ?";
-
-        // Calculate the timestamp of 30 days ago
-        long thirtyDaysAgo = System.currentTimeMillis() - (30L * 24 * 60 * 60 * 1000);
-
-        Object[] params = { thirtyDaysAgo };
-
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-            try {
-                // Execute the deletion without returning the number of rows deleted
-                executeUpdate(deleteOldBackupsQuery, params);
-
-                // Log a success message (optional)
-                plugin.debugMessage("Deleted backups older than 30 days.", 5);
-            } catch (SQLException e) {
-                plugin.debugMessage("Failed to delete old grave backups: " + e.getMessage(), 5);
             }
         });
     }
