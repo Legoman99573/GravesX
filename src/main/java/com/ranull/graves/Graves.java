@@ -289,7 +289,7 @@ public class Graves extends JavaPlugin {
         updateConfig();
         unregisterListeners();
         registerListeners();
-        dataManager.reload();
+        // dataManager.reload();
         integrationManager.reload();
         try {
             registerRecipes();

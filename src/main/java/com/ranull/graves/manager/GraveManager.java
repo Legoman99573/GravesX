@@ -433,7 +433,7 @@ public final class GraveManager {
         plugin.getDataManager().updateGrave(grave, "experience", grave.getExperience());
         plugin.getDataManager().updateGrave(grave, "owner_name_display", grave.getOwnerDisplayName());
         plugin.getDataManager().updateGrave(grave, "is_abandoned", grave.isAbandoned() ? 1 : 0);
-        plugin.getDataManager().loadGraveMap();
+        // plugin.getDataManager().loadGraveMap();
     }
 
     /**

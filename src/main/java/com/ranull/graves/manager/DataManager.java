@@ -202,6 +202,7 @@ public final class DataManager {
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
+
             loadGraveMap();
             loadBlockMap();
             loadGraveyardsMap();
@@ -209,32 +210,52 @@ public final class DataManager {
             loadEntityMap("itemframe", EntityData.Type.ITEM_FRAME);
             loadHologramMap();
 
-            if (plugin.getIntegrationManager().hasFurnitureLib()) {
-                loadEntityDataMap("furniturelib", EntityData.Type.FURNITURELIB);
-            }
+            Map<String, EntityData.Type> integrationMap = new HashMap<>();
+            integrationMap.put("furniturelib", EntityData.Type.FURNITURELIB);
+            integrationMap.put("furnitureengine", EntityData.Type.FURNITUREENGINE);
+            integrationMap.put("itemsadder", EntityData.Type.ITEMSADDER);
+            integrationMap.put("oraxen", EntityData.Type.ORAXEN);
+            integrationMap.put("playernpc", EntityData.Type.PLAYERNPC);
+            integrationMap.put("citizensnpc", EntityData.Type.CITIZENSNPC);
 
-            if (plugin.getIntegrationManager().hasFurnitureEngine()) {
-                loadEntityDataMap("furnitureengine", EntityData.Type.FURNITUREENGINE);
-            }
+            for (Map.Entry<String, EntityData.Type> entry : integrationMap.entrySet()) {
+                String integration = entry.getKey();
+                EntityData.Type type = entry.getValue();
 
-            if (plugin.getIntegrationManager().hasItemsAdder()) {
-                loadEntityDataMap("itemsadder", EntityData.Type.ITEMSADDER);
-            }
-
-            if (plugin.getIntegrationManager().hasOraxen()) {
-                loadEntityDataMap("oraxen", EntityData.Type.ORAXEN);
-            }
-
-            if (plugin.getIntegrationManager().hasPlayerNPC()) {
-                loadEntityDataMap("playernpc", EntityData.Type.PLAYERNPC);
-                plugin.getIntegrationManager().getPlayerNPC().createCorpses();
-            }
-
-            if (plugin.getIntegrationManager().hasCitizensNPC()) {
-                loadEntityDataMap("citizensnpc", EntityData.Type.CITIZENSNPC);
-                plugin.getIntegrationManager().getCitizensNPC().createCorpses();
+                if (isIntegrationEnabled(integration)) {
+                    loadEntityDataMap(integration, type);
+                    if (integration.equals("playernpc")) {
+                        plugin.getIntegrationManager().getPlayerNPC().createCorpses();
+                    } else if (integration.equals("citizensnpc")) {
+                        plugin.getIntegrationManager().getCitizensNPC().createCorpses();
+                    }
+                }
             }
         });
+    }
+
+    /**
+     * Checks if the integration is enabled.
+     * @param integration The name of the integration.
+     * @return true if enabled, false otherwise.
+     */
+    private boolean isIntegrationEnabled(String integration) {
+        switch (integration) {
+            case "furniturelib":
+                return plugin.getIntegrationManager().hasFurnitureLib();
+            case "furnitureengine":
+                return plugin.getIntegrationManager().hasFurnitureEngine();
+            case "itemsadder":
+                return plugin.getIntegrationManager().hasItemsAdder();
+            case "oraxen":
+                return plugin.getIntegrationManager().hasOraxen();
+            case "playernpc":
+                return plugin.getIntegrationManager().hasPlayerNPC();
+            case "citizensnpc":
+                return plugin.getIntegrationManager().hasCitizensNPC();
+            default:
+                return false;
+        }
     }
 
     /**
@@ -247,31 +268,29 @@ public final class DataManager {
         setupBlockTable();
         setupHologramTable();
         setupGraveyardsTable();
-        setupEntityTable("armorstand");
-        setupEntityTable("itemframe");
+        setupEntityTables();
+    }
 
-        if (plugin.getIntegrationManager().hasFurnitureLib()) {
-            setupEntityTable("furniturelib");
-        }
+    /**
+     * Sets up entity tables.
+     *
+     * @throws SQLException if an SQL error occurs.
+     */
+    private void setupEntityTables() throws SQLException {
+        Map<String, Boolean> integrationMap = new HashMap<>();
+        integrationMap.put("armorstand", true);
+        integrationMap.put("itemframe", true);
+        integrationMap.put("furniturelib", plugin.getIntegrationManager().hasFurnitureLib());
+        integrationMap.put("furnitureengine", plugin.getIntegrationManager().hasFurnitureEngine());
+        integrationMap.put("itemsadder", plugin.getIntegrationManager().hasItemsAdder());
+        integrationMap.put("oraxen", plugin.getIntegrationManager().hasOraxen());
+        integrationMap.put("playernpc", plugin.getIntegrationManager().hasPlayerNPC());
+        integrationMap.put("citizensnpc", plugin.getIntegrationManager().hasCitizensNPC());
 
-        if (plugin.getIntegrationManager().hasFurnitureEngine()) {
-            setupEntityTable("furnitureengine");
-        }
-
-        if (plugin.getIntegrationManager().hasItemsAdder()) {
-            setupEntityTable("itemsadder");
-        }
-
-        if (plugin.getIntegrationManager().hasOraxen()) {
-            setupEntityTable("oraxen");
-        }
-
-        if (plugin.getIntegrationManager().hasPlayerNPC()) {
-            setupEntityTable("playernpc");
-        }
-
-        if (plugin.getIntegrationManager().hasCitizensNPC()) {
-            setupEntityTable("citizensnpc");
+        for (Map.Entry<String, Boolean> entry : integrationMap.entrySet()) {
+            if (entry.getValue()) {
+                setupEntityTable(entry.getKey());
+            }
         }
     }
 
@@ -333,161 +352,81 @@ public final class DataManager {
      */
     public void loadType(Type type) {
         this.type = type;
-        if (type == Type.POSTGRESQL) {
-            String host = plugin.getConfig().getString("settings.storage.postgresql.host", "localhost");
-            int port = plugin.getConfig().getInt("settings.storage.postgresql.port", 3306);
-            String user = plugin.getConfig().getString("settings.storage.postgresql.username", "username");
-            String password = plugin.getConfig().getString("settings.storage.postgresql.password", "password");
-            String database = plugin.getConfig().getString("settings.storage.postgresql.database", "graves");
-            long maxLifetime = plugin.getConfig().getLong("settings.storage.postgresql.maxLifetime", 1800000);
-            int maxConnections = plugin.getConfig().getInt("settings.storage.postgresql.maxConnections", 20); // Increased pool size
-            long connectionTimeout = plugin.getConfig().getLong("settings.storage.postgresql.connectionTimeout", 30000);
-            boolean ssl = plugin.getConfig().getBoolean("settings.storage.postgresql.ssl", true);
-            String allowPublicKeyRetrieval = plugin.getConfig().getString("settings.storage.postgresql.sslfactory", "com.ranull.graves.postgresql.ssl.NonValidatingFactory");
-            String verifyServerCertificate = plugin.getConfig().getString("settings.storage.postgresql.sslmode", "disable");
-            String sslrootcert = plugin.getConfig().getString("settings.storage.postgresql.sslrootcert", "/path/to/server.crt");
-            String sslcert = plugin.getConfig().getString("settings.storage.postgresql.sslcert", "/path/to/client.crt");
-            String sslkey = plugin.getConfig().getString("settings.storage.postgresql.sslkey", "/path/to/client.key");
-            HikariConfig config = new HikariConfig();
-            config.setJdbcUrl("jdbc:postgresql://" + host + ":" + port + "/" + database);
-            config.setUsername(user);
-            config.setPassword(password);
-            config.addDataSourceProperty("autoReconnect", "true");
-            config.addDataSourceProperty("cachePrepStmts", "true");
-            config.addDataSourceProperty("prepStmtCacheSize", "250");
-            config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
-            config.addDataSourceProperty("useServerPrepStmts", "true");
-            config.addDataSourceProperty("useLocalSessionState", "true");
-            config.addDataSourceProperty("cacheResultSetMetadata", "true");
-            config.addDataSourceProperty("cacheServerConfiguration", "true");
-            config.addDataSourceProperty("elideSetAutoCommits", "true");
-            config.addDataSourceProperty("maintainTimeStats", "false");
-            config.addDataSourceProperty("alwaysSendSetIsolation", "false");
-            config.addDataSourceProperty("cacheCallableStmts", "true");
-            config.addDataSourceProperty("dataSourceName", "Graves");
-            config.addDataSourceProperty("ssl", String.valueOf(ssl));
-            if (ssl) {
-                config.addDataSourceProperty("sslfactory", allowPublicKeyRetrieval);
-                config.addDataSourceProperty("sslmode", verifyServerCertificate);
-                config.addDataSourceProperty("sslrootcert", sslrootcert);
-                config.addDataSourceProperty("sslcert", sslcert);
-                config.addDataSourceProperty("sslkey", sslkey);
-            }
-            config.setDriverClassName("com.ranull.graves.libraries.postgresql.Driver");
-            config.setMaximumPoolSize(maxConnections);
-            config.setMaxLifetime(maxLifetime);
-            config.setMinimumIdle(2);
-            config.setConnectionTimeout(connectionTimeout);
-            config.setPoolName("Graves PostgreSQL");
-            config.setIdleTimeout(600000); // 10 minutes
-            config.setConnectionTestQuery("SELECT 1");
-            config.setLeakDetectionThreshold(15000); // Detect connection leaks
-            dataSource = new HikariDataSource(config);
-            checkAndUnlockDatabase(); // Check and unlock the database if needed
-        } else if (type == Type.SQLITE) {
-            migrateRootDataSubData();
-            HikariConfig config = new HikariConfig();
-            configureSQLite(config);
-            dataSource = new HikariDataSource(config);
-            checkAndUnlockDatabase(); // Check and unlock the database if needed
-        } else if (type == Type.H2) {
-            migrateRootDataSubData();
-            HikariConfig config = new HikariConfig();
-            configureH2(config);
-            dataSource = new HikariDataSource(config);
-            checkAndUnlockDatabase(); // Check and unlock the database if needed
-        } else if (this.type == Type.MSSQL) {
-            // MS SQL configuration
-            String host = plugin.getConfig().getString("settings.storage.mssql.host", "localhost");
-            int port = plugin.getConfig().getInt("settings.storage.mssql.port", 1433);
-            String user = plugin.getConfig().getString("settings.storage.mssql.username", "username");
-            String password = plugin.getConfig().getString("settings.storage.mssql.password", "password");
-            String database = plugin.getConfig().getString("settings.storage.mssql.database", "graves");
-            long maxLifetime = plugin.getConfig().getLong("settings.storage.mssql.maxLifetime", 1800000);
-            int maxConnections = plugin.getConfig().getInt("settings.storage.mssql.maxConnections", 20);
-            long connectionTimeout = plugin.getConfig().getLong("settings.storage.mssql.connectionTimeout", 30000);
-            boolean encrypt = plugin.getConfig().getBoolean("settings.storage.mssql.encrypt", true);
-            boolean trustServerCertificate = plugin.getConfig().getBoolean("settings.storage.mssql.trustServerCertificate", false);
+        HikariConfig config = new HikariConfig();
 
-            HikariConfig config = new HikariConfig();
-            config.setJdbcUrl("jdbc:sqlserver://" + host + ":" + port + ";databaseName=" + database);
-            config.setUsername(user);
-            config.setPassword(password);
-            config.addDataSourceProperty("encrypt", String.valueOf(encrypt));
-            config.addDataSourceProperty("trustServerCertificate", String.valueOf(trustServerCertificate));
-            config.setMaximumPoolSize(maxConnections);
-            config.setMaxLifetime(maxLifetime);
-            config.setMinimumIdle(2);
-            config.setPoolName("Graves MSSQL");
-            config.setConnectionTimeout(connectionTimeout);
-            config.setIdleTimeout(600000);
-            config.setConnectionTestQuery("SELECT 1");
-            config.setLeakDetectionThreshold(15000);
+        switch (type) {
+            case POSTGRESQL:
+                configurePostgreSQL(config);
+                break;
 
-            // Set MSSQL driver class
-            config.setDriverClassName("com.ranull.graves.libraries.microsoft.sqlserver.jdbc.SQLServerDriver");
+            case SQLITE:
+                migrateRootDataSubData();
+                configureSQLite(config);
+                break;
+            case H2:
+                configureH2(config);
+                break;
 
-            dataSource = new HikariDataSource(config);
-        } else {
-            // MySQL or MariaDB configuration
-            String host = plugin.getConfig().getString("settings.storage.mysql.host", "localhost");
-            int port = plugin.getConfig().getInt("settings.storage.mysql.port", 3306);
-            String user = plugin.getConfig().getString("settings.storage.mysql.username", "username");
-            String password = plugin.getConfig().getString("settings.storage.mysql.password", "password");
-            String database = plugin.getConfig().getString("settings.storage.mysql.database", "graves");
-            long maxLifetime = plugin.getConfig().getLong("settings.storage.mysql.maxLifetime", 1800000);
-            int maxConnections = plugin.getConfig().getInt("settings.storage.mysql.maxConnections", 20); // Increased pool size
-            long connectionTimeout = plugin.getConfig().getLong("settings.storage.mysql.connectionTimeout", 30000);
-            boolean useSSL = plugin.getConfig().getBoolean("settings.storage.mysql.useSSL", true);
-            boolean allowPublicKeyRetrieval = plugin.getConfig().getBoolean("settings.storage.mysql.allowPublicKeyRetrieval", false);
-            boolean verifyServerCertificate = plugin.getConfig().getBoolean("settings.storage.mysql.verifyServerCertificate", false);
+            case MSSQL:
+                configureMSSQL(config);
+                break;
 
-            HikariConfig config = new HikariConfig();
-            if (type == Type.MARIADB) {
-                config.setJdbcUrl("jdbc:mariadb://" + host + ":" + port + "/" + database);
-            } else {
-                config.setJdbcUrl("jdbc:mysql://" + host + ":" + port + "/" + database);
-            }
-            config.setUsername(user);
-            config.setPassword(password);
-            config.addDataSourceProperty("autoReconnect", "true");
-            config.addDataSourceProperty("cachePrepStmts", "true");
-            config.addDataSourceProperty("prepStmtCacheSize", "250");
-            config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
-            config.addDataSourceProperty("useServerPrepStmts", "true");
-            config.addDataSourceProperty("useLocalSessionState", "true");
-            config.addDataSourceProperty("cacheResultSetMetadata", "true");
-            config.addDataSourceProperty("cacheServerConfiguration", "true");
-            config.addDataSourceProperty("elideSetAutoCommits", "true");
-            config.addDataSourceProperty("maintainTimeStats", "false");
-            config.addDataSourceProperty("alwaysSendSetIsolation", "false");
-            config.addDataSourceProperty("cacheCallableStmts", "true");
-            config.addDataSourceProperty("useSSL", String.valueOf(useSSL));
-            if (useSSL) {
-                config.addDataSourceProperty("allowPublicKeyRetrieval", String.valueOf(allowPublicKeyRetrieval));
-                config.addDataSourceProperty("verifyServerCertificate", String.valueOf(verifyServerCertificate));
-            }
-            config.setMaximumPoolSize(maxConnections);
-            config.setMaxLifetime(maxLifetime);
-            config.setMinimumIdle(2);
-            if (type == Type.MARIADB) {
-                config.setPoolName("Graves MariaDB");
-            } else {
-                config.setPoolName("Graves MySQL");
-            }
-            config.setConnectionTimeout(connectionTimeout);
-            config.setIdleTimeout(600000); // 10 minutes
-            config.setConnectionTestQuery("SELECT 1");
-            config.setLeakDetectionThreshold(15000); // Detect connection leaks
+            case MARIADB:
+            case MYSQL:
+                configureMySQLOrMariaDB(config, type);
+                break;
 
-            if (type == Type.MARIADB) {
-                config.setDriverClassName("com.ranull.graves.libraries.mariadb.jdbc.Driver");
-            } else {
-                config.setDriverClassName("com.mysql.cj.jdbc.Driver");
-            }
-
-            dataSource = new HikariDataSource(config);
+            default:
+                throw new IllegalArgumentException("Unsupported database type: " + type);
         }
+
+        dataSource = new HikariDataSource(config);
+        checkAndUnlockDatabase(); // Check and unlock the database if needed
+
+        if (type == Type.MYSQL) {
+            checkMariaDBasMySQL();
+        }
+    }
+
+    private void checkMariaDBasMySQL() {
+        try (Connection connection = dataSource.getConnection();
+             Statement statement = connection.createStatement()) {
+
+            ResultSet resultSet = statement.executeQuery("SELECT VERSION()");
+            if (resultSet.next()) {
+                String version = resultSet.getString(1);
+                if (version.contains("MariaDB")) {
+                    String versionNumber = version.split(" ")[0];
+
+                    if (isVersionGreaterThan(versionNumber)) {
+                        plugin.getLogger().warning("MySQL Warning: Your configuration is currently set to use MySQL, but the server is running MariaDB. As of MariaDB version 11, MySQL has been deprecated and will be removed in future versions. To avoid potential conflicts, we recommend updating your config.yml to use MARIADB.");
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Failed to check version of MySQL");
+            plugin.logStackTrace(e);
+        }
+    }
+
+    private boolean isVersionGreaterThan(String version) {
+        String[] versionParts = version.split("\\.");
+        String[] compareToParts = "11".split("\\.");
+
+        int maxLength = Math.max(versionParts.length, compareToParts.length);
+
+        for (int i = 0; i < maxLength; i++) {
+            int currentVersionPart = (i < versionParts.length) ? Integer.parseInt(versionParts[i]) : 0;
+            int compareToVersionPart = (i < compareToParts.length) ? Integer.parseInt(compareToParts[i]) : 0;
+
+            if (currentVersionPart > compareToVersionPart) {
+                return true;
+            } else if (currentVersionPart < compareToVersionPart) {
+                return false;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -511,6 +450,74 @@ public final class DataManager {
         config.setPoolName("Graves SQLite");
         config.addDataSourceProperty("autoReconnect", "true");
         config.setDriverClassName("org.sqlite.JDBC");
+    }
+
+    /**
+     * Configures the HikariConfig for PostgreSQL.
+     *
+     * @param config the HikariConfig to configure.
+     */
+    private void configurePostgreSQL(HikariConfig config) {
+        String host = plugin.getConfig().getString("settings.storage.postgresql.host", "localhost");
+        int port = plugin.getConfig().getInt("settings.storage.postgresql.port", 3306);
+        String user = plugin.getConfig().getString("settings.storage.postgresql.username", "username");
+        String password = plugin.getConfig().getString("settings.storage.postgresql.password", "password");
+        String database = plugin.getConfig().getString("settings.storage.postgresql.database", "graves");
+        long maxLifetime = plugin.getConfig().getLong("settings.storage.postgresql.maxLifetime", 1800000);
+        int maxConnections = plugin.getConfig().getInt("settings.storage.postgresql.maxConnections", 20);
+        long connectionTimeout = plugin.getConfig().getLong("settings.storage.postgresql.connectionTimeout", 30000);
+        boolean ssl = plugin.getConfig().getBoolean("settings.storage.postgresql.ssl", true);
+
+        config.setJdbcUrl(String.format("jdbc:postgresql://%s:%d/%s", host, port, database));
+        config.setUsername(user);
+        config.setPassword(password);
+        config.setDriverClassName("com.ranull.graves.libraries.postgresql.Driver");
+        config.setMaximumPoolSize(maxConnections);
+        config.setMaxLifetime(maxLifetime);
+        config.setMinimumIdle(2);
+        config.setConnectionTimeout(connectionTimeout);
+        config.setIdleTimeout(600000); // 10 minutes
+        config.setConnectionTestQuery("SELECT 1");
+        config.setLeakDetectionThreshold(15000); // Detect connection leaks
+
+        addPostgreSQLProperties(config, ssl);
+    }
+
+    /**
+     * Adds PostgreSQL-specific properties to the HikariConfig.
+     *
+     * @param config the HikariConfig to which properties will be added.
+     * @param ssl    whether SSL is enabled.
+     */
+    private void addPostgreSQLProperties(HikariConfig config, boolean ssl) {
+        config.addDataSourceProperty("autoReconnect", "true");
+        config.addDataSourceProperty("cachePrepStmts", "true");
+        config.addDataSourceProperty("prepStmtCacheSize", "250");
+        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+        config.addDataSourceProperty("useServerPrepStmts", "true");
+        config.addDataSourceProperty("useLocalSessionState", "true");
+        config.addDataSourceProperty("cacheResultSetMetadata", "true");
+        config.addDataSourceProperty("cacheServerConfiguration", "true");
+        config.addDataSourceProperty("elideSetAutoCommits", "true");
+        config.addDataSourceProperty("maintainTimeStats", "false");
+        config.addDataSourceProperty("alwaysSendSetIsolation", "false");
+        config.addDataSourceProperty("cacheCallableStmts", "true");
+        config.addDataSourceProperty("dataSourceName", "Graves");
+        config.addDataSourceProperty("ssl", String.valueOf(ssl));
+
+        if (ssl) {
+            String allowPublicKeyRetrieval = plugin.getConfig().getString("settings.storage.postgresql.sslfactory", "com.ranull.graves.postgresql.ssl.NonValidatingFactory");
+            String verifyServerCertificate = plugin.getConfig().getString("settings.storage.postgresql.sslmode", "disable");
+            String sslrootcert = plugin.getConfig().getString("settings.storage.postgresql.sslrootcert", "/path/to/server.crt");
+            String sslcert = plugin.getConfig().getString("settings.storage.postgresql.sslcert", "/path/to/client.crt");
+            String sslkey = plugin.getConfig().getString("settings.storage.postgresql.sslkey", "/path/to/client.key");
+
+            config.addDataSourceProperty("sslfactory", allowPublicKeyRetrieval);
+            config.addDataSourceProperty("sslmode", verifyServerCertificate);
+            config.addDataSourceProperty("sslrootcert", sslrootcert);
+            config.addDataSourceProperty("sslcert", sslcert);
+            config.addDataSourceProperty("sslkey", sslkey);
+        }
     }
 
     /**
@@ -552,6 +559,108 @@ public final class DataManager {
         config.setConnectionTestQuery("SELECT 1");
         config.setLeakDetectionThreshold(15000); // Detect connection leaks
     }
+
+    /**
+     * Configures the HikariConfig for MySQL or MariaDB.
+     *
+     * @param config the HikariConfig to configure.
+     * @param type   the type of database (MYSQL or MARIADB).
+     */
+    private void configureMySQLOrMariaDB(HikariConfig config, Type type) {
+        String host = plugin.getConfig().getString("settings.storage.mysql.host", "localhost");
+        int port = plugin.getConfig().getInt("settings.storage.mysql.port", 3306);
+        String user = plugin.getConfig().getString("settings.storage.mysql.username", "username");
+        String password = plugin.getConfig().getString("settings.storage.mysql.password", "password");
+        String database = plugin.getConfig().getString("settings.storage.mysql.database", "graves");
+        long maxLifetime = plugin.getConfig().getLong("settings.storage.mysql.maxLifetime", 1800000);
+        int maxConnections = plugin.getConfig().getInt("settings.storage.mysql.maxConnections", 20);
+        long connectionTimeout = plugin.getConfig().getLong("settings.storage.mysql.connectionTimeout", 30000);
+        boolean useSSL = plugin.getConfig().getBoolean("settings.storage.mysql.useSSL", true);
+        boolean allowPublicKeyRetrieval = plugin.getConfig().getBoolean("settings.storage.mysql.allowPublicKeyRetrieval", false);
+        boolean verifyServerCertificate = plugin.getConfig().getBoolean("settings.storage.mysql.verifyServerCertificate", false);
+
+        String jdbcUrl = (type == Type.MARIADB)
+                ? String.format("jdbc:mariadb://%s:%d/%s", host, port, database)
+                : String.format("jdbc:mysql://%s:%d/%s", host, port, database);
+
+        config.setJdbcUrl(jdbcUrl);
+        config.setUsername(user);
+        config.setPassword(password);
+        config.setDriverClassName(type == Type.MARIADB ? "com.ranull.graves.libraries.mariadb.jdbc.Driver" : "com.mysql.cj.jdbc.Driver");
+        config.setMaximumPoolSize(maxConnections);
+        config.setMaxLifetime(maxLifetime);
+        config.setMinimumIdle(2);
+        config.setConnectionTimeout(connectionTimeout);
+        config.setIdleTimeout(600000); // 10 minutes
+        config.setConnectionTestQuery("SELECT 1");
+        config.setLeakDetectionThreshold(15000); // Detect connection leaks
+
+        addMySQLProperties(config, useSSL, allowPublicKeyRetrieval, verifyServerCertificate);
+    }
+
+    /**
+     * Adds MySQL or MariaDB-specific properties to the HikariConfig.
+     *
+     * @param config                    the HikariConfig to which properties will be added.
+     * @param useSSL                    whether SSL is enabled.
+     * @param allowPublicKeyRetrieval   whether to allow public key retrieval.
+     * @param verifyServerCertificate    whether to verify the server certificate.
+     */
+    private void addMySQLProperties(HikariConfig config, boolean useSSL, boolean allowPublicKeyRetrieval, boolean verifyServerCertificate) {
+        config.addDataSourceProperty("autoReconnect", "true");
+        config.addDataSourceProperty("cachePrepStmts", "true");
+        config.addDataSourceProperty("prepStmtCacheSize", "250");
+        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+        config.addDataSourceProperty("useServerPrepStmts", "true");
+        config.addDataSourceProperty("useLocalSessionState", "true");
+        config.addDataSourceProperty("cacheResultSetMetadata", "true");
+        config.addDataSourceProperty("cacheServerConfiguration", "true");
+        config.addDataSourceProperty("elideSetAutoCommits", "true");
+        config.addDataSourceProperty("maintainTimeStats", "false");
+        config.addDataSourceProperty("alwaysSendSetIsolation", "false");
+        config.addDataSourceProperty("cacheCallableStmts", "true");
+        config.addDataSourceProperty("useSSL", String.valueOf(useSSL));
+
+        if (useSSL) {
+            config.addDataSourceProperty("allowPublicKeyRetrieval", String.valueOf(allowPublicKeyRetrieval));
+            config.addDataSourceProperty("verifyServerCertificate", String.valueOf(verifyServerCertificate));
+        }
+    }
+
+    /**
+     * Configures the HikariConfig for Microsoft SQL Server (MSSQL).
+     *
+     * @param config the HikariConfig to configure.
+     */
+    private void configureMSSQL(HikariConfig config) {
+        String host = plugin.getConfig().getString("settings.storage.mssql.host", "localhost");
+        int port = plugin.getConfig().getInt("settings.storage.mssql.port", 1433);
+        String user = plugin.getConfig().getString("settings.storage.mssql.username", "username");
+        String password = plugin.getConfig().getString("settings.storage.mssql.password", "password");
+        String database = plugin.getConfig().getString("settings.storage.mssql.database", "graves");
+        long maxLifetime = plugin.getConfig().getLong("settings.storage.mssql.maxLifetime", 1800000);
+        int maxConnections = plugin.getConfig().getInt("settings.storage.mssql.maxConnections", 20);
+        long connectionTimeout = plugin.getConfig().getLong("settings.storage.mssql.connectionTimeout", 30000);
+        boolean encrypt = plugin.getConfig().getBoolean("settings.storage.mssql.encrypt", true);
+        boolean trustServerCertificate = plugin.getConfig().getBoolean("settings.storage.mssql.trustServerCertificate", false);
+
+        config.setJdbcUrl(String.format("jdbc:sqlserver://%s:%d;databaseName=%s", host, port, database));
+        config.setUsername(user);
+        config.setPassword(password);
+        config.setDriverClassName("com.ranull.graves.libraries.microsoft.sqlserver.jdbc.SQLServerDriver");
+        config.setMaximumPoolSize(maxConnections);
+        config.setMaxLifetime(maxLifetime);
+        config.setMinimumIdle(2);
+        config.setPoolName("Graves MSSQL");
+        config.setConnectionTimeout(connectionTimeout);
+        config.setIdleTimeout(600000);
+        config.setConnectionTestQuery("SELECT 1");
+        config.setLeakDetectionThreshold(15000); // Detect connection leaks
+
+        config.addDataSourceProperty("encrypt", String.valueOf(encrypt));
+        config.addDataSourceProperty("trustServerCertificate", String.valueOf(trustServerCertificate));
+    }
+
 
     /**
      * Migrates root data to a sub-data directory.
