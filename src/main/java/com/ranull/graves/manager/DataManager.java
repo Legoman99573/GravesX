@@ -91,9 +91,16 @@ public final class DataManager {
                 break;
             case MSSQL:
                 loadType(Type.MSSQL);
-                migrate();
-                load();
-                keepConnectionAlive();
+                if (testDatabaseConnection()) {
+
+                    migrate();
+                    load();
+                    keepConnectionAlive();
+                } else {
+                    plugin.getLogger().severe("Failed to connect to " + this.type + " database. Disabling plugin...");
+                    plugin.getServer().getPluginManager().disablePlugin(this.plugin);
+                }
+                break;
             default:
                 plugin.getLogger().severe("Database Type is invalid. Only valid options: SQLITE, H2, POSTGRESQL, MARIADB, and MYSQL. Disabling plugin...");
                 plugin.getServer().getPluginManager().disablePlugin(this.plugin);
@@ -281,13 +288,42 @@ public final class DataManager {
      * @param type the type of database.
      */
     public void reload(Type type) {
-        loadType(type);
-        if ((type == Type.MYSQL || type == Type.MARIADB) && !testDatabaseConnection()) {
-            plugin.getLogger().severe("Failed to connect to MySQL database. Disabling plugin...");
-            plugin.getServer().getPluginManager().disablePlugin(this.plugin);
-            return;
+        switch (type) {
+            case SQLITE:
+                plugin.getLogger().warning("Database Option SQLITE is set for removal in a future release. Use H2 Database option instead for better reliance.");
+                loadType(Type.SQLITE);
+                load();
+                keepConnectionAlive(); // If we don't enable this, connection will close or time out :/
+                break;
+            case H2:
+            case POSTGRESQL:
+            case MYSQL:
+            case MARIADB:
+                loadType(type);
+                if (testDatabaseConnection()) {
+                    migrate();
+                    load();
+                    keepConnectionAlive(); // If we don't enable this, connection will close or time out :/
+                } else {
+                    plugin.getLogger().severe("Failed to connect to " + type + " database. Disabling plugin...");
+                    plugin.getServer().getPluginManager().disablePlugin(this.plugin);
+                }
+                break;
+            case MSSQL:
+                loadType(Type.MSSQL);
+                if (testDatabaseConnection()) {
+                    migrate();
+                    load();
+                    keepConnectionAlive();
+                } else {
+                    plugin.getLogger().severe("Failed to connect to " + type + " database. Disabling plugin...");
+                    plugin.getServer().getPluginManager().disablePlugin(this.plugin);
+                }
+                break;
+            default:
+                plugin.getLogger().severe("Database Type is invalid. Only valid options: SQLITE, H2, POSTGRESQL, MARIADB, and MYSQL. Disabling plugin...");
+                plugin.getServer().getPluginManager().disablePlugin(this.plugin);
         }
-        load();
     }
 
     /**
