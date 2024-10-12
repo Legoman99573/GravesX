@@ -2,11 +2,12 @@ package dev.cwhead.GravesX;
 
 import com.ranull.graves.Graves;
 import com.ranull.graves.data.BlockData;
+import com.ranull.graves.data.ChunkData;
 import com.ranull.graves.event.GraveCreateEvent;
+import com.ranull.graves.manager.CacheManager;
 import com.ranull.graves.manager.DataManager;
 import com.ranull.graves.manager.GraveManager;
 import com.ranull.graves.type.Grave;
-import com.ranull.graves.util.StringUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
@@ -223,6 +224,7 @@ public class GravesXAPI {
     public void createGrave(@NotNull Entity victim, @Nullable Entity killer, @NotNull EntityType killerEntityType, @Nullable Location locationDeath, @NotNull Map<EquipmentSlot, ItemStack> equipmentMap, @NotNull List<ItemStack> itemStackList, int experience, long timeAliveRemaining, @Nullable StorageType storageType, boolean graveProtection, long graveProtectionTime) {
         GraveManager graveManager = plugin.getGraveManager();
         DataManager dataManager = plugin.getDataManager();
+        CacheManager cacheManager = plugin.getCacheManager();
         Map<Location, BlockData.BlockType> locationMap = new HashMap<>();
 
         Grave grave = new Grave(UUID.randomUUID());
@@ -257,10 +259,19 @@ public class GravesXAPI {
             if (!createGrave.isCancelled()) {
                 locationMap.put(finalLocationDeath, BlockData.BlockType.DEATH);
 
+                grave.setLocationDeath(finalLocationDeath);
                 grave.setInventory(plugin.getGraveManager().getGraveInventory(grave, (LivingEntity) victim, itemStackList, getRemovedItemStacks((LivingEntity) victim), null));
                 grave.setEquipmentMap(!plugin.getVersionManager().is_v1_7() ? plugin.getEntityManager().getEquipmentMap((LivingEntity) victim, grave) : new HashMap<>());
                 graveManager.placeGrave(finalLocationDeath, grave);
                 dataManager.addGrave(grave);
+
+                cacheManager.getGraveMap().put(grave.getUUID(), grave);
+
+                ChunkData chunkData = new ChunkData(finalLocationDeath);
+
+                String chunkKey = generateChunkKey(finalLocationDeath);
+                cacheManager.getChunkMap().put(chunkKey, chunkData);
+
                 plugin.debugMessage("Creating grave " + grave.getUUID() + " for entity " + victim + " through the GravesX API", 1);
             }
         } catch (Exception e) {
@@ -268,6 +279,12 @@ public class GravesXAPI {
             plugin.getLogger().severe("Exception Message: " + e.getMessage());
             plugin.logStackTrace(e);
         }
+    }
+
+    private String generateChunkKey(Location location) {
+        int chunkX = location.getChunk().getX();
+        int chunkZ = location.getChunk().getZ();
+        return chunkX + "_" + chunkZ;
     }
 
     /**
