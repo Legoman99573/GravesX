@@ -225,9 +225,9 @@ public class GravesXAPI {
         GraveManager graveManager = plugin.getGraveManager();
         DataManager dataManager = plugin.getDataManager();
         CacheManager cacheManager = plugin.getCacheManager();
+        Grave grave = graveManager.createGrave(victim, itemStackList);
         Map<Location, BlockData.BlockType> locationMap = new HashMap<>();
 
-        Grave grave = new Grave(UUID.randomUUID());
         grave.setOwnerType(victim.getType());
         grave.setOwnerUUID(victim.getUniqueId());
         grave.setOwnerName(victim.getName());
