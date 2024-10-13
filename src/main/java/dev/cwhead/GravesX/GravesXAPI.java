@@ -2,11 +2,10 @@ package dev.cwhead.GravesX;
 
 import com.ranull.graves.Graves;
 import com.ranull.graves.data.BlockData;
-import com.ranull.graves.data.ChunkData;
+import com.ranull.graves.event.GraveBlockPlaceEvent;
 import com.ranull.graves.event.GraveCreateEvent;
-import com.ranull.graves.manager.CacheManager;
-import com.ranull.graves.manager.DataManager;
-import com.ranull.graves.manager.GraveManager;
+import com.ranull.graves.event.GraveProtectionCreateEvent;
+import com.ranull.graves.manager.*;
 import com.ranull.graves.type.Grave;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -15,6 +14,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.PluginManager;
@@ -221,36 +221,44 @@ public class GravesXAPI {
      * @param graveProtection     Whether the grave is protected.
      * @param graveProtectionTime The time for which the grave remains protected.
      */
-    public void createGrave(@NotNull Entity victim, @Nullable Entity killer, @NotNull EntityType killerEntityType, @Nullable Location locationDeath, @NotNull Map<EquipmentSlot, ItemStack> equipmentMap, @NotNull List<ItemStack> itemStackList, int experience, long timeAliveRemaining, @Nullable StorageType storageType, boolean graveProtection, long graveProtectionTime) {
+    public void createGrave(@NotNull Entity victim, @Nullable Entity killer, @NotNull EntityType killerEntityType, @Nullable Location locationDeath, @Nullable Map<EquipmentSlot, ItemStack> equipmentMap, @Nullable List<ItemStack> itemStackList, int experience, long timeAliveRemaining, @Nullable StorageType storageType, boolean graveProtection, long graveProtectionTime) {
         GraveManager graveManager = plugin.getGraveManager();
         DataManager dataManager = plugin.getDataManager();
-        CacheManager cacheManager = plugin.getCacheManager();
-        Grave grave = graveManager.createGrave(victim, itemStackList);
+        IntegrationManager integrationManager = plugin.getIntegrationManager();
+        VersionManager versionManager = plugin.getVersionManager();
+        LocationManager locationManager = plugin.getLocationManager();
+        EntityManager entityManager = plugin.getEntityManager();
+
         Map<Location, BlockData.BlockType> locationMap = new HashMap<>();
+        Grave grave = graveManager.createGrave(victim, itemStackList);
 
         grave.setOwnerType(victim.getType());
-        grave.setOwnerUUID(victim.getUniqueId());
         grave.setOwnerName(victim.getName());
-        grave.setOwnerDisplayName(victim instanceof Player ? ((Player) victim).getDisplayName()
-                : victim.getCustomName());
+        grave.setOwnerNameDisplay(victim instanceof Player ? ((Player) victim).getDisplayName() : grave.getOwnerName());
+        grave.setOwnerUUID(victim.getUniqueId());
+        grave.setPermissionList(null);
+        grave.setYaw(victim.getLocation().getYaw());
+        grave.setPitch(victim.getLocation().getPitch());
+        Location finalLocationDeath = locationDeath != null ? locationManager.getSafeGraveLocation((LivingEntity) victim, locationDeath, grave) : locationManager.getSafeGraveLocation((LivingEntity) victim, victim.getLocation(), grave);
         if (killer != null) {
-            grave.setKillerName(killer instanceof Player ? ((Player) killer).getDisplayName()
-                    : killer.getCustomName());
-        }
-        grave.setKillerType(killerEntityType);
-        grave.setTimeCreation(System.currentTimeMillis());
-        grave.setTimeAlive(timeAliveRemaining);
-        grave.setTimeAliveRemaining(timeAliveRemaining);
-        grave.setProtection(graveProtection);
-        grave.setTimeProtection(graveProtectionTime);
-        grave.setExperience(experience);
-        grave.setEquipmentMap(equipmentMap);
-        Location finalLocationDeath;
-
-        if (locationDeath != null) {
-            finalLocationDeath = locationDeath;
+            grave.setKillerType(EntityType.PLAYER);
+            grave.setKillerName(killer.getName());
+            grave.setKillerNameDisplay(killer.getCustomName());
+            grave.setKillerUUID(killer.getUniqueId());
         } else {
-            finalLocationDeath = victim.getLocation();
+            grave.setKillerUUID(null);
+            grave.setKillerType(null);
+            grave.setKillerName(graveManager.getDamageReason(victim.getLastDamageCause() != null ? victim.getLastDamageCause().getCause() : EntityDamageEvent.DamageCause.valueOf("KILLED"), grave));
+            grave.setKillerNameDisplay(grave.getKillerName());
+        }
+
+        if (graveProtection && plugin.getConfig("protection.enabled", grave).getBoolean("protection.enabled")) {
+            GraveProtectionCreateEvent graveProtectionCreateEvent = new GraveProtectionCreateEvent(victim, grave);
+            plugin.getServer().getPluginManager().callEvent(graveProtectionCreateEvent);
+            if (!graveProtectionCreateEvent.isCancelled()) {
+                grave.setProtection(true);
+                grave.setTimeProtection(graveProtectionTime != 0 ? graveProtectionTime : plugin.getConfig("protection.time", grave).getInt("protection.time") * 1000L);
+            }
         }
 
         try {
@@ -260,17 +268,17 @@ public class GravesXAPI {
                 locationMap.put(finalLocationDeath, BlockData.BlockType.DEATH);
 
                 grave.setLocationDeath(finalLocationDeath);
-                grave.setInventory(plugin.getGraveManager().getGraveInventory(grave, (LivingEntity) victim, itemStackList, getRemovedItemStacks((LivingEntity) victim), null));
-                grave.setEquipmentMap(!plugin.getVersionManager().is_v1_7() ? plugin.getEntityManager().getEquipmentMap((LivingEntity) victim, grave) : new HashMap<>());
-                graveManager.placeGrave(finalLocationDeath, grave);
+                grave.setInventory(graveManager.getGraveInventory(grave, (LivingEntity) victim, itemStackList, getRemovedItemStacks((LivingEntity) victim), null));
+                if (equipmentMap != null) {
+                    grave.setEquipmentMap(equipmentMap);
+                } else {
+                    grave.setEquipmentMap(!versionManager.is_v1_7() ? entityManager.getEquipmentMap((LivingEntity) victim, grave) : new HashMap<>());
+                }
                 dataManager.addGrave(grave);
-
-                cacheManager.getGraveMap().put(grave.getUUID(), grave);
-
-                ChunkData chunkData = new ChunkData(finalLocationDeath);
-
-                String chunkKey = generateChunkKey(finalLocationDeath);
-                cacheManager.getChunkMap().put(chunkKey, chunkData);
+                if (integrationManager.hasMultiPaper()) {
+                    integrationManager.getMultiPaper().notifyGraveCreation(grave);
+                }
+                placeGraveBlocks(grave, locationMap, (LivingEntity) victim);
 
                 plugin.debugMessage("Creating grave " + grave.getUUID() + " for entity " + victim + " through the GravesX API", 1);
             }
@@ -279,12 +287,6 @@ public class GravesXAPI {
             plugin.getLogger().severe("Exception Message: " + e.getMessage());
             plugin.logStackTrace(e);
         }
-    }
-
-    private String generateChunkKey(Location location) {
-        int chunkX = location.getChunk().getX();
-        int chunkZ = location.getChunk().getZ();
-        return chunkX + "_" + chunkZ;
     }
 
     /**
@@ -300,6 +302,37 @@ public class GravesXAPI {
             plugin.getCacheManager().getRemovedItemStackMap().remove(livingEntity.getUniqueId());
         }
         return removedItemStackList;
+    }
+
+    private void placeGraveBlocks(Grave grave, Map<Location, BlockData.BlockType> locationMap, LivingEntity livingEntity) {
+        for (Map.Entry<Location, BlockData.BlockType> entry : locationMap.entrySet()) {
+            Location location = entry.getKey().clone();
+            int offsetX = 0;
+            int offsetY = 0;
+            int offsetZ = 0;
+            switch (entry.getValue()) {
+                case DEATH:
+                    break;
+                case NORMAL:
+                    offsetX = plugin.getConfig("placement.offset.x", grave).getInt("placement.offset.x");
+                    offsetY = plugin.getConfig("placement.offset.y", grave).getInt("placement.offset.y");
+                    offsetZ = plugin.getConfig("placement.offset.z", grave).getInt("placement.offset.z");
+                    break;
+                case GRAVEYARD:
+                    offsetX = plugin.getConfig().getInt("settings.graveyard.offset.x");
+                    offsetY = plugin.getConfig().getInt("settings.graveyard.offset.y");
+                    offsetZ = plugin.getConfig().getInt("settings.graveyard.offset.z");
+                    break;
+            }
+            location.add(offsetX, offsetY, offsetZ);
+            GraveBlockPlaceEvent graveBlockPlaceEvent = new GraveBlockPlaceEvent(grave, location, entry.getValue(), entry.getKey().getBlock(), livingEntity);
+            plugin.getServer().getPluginManager().callEvent(graveBlockPlaceEvent);
+            if (!graveBlockPlaceEvent.isCancelled()) {
+                plugin.getGraveManager().placeGrave(graveBlockPlaceEvent.getLocation(), grave);
+                plugin.getEntityManager().sendMessage("message.block", livingEntity, location, grave);
+                plugin.getEntityManager().runCommands("event.command.block", livingEntity, graveBlockPlaceEvent.getLocation(), grave);
+            }
+        }
     }
 
     /**
