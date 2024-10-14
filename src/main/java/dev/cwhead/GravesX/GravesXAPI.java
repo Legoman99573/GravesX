@@ -45,8 +45,6 @@ public class GravesXAPI {
         instance = this;
     }
 
-    //TODO Implement API methods
-
     /**
      * Creates a grave for an entity with the basic parameters.
      *
@@ -303,11 +301,7 @@ public class GravesXAPI {
                 cacheManager.getGraveMap().put(grave.getUUID(), grave);
                 grave.setLocationDeath(finalLocationDeath);
                 grave.setInventory(graveManager.getGraveInventory(grave, (LivingEntity) victim, itemStackList, getRemovedItemStacks((LivingEntity) victim), null));
-                if (equipmentMap != null) {
-                    grave.setEquipmentMap(equipmentMap);
-                } else {
-                    grave.setEquipmentMap(!versionManager.is_v1_7() ? entityManager.getEquipmentMap((LivingEntity) victim, grave) : new HashMap<>());
-                }
+                grave.setEquipmentMap(equipmentMap != null ? equipmentMap : !versionManager.is_v1_7() ? entityManager.getEquipmentMap((LivingEntity) victim, grave) : new HashMap<>());
                 dataManager.addGrave(grave);
                 if (integrationManager.hasMultiPaper()) {
                     integrationManager.getMultiPaper().notifyGraveCreation(grave);
