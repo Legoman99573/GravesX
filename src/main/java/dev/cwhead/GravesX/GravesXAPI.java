@@ -46,6 +46,30 @@ public class GravesXAPI {
     }
 
     //TODO Implement API methods
+
+    /**
+     * Creates a grave for an entity with the basic parameters.
+     *
+     * @param victim              The entity that died.
+     * @param killerEntityType    The entity type of the killer.
+     * @param timeAliveRemaining  The remaining time the grave will stay alive.
+     */
+    public void createGrave(@NotNull Entity victim, @Nullable EntityType killerEntityType, long timeAliveRemaining) {
+        createGrave(victim, null, killerEntityType,  null, null, null, 0, timeAliveRemaining, null, false, 0);
+    }
+
+    /**
+     * Creates a grave for an entity with the basic parameters.
+     *
+     * @param victim              The entity that died.
+     * @param killerEntityType    The entity type of the killer.
+     * @param experience          The experience the victim had.
+     * @param timeAliveRemaining  The remaining time the grave will stay alive.
+     */
+    public void createGrave(@NotNull Entity victim, @Nullable EntityType killerEntityType, int experience, long timeAliveRemaining) {
+        createGrave(victim, null, killerEntityType,  null, null, null, experience, timeAliveRemaining, null, false, 0);
+    }
+
     /**
      * Creates a grave for an entity with the basic parameters.
      *
@@ -343,6 +367,80 @@ public class GravesXAPI {
                 plugin.getEntityManager().runCommands("event.command.block", livingEntity, graveBlockPlaceEvent.getLocation(), grave);
             }
         }
+    }
+
+    /**
+     * Removes the specified grave from the grave manager.
+     *
+     * @param grave the grave to be removed
+     */
+    public void removeGrave(Grave grave) {
+        GraveManager graveManager = plugin.getGraveManager();
+        graveManager.removeGrave(grave);
+    }
+
+    /**
+     * Breaks the specified grave, triggering its removal and handling any related events.
+     *
+     * @param grave the grave to be broken
+     */
+    public void breakGrave(Grave grave) {
+        GraveManager graveManager = plugin.getGraveManager();
+        graveManager.breakGrave(grave);
+    }
+
+    /**
+     * Breaks the specified grave at a given location.
+     *
+     * @param location the location where the grave is located
+     * @param grave the grave to be broken
+     */
+    public void breakGrave(Location location, Grave grave) {
+        GraveManager graveManager = plugin.getGraveManager();
+        graveManager.breakGrave(location, grave);
+    }
+
+    /**
+     * Automatically loots the specified grave for the given entity at the given location.
+     *
+     * @param entity the entity that will loot the grave
+     * @param location the location of the grave
+     * @param grave the grave to be looted
+     */
+    public void autoLootGrave(Entity entity, Location location, Grave grave) {
+        GraveManager graveManager = plugin.getGraveManager();
+        graveManager.autoLootGrave(entity, location, grave);
+    }
+
+    /**
+     * Marks the specified grave as abandoned, preventing further interaction.
+     *
+     * @param grave the grave to be abandoned
+     */
+    public void abandonGrave(Grave grave) {
+        GraveManager graveManager = plugin.getGraveManager();
+        graveManager.abandonGrave(grave);
+    }
+
+    /**
+     * Drops the items stored in the specified grave at the given location.
+     *
+     * @param location the location where the items will be dropped
+     * @param grave the grave whose items are to be dropped
+     */
+    public void dropGraveItems(Location location, Grave grave) {
+        GraveManager graveManager = plugin.getGraveManager();
+        graveManager.dropGraveItems(location, grave);
+    }
+
+    /**
+     * Removes the oldest grave associated with the specified living entity.
+     *
+     * @param livingEntity the entity whose oldest grave will be removed
+     */
+    public void removeOldestGrave(LivingEntity livingEntity) {
+        GraveManager graveManager = plugin.getGraveManager();
+        graveManager.removeOldestGrave(livingEntity);
     }
 
     /**
