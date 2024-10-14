@@ -1,0 +1,32 @@
+name: Auto Close Invalid Issues
+
+on:
+  issues:
+    types:
+      - labeled
+
+jobs:
+  close_and_lock_invalid_issues:
+    runs-on: ubuntu-latest
+    if: github.event.label.name == 'invalid'
+    steps:
+      - name: Close issue
+        uses: peter-evans/close-issue@v2
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          comment: |
+            This issue has been marked as invalid and is being closed automatically for one or more of the following reasons:
+            
+            - Missing dump using ``/graves dump``
+            - Missing Minecraft Version (didn't provide a dump before hand)
+            - Missing steps to reproduce the bug or not providing anything that would help trace the bug
+            - Didn't use template
+            - Using an out of date version when reporting a bug
+            - Using a Plugin Manager
+
+            Please review the issue guidelines and open a new issue if necessary, ensuring all required information is provided.
+
+      - name: Lock issue
+        uses: peter-evans/lock-threads@v3
+        with:
+          issue-number: ${{ github.event.issue.number }}
