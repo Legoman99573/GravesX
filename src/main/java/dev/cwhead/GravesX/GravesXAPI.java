@@ -244,7 +244,7 @@ public class GravesXAPI {
         grave.setTimeAliveRemaining(timeAliveRemaining);
         grave.setTimeCreation(System.currentTimeMillis());
         grave.setTimeAlive(timeAliveRemaining);
-        Location finalLocationDeath = locationDeath != null ? locationManager.getSafeGraveLocation((LivingEntity) victim, locationDeath, grave) : locationManager.getSafeGraveLocation((LivingEntity) victim, victim.getLocation(), grave);
+        Location finalLocationDeath = locationDeath != null ? locationDeath : locationManager.getSafeGraveLocation((LivingEntity) victim, victim.getLocation(), grave);
         if (killer != null) {
             grave.setKillerType(killerEntityType != null ? killerEntityType : EntityType.PLAYER);
             grave.setKillerName(killer.getName());
