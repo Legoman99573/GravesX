@@ -56,7 +56,7 @@ public class GravesXAPI {
      * @param experience          The experience the victim had.
      * @param timeAliveRemaining  The remaining time the grave will stay alive.
      */
-    public void createGrave(@NotNull Entity victim, @NotNull EntityType killerEntityType, @NotNull Map<EquipmentSlot, ItemStack> equipmentMap, @NotNull List<ItemStack> itemStackList, int experience, long timeAliveRemaining) {
+    public void createGrave(@NotNull Entity victim, @Nullable EntityType killerEntityType, @Nullable Map<EquipmentSlot, ItemStack> equipmentMap, @Nullable List<ItemStack> itemStackList, int experience, long timeAliveRemaining) {
         createGrave(victim, null, killerEntityType,  null, equipmentMap, itemStackList, experience, timeAliveRemaining, null, false, 0);
     }
 
@@ -72,7 +72,7 @@ public class GravesXAPI {
      * @param graveProtection     Whether the grave is protected.
      * @param graveProtectionTime The time for which the grave remains protected.
      */
-    public void createGrave(@NotNull Entity victim, @NotNull EntityType killerEntityType, @NotNull Map<EquipmentSlot, ItemStack> equipmentMap, @NotNull List<ItemStack> itemStackList, int experience, long timeAliveRemaining, boolean graveProtection, long graveProtectionTime) {
+    public void createGrave(@NotNull Entity victim, @Nullable EntityType killerEntityType, @Nullable Map<EquipmentSlot, ItemStack> equipmentMap, @Nullable List<ItemStack> itemStackList, int experience, long timeAliveRemaining, boolean graveProtection, long graveProtectionTime) {
         createGrave(victim, null, killerEntityType,  null, equipmentMap, itemStackList, experience, timeAliveRemaining, null, graveProtection, graveProtectionTime);
     }
 
@@ -85,10 +85,10 @@ public class GravesXAPI {
      * @param itemStackList       The list of items the victim had at the time of death.
      * @param experience          The experience the victim had.
      * @param timeAliveRemaining  The remaining time the grave will stay alive.
-     * @param storageType         The type of storage used for the grave (nullable).
+     * @param damageCause         Damage Caused (nullable).
      */
-    public void createGrave(@NotNull Entity victim, @NotNull EntityType killerEntityType, @NotNull Map<EquipmentSlot, ItemStack> equipmentMap, @NotNull List<ItemStack> itemStackList, int experience, long timeAliveRemaining, @Nullable StorageType storageType) {
-        createGrave(victim, null, killerEntityType,  null, equipmentMap, itemStackList, experience, timeAliveRemaining, storageType, false, 0);
+    public void createGrave(@NotNull Entity victim, @Nullable EntityType killerEntityType, @Nullable Map<EquipmentSlot, ItemStack> equipmentMap, @Nullable List<ItemStack> itemStackList, int experience, long timeAliveRemaining, @Nullable EntityDamageEvent.DamageCause damageCause) {
+        createGrave(victim, null, killerEntityType,  null, equipmentMap, itemStackList, experience, timeAliveRemaining, damageCause, false, 0);
     }
 
     /**
@@ -100,12 +100,12 @@ public class GravesXAPI {
      * @param itemStackList       The list of items the victim had at the time of death.
      * @param experience          The experience the victim had.
      * @param timeAliveRemaining  The remaining time the grave will stay alive.
-     * @param storageType         The type of storage used for the grave (nullable).
+     * @param damageCause         Damage Caused (nullable).
      * @param graveProtection     Whether the grave is protected.
      * @param graveProtectionTime The time for which the grave remains protected.
      */
-    public void createGrave(@NotNull Entity victim, @NotNull EntityType killerEntityType, @NotNull Map<EquipmentSlot, ItemStack> equipmentMap, @NotNull List<ItemStack> itemStackList, int experience, long timeAliveRemaining, @Nullable StorageType storageType, boolean graveProtection, long graveProtectionTime) {
-        createGrave(victim, null, killerEntityType,  null, equipmentMap, itemStackList, experience, timeAliveRemaining, storageType, graveProtection, graveProtectionTime);
+    public void createGrave(@NotNull Entity victim, @Nullable EntityType killerEntityType, @Nullable Map<EquipmentSlot, ItemStack> equipmentMap, @Nullable List<ItemStack> itemStackList, int experience, long timeAliveRemaining, @Nullable EntityDamageEvent.DamageCause damageCause, boolean graveProtection, long graveProtectionTime) {
+        createGrave(victim, null, killerEntityType,  null, equipmentMap, itemStackList, experience, timeAliveRemaining, damageCause, graveProtection, graveProtectionTime);
     }
 
     /**
@@ -119,8 +119,8 @@ public class GravesXAPI {
      * @param experience          The experience the victim had.
      * @param timeAliveRemaining  The remaining time the grave will stay alive.
      */
-    public void createGrave(@NotNull Entity victim, @NotNull EntityType killerEntityType, @Nullable Location locationDeath, @NotNull Map<EquipmentSlot, ItemStack> equipmentMap, @NotNull List<ItemStack> itemStackList, int experience, long timeAliveRemaining, @Nullable StorageType storageType) {
-        createGrave(victim, null, killerEntityType, locationDeath, equipmentMap, itemStackList, experience, timeAliveRemaining, storageType, false, 0);
+    public void createGrave(@NotNull Entity victim, @Nullable EntityType killerEntityType, @Nullable Location locationDeath, @Nullable Map<EquipmentSlot, ItemStack> equipmentMap, @Nullable List<ItemStack> itemStackList, int experience, long timeAliveRemaining, @Nullable EntityDamageEvent.DamageCause damageCause) {
+        createGrave(victim, null, killerEntityType, locationDeath, equipmentMap, itemStackList, experience, timeAliveRemaining, damageCause, false, 0);
     }
 
     /**
@@ -136,8 +136,8 @@ public class GravesXAPI {
      * @param graveProtection     Whether the grave is protected.
      * @param graveProtectionTime The time for which the grave remains protected.
      */
-    public void createGrave(@NotNull Entity victim, @NotNull EntityType killerEntityType, @Nullable Location locationDeath, @NotNull Map<EquipmentSlot, ItemStack> equipmentMap, @NotNull List<ItemStack> itemStackList, int experience, long timeAliveRemaining, @Nullable StorageType storageType, boolean graveProtection, long graveProtectionTime) {
-        createGrave(victim, null, killerEntityType, locationDeath, equipmentMap, itemStackList, experience, timeAliveRemaining, storageType, graveProtection, graveProtectionTime);
+    public void createGrave(@NotNull Entity victim, @Nullable EntityType killerEntityType, @Nullable Location locationDeath, @NotNull Map<EquipmentSlot, ItemStack> equipmentMap, @NotNull List<ItemStack> itemStackList, int experience, long timeAliveRemaining, @Nullable EntityDamageEvent.DamageCause damageCause, boolean graveProtection, long graveProtectionTime) {
+        createGrave(victim, null, killerEntityType, locationDeath, equipmentMap, itemStackList, experience, timeAliveRemaining, damageCause, graveProtection, graveProtectionTime);
     }
 
     /**
@@ -151,7 +151,7 @@ public class GravesXAPI {
      * @param experience          The experience the victim had.
      * @param timeAliveRemaining  The remaining time the grave will stay alive.
      */
-    public void createGrave(@NotNull Entity victim, @NotNull EntityType killerEntityType, @Nullable Location locationDeath, @NotNull Map<EquipmentSlot, ItemStack> equipmentMap, @NotNull List<ItemStack> itemStackList, int experience, long timeAliveRemaining) {
+    public void createGrave(@NotNull Entity victim, @Nullable EntityType killerEntityType, @Nullable Location locationDeath, @NotNull Map<EquipmentSlot, ItemStack> equipmentMap, @NotNull List<ItemStack> itemStackList, int experience, long timeAliveRemaining) {
         createGrave(victim, null, killerEntityType, locationDeath, equipmentMap, itemStackList, experience, timeAliveRemaining, null, false, 0);
     }
 
@@ -168,7 +168,7 @@ public class GravesXAPI {
      * @param graveProtection     Whether the grave is protected.
      * @param graveProtectionTime The time for which the grave remains protected.
      */
-    public void createGrave(@NotNull Entity victim, @NotNull EntityType killerEntityType, @Nullable Location locationDeath, @NotNull Map<EquipmentSlot, ItemStack> equipmentMap, @NotNull List<ItemStack> itemStackList, int experience, long timeAliveRemaining, boolean graveProtection, long graveProtectionTime) {
+    public void createGrave(@NotNull Entity victim, @Nullable EntityType killerEntityType, @Nullable Location locationDeath, @Nullable Map<EquipmentSlot, ItemStack> equipmentMap, @Nullable List<ItemStack> itemStackList, int experience, long timeAliveRemaining, boolean graveProtection, long graveProtectionTime) {
         createGrave(victim, null, killerEntityType, locationDeath, equipmentMap, itemStackList, experience, timeAliveRemaining, null, graveProtection, graveProtectionTime);
     }
 
@@ -184,7 +184,7 @@ public class GravesXAPI {
      * @param experience          The experience the victim had.
      * @param timeAliveRemaining  The remaining time the grave will stay alive.
      */
-    public void createGrave(@NotNull Entity victim, @Nullable Entity killer, @NotNull EntityType killerEntityType, @Nullable Location locationDeath, @NotNull Map<EquipmentSlot, ItemStack> equipmentMap, @NotNull List<ItemStack> itemStackList, int experience, long timeAliveRemaining) {
+    public void createGrave(@NotNull Entity victim, @Nullable Entity killer, @Nullable EntityType killerEntityType, @Nullable Location locationDeath, @Nullable Map<EquipmentSlot, ItemStack> equipmentMap, @Nullable List<ItemStack> itemStackList, int experience, long timeAliveRemaining) {
         createGrave(victim, killer, killerEntityType, locationDeath, equipmentMap, itemStackList, experience, timeAliveRemaining, null, false, 0);
     }
 
@@ -202,7 +202,7 @@ public class GravesXAPI {
      * @param graveProtection     Whether the grave is protected.
      * @param graveProtectionTime The time for which the grave remains protected.
      */
-    public void createGrave(@NotNull Entity victim, @Nullable Entity killer, @NotNull EntityType killerEntityType, @Nullable Location locationDeath, @NotNull Map<EquipmentSlot, ItemStack> equipmentMap, @NotNull List<ItemStack> itemStackList, int experience, long timeAliveRemaining, boolean graveProtection, long graveProtectionTime) {
+    public void createGrave(@NotNull Entity victim, @Nullable Entity killer, @Nullable EntityType killerEntityType, @Nullable Location locationDeath, @Nullable Map<EquipmentSlot, ItemStack> equipmentMap, @Nullable List<ItemStack> itemStackList, int experience, long timeAliveRemaining, boolean graveProtection, long graveProtectionTime) {
         createGrave(victim, killer, killerEntityType, locationDeath, equipmentMap, itemStackList, experience, timeAliveRemaining, null, graveProtection, graveProtectionTime);
     }
 
@@ -217,17 +217,18 @@ public class GravesXAPI {
      * @param itemStackList       The list of items the victim had at the time of death.
      * @param experience          The experience the victim had.
      * @param timeAliveRemaining  The remaining time the grave will stay alive.
-     * @param storageType         The type of storage used for the grave (nullable).
+     * @param damageCause         Damage Caused (nullable).
      * @param graveProtection     Whether the grave is protected.
      * @param graveProtectionTime The time for which the grave remains protected.
      */
-    public void createGrave(@NotNull Entity victim, @Nullable Entity killer, @NotNull EntityType killerEntityType, @Nullable Location locationDeath, @Nullable Map<EquipmentSlot, ItemStack> equipmentMap, @Nullable List<ItemStack> itemStackList, int experience, long timeAliveRemaining, @Nullable StorageType storageType, boolean graveProtection, long graveProtectionTime) {
+    public void createGrave(@NotNull Entity victim, @Nullable Entity killer, @Nullable EntityType killerEntityType, @Nullable Location locationDeath, @Nullable Map<EquipmentSlot, ItemStack> equipmentMap, @Nullable List<ItemStack> itemStackList, int experience, long timeAliveRemaining, @Nullable EntityDamageEvent.DamageCause damageCause, boolean graveProtection, long graveProtectionTime) {
         GraveManager graveManager = plugin.getGraveManager();
         DataManager dataManager = plugin.getDataManager();
         IntegrationManager integrationManager = plugin.getIntegrationManager();
         VersionManager versionManager = plugin.getVersionManager();
         LocationManager locationManager = plugin.getLocationManager();
         EntityManager entityManager = plugin.getEntityManager();
+        CacheManager cacheManager = plugin.getCacheManager();
 
         Map<Location, BlockData.BlockType> locationMap = new HashMap<>();
         Grave grave = graveManager.createGrave(victim, itemStackList);
@@ -239,16 +240,24 @@ public class GravesXAPI {
         grave.setPermissionList(null);
         grave.setYaw(victim.getLocation().getYaw());
         grave.setPitch(victim.getLocation().getPitch());
+        grave.setExperience(experience);
+        grave.setTimeAliveRemaining(timeAliveRemaining);
+        grave.setTimeCreation(System.currentTimeMillis());
+        grave.setTimeAlive(timeAliveRemaining);
         Location finalLocationDeath = locationDeath != null ? locationManager.getSafeGraveLocation((LivingEntity) victim, locationDeath, grave) : locationManager.getSafeGraveLocation((LivingEntity) victim, victim.getLocation(), grave);
         if (killer != null) {
-            grave.setKillerType(EntityType.PLAYER);
+            grave.setKillerType(killerEntityType != null ? killerEntityType : EntityType.PLAYER);
             grave.setKillerName(killer.getName());
             grave.setKillerNameDisplay(killer.getCustomName());
             grave.setKillerUUID(killer.getUniqueId());
         } else {
             grave.setKillerUUID(null);
             grave.setKillerType(null);
-            grave.setKillerName(graveManager.getDamageReason(victim.getLastDamageCause() != null ? victim.getLastDamageCause().getCause() : EntityDamageEvent.DamageCause.valueOf("KILLED"), grave));
+            EntityDamageEvent.DamageCause finalDamageCause = EntityDamageEvent.DamageCause.valueOf("KILL");
+            if (damageCause != null) {
+                finalDamageCause = damageCause;
+            }
+            grave.setKillerName(graveManager.getDamageReason(victim.getLastDamageCause() != null ? victim.getLastDamageCause().getCause() : EntityDamageEvent.DamageCause.valueOf(String.valueOf(finalDamageCause)), grave));
             grave.setKillerNameDisplay(grave.getKillerName());
         }
 
@@ -267,6 +276,7 @@ public class GravesXAPI {
             if (!createGrave.isCancelled()) {
                 locationMap.put(finalLocationDeath, BlockData.BlockType.DEATH);
 
+                cacheManager.getGraveMap().put(grave.getUUID(), grave);
                 grave.setLocationDeath(finalLocationDeath);
                 grave.setInventory(graveManager.getGraveInventory(grave, (LivingEntity) victim, itemStackList, getRemovedItemStacks((LivingEntity) victim), null));
                 if (equipmentMap != null) {
@@ -350,14 +360,5 @@ public class GravesXAPI {
     public void register() {
         PluginManager pm = plugin.getServer().getPluginManager();
         pm.registerEvents((Listener) this, plugin);
-    }
-
-    /**
-     * Enumeration representing different types of storage modes for the grave.
-     */
-    public enum StorageType {
-        COMPACT,
-        EXACT,
-        CHESTSORT
     }
 }
