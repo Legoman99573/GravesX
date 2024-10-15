@@ -43,7 +43,7 @@ public final class FancyNPCs extends EntityDataManager {
                     npcLocation.add(-0.5, 0, -0.5);
                 }
                 NpcData newNpcData = new NpcData(uuid.toString().replace("-",""), grave.getOwnerUUID(), npcLocation);
-                SkinFetcher.SkinData skin = new SkinFetcher.SkinData(uuid.toString(), null,null);
+                SkinFetcher.SkinData skin = new SkinFetcher.SkinData(id,grave.getOwnerTexture(),grave.getOwnerTextureSignature());
                 Npc newNpc = FancyNpcsPlugin.get().getNpcAdapter().apply(newNpcData);
                 newNpc.getData().setSkin(skin);
                 newNpc.create();
@@ -116,7 +116,9 @@ public final class FancyNPCs extends EntityDataManager {
                     npcLocation.add(-0.5, 0, -0.5);
                 }
                 NpcData newNpcData = new NpcData(grave.getUUID().toString().replace("-",""), grave.getOwnerUUID(), npcLocation);
-                SkinFetcher.SkinData skin = new SkinFetcher.SkinData("corpse", null, null);
+                SkinFetcher.SkinData skin = new SkinFetcher.SkinData("194ffca812294de7ab5386bb5c2686d3",
+                        "ewogICJ0aW1lc3RhbXAiIDogMTcwMDA3NTcyMjAzOSwKICAicHJvZmlsZUlkIiA6ICIxOTRmZmNhODEyMjk0ZGU3YWI1Mzg2YmI1YzI2ODZkMyIsCiAgInByb2ZpbGVOYW1lIiA6ICJDb3Jwc2UiLAogICJzaWduYXR1cmVSZXF1aXJlZCIgOiB0cnVlLAogICJ0ZXh0dXJlcyIgOiB7CiAgICAiU0tJTiIgOiB7CiAgICAgICJ1cmwiIDogImh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNWJmZjJlYzQ0ZWM1MWIzMmVmMzc4YTY1NzIwYzA2MGYzYWRmNzQ5NDVkNDgwNmQ1YjQyZTI1Y2UxNzM2NGViZiIKICAgIH0KICB9Cn0=",
+                        "v2WrGsMU53dyK1xvx6xS5r41XM4mvR6tB/86Tf5CjtQtv5ozjhEaHARHqFChnTl4/oG238alBMoFw6punEdLLJ8vVYSAa0K8CSpm8RT/gGvxpd6JHGsvcOEWEOV2wv0cntBs9BgrvoKvdFz7WyzT7w1PyP/74waU/Z83lBMU9he71DOFgAVnWXIp2PIWttK89hpbSmkrrdMLQ18/bUURQnp082ZinlDa7G2OjRbdpxGluOCKU725rufdnMhMBj5FCuuW8FaApa+6vuDDg6puIJgOXwtRX5/ZTp22UwEaMSegM+aP7oENx3wmm6XHHs3fgsulquRmxDuhAZ+sMi8wnW6lZU+2FWpsIOh4Xehn426iDu5wl4/kFe4RzTXr7G6N4uncgDRVaQQwsM3L/A7TmRbs8rQVrphqhOMvZ5R9fVu668EbMtAJbobofNxsVTRsRA9o7jnusIhmrWwroqVVxpq4k517ZEzDbPHkH/2X/amc7IGoeSLLfngIRYD+n7EUzO5ErQWFS778DiCxtQHKNOrBc/D+Fg9HsoH/Z2rD5dUBcxQ5DhprgMGGbaLDoQXjFul0mkE4Rg5yubonK+Ccvwmtv2s37sj1FwEJwllSFxvhmjxifTjSCaVoXJnsGJEZf3Zok9g2qk9gBzbgM1V2Ub8iOMupRs4JET9WR8+XIEk=");
                 Npc newNpc = FancyNpcsPlugin.get().getNpcAdapter().apply(newNpcData);
                 newNpc.getData().setSkin(skin);
                 newNpc.create();
