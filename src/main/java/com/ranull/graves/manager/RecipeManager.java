@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-/**
+/**6
  * Manages custom recipes for the Graves plugin.
  */
 public final class RecipeManager {
@@ -77,9 +77,9 @@ public final class RecipeManager {
      * Unloads the custom recipes.
      */
     public void unload() {
-        Iterator<Recipe> iterator = Bukkit.recipeIterator();
 
         try {
+            Iterator<Recipe> iterator = Bukkit.recipeIterator();
             while (iterator.hasNext()) {
                 Recipe recipe = iterator.next();
 
@@ -91,7 +91,7 @@ public final class RecipeManager {
                     }
                 }
             }
-        } catch (ArrayIndexOutOfBoundsException ignored) {
+        } catch (Exception ignored) {
             // End the loop if the exception occurs
         }
     }
@@ -195,6 +195,9 @@ public final class RecipeManager {
                 for (String string : lineList.get(0).split(" ")) {
                     Material material = Material.matchMaterial(string);
 
+                    if (material == null || material.toString().contains("AIR")) {
+                        shapedRecipe.setIngredient(getChar(recipeKey), Material.AIR);
+                    }
                     if (material != null && material != Material.AIR) {
                         shapedRecipe.setIngredient(getChar(recipeKey), material);
                     }
