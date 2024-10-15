@@ -11,7 +11,7 @@ jobs:
     if: github.event.label.name == 'invalid'
     steps:
       - name: Close issue
-        uses: peter-evans/close-issue@v2
+        uses: peter-evans/close-issue@v3
         with:
           issue-number: ${{ github.event.issue.number }}
           comment: |
