@@ -202,7 +202,7 @@ public class Graves extends JavaPlugin {
         LibraryLoaderUtil libraryLoaderUtil = new LibraryLoaderUtil(this);
 
         libraryLoaderUtil.loadLibrary("com{}zaxxer", "HikariCP", "6.0.0", "com{}zaxxer{}hikari", "com{}ranull{}graves{}libraries{}hikari", false);
-        libraryLoaderUtil.loadLibrary("org{}xerial", "sqlite-jdbc", "3.46.0.0", false);
+        libraryLoaderUtil.loadLibrary("org{}xerial", "sqlite-jdbc", "3.46.1.3", false);
         try {
             Class.forName("org.json.JSONObject");
         } catch (ClassNotFoundException e) {
