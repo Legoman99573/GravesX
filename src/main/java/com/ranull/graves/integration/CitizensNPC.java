@@ -113,6 +113,17 @@ public final class CitizensNPC extends EntityDataManager {
                     // Create NPC name from location
                     String npcName = getNPCNameFromLocation(npcLocation);
                     NPC npc = CitizensAPI.getNPCRegistry().createNPC(EntityType.PLAYER, npcName);
+                    try {
+                        double x = plugin.getConfig("citizens.corpse.offset.x", grave)
+                                .getDouble("citizens.corpse.offset.x");
+                        double y = plugin.getConfig("citizens.corpse.offset.y", grave)
+                                .getDouble("citizens.corpse.offset.y");
+                        double z = plugin.getConfig("citizens.corpse.offset.z", grave)
+                                .getDouble("citizens.corpse.offset.z");
+                        npcLocation.add( x, y, z);
+                    } catch (IllegalArgumentException handled) {
+                        npcLocation.add(0.5, 0.0, 0.5);
+                    }
                     npc.spawn(npcLocation);
                     npc.data().setPersistent(NPC.Metadata.DEFAULT_PROTECTED, true);
                     npc.data().setPersistent(NPC.Metadata.FLYABLE, true);
@@ -139,19 +150,6 @@ public final class CitizensNPC extends EntityDataManager {
                     }
                     team.addEntry(npc.getName());
                     NMS.setTeamNameTagVisible(team, false); // doesnt work
-
-                    Location npcTeleportLocation = npc.getStoredLocation();
-                    try {
-                        double x = plugin.getConfig("citizens.corpse.offset.x", grave)
-                                .getDouble("citizens.corpse.offset.x");
-                        double y = plugin.getConfig("citizens.corpse.offset.y", grave)
-                                .getDouble("citizens.corpse.offset.y");
-                        double z = plugin.getConfig("citizens.corpse.offset.z", grave)
-                                .getDouble("citizens.corpse.offset.z");
-                        npcTeleportLocation.add( x + 20.0, y, z);
-                    } catch (IllegalArgumentException handled) {
-                        npcTeleportLocation.add(20.0, 0.0, 0);
-                    }
 
                     npc.data().setPersistent(NPC.Metadata.COLLIDABLE, plugin.getConfig("citizens.corpse.collide", grave).getBoolean("citizens.corpse.collide"));
 
@@ -229,7 +227,6 @@ public final class CitizensNPC extends EntityDataManager {
 
                     npc.data().setPersistent("grave_uuid", grave.getUUID().toString());
 
-                    npc.teleport(npcTeleportLocation, PlayerTeleportEvent.TeleportCause.PLUGIN);
                     plugin.debugMessage("Spawning Citizens NPC for " + grave.getUUID() + " at "
                             + npcLocation.getWorld().getName() + ", " + (npcLocation.getBlockX() + 0.5) + "x, "
                             + (npcLocation.getBlockY() + 0.5) + "y, " + (npcLocation.getBlockZ() + 0.5) + "z", 1);
