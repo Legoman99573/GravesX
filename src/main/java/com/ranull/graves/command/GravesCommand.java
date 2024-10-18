@@ -2,6 +2,7 @@ package com.ranull.graves.command;
 
 import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
@@ -17,6 +18,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Handles command execution and tab completion for the Graves plugin.
@@ -216,7 +218,22 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
             } else if (args[0].equals("purge") && (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.debug", ((Player) commandSender).getPlayer()))) {
                 if (args.length == 2) {
                     stringList.add("graves");
+                    stringList.add("grave");
+                    stringList.add("player");
+                    stringList.add("offline-player");
                     stringList.add("holograms");
+                    stringList.add("hologram");
+                }
+                if (args.length == 3 && args[1].equals("offline-player")) {
+                    Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                        for (OfflinePlayer offlinePlayer : Bukkit.getOfflinePlayers()) {
+                            if (offlinePlayer.hasPlayedBefore() && offlinePlayer.getName() != null) {
+                                synchronized (stringList) {
+                                    stringList.add(offlinePlayer.getName());
+                                }
+                            }
+                        }
+                    });
                 }
 
             } else if (plugin.getRecipeManager() != null && args[0].equalsIgnoreCase("givetoken")
@@ -449,7 +466,7 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
 
     private void handlePurgeCommand(CommandSender commandSender, String[] args) {
         if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.purge", ((Player) commandSender).getPlayer())) {
-            if (args.length > 1 && !args[1].equalsIgnoreCase("graves") && !args[1].equalsIgnoreCase("grave")) {
+            if (args.length > 1 && !args[1].equalsIgnoreCase("graves") && !args[1].equalsIgnoreCase("grave") && args.length > 1 && !args[1].equalsIgnoreCase("offline-player") && !args[1].equalsIgnoreCase("player")) {
                 if (args[1].equalsIgnoreCase("holograms") || args[1].equalsIgnoreCase("hologram")) {
                     int count = 0;
 
@@ -464,6 +481,69 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
 
                     commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » "
                             + ChatColor.RESET + count + " holograms purged.");
+                }
+            } else if (args.length > 1 && !args[1].equalsIgnoreCase("graves") && !args[1].equalsIgnoreCase("grave")) {
+                if (args[1].equalsIgnoreCase("player")) {
+                    if (args.length < 3) {
+                        commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
+                                + "Please specify a player's name.");
+                        return;
+                    }
+                    List<Grave> graveList = new ArrayList<>(plugin.getCacheManager().getGraveMap().values());
+
+                    String targetPlayerName = args[2];
+                    Player targetPlayer = Bukkit.getPlayer(targetPlayerName);
+
+                    if (targetPlayer == null) {
+                        commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
+                                + "Player not found or not online.");
+                        return;
+                    }
+                    UUID playerUUID = targetPlayer.getUniqueId();
+
+
+                    for (Grave grave : graveList) {
+                        if (grave.getOwnerUUID().equals(playerUUID)) {
+                            plugin.getGraveManager().removeGrave(grave);
+                        }
+                    }
+
+                    commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
+                            + "Graves of player " + targetPlayerName + " purged.");
+                } else if (args[1].equalsIgnoreCase("offline-player")) {
+                    if (args.length < 3) {
+                        commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
+                                + "Please specify an offline player's name.");
+                        return;
+                    }
+
+                    String targetPlayerName = args[2];
+                    OfflinePlayer targetOfflinePlayer = Bukkit.getOfflinePlayer(targetPlayerName);
+
+                    if (!targetOfflinePlayer.hasPlayedBefore()) {
+                        commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
+                                + "Player not found or has never played on this server.");
+                        return;
+                    }
+
+                    UUID playerUUID = targetOfflinePlayer.getUniqueId();
+                    List<Grave> graveList = new ArrayList<>(plugin.getCacheManager().getGraveMap().values());
+
+                    boolean graveFound = false;
+                    for (Grave grave : graveList) {
+                        if (grave.getOwnerUUID().equals(playerUUID)) {
+                            plugin.getGraveManager().removeGrave(grave);
+                            graveFound = true;
+                        }
+                    }
+
+                    if (graveFound) {
+                        commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
+                                + "Graves of offline player " + targetPlayerName + " purged.");
+                    } else {
+                        commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
+                                + "No graves found for offline player " + targetPlayerName + ".");
+                    }
                 }
             } else {
                 List<Grave> graveList = new ArrayList<>(plugin.getCacheManager().getGraveMap().values());
