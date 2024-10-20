@@ -9,6 +9,7 @@ import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.*;
 import org.apache.commons.lang3.StringUtils;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.EntityType;
@@ -1356,10 +1357,11 @@ public final class DataManager {
                     // Ensure required fields are valid
                     if (replaceMaterial != null && replaceData != null) {
                         getChunkData(location).addBlockData(new BlockData(location, uuidGrave, replaceMaterial, replaceData));
-                        blockCount++;
                     } else {
-                        plugin.getLogger().warning("Data is missing or invalid in result set for location: " + location);
+                        getChunkData(location).addBlockData(new BlockData(location, uuidGrave, "AIR", "minecraft:air"));
+                        plugin.getLogger().warning("Block Data for grave \"" + uuidGrave + "\" is missing or is invalid. Material/Block set to Air.");
                     }
+                    blockCount++;
                 }
 
                 if (blockCount == 0) {
