@@ -110,6 +110,29 @@ settings:
       # Only increase if your connection keeps timing out.
       connectionTimeout: 30000
 
+      # Web server information for H2 Database
+      web-server:
+        # It is recommended to keep this set to false in a production environment for security reasons.
+        # If you enable this, be aware that in a Docker container, the web server may be accessible from remote connections.
+        enabled: false
+        # The address that the web server will bind to. It is highly recommended to keep this as "127.0.0.1"
+        # to restrict access to the local machine. You can change it to "0.0.0.0" to allow access from other machines.
+        webBindAddress: "127.0.0.1"
+        # The port on which the web server will listen. If you do not set a password for access,
+        # consider changing this to a non-default port to enhance security.
+        webPort: 8082
+        # Controls whether to allow remote connections to the web server.
+        # Setting this to false restricts access to local connections only.
+        allowOthers: false
+        # SSL configuration for secure connections to the web server.
+        ssl:
+          # Enable SSL for secure connections to the web server. It is recommended to enable this for remote access.
+          enabled: false
+          # Path to the keystore file containing the SSL certificate and private key.
+          keyStore: "/path/to/keystore.jks"
+          # Password for the keystore file.
+          keyStorePassword: "your-keystore-password"
+
     mssql:
       # The hostname or IP address of the MS SQL server.
       host: "localhost"

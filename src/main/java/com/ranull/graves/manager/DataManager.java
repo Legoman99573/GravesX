@@ -15,6 +15,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.entity.EntityType;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.h2.tools.Server;
 
 import java.io.File;
 import java.sql.*;
@@ -53,6 +54,15 @@ public final class DataManager {
      * </p>
      */
     private HikariDataSource dataSource;
+
+    /**
+     * The webserver for H2.
+     * <p>
+     * This {@link Server} provides the connection pool for interacting with the database.
+     * </p>
+     */
+    private Server webServer;  // H2 Web Server
+
 
     /**
      * Initializes the DataManager with the specified plugin instance and sets up the database connection.
@@ -533,6 +543,8 @@ public final class DataManager {
         long maxLifetime = plugin.getConfig().getLong("settings.storage.h2.maxLifetime", 1800000);
         int maxConnections = plugin.getConfig().getInt("settings.storage.h2.maxConnections", 50); // Increased pool size
         long connectionTimeout = plugin.getConfig().getLong("settings.storage.h2.connectionTimeout", 30000);
+        boolean webserverEnabled = plugin.getConfig().getBoolean("settings.storage.h2.web-server.enabled", false);
+
 
         config.setJdbcUrl("jdbc:h2:file:./" + filePath + ";AUTO_SERVER=TRUE");
         config.setUsername(username);
@@ -559,6 +571,48 @@ public final class DataManager {
         config.setIdleTimeout(600000); // 10 minutes
         config.setConnectionTestQuery("SELECT 1");
         config.setLeakDetectionThreshold(15000); // Detect connection leaks
+
+        if (webserverEnabled) {
+            String webBindAddress = plugin.getConfig().getString("settings.storage.h2.web-server.webBindAddress", "127.0.0.1");
+            int webPort = plugin.getConfig().getInt("settings.storage.h2.web-server.webPort", 8082);
+            boolean allowOthers = plugin.getConfig().getBoolean("settings.storage.h2.web-server.allowOthers", false);
+            boolean ssl = plugin.getConfig().getBoolean("settings.storage.h2.web-server.ssl.enabled", false);
+            String keyStore = plugin.getConfig().getString("settings.storage.h2.web-server.ssl.keyStore");
+            String keyStorePassword = plugin.getConfig().getString("settings.storage.h2.web-server.ssl.keyStorePassword");
+
+            try {
+                if (allowOthers) {
+                    if (ssl) {
+                        webServer = Server.createWebServer(
+                                "-web",
+                                "-webAllowOthers",
+                                "-webSSL",
+                                "-keyStore", keyStore,
+                                "-keyStorePassword", keyStorePassword,
+                                "-webPort", String.valueOf(webPort),
+                                "-webBindAddress", webBindAddress
+                        ).start();
+                    } else {
+                        webServer = Server.createWebServer(
+                                "-web",
+                                "-webAllowOthers",
+                                "-webPort", String.valueOf(webPort),
+                                "-webBindAddress", webBindAddress
+                        ).start();
+                    }
+                } else {
+                    webServer = Server.createWebServer(
+                            "-web",
+                            "-webPort", String.valueOf(webPort),
+                            "-webBindAddress", webBindAddress
+                    ).start();
+                }
+                plugin.getLogger().info("H2 Web Console started at http://" + webBindAddress + ":" + webPort + "/");
+            } catch (SQLException e) {
+                plugin.getLogger().warning("Failed to start H2 Web Console. Cause: " + e.getCause());
+                plugin.getLogger().warning("H2 Web Console will not be enabled for this session.");
+            }
+        }
     }
 
     /**
