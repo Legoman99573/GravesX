@@ -2262,6 +2262,9 @@ public final class DataManager {
         if (dataSource != null && !dataSource.isClosed()) {
             dataSource.close();
         }
+        if (webServer != null && webServer.isRunning(false)) {
+            webServer.stop();
+        }
     }
 
     /**
