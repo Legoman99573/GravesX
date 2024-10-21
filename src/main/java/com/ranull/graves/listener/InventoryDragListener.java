@@ -111,11 +111,11 @@ public class InventoryDragListener implements Listener {
     private void handleGraveInventoryDrag(InventoryDragEvent event, Player player, Grave grave) {
         if (!grave.getGravePreview()) {
             if (plugin.getEntityManager().canOpenGrave(player, grave)) {
-                // Schedule a task to update the grave's inventory in the data manager
-                plugin.getServer().getScheduler().runTaskLater(plugin, () ->
-                        plugin.getDataManager().updateGrave(grave, "inventory",
-                                InventoryUtil.inventoryToString(grave.getInventory())), 1L);
-            } else {
+//                // Schedule a task to update the grave's inventory in the data manager
+//                plugin.getServer().getScheduler().runTaskLater(plugin, () ->
+//                        plugin.getDataManager().updateGrave(grave, "inventory",
+//                                InventoryUtil.inventoryToString(grave.getInventory())), 1L);
+//            } else {
                 event.setCancelled(true);
             }
         } else {

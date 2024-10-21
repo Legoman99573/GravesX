@@ -122,7 +122,7 @@ public final class CitizensNPC extends EntityDataManager {
                                 .getDouble("citizens.corpse.offset.z");
                         npcLocation.add( x, y, z);
                     } catch (IllegalArgumentException handled) {
-                        npcLocation.add(0.5, 0.0, 0.5);
+                        npcLocation.add(0.5, 0.5, 0.5);
                     }
                     npc.spawn(npcLocation);
                     npc.data().setPersistent(NPC.Metadata.DEFAULT_PROTECTED, true);
