@@ -9,7 +9,6 @@ import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.*;
 import org.apache.commons.lang3.StringUtils;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.EntityType;
@@ -396,52 +395,6 @@ public final class DataManager {
 
         if (type == Type.MYSQL) {
             checkMariaDBasMySQL();
-        }
-
-        if (type == Type.H2) {
-            boolean webserverEnabled = plugin.getConfig().getBoolean("settings.storage.h2.web-server.enabled", false);
-
-            if (webserverEnabled) {
-                String webBindAddress = plugin.getConfig().getString("settings.storage.h2.web-server.webBindAddress", "127.0.0.1");
-                int webPort = plugin.getConfig().getInt("settings.storage.h2.web-server.webPort", 8082);
-                boolean allowOthers = plugin.getConfig().getBoolean("settings.storage.h2.web-server.allowOthers", false);
-                boolean ssl = plugin.getConfig().getBoolean("settings.storage.h2.web-server.ssl.enabled", false);
-                String keyStore = plugin.getConfig().getString("settings.storage.h2.web-server.ssl.keyStore");
-                String keyStorePassword = plugin.getConfig().getString("settings.storage.h2.web-server.ssl.keyStorePassword");
-
-                try {
-                    if (allowOthers) {
-                        if (ssl) {
-                            webServer = Server.createWebServer(
-                                    "-web",
-                                    "-webAllowOthers",
-                                    "-webSSL",
-                                    "-keyStore", keyStore,
-                                    "-keyStorePassword", keyStorePassword,
-                                    "-webPort", String.valueOf(webPort),
-                                    "-webBindAddress", webBindAddress
-                            ).start();
-                        } else {
-                            webServer = Server.createWebServer(
-                                    "-web",
-                                    "-webAllowOthers",
-                                    "-webPort", String.valueOf(webPort),
-                                    "-webBindAddress", webBindAddress
-                            ).start();
-                        }
-                    } else {
-                        webServer = Server.createWebServer(
-                                "-web",
-                                "-webPort", String.valueOf(webPort),
-                                "-webBindAddress", webBindAddress
-                        ).start();
-                    }
-                    plugin.getLogger().info("H2 Web Console started at http://" + webBindAddress + ":" + webPort + "/");
-                } catch (SQLException e) {
-                    plugin.getLogger().warning("Failed to start H2 Web Console. Cause: " + e.getCause());
-                    plugin.getLogger().warning("H2 Web Console will not be enabled for this session.");
-                }
-            }
         }
     }
 
