@@ -21,6 +21,7 @@ import java.util.List;
 /**
  * Handles command execution and tab completion for the Graveyards functionality.
  */
+@Deprecated
 public final class GraveyardsCommand implements CommandExecutor, TabCompleter {
     private final Graves plugin;
 

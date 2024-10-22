@@ -11,6 +11,7 @@ import org.bukkit.block.BlockFace;
 import java.util.HashMap;
 import java.util.Map;
 
+@Deprecated
 public class Graveyard {
     private final String name;
     private final World world;

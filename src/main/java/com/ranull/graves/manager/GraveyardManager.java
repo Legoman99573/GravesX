@@ -15,6 +15,7 @@ import org.bukkit.entity.Player;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
+@Deprecated
 public final class GraveyardManager {
     private final Graves plugin;
     private final Map<String, Graveyard> graveyardMap;
