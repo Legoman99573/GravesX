@@ -682,6 +682,7 @@ public class EntityDeathListener implements Listener {
     private void setupObituary(Grave grave, List<ItemStack> graveItemStackList, LivingEntity livingEntity, Location location) {
         if (plugin.getConfig("obituary.enabled", grave).getBoolean("obituary.enabled")) {
             double percentage = plugin.getConfig("obituary.percent", grave).getDouble("obituary.percent");
+            boolean shouldDrop = plugin.getConfig("obituary.drop", grave).getBoolean("obituary.drop");
 
             // Ensure the percentage is between 0 and 1
             if (percentage < 0) {
@@ -695,9 +696,21 @@ public class EntityDeathListener implements Listener {
                 plugin.getServer().getPluginManager().callEvent(graveObituaryAddEvent);
 
                 if (!graveObituaryAddEvent.isCancelled()) {
-                    Block graveLocation = location.getBlock();
-                    plugin.debugMessage("Obituary added to " + grave.getOwnerName() + "'s Grave at location x: " + graveLocation.getX() + " y: " + graveLocation.getY() + " z: " + graveLocation.getZ() + ".", 2);
-                    graveItemStackList.add(plugin.getItemStackManager().getGraveObituary(grave));
+                    if (shouldDrop) {
+                        ItemStack obituaryItem = plugin.getItemStackManager().getGraveObituary(grave);
+                        if (location.getWorld() != null) {
+                            location.getWorld().dropItemNaturally(location, obituaryItem);
+                            plugin.debugMessage("Obituary dropped at location x: " + location.getBlockX() + " y: " + location.getBlockY() + " z: " + location.getBlockZ() + ".", 2);
+                        } else {
+                            Block graveLocation = location.getBlock();
+                            plugin.debugMessage("World not found. Obituary added to " + grave.getOwnerName() + "'s Grave at location x: " + graveLocation.getX() + " y: " + graveLocation.getY() + " z: " + graveLocation.getZ() + ".", 2);
+                            graveItemStackList.add(plugin.getItemStackManager().getGraveObituary(grave));
+                        }
+                    } else {
+                        Block graveLocation = location.getBlock();
+                        plugin.debugMessage("Obituary added to " + grave.getOwnerName() + "'s Grave at location x: " + graveLocation.getX() + " y: " + graveLocation.getY() + " z: " + graveLocation.getZ() + ".", 2);
+                        graveItemStackList.add(plugin.getItemStackManager().getGraveObituary(grave));
+                    }
                 }
             }
         }
@@ -720,14 +733,32 @@ public class EntityDeathListener implements Listener {
      * @param graveItemStackList  The list of item stacks for the grave.
      */
     private void setupSkull(Grave grave, List<ItemStack> graveItemStackList, LivingEntity livingEntity, Location location) {
-        if (plugin.getConfig("head.enabled", grave).getBoolean("head.enabled") && Math.random() < plugin.getConfig("head.percent", grave).getDouble("head.percent") && grave.getOwnerTexture() != null && grave.getOwnerTextureSignature() != null) {
+        if (plugin.getConfig("head.enabled", grave).getBoolean("head.enabled")
+                && Math.random() < plugin.getConfig("head.percent", grave).getDouble("head.percent")
+                && grave.getOwnerTexture() != null
+                && grave.getOwnerTextureSignature() != null) {
+
+            boolean shouldDrop = plugin.getConfig("head.drop", grave).getBoolean("head.drop");
+
             GravePlayerHeadDropEvent gravePlayerHeadDropEvent = new GravePlayerHeadDropEvent(grave, location, livingEntity);
             plugin.getServer().getPluginManager().callEvent(gravePlayerHeadDropEvent);
 
             if (!gravePlayerHeadDropEvent.isCancelled()) {
-                Location graveLocation = grave.getLocationDeath();
-                plugin.debugMessage("Player Head for " + livingEntity.getName() + " was dropped at grave x: " + graveLocation.getBlockX() + ", y: " + graveLocation.getBlockY() + ", z: " + graveLocation.getBlockZ() + ".", 2);
-                graveItemStackList.add(plugin.getItemStackManager().getGraveHead(grave));
+                if (shouldDrop) {
+                    if (location.getWorld() != null) {
+                        ItemStack headItem = plugin.getItemStackManager().getGraveHead(grave);
+                        location.getWorld().dropItemNaturally(location, headItem);
+                        plugin.debugMessage("Player Head dropped at location x: " + location.getBlockX() + ", y: " + location.getBlockY() + ", z: " + location.getBlockZ() + ".", 2);
+                    } else {
+                        Location graveLocation = grave.getLocationDeath();
+                        plugin.debugMessage("World not found. Player Head added to " + livingEntity.getName() + "'s grave at location x: " + graveLocation.getBlockX() + ", y: " + graveLocation.getBlockY() + ", z: " + graveLocation.getBlockZ() + ".", 2);
+                        graveItemStackList.add(plugin.getItemStackManager().getGraveHead(grave));
+                    }
+                } else {
+                    Location graveLocation = grave.getLocationDeath();
+                    plugin.debugMessage("Player Head added to " + livingEntity.getName() + "'s grave at location x: " + graveLocation.getBlockX() + ", y: " + graveLocation.getBlockY() + ", z: " + graveLocation.getBlockZ() + ".", 2);
+                    graveItemStackList.add(plugin.getItemStackManager().getGraveHead(grave));
+                }
             }
         }
     }

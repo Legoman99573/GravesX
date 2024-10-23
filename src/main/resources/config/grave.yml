@@ -302,6 +302,8 @@ settings:
         enabled: true
         # Chance an obituary should be created, 0.2 = 20%, 1 = 100%, 0 = 0%.
         percent: 1
+        # Should obituaries drop to the ground instead of being stored in the player's grave?
+        drop: false
         # Title of the obituary.
         title: "&c%owner_name%'s Obituary"
         # Author of the obituary.
@@ -337,6 +339,8 @@ settings:
         enabled: false
         # Chance a head should be created, 0.2 = 20%, 1 = 100%, 0 = 0%.
         percent: 0.2
+        # Should heads drop to the ground instead of being stored in the player's grave?
+        drop: false
         # Custom model data, -1 is none.
         model-data: -1
         # Name of the head.
