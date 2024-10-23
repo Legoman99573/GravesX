@@ -7,6 +7,8 @@ import com.ranull.graves.event.GraveCreateEvent;
 import com.ranull.graves.event.GraveProtectionCreateEvent;
 import com.ranull.graves.manager.*;
 import com.ranull.graves.type.Grave;
+import com.ranull.graves.util.SkinSignatureUtil;
+import com.ranull.graves.util.SkinTextureUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
@@ -259,6 +261,8 @@ public class GravesXAPI {
         grave.setOwnerName(victim.getName());
         grave.setOwnerNameDisplay(victim instanceof Player ? ((Player) victim).getDisplayName() : grave.getOwnerName());
         grave.setOwnerUUID(victim.getUniqueId());
+        grave.setOwnerTexture(SkinTextureUtil.getTexture(victim));
+        grave.setOwnerTextureSignature(SkinSignatureUtil.getSignature(victim));
         grave.setPermissionList(null);
         grave.setYaw(victim.getLocation().getYaw());
         grave.setPitch(victim.getLocation().getPitch());
@@ -273,8 +277,8 @@ public class GravesXAPI {
             grave.setKillerNameDisplay(killer.getCustomName());
             grave.setKillerUUID(killer.getUniqueId());
         } else {
-            grave.setKillerUUID(null);
-            grave.setKillerType(null);
+            grave.setKillerUUID(victim.getUniqueId());
+            grave.setKillerType(EntityType.PLAYER);
             EntityDamageEvent.DamageCause finalDamageCause = EntityDamageEvent.DamageCause.valueOf("KILL");
             if (damageCause != null) {
                 finalDamageCause = damageCause;
