@@ -214,15 +214,18 @@ public class InventoryClickListener implements Listener {
                 InventoryAction action = event.getAction();
                 Inventory topInventory = event.getView().getTopInventory(); // The grave's inventory
                 Inventory bottomInventory = event.getView().getBottomInventory(); // The player's inventory
+                Grave.StorageMode storageMode = plugin.getGraveManager().getStorageMode(plugin.getConfig("storage.mode", grave)
+                        .getString("storage.mode"));
 
                 // If the player is interacting with the grave's inventory
                 if (clickedInventory != null) {
+                    if (storageMode == Grave.StorageMode.EXACT) {
+                        // Block shift-clicking items INTO the grave from player's inventory
+                        if (action == InventoryAction.MOVE_TO_OTHER_INVENTORY && clickedInventory.equals(bottomInventory)) {
+                            event.setCancelled(true);
+                            return;
+                        }
 
-                    // Block shift-clicking items INTO the grave from player's inventory
-                    if (action == InventoryAction.MOVE_TO_OTHER_INVENTORY && clickedInventory.equals(bottomInventory)) {
-                        event.setCancelled(true);
-                        return;
-                    }
 
                     // Block manual placement of items into the grave
                     if (clickedInventory.equals(grave.getInventory())) {
@@ -233,6 +236,11 @@ public class InventoryClickListener implements Listener {
                             event.setCancelled(true);
                             return;
                         }
+                    } else {
+                        plugin.getServer().getScheduler().runTaskLater(plugin, () ->
+                        plugin.getDataManager().updateGrave(grave, "inventory",
+                                InventoryUtil.inventoryToString(grave.getInventory())), 1L);
+                    }
 
                         // Allow shift-clicking or picking items OUT of the grave
                         if (action == InventoryAction.PICKUP_ALL

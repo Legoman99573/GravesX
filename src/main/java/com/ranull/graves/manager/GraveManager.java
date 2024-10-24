@@ -1214,56 +1214,18 @@ public final class GraveManager {
                 for (ItemStack itemStack : grave.getInventory().getContents()) {
                     if (itemStack != null) {
                         if (player.getInventory().getItem(counter) == null) {
-                            if (counter <= inventorySize) {
+                            if (counter < inventorySize) {
                                 player.getInventory().setItem(counter, itemStack);
                                 grave.getInventory().remove(itemStack);
                                 if (counter == 17 && plugin.getVersionManager().hasSecondHand()) {
                                     player.getInventory().setItem(17, itemStack);
                                     grave.getInventory().remove(itemStack);
-                                } else if (counter <= 35) {
-                                    player.getInventory().setItem(counter, itemStack);
-                                    grave.getInventory().remove(itemStack);
+                                }
+                                if ((counter == 39 && InventoryUtil.isHelmet(itemStack))
+                                        || (counter == 38 && InventoryUtil.isChestplate(itemStack))
+                                        || (counter == 37 && InventoryUtil.isLeggings(itemStack))
+                                        || (counter == 36 && InventoryUtil.isBoots(itemStack))) {
                                     InventoryUtil.playArmorEquipSound(player, itemStack);
-                                } else if (counter == 36) {
-                                    if (InventoryUtil.isBoots(grave.getInventory().getItem(36))) {
-                                        InventoryUtil.equipArmor(grave.getInventory(), player);
-                                        InventoryUtil.playArmorEquipSound(player, itemStack);
-                                    } else if (player.getInventory().firstEmpty() != -1 || player.getInventory().firstEmpty() != 36
-                                            || player.getInventory().firstEmpty() != 37 || player.getInventory().firstEmpty() != 38
-                                            || player.getInventory().firstEmpty() != 39) {
-                                        player.getInventory().setItem(player.getInventory().firstEmpty(), itemStack);
-                                        grave.getInventory().remove(itemStack);
-                                    }
-                                } else if (counter == 37) {
-                                    if (InventoryUtil.isLeggings(grave.getInventory().getItem(37))) {
-                                        InventoryUtil.equipArmor(grave.getInventory(), player);
-                                        InventoryUtil.playArmorEquipSound(player, itemStack);
-                                    } else if (player.getInventory().firstEmpty() != -1 || player.getInventory().firstEmpty() != 36
-                                            || player.getInventory().firstEmpty() != 37 || player.getInventory().firstEmpty() != 38
-                                            || player.getInventory().firstEmpty() != 39) {
-                                        player.getInventory().setItem(player.getInventory().firstEmpty(), itemStack);
-                                        grave.getInventory().remove(itemStack);
-                                    }
-                                } else if (counter == 38) {
-                                    if (InventoryUtil.isChestplate(grave.getInventory().getItem(38))) {
-                                        InventoryUtil.equipArmor(grave.getInventory(), player);
-                                        InventoryUtil.playArmorEquipSound(player, itemStack);
-                                    } else if (player.getInventory().firstEmpty() != -1 || player.getInventory().firstEmpty() != 36
-                                            || player.getInventory().firstEmpty() != 37 || player.getInventory().firstEmpty() != 38
-                                            || player.getInventory().firstEmpty() != 39) {
-                                        player.getInventory().setItem(player.getInventory().firstEmpty(), itemStack);
-                                        grave.getInventory().remove(itemStack);
-                                    }
-                                } else if (counter == 39) {
-                                    if (InventoryUtil.isHelmet(grave.getInventory().getItem(39))) {
-                                        InventoryUtil.equipArmor(grave.getInventory(), player);
-                                        InventoryUtil.playArmorEquipSound(player, itemStack);
-                                    } else if (player.getInventory().firstEmpty() != -1 || player.getInventory().firstEmpty() != 36
-                                            || player.getInventory().firstEmpty() != 37 || player.getInventory().firstEmpty() != 38
-                                            || player.getInventory().firstEmpty() != 39) {
-                                        player.getInventory().setItem(player.getInventory().firstEmpty(), itemStack);
-                                        grave.getInventory().remove(itemStack);
-                                    }
                                 }
                             } else {
                                 itemStackListLeftOver.add(itemStack);
