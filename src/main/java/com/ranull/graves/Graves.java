@@ -202,7 +202,8 @@ public class Graves extends JavaPlugin {
         LibraryLoaderUtil libraryLoaderUtil = new LibraryLoaderUtil(this);
 
         libraryLoaderUtil.loadLibrary("com{}zaxxer", "HikariCP", "6.0.0", "com{}zaxxer{}hikari", "com{}ranull{}graves{}libraries{}hikari", false);
-        libraryLoaderUtil.loadLibrary("org{}xerial", "sqlite-jdbc", "3.46.1.3", false);
+        libraryLoaderUtil.loadLibrary("org{}xerial", "sqlite-jdbc", "3.47.0.0", false);
+
         try {
             Class.forName("org.json.JSONObject");
         } catch (ClassNotFoundException e) {
@@ -230,7 +231,7 @@ public class Graves extends JavaPlugin {
 
         libraryLoaderUtil.loadLibrary("org{}postgresql", "postgresql", "42.7.4", "org{}postgresql", "com{}ranull{}graves{}libraries{}postgresql", false);
         libraryLoaderUtil.loadLibrary("org{}mariadb{}jdbc", "mariadb-java-client", "3.4.1", "org{}mariadb", "com{}ranull{}graves{}libraries{}mariadb", false);
-        libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.1.0", false);
+        libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.1.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
         libraryLoaderUtil.loadLibrary("com{}h2database", "h2", "2.3.232", "org{}h2", "com{}ranull{}graves{}libraries{}h2", false);
         //libraryLoaderUtil.loadLibrary("org{}slf4j", "slf4j-simple", "2.0.16", false);
         libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-api", "4.17.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);

@@ -449,10 +449,10 @@ public final class DataManager {
         String synchronous = plugin.getConfig().getString("settings.storage.sqlite.synchronous", "OFF");
 
         config.setJdbcUrl("jdbc:sqlite:" + plugin.getDataFolder() + File.separator + "data" + File.separator + "data.db");
-        config.setConnectionTimeout(30000); // 30 seconds
-        config.setIdleTimeout(600000); // 10 minutes
-        config.setMaxLifetime(1800000); // 30 minutes
-        config.setMaximumPoolSize(50); // Might as well increase this.
+        config.setConnectionTimeout(30000);
+        config.setIdleTimeout(600000);
+        config.setMaxLifetime(1800000);
+        config.setMaximumPoolSize(50);
         config.addDataSourceProperty("dataSource.journalMode", journal_mode); // DELETE | TRUNCATE | PERSIST | MEMORY | WAL | OFF
         config.addDataSourceProperty("dataSource.synchronous", synchronous); // 0 | OFF | 1 | NORMAL | 2 | FULL | 3 | EXTRA
         config.setConnectionInitSql("PRAGMA busy_timeout = 30000");
@@ -596,7 +596,7 @@ public final class DataManager {
         config.setJdbcUrl(jdbcUrl);
         config.setUsername(user);
         config.setPassword(password);
-        config.setDriverClassName(type == Type.MARIADB ? "com.ranull.graves.libraries.mariadb.jdbc.Driver" : "com.mysql.cj.jdbc.Driver");
+        config.setDriverClassName(type == Type.MARIADB ? "com.ranull.graves.libraries.mariadb.jdbc.Driver" : "com.ranull.graves.libraries.mysql.cj.jdbc.Driver");
         config.setMaximumPoolSize(maxConnections);
         config.setMaxLifetime(maxLifetime);
         config.setMinimumIdle(2);
@@ -1191,10 +1191,9 @@ public final class DataManager {
                 if (grave != null) {
                     plugin.getCacheManager().getGraveMap().put(grave.getUUID(), grave);
                     graveCount++;
-                } else {
-                    plugin.getLogger().severe("Failed to load grave from result set at row " + resultSet.getRow());
                 }
             }
+
             if (graveCount == 0) {
                 plugin.getLogger().info("Found 0 grave maps to load into cache.");
             } else {
@@ -2074,7 +2073,13 @@ public final class DataManager {
      */
     public Grave resultSetToGrave(ResultSet resultSet) {
         try {
-            Grave grave = new Grave(UUID.fromString(resultSet.getString("uuid")));
+            String uuidString = resultSet.getString("uuid");
+            if (uuidString == null) {
+                plugin.getLogger().warning("Skipping grave at row " + resultSet.getRow() + " due to null UUID.");
+                return null;
+            }
+
+            Grave grave = new Grave(UUID.fromString(uuidString));
 
             grave.setOwnerType(resultSet.getString("owner_type") != null
                     ? EntityType.valueOf(resultSet.getString("owner_type")) : null);
