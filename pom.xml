@@ -8,7 +8,7 @@
     <artifactId>graves</artifactId>
     <name>GravesX</name>
     <description>Full featured lightweight death chest plugin.</description>
-    <version>4.9.7.3</version>
+    <version>4.9.5.3</version>
 
     <developers>
         <developer>
@@ -303,8 +303,16 @@
             <url>https://oss.sonatype.org/content/groups/public/</url>
         </repository>
         <repository>
+            <id>griefdefender-repo</id>
+            <url>https://repo.glaremasters.me/repository/bloodshot/</url>
+        </repository>
+        <repository>
             <id>jeff-media-repo</id>
             <url>https://hub.jeff-media.com/nexus/repository/jeff-media-public/</url>
+        </repository>
+        <repository>
+            <id>glaremasters repo</id>
+            <url>https://repo.glaremasters.me/repository/towny/</url>
         </repository>
         <repository>
             <id>skript-repo</id>
@@ -313,6 +321,10 @@
         <repository>
             <id>enginehub</id>
             <url>https://maven.enginehub.org/repo/</url>
+        </repository>
+        <repository>
+            <id>glaremasters-repo</id>
+            <url>https://repo.glaremasters.me/repository/towny/</url>
         </repository>
         <repository>
             <id>minebench-repo</id>
@@ -391,7 +403,7 @@
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
             <artifactId>mariadb-java-client</artifactId>
-            <version>3.5.1</version>
+            <version>3.5.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -474,6 +486,18 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>com.sk89q.worldguard</groupId>
+            <artifactId>worldguard-bukkit</artifactId>
+            <version>7.0.12</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.palmergames.bukkit.towny</groupId>
+            <artifactId>towny</artifactId>
+            <version>0.100.4.12</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>de.jeff_media</groupId>
             <artifactId>ChestSort</artifactId>
             <version>14.1.0</version>
@@ -486,9 +510,15 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>com.griefdefender</groupId>
+            <artifactId>api</artifactId>
+            <version>2.0.0-20210822.184639-9</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>com.github.SkriptLang</groupId>
             <artifactId>Skript</artifactId>
-            <version>2.9.5</version>
+            <version>2.9.3</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -589,19 +619,19 @@
             <groupId>com.github.imDaniX</groupId>
             <artifactId>MiniTranslator</artifactId>
             <version>v2.1</version>
-            <scope>compile</scope>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.18.0</version>
+            <version>2.17.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>de.themoep</groupId>
             <artifactId>minedown-adventure</artifactId>
-            <version>1.7.3-SNAPSHOT</version>
-            <scope>compile</scope>
+            <version>1.7.3-graves</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.jetbrains</groupId>
@@ -642,7 +672,7 @@
         <dependency>
             <groupId>org.apache.maven.resolver</groupId>
             <artifactId>maven-resolver-connector-basic</artifactId>
-            <version>2.0.4</version>
+            <version>2.0.2</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
