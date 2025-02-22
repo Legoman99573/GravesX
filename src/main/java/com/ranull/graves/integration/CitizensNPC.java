@@ -19,6 +19,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
@@ -164,14 +165,14 @@ public final class CitizensNPC extends EntityDataManager {
                     npc.data().setPersistent(NPC.Metadata.COLLIDABLE, plugin.getConfig("citizens.corpse.collide", grave).getBoolean("citizens.corpse.collide"));
 
                     // Set NPC equipment
-                    setNPCEquipment(npc, grave, Equipment.EquipmentSlot.HELMET, "citizens.corpse.armor");
-                    setNPCEquipment(npc, grave, Equipment.EquipmentSlot.CHESTPLATE, "citizens.corpse.armor");
-                    setNPCEquipment(npc, grave, Equipment.EquipmentSlot.LEGGINGS, "citizens.corpse.armor");
-                    setNPCEquipment(npc, grave, Equipment.EquipmentSlot.BOOTS, "citizens.corpse.armor");
-                    setNPCEquipment(npc, grave, Equipment.EquipmentSlot.HAND, "citizens.corpse.hand");
+                    setNPCEquipment(npc, grave, "HELMET", "citizens.corpse.armor");
+                    setNPCEquipment(npc, grave, "CHESTPLATE", "citizens.corpse.armor");
+                    setNPCEquipment(npc, grave, "LEGGINGS", "citizens.corpse.armor");
+                    setNPCEquipment(npc, grave, "BOOTS", "citizens.corpse.armor");
+                    setNPCEquipment(npc, grave, "HAND", "citizens.corpse.hand");
 
                     if (plugin.getVersionManager().hasSecondHand()) {
-                        setNPCEquipment(npc, grave, Equipment.EquipmentSlot.OFF_HAND, "citizens.corpse.hand");
+                        setNPCEquipment(npc, grave, "OFF_HAND", "citizens.corpse.hand");
                     }
 
                     // Make the NPC perform the configured animation (default is sleeping)
@@ -249,11 +250,14 @@ public final class CitizensNPC extends EntityDataManager {
         });
     }
 
-    private void setNPCEquipment(NPC npc, Grave grave, Equipment.EquipmentSlot slot, String configPath) {
-        if (plugin.getConfig(configPath, grave).getBoolean(configPath)
-                && grave.getEquipmentMap().containsKey(slot.toBukkit())) {
-            ItemStack item = grave.getEquipmentMap().get(slot.toBukkit());
-            npc.getOrAddTrait(Equipment.class).set(slot, item);
+    private void setNPCEquipment(NPC npc, Grave grave, String slot, String configPath) {
+        if (plugin.getConfig(configPath, grave).getBoolean(configPath)) {
+            EquipmentSlot BukkitSlot = EquipmentSlot.valueOf(slot);
+            Equipment.EquipmentSlot CitizensSlot = Equipment.EquipmentSlot.valueOf(slot);
+            if (grave.getEquipmentMap().containsKey(BukkitSlot)) {
+                ItemStack item = grave.getEquipmentMap().get(BukkitSlot);
+                npc.getOrAddTrait(Equipment.class).set(CitizensSlot, item);
+            }
         }
     }
 
