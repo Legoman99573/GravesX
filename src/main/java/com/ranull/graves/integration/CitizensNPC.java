@@ -148,6 +148,7 @@ public final class CitizensNPC extends EntityDataManager {
                                     grave.getOwnerName()
                             );
                         } catch (Exception ignored) {
+
                         }
                     }
 
@@ -249,8 +250,9 @@ public final class CitizensNPC extends EntityDataManager {
     }
 
     private void setNPCEquipment(NPC npc, Grave grave, Equipment.EquipmentSlot slot, String configPath) {
-        if (plugin.getConfig(configPath, grave).getBoolean(configPath) && grave.getEquipmentMap().containsKey(slot)) {
-            ItemStack item = grave.getEquipmentMap().get(slot);
+        if (plugin.getConfig(configPath, grave).getBoolean(configPath)
+                && grave.getEquipmentMap().containsKey(slot.toBukkit())) {
+            ItemStack item = grave.getEquipmentMap().get(slot.toBukkit());
             npc.getOrAddTrait(Equipment.class).set(slot, item);
         }
     }
