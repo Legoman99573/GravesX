@@ -136,11 +136,20 @@ public final class CitizensNPC extends EntityDataManager {
                     npc.data().setPersistent(NPC.Metadata.REMOVE_FROM_PLAYERLIST, true);
                     npc.data().setPersistent(NPC.Metadata.SHOULD_SAVE, false);
 
-                    npc.getOrAddTrait(SkinTrait.class).setSkinPersistent(
-                            grave.getOwnerName(),
-                            grave.getOwnerTextureSignature(),
-                            grave.getOwnerTexture()
-                    );
+                    try {
+                        npc.getOrAddTrait(SkinTrait.class).setSkinPersistent(
+                                grave.getOwnerName(),
+                                grave.getOwnerTextureSignature(),
+                                grave.getOwnerTexture()
+                        );
+                    } catch (Exception handled) {
+                        try {
+                            npc.getOrAddTrait(SkinTrait.class).setSkinName(
+                                    grave.getOwnerName()
+                            );
+                        } catch (Exception ignored) {
+                        }
+                    }
 
                     // Create a scoreboard team for the NPC
                     Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
