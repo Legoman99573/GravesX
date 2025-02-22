@@ -129,7 +129,7 @@ public final class CitizensNPC extends EntityDataManager {
                     npc.data().setPersistent(NPC.Metadata.FLYABLE, true);
                     npc.data().setPersistent(NPC.Metadata.NAMEPLATE_VISIBLE, false);
                     npc.data().setPersistent(NPC.Metadata.KNOCKBACK, false);
-                    npc.data().setPersistent(NPC.Metadata.TARGETABLE, false);
+                    npc.data().setPersistent(NPC.Metadata.DAMAGE_OTHERS, false);
                     npc.data().setPersistent(NPC.Metadata.FLUID_PUSHABLE, false);
                     npc.data().setPersistent(NPC.Metadata.SWIM, false);
                     npc.data().setPersistent(NPC.Metadata.REMOVE_FROM_TABLIST, true);
