@@ -149,7 +149,6 @@ public final class CitizensNPC extends EntityDataManager {
                                     grave.getOwnerName()
                             );
                         } catch (Exception ignored) {
-
                         }
                     }
 
@@ -164,15 +163,18 @@ public final class CitizensNPC extends EntityDataManager {
 
                     npc.data().setPersistent(NPC.Metadata.COLLIDABLE, plugin.getConfig("citizens.corpse.collide", grave).getBoolean("citizens.corpse.collide"));
 
-                    // Set NPC equipment
-                    setNPCEquipment(npc, grave, "HELMET", "citizens.corpse.armor");
-                    setNPCEquipment(npc, grave, "CHESTPLATE", "citizens.corpse.armor");
-                    setNPCEquipment(npc, grave, "LEGGINGS", "citizens.corpse.armor");
-                    setNPCEquipment(npc, grave, "BOOTS", "citizens.corpse.armor");
-                    setNPCEquipment(npc, grave, "HAND", "citizens.corpse.hand");
+                    try {
+                        // Set NPC equipment
+                        setNPCEquipment(npc, grave, "HELMET", "HEAD", "citizens.corpse.armor");
+                        setNPCEquipment(npc, grave, "CHESTPLATE", "CHEST", "citizens.corpse.armor");
+                        setNPCEquipment(npc, grave, "LEGGINGS", "LEGS", "citizens.corpse.armor");
+                        setNPCEquipment(npc, grave, "BOOTS", "FEET", "citizens.corpse.armor");
+                        setNPCEquipment(npc, grave, "HAND", "HAND", "citizens.corpse.hand");
 
-                    if (plugin.getVersionManager().hasSecondHand()) {
-                        setNPCEquipment(npc, grave, "OFF_HAND", "citizens.corpse.hand");
+                        if (plugin.getVersionManager().hasSecondHand()) {
+                            setNPCEquipment(npc, grave, "OFF_HAND", "OFF_HAND", "citizens.corpse.hand");
+                        }
+                    } catch (Exception ignored) {
                     }
 
                     // Make the NPC perform the configured animation (default is sleeping)
@@ -250,9 +252,9 @@ public final class CitizensNPC extends EntityDataManager {
         });
     }
 
-    private void setNPCEquipment(NPC npc, Grave grave, String slot, String configPath) {
+    private void setNPCEquipment(NPC npc, Grave grave, String slot, String slotBukkit, String configPath) {
         if (plugin.getConfig(configPath, grave).getBoolean(configPath)) {
-            EquipmentSlot BukkitSlot = EquipmentSlot.valueOf(slot);
+            EquipmentSlot BukkitSlot = EquipmentSlot.valueOf(slotBukkit);
             Equipment.EquipmentSlot CitizensSlot = Equipment.EquipmentSlot.valueOf(slot);
             if (grave.getEquipmentMap().containsKey(BukkitSlot)) {
                 ItemStack item = grave.getEquipmentMap().get(BukkitSlot);
