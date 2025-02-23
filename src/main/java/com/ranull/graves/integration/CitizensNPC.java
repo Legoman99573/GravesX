@@ -18,9 +18,10 @@ import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
-import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.scoreboard.Team;
 
 import java.util.*;
@@ -129,39 +130,62 @@ public final class CitizensNPC extends EntityDataManager {
                     npc.data().setPersistent(NPC.Metadata.FLYABLE, true);
                     npc.data().setPersistent(NPC.Metadata.NAMEPLATE_VISIBLE, false);
                     npc.data().setPersistent(NPC.Metadata.KNOCKBACK, false);
-                    npc.data().setPersistent(NPC.Metadata.DAMAGE_OTHERS, false);
+                    try {
+                        npc.data().setPersistent(NPC.Metadata.valueOf("TARGETABLE"), false);
+                    } catch (IllegalArgumentException e) {
+                        //plugin.getServer().getConsoleSender().sendMessage("Nope");
+                    }
+                    try {
+                        npc.data().setPersistent(NPC.Metadata.DAMAGE_OTHERS, false);
+                    } catch (Exception ignored) {
+                    }
                     npc.data().setPersistent(NPC.Metadata.FLUID_PUSHABLE, false);
                     npc.data().setPersistent(NPC.Metadata.SWIM, false);
                     npc.data().setPersistent(NPC.Metadata.REMOVE_FROM_TABLIST, true);
                     npc.data().setPersistent(NPC.Metadata.REMOVE_FROM_PLAYERLIST, true);
                     npc.data().setPersistent(NPC.Metadata.SHOULD_SAVE, false);
 
-                    npc.getOrAddTrait(SkinTrait.class).setSkinPersistent(
-                            grave.getOwnerName(),
-                            grave.getOwnerTextureSignature(),
-                            grave.getOwnerTexture()
-                    );
+                    try {
+                        npc.getOrAddTrait(SkinTrait.class).setSkinPersistent(
+                                grave.getOwnerName(),
+                                grave.getOwnerTextureSignature(),
+                                grave.getOwnerTexture()
+                        );
+                    } catch (Exception handled) {
+                        try {
+                            npc.getOrAddTrait(SkinTrait.class).setSkinName(
+                                    grave.getOwnerName()
+                            );
+                        } catch (Exception ignored) {
+                        }
+                    }
 
                     // Create a scoreboard team for the NPC
-                    Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
-                    Team team = scoreboard.getTeam("npcTeam");
-                    if (team == null) {
-                        team = scoreboard.registerNewTeam("npcTeam");
+                    ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
+                    if (scoreboardManager != null) {
+                        Scoreboard scoreboard = scoreboardManager.getMainScoreboard();
+                        Team team = scoreboard.getTeam("npcTeam");
+                        if (team == null) {
+                            team = scoreboard.registerNewTeam("npcTeam");
+                        }
+                        team.addEntry(npc.getName());
+                        NMS.setTeamNameTagVisible(team, false); // doesnt work
                     }
-                    team.addEntry(npc.getName());
-                    NMS.setTeamNameTagVisible(team, false); // doesnt work
 
                     npc.data().setPersistent(NPC.Metadata.COLLIDABLE, plugin.getConfig("citizens.corpse.collide", grave).getBoolean("citizens.corpse.collide"));
 
-                    // Set NPC equipment
-                    setNPCEquipment(npc, grave, Equipment.EquipmentSlot.HELMET, "citizens.corpse.armor");
-                    setNPCEquipment(npc, grave, Equipment.EquipmentSlot.CHESTPLATE, "citizens.corpse.armor");
-                    setNPCEquipment(npc, grave, Equipment.EquipmentSlot.LEGGINGS, "citizens.corpse.armor");
-                    setNPCEquipment(npc, grave, Equipment.EquipmentSlot.BOOTS, "citizens.corpse.armor");
-                    setNPCEquipment(npc, grave, Equipment.EquipmentSlot.HAND, "citizens.corpse.hand");
+                    try {
+                        // Set NPC equipment
+                        setNPCEquipment(npc, grave, "HELMET", "HEAD", "citizens.corpse.armor");
+                        setNPCEquipment(npc, grave, "CHESTPLATE", "CHEST", "citizens.corpse.armor");
+                        setNPCEquipment(npc, grave, "LEGGINGS", "LEGS", "citizens.corpse.armor");
+                        setNPCEquipment(npc, grave, "BOOTS", "FEET", "citizens.corpse.armor");
+                        setNPCEquipment(npc, grave, "HAND", "HAND", "citizens.corpse.hand");
 
-                    if (plugin.getVersionManager().hasSecondHand()) {
-                        setNPCEquipment(npc, grave, Equipment.EquipmentSlot.OFF_HAND, "citizens.corpse.hand");
+                        if (plugin.getVersionManager().hasSecondHand()) {
+                            setNPCEquipment(npc, grave, "OFF_HAND", "OFF_HAND", "citizens.corpse.hand");
+                        }
+                    } catch (Exception ignored) {
                     }
 
                     // Make the NPC perform the configured animation (default is sleeping)
@@ -239,17 +263,24 @@ public final class CitizensNPC extends EntityDataManager {
         });
     }
 
-    private void setNPCEquipment(NPC npc, Grave grave, Equipment.EquipmentSlot slot, String configPath) {
-        if (plugin.getConfig(configPath, grave).getBoolean(configPath) && grave.getEquipmentMap().containsKey(slot)) {
-            ItemStack item = grave.getEquipmentMap().get(slot);
-            npc.getOrAddTrait(Equipment.class).set(slot, item);
+    private void setNPCEquipment(NPC npc, Grave grave, String slot, String slotBukkit, String configPath) {
+        if (plugin.getConfig(configPath, grave).getBoolean(configPath)) {
+            EquipmentSlot BukkitSlot = EquipmentSlot.valueOf(slotBukkit);
+            Equipment.EquipmentSlot CitizensSlot = Equipment.EquipmentSlot.valueOf(slot);
+            if (grave.getEquipmentMap().containsKey(BukkitSlot)) {
+                ItemStack item = grave.getEquipmentMap().get(BukkitSlot);
+                npc.getOrAddTrait(Equipment.class).set(CitizensSlot, item);
+            }
         }
     }
 
     private String getNPCNameFromLocation(Location location) {
-        String npcName = location.getWorld().getName() + "_" + location.getBlockX() + "_"
-                + location.getBlockY() + "_" + location.getBlockZ();
-        return npcName.replace("|", "");
+        if (location.getWorld() != null) {
+            String npcName = location.getWorld().getName() + "_" + location.getBlockX() + "_"
+                    + location.getBlockY() + "_" + location.getBlockZ();
+            return npcName.replace("|", "");
+        }
+        return "";
     }
 
     /**
