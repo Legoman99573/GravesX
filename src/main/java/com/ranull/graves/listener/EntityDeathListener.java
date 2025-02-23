@@ -16,6 +16,9 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.MetadataValue;
 
@@ -120,6 +123,32 @@ public class EntityDeathListener implements Listener {
         List<ItemStack> graveItemStackList = getGraveItemStackList(event, livingEntity, permissionList);
 
         if (!graveItemStackList.isEmpty()) {
+            if (location.getWorld() != null && player != null ) {
+//                if (!player.getOpenInventory().getTopInventory().isEmpty()) {
+//                    for (ItemStack item : player.getOpenInventory().getTopInventory().getContents().clone())
+//                        location.getWorld().dropItem(location, item);
+//                }
+//            }
+                InventoryView inventoryView = player.getOpenInventory();
+
+                if (inventoryView != null) {
+                    Inventory topInventory = inventoryView.getTopInventory();
+
+                    // Check if it's a crafting table or a 2x2 crafting grid
+                    if (topInventory.getType() == InventoryType.WORKBENCH || topInventory.getType() == InventoryType.CRAFTING) {
+
+                        // Drop only the crafting grid items (skip result slot at index 0)
+                        ItemStack[] contents = topInventory.getContents();
+                        for (int i = 1; i < contents.length; i++) { // Start from 1 to skip result slot
+                            ItemStack item = contents[i];
+                            if (item != null && item.getType() != Material.AIR) {
+                                location.getWorld().dropItemNaturally(location, item);
+                                topInventory.setItem(i, null); // Clear the slot to prevent duping
+                            }
+                        }
+                    }
+                }
+            }
             createGrave(event, livingEntity, entityName, permissionList, removedItemStackList, graveItemStackList, location);
         } else {
             plugin.debugMessage("Grave not created for " + entityName + " because they had no drops", 2);
