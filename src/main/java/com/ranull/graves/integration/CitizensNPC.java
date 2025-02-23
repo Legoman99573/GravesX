@@ -8,6 +8,7 @@ import com.ranull.graves.manager.EntityDataManager;
 import com.ranull.graves.type.Grave;
 import net.citizensnpcs.api.CitizensAPI;
 import net.citizensnpcs.api.npc.NPC;
+import net.citizensnpcs.api.npc.NPCRegistry;
 import net.citizensnpcs.api.trait.trait.Equipment;
 import net.citizensnpcs.trait.SkinTrait;
 import net.citizensnpcs.util.NMS;
@@ -113,7 +114,8 @@ public final class CitizensNPC extends EntityDataManager {
 
                     // Create NPC name from location
                     String npcName = getNPCNameFromLocation(npcLocation);
-                    NPC npc = CitizensAPI.getNPCRegistry().createNPC(EntityType.PLAYER, npcName);
+                    NPCRegistry npcRegistry = CitizensAPI.getNPCRegistry();
+                    NPC npc = npcRegistry.createNPC(EntityType.PLAYER, npcName);
                     try {
                         double x = plugin.getConfig("citizens.corpse.offset.x", grave)
                                 .getDouble("citizens.corpse.offset.x");
@@ -126,6 +128,7 @@ public final class CitizensNPC extends EntityDataManager {
                         npcLocation.add(0.5, 0.5, 0.5);
                     }
                     npc.spawn(npcLocation);
+
                     npc.data().setPersistent(NPC.Metadata.DEFAULT_PROTECTED, true);
                     npc.data().setPersistent(NPC.Metadata.FLYABLE, true);
                     npc.data().setPersistent(NPC.Metadata.NAMEPLATE_VISIBLE, false);
@@ -143,7 +146,7 @@ public final class CitizensNPC extends EntityDataManager {
                     npc.data().setPersistent(NPC.Metadata.SWIM, false);
                     npc.data().setPersistent(NPC.Metadata.REMOVE_FROM_TABLIST, true);
                     npc.data().setPersistent(NPC.Metadata.REMOVE_FROM_PLAYERLIST, true);
-                    npc.data().setPersistent(NPC.Metadata.SHOULD_SAVE, false);
+                    npc.data().setPersistent(NPC.Metadata.SHOULD_SAVE, true);
 
                     try {
                         npc.getOrAddTrait(SkinTrait.class).setSkinPersistent(
