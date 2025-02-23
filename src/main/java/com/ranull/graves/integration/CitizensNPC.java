@@ -15,17 +15,15 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
-import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.scoreboard.Team;
 
-import java.io.Console;
 import java.util.*;
 
 /**
@@ -163,13 +161,16 @@ public final class CitizensNPC extends EntityDataManager {
                     }
 
                     // Create a scoreboard team for the NPC
-                    Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
-                    Team team = scoreboard.getTeam("npcTeam");
-                    if (team == null) {
-                        team = scoreboard.registerNewTeam("npcTeam");
+                    ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
+                    if (scoreboardManager != null) {
+                        Scoreboard scoreboard = scoreboardManager.getMainScoreboard();
+                        Team team = scoreboard.getTeam("npcTeam");
+                        if (team == null) {
+                            team = scoreboard.registerNewTeam("npcTeam");
+                        }
+                        team.addEntry(npc.getName());
+                        NMS.setTeamNameTagVisible(team, false); // doesnt work
                     }
-                    team.addEntry(npc.getName());
-                    NMS.setTeamNameTagVisible(team, false); // doesnt work
 
                     npc.data().setPersistent(NPC.Metadata.COLLIDABLE, plugin.getConfig("citizens.corpse.collide", grave).getBoolean("citizens.corpse.collide"));
 
@@ -274,9 +275,12 @@ public final class CitizensNPC extends EntityDataManager {
     }
 
     private String getNPCNameFromLocation(Location location) {
-        String npcName = location.getWorld().getName() + "_" + location.getBlockX() + "_"
-                + location.getBlockY() + "_" + location.getBlockZ();
-        return npcName.replace("|", "");
+        if (location.getWorld() != null) {
+            String npcName = location.getWorld().getName() + "_" + location.getBlockX() + "_"
+                    + location.getBlockY() + "_" + location.getBlockZ();
+            return npcName.replace("|", "");
+        }
+        return "";
     }
 
     /**
