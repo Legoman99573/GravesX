@@ -1029,8 +1029,9 @@ public class Graves extends JavaPlugin {
                 + graveY
                 + ", z: "
                 + graveZ
-                + " is invalid. If this was caused by an addon, then report it to the plugin author. Reason: "
-                + String.join(", ", invalidationReason));
+                + " has the following missing from grave data: "
+                + String.join(", ", invalidationReason) 
+                + ". This may affect grave behavior. Do not report this as a bug.");
     }
 
     /**
