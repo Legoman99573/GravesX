@@ -15,6 +15,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
@@ -24,6 +25,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
+import java.io.Console;
 import java.util.*;
 
 /**
@@ -130,6 +132,11 @@ public final class CitizensNPC extends EntityDataManager {
                     npc.data().setPersistent(NPC.Metadata.FLYABLE, true);
                     npc.data().setPersistent(NPC.Metadata.NAMEPLATE_VISIBLE, false);
                     npc.data().setPersistent(NPC.Metadata.KNOCKBACK, false);
+                    try {
+                        npc.data().setPersistent(NPC.Metadata.valueOf("TARGETABLE"), false);
+                    } catch (IllegalArgumentException e) {
+                        //plugin.getServer().getConsoleSender().sendMessage("Nope");
+                    }
                     npc.data().setPersistent(NPC.Metadata.DAMAGE_OTHERS, false);
                     npc.data().setPersistent(NPC.Metadata.FLUID_PUSHABLE, false);
                     npc.data().setPersistent(NPC.Metadata.SWIM, false);
