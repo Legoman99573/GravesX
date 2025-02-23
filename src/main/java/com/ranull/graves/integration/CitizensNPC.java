@@ -137,7 +137,10 @@ public final class CitizensNPC extends EntityDataManager {
                     } catch (IllegalArgumentException e) {
                         //plugin.getServer().getConsoleSender().sendMessage("Nope");
                     }
-                    npc.data().setPersistent(NPC.Metadata.DAMAGE_OTHERS, false);
+                    try {
+                        npc.data().setPersistent(NPC.Metadata.DAMAGE_OTHERS, false);
+                    } catch (Exception ignored) {
+                    }
                     npc.data().setPersistent(NPC.Metadata.FLUID_PUSHABLE, false);
                     npc.data().setPersistent(NPC.Metadata.SWIM, false);
                     npc.data().setPersistent(NPC.Metadata.REMOVE_FROM_TABLIST, true);
