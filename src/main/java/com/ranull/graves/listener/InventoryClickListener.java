@@ -228,31 +228,31 @@ public class InventoryClickListener implements Listener {
                         }
 
 
-                    // Block manual placement of items into the grave
-                    if (clickedInventory.equals(grave.getInventory())) {
-                        if (action == InventoryAction.PLACE_ALL
-                                || action == InventoryAction.PLACE_SOME
-                                || action == InventoryAction.PLACE_ONE
-                                || action == InventoryAction.SWAP_WITH_CURSOR) {
-                            event.setCancelled(true);
-                            return;
-                        }
-                    } else {
-                        plugin.getServer().getScheduler().runTaskLater(plugin, () ->
-                        plugin.getDataManager().updateGrave(grave, "inventory",
-                                InventoryUtil.inventoryToString(grave.getInventory())), 1L);
-                    }
+                        // Block manual placement of items into the grave
+                        if (clickedInventory.equals(grave.getInventory())) {
+                            if (action == InventoryAction.PLACE_ALL
+                                    || action == InventoryAction.PLACE_SOME
+                                    || action == InventoryAction.PLACE_ONE
+                                    || action == InventoryAction.SWAP_WITH_CURSOR) {
+                                event.setCancelled(true);
+                                return;
+                            } else {
+                                plugin.getServer().getScheduler().runTaskLater(plugin, () ->
+                                        plugin.getDataManager().updateGrave(grave, "inventory",
+                                                InventoryUtil.inventoryToString(grave.getInventory())), 1L);
+                            }
 
-                        // Allow shift-clicking or picking items OUT of the grave
-                        if (action == InventoryAction.PICKUP_ALL
-                                || action == InventoryAction.PICKUP_SOME
-                                || action == InventoryAction.PICKUP_HALF
-                                || action == InventoryAction.PICKUP_ONE
-                                || action == InventoryAction.MOVE_TO_OTHER_INVENTORY && clickedInventory.equals(topInventory)) {
-                            // Schedule a task to update the grave's inventory in the data manager
-                            plugin.getServer().getScheduler().runTaskLater(plugin, () ->
-                                    plugin.getDataManager().updateGrave(grave, "inventory",
-                                            InventoryUtil.inventoryToString(grave.getInventory())), 1L);
+                            // Allow shift-clicking or picking items OUT of the grave
+                            if (action == InventoryAction.PICKUP_ALL
+                                    || action == InventoryAction.PICKUP_SOME
+                                    || action == InventoryAction.PICKUP_HALF
+                                    || action == InventoryAction.PICKUP_ONE
+                                    || action == InventoryAction.MOVE_TO_OTHER_INVENTORY && clickedInventory.equals(topInventory)) {
+                                // Schedule a task to update the grave's inventory in the data manager
+                                plugin.getServer().getScheduler().runTaskLater(plugin, () ->
+                                        plugin.getDataManager().updateGrave(grave, "inventory",
+                                                InventoryUtil.inventoryToString(grave.getInventory())), 1L);
+                            }
                         }
                     }
                 }
