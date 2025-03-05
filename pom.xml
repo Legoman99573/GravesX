@@ -108,6 +108,10 @@
                             <pattern>com.microsoft</pattern>
                             <shadedPattern>${project.groupId}.${project.artifactId}.libraries.microsoft</shadedPattern>
                         </relocation>
+                        <relocation>
+                            <pattern>com.github.Anon8281.universalScheduler</pattern>
+                            <shadedPattern>${project.groupId}.${project.artifactId}.libraries.universalScheduler</shadedPattern>
+                        </relocation>
                     </relocations>
                 </configuration>
                 <executions>
@@ -261,18 +265,13 @@
 
     <repositories>
         <repository>
-            <id>dmulloy2-repo</id>
-            <url>https://repo.dmulloy2.net/repository/public/</url>
-        </repository>
+        <id>dmulloy2-repo</id>
+        <url>https://repo.dmulloy2.net/repository/public/</url>
+    </repository>
         <repository>
             <id>jeff-media-public</id>
             <name>JEFF Media GbR Repository</name>
             <url>https://repo.jeff-media.com/public</url>
-        </repository>
-        <repository>
-            <id>ranull-repo-external</id>
-            <name>Ranull's Maven Repository</name>
-            <url>https://repo.ranull.com/maven/external</url>
         </repository>
         <repository>
             <id>ranull-repo-ranull</id>
@@ -471,7 +470,7 @@
         <dependency>
             <groupId>dev.sergiferry</groupId>
             <artifactId>PlayerNPC</artifactId>
-            <version>2023.4</version>
+            <version>2023.6</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -735,6 +734,12 @@
             <artifactId>NoteBlockAPI</artifactId>
             <version>1.6.2</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.Anon8281</groupId>
+            <artifactId>UniversalScheduler</artifactId>
+            <version>0.1.6</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 </project>

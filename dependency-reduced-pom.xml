@@ -122,6 +122,10 @@
               <pattern>com.microsoft</pattern>
               <shadedPattern>${project.groupId}.${project.artifactId}.libraries.microsoft</shadedPattern>
             </relocation>
+            <relocation>
+              <pattern>com.github.Anon8281.universalScheduler</pattern>
+              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.universalScheduler</shadedPattern>
+            </relocation>
           </relocations>
         </configuration>
       </plugin>
