@@ -380,13 +380,13 @@
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
-            <version>1.21.3-R0.1-SNAPSHOT</version>
+            <version>1.21.4-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
-            <version>1.21.3-R0.1-SNAPSHOT</version>
+            <version>1.21.4-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -707,7 +707,7 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>de.themoep</groupId>
+            <groupId>com.alessiodp</groupId>
             <artifactId>libby</artifactId>
             <version>2.0.1-graves</version>
             <scope>compile</scope>
