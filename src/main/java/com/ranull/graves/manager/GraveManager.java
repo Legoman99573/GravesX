@@ -535,6 +535,7 @@ public final class GraveManager {
         }
 
         if (plugin.getIntegrationManager().hasFurnitureEngine()) {
+            plugin.getLogger().warning("You have FurnitureEngine enabled. ");
             plugin.getIntegrationManager().getFurnitureEngine().removeFurniture(grave);
         }
 

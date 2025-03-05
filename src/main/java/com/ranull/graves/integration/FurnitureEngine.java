@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * @deprecated Plugin no longer exists externally
  * Manages FurnitureEngine integration for creating, removing, and interacting with furniture.
  */
 public final class FurnitureEngine extends EntityDataManager {
@@ -31,6 +32,8 @@ public final class FurnitureEngine extends EntityDataManager {
     private final FurnitureBreakListener furnitureBreakListener;
 
     /**
+     * @deprecated Plugin no longer exists externally
+     *
      * Constructs a FurnitureEngine instance.
      *
      * @param plugin The main plugin instance.
@@ -44,6 +47,8 @@ public final class FurnitureEngine extends EntityDataManager {
     }
 
     /**
+     * @deprecated Plugin no longer exists externally
+     *
      * Registers FurnitureEngine event listeners.
      */
     public void registerListeners() {
@@ -52,6 +57,8 @@ public final class FurnitureEngine extends EntityDataManager {
     }
 
     /**
+     * @deprecated Plugin no longer exists externally
+     *
      * Unregisters FurnitureEngine event listeners.
      */
     public void unregisterListeners() {
@@ -64,6 +71,8 @@ public final class FurnitureEngine extends EntityDataManager {
     }
 
     /**
+     * @deprecated Plugin no longer exists externally
+     *
      * Creates and places furniture at the specified location.
      *
      * @param location The location where the furniture should be placed.
@@ -86,6 +95,8 @@ public final class FurnitureEngine extends EntityDataManager {
     }
 
     /**
+     * @deprecated Plugin no longer exists externally
+     *
      * Removes furniture associated with the specified grave.
      *
      * @param grave The grave for which to remove furniture.
@@ -100,6 +111,8 @@ public final class FurnitureEngine extends EntityDataManager {
     }
 
     /**
+     * @deprecated Plugin no longer exists externally
+     *
      * Removes specific furniture entity data.
      *
      * @param entityData The entity data of the furniture to remove.
@@ -109,6 +122,8 @@ public final class FurnitureEngine extends EntityDataManager {
     }
 
     /**
+     * @deprecated Plugin no longer exists externally
+     *
      * Removes multiple pieces of furniture based on a map of entity data to entities.
      *
      * @param entityDataMap A map of entity data to entities to remove.
@@ -124,6 +139,8 @@ public final class FurnitureEngine extends EntityDataManager {
     }
 
     /**
+     * @deprecated Plugin no longer exists externally
+     *
      * Retrieves the ItemFrame at a specified location.
      *
      * @param location The location to search for the ItemFrame.
@@ -142,6 +159,8 @@ public final class FurnitureEngine extends EntityDataManager {
     }
 
     /**
+     * @deprecated Plugin no longer exists externally
+     *
      * Cleans up ItemFrames near the death location of a grave.
      *
      * @param grave The grave to clean up.
@@ -157,6 +176,9 @@ public final class FurnitureEngine extends EntityDataManager {
         }
     }
 
+    /**
+     * @deprecated Plugin no longer exists externally
+     */
     private boolean placeFurniture(String name, Location location, Rotation rotation) {
         try {
             Furniture furniture = FurnitureManager.getInstance().getFurniture(name);
@@ -169,6 +191,9 @@ public final class FurnitureEngine extends EntityDataManager {
         }
     }
 
+    /**
+     * @deprecated Plugin no longer exists externally
+     */
     private void breakFurniture(Location location) {
         try {
             Furniture furniture = FurnitureManager.getInstance().isFurniture(location);

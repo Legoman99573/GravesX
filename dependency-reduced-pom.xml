@@ -228,11 +228,6 @@
       <url>https://repo.jeff-media.com/public</url>
     </repository>
     <repository>
-      <id>ranull-repo-external</id>
-      <name>Ranull's Maven Repository</name>
-      <url>https://repo.ranull.com/maven/external</url>
-    </repository>
-    <repository>
       <id>ranull-repo-ranull</id>
       <name>Ranull's Maven Repository</name>
       <url>https://repo.ranull.com/maven/ranull</url>
@@ -420,13 +415,13 @@
     <dependency>
       <groupId>dev.sergiferry</groupId>
       <artifactId>PlayerNPC</artifactId>
-      <version>2023.4</version>
+      <version>2023.6</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>com.mira</groupId>
       <artifactId>furnitureengine</artifactId>
-      <version>3.2.6</version>
+      <version>3.3</version>
       <scope>provided</scope>
     </dependency>
     <dependency>

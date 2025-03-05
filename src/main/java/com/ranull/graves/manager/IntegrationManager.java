@@ -73,6 +73,8 @@ public final class IntegrationManager {
     private FurnitureLib furnitureLib;
 
     /**
+     * @deprecated Plugin no longer exists externally
+     *
      * Integration with FurnitureEngine, another plugin for furniture management.
      * <p>
      * This {@link FurnitureEngine} instance represents the integration with the FurnitureEngine plugin, used for managing furniture.
@@ -368,6 +370,8 @@ public final class IntegrationManager {
     }
 
     /**
+     * @deprecated Plugin no longer exists externally
+     *
      * Returns the instance of the FurnitureEngine integration, if it is loaded.
      *
      * @return The {@code FurnitureEngine} integration instance, or null if not loaded.
@@ -557,6 +561,8 @@ public final class IntegrationManager {
     }
 
     /**
+     * @deprecated Plugin no longer exists externally
+     *
      * Checks if FurnitureEngine integration is loaded.
      *
      * @return {@code true} if FurnitureEngine integration is loaded, {@code false} otherwise.
@@ -894,6 +900,8 @@ public final class IntegrationManager {
     }
 
     /**
+     * @deprecated Plugin no longer exists externally
+     *
      * Loads the FurnitureEngine integration if enabled in the configuration.
      */
     private void loadFurnitureEngine() {

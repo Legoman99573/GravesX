@@ -243,7 +243,7 @@ settings:
     ###################
     # FurnitureEngine #
     ###################
-    # Source: https://www.spigotmc.org/resources/furnitureengine.97134/
+    # Source: https://github.com/Mira047/FurnitureEngine - Plugin must be compiled yourself. No support given.
     furnitureengine:
       # Should FurnitureEngine integration be enabled.
       enabled: true
