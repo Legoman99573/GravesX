@@ -331,7 +331,7 @@ public final class GraveManager {
                     }
                 }
             }
-        } catch (ArrayIndexOutOfBoundsException ignored) {
+        } catch (ArrayIndexOutOfBoundsException | IllegalStateException ignored) {
             // ignored
         }
     }
