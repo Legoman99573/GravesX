@@ -47,7 +47,7 @@ public class PlayerJoinListener implements Listener {
         Player player = event.getPlayer();
 
         if (shouldCheckForUpdates(player)) {
-            plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
                 notifyPlayerIfOutdated(player);
             });
         }

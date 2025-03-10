@@ -203,7 +203,7 @@ public final class DataManager {
      * Loads data from the database asynchronously.
      */
     private void load() {
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
             try {
                 loadTables();
             } catch (SQLException e) {
@@ -1207,7 +1207,7 @@ public final class DataManager {
     public void loadBlockMap() {
         String query = "SELECT * FROM block;";
 
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
             plugin.getLogger().info("Loading Block Map cache...");
             int blockCount = 0;
 
@@ -1273,7 +1273,7 @@ public final class DataManager {
     private void loadEntityMap(String table, EntityData.Type type) {
         String query = "SELECT * FROM " + table + ";";
 
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
             plugin.getLogger().info("Loading Entity Map Cache for " + table + "...");
             int entityCount = 0;
 
@@ -1328,7 +1328,7 @@ public final class DataManager {
     public void loadHologramMap() {
         String query = "SELECT * FROM hologram;";
 
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
             plugin.getLogger().info("Loading Holograms into Hologram Map Cache...");
             int hologramCount = 0;
 
@@ -1387,7 +1387,7 @@ public final class DataManager {
     private void loadEntityDataMap(String table, EntityData.Type type) {
         String query = "SELECT * FROM " + table + ";";
 
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
             plugin.getLogger().info("Loading Entity Data Map Cache for " + table + "...");
             int entityCount = 0;
 
@@ -1459,7 +1459,7 @@ public final class DataManager {
         // Set replace_data
         parameters[3] = blockData.getReplaceData();
 
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException exception) {
@@ -1480,7 +1480,7 @@ public final class DataManager {
         String query = "DELETE FROM block WHERE location = ?";
         Object[] parameters = { LocationUtil.locationToString(location) };
 
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException exception) {
@@ -1506,7 +1506,7 @@ public final class DataManager {
                 LocationUtil.locationToString(hologramData.getLocation())
         };
 
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException exception) {
@@ -1522,7 +1522,7 @@ public final class DataManager {
      * @param entityDataList the list of entity data to remove.
      */
     public void removeHologramData(List<EntityData> entityDataList) {
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
             String sql = "DELETE FROM hologram WHERE uuid_entity = ?";
             try (Connection connection = getConnection();
                  PreparedStatement statement = connection != null ? connection.prepareStatement(sql) : null) {
@@ -1559,7 +1559,7 @@ public final class DataManager {
                 entityData.getUUIDGrave()
         };
 
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException e) {
@@ -1584,7 +1584,7 @@ public final class DataManager {
      * @param entityDataList the list of entity data to remove.
      */
     public void removeEntityData(List<EntityData> entityDataList) {
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
             try (Connection connection = getConnection();
                  Statement statement = connection != null ? connection.createStatement() : null) {
                 if (statement != null) {
@@ -1690,7 +1690,7 @@ public final class DataManager {
                 grave.getPermissionList() != null && !grave.getPermissionList().isEmpty() ? StringUtils.join(grave.getPermissionList(), "|") : null
         };
 
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException e) {
@@ -1715,7 +1715,7 @@ public final class DataManager {
         String deleteQuery = "DELETE FROM grave WHERE uuid = ?";
         Object[] deleteParams = { uuid };
 
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
             try {
                 plugin.debugMessage("Attempting to remove grave for UUID: " + uuid, 1);
 
@@ -1739,7 +1739,7 @@ public final class DataManager {
         String query = "UPDATE grave SET " + column + " = ? WHERE uuid = ?";
         Object[] parameters = { integer, grave.getUUID() };
 
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException e) {
@@ -1760,7 +1760,7 @@ public final class DataManager {
         String query = "UPDATE grave SET " + column + " = ? WHERE uuid = ?";
         Object[] parameters = { string, grave.getUUID() };
 
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException e) {
@@ -2016,7 +2016,7 @@ public final class DataManager {
      * @throws SQLException if a database access error occurs.
      */
     private void executeUpdate(String sql, Object[] parameters) throws SQLException {
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
             try (Connection connection = getConnection();
                  PreparedStatement statement = connection.prepareStatement(sql)) {
 
@@ -2131,7 +2131,7 @@ public final class DataManager {
     private ResultSet executeQuery(String sql, Object[] params) throws SQLException {
         AtomicReference<ResultSet> resultSet = new AtomicReference<>();
         AtomicReference<PreparedStatement> preparedStatement = new AtomicReference<>();
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
             try (Connection connection = getConnection()) {
                 if (connection != null) {
                     preparedStatement.set(connection.prepareStatement(sql));
@@ -2548,7 +2548,7 @@ public final class DataManager {
      * Keeps the database connection alive by periodically executing a query.
      */
     private void keepConnectionAlive() {
-        plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskTimerAsynchronously(plugin, () -> {
             if (isConnected()) {
                 checkAndUnlockDatabase(); // Good to check
                 try (Connection connection = getConnection();

@@ -1,5 +1,7 @@
 package com.ranull.graves;
 
+import com.github.Anon8281.universalScheduler.UniversalScheduler;
+import com.github.Anon8281.universalScheduler.scheduling.schedulers.TaskScheduler;
 import com.ranull.graves.command.GravesCommand;
 import com.ranull.graves.compatibility.Compatibility;
 import com.ranull.graves.compatibility.CompatibilityBlockData;
@@ -60,6 +62,7 @@ public class Graves extends JavaPlugin {
     private boolean isDevelopmentBuild = false;
     private boolean isOutdatedBuild = false;
     private boolean isUnknownBuild = false;
+    private static TaskScheduler graveScheduler;
 
     @Override
     public void onLoad() {
@@ -84,6 +87,8 @@ public class Graves extends JavaPlugin {
     public void onEnable() {
         loadLibraries();
 
+        graveScheduler = UniversalScheduler.getScheduler(this);
+
         integrationManager.load();
         integrationManager.loadNoReload();
 
@@ -106,7 +111,7 @@ public class Graves extends JavaPlugin {
         registerRecipes();
         saveTextFiles();
 
-        getServer().getScheduler().runTask(this, () -> {
+        getGravesXScheduler().runTask(this, () -> {
             compatibilityChecker();
             updateConfig();
             updateChecker();
@@ -629,7 +634,7 @@ public class Graves extends JavaPlugin {
 
     private void updateChecker() {
         if (getConfig().getBoolean("settings.update.check")) {
-            getServer().getScheduler().runTaskAsynchronously(this, () -> {
+            getGravesXScheduler().runTaskAsynchronously(this, () -> {
                 String latestVersion = getLatestVersion();
                 String installedVersion = getDescription().getVersion();
 
@@ -709,7 +714,7 @@ public class Graves extends JavaPlugin {
 
     public void dumpServerInfo(CommandSender commandSender) {
         if (isEnabled()) {
-            getServer().getScheduler().runTaskAsynchronously(this, () -> {
+            getGravesXScheduler().runTaskAsynchronously(this, () -> {
                 String serverDumpInfo = ServerUtil.getServerDumpInfo(this);
                 String message = serverDumpInfo;
 
@@ -815,6 +820,10 @@ public class Graves extends JavaPlugin {
 
     public Compatibility getCompatibility() {
         return compatibility;
+    }
+
+    public TaskScheduler getGravesXScheduler() {
+        return graveScheduler;
     }
 
     public String getPluginReleaseType() {

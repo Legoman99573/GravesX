@@ -708,7 +708,7 @@ public final class EntityManager extends EntityDataManager {
 
             if ((plugin.getVersionManager().is_v1_7() || plugin.getVersionManager().is_v1_8())
                     || !serverCommandEvent.isCancelled()) {
-                plugin.getServer().getScheduler().callSyncMethod(plugin, () -> plugin.getServer()
+                plugin.getGravesXScheduler().callSyncMethod(() -> plugin.getServer()
                         .dispatchCommand(serverCommandEvent.getSender(), serverCommandEvent.getCommand()));
                 plugin.debugMessage("Running console command " + string, 1);
             }

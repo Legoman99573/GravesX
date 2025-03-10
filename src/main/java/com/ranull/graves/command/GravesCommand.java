@@ -245,7 +245,7 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
 
                 if ((args.length == 3 && args[1].equals("offline-player")) || (args.length == 3 && args[1].equals("player"))) {
                     String partialInput = args[2];
-                    Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                    plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
                         for (OfflinePlayer offlinePlayer : Bukkit.getOfflinePlayers()) {
                             if (offlinePlayer.hasPlayedBefore() && offlinePlayer.getName() != null) {
                                 String playerName = offlinePlayer.getName();
@@ -618,7 +618,7 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
                             CountDownLatch latch = new CountDownLatch(2);
 
                             if (items != null && !items.isEmpty()) {
-                                Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                                plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
                                     List<ItemStack> validItems = new ArrayList<>();
                                     for (ItemStack item : items.values()) {
                                         if (item != null && item.getType() != Material.AIR) {
@@ -626,7 +626,7 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
                                         }
                                     }
 
-                                    Bukkit.getScheduler().runTask(plugin, () -> {
+                                    plugin.getGravesXScheduler().runTask(plugin, () -> {
                                         for (ItemStack item : validItems) {
                                             if (validItems.isEmpty()) break;
                                             grave.getLocationDeath().getWorld().dropItem(grave.getLocationDeath(), item);
@@ -640,7 +640,7 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
                             }
 
                             if (graveInventory != null && graveInventory.length > 0) {
-                                Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                                plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
                                     for (ItemStack item : graveInventory) {
                                         if (item != null && item.getAmount() > 0) {
                                             grave.getLocationDeath().getWorld().dropItem(grave.getLocationDeath(), item);
@@ -654,7 +654,7 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
                             }
 
                             // Wait for both async tasks to complete
-                            Bukkit.getScheduler().runTask(plugin, () -> {
+                            plugin.getGravesXScheduler().runTask(plugin, () -> {
                                 try {
                                     latch.await(); // Wait until both tasks complete
                                 } catch (InterruptedException e) {

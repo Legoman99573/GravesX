@@ -23,7 +23,7 @@ public final class FancyNPCs extends EntityDataManager {
         this.plugin = plugin;
     }
     public void createCorpse(UUID uuid, Location location, Grave grave) {
-        plugin.getServer().getScheduler().runTask(plugin, () -> {
+        plugin.getGravesXScheduler().runTask(plugin, () -> {
             if (plugin.getConfig("fancynpcs.corpse.enabled", grave).getBoolean("fancynpcs.corpse.enabled") && grave.getOwnerType() == EntityType.PLAYER) {
                 location.getBlock().setType(Material.AIR);
                 Location npcLocation = location.clone();
@@ -97,7 +97,7 @@ public final class FancyNPCs extends EntityDataManager {
         });
     }
     public void createBedrockcompatCorpse(UUID uuid, Location location, Grave grave) {
-        plugin.getServer().getScheduler().runTask(plugin, () -> {
+        plugin.getGravesXScheduler().runTask(plugin, () -> {
             if (plugin.getConfig("fancynpcs.corpse.enabled", grave).getBoolean("fancynpcs.corpse.enabled") && grave.getOwnerType() == EntityType.PLAYER) {
                 location.getBlock().setType(Material.AIR);
                 Location npcLocation = location.clone();

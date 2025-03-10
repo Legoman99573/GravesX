@@ -125,7 +125,7 @@ public class PlayerInteractListener implements Listener {
             event.setCancelled(true);
             try {
                 Grave finalGrave = grave;
-                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                plugin.getGravesXScheduler().runTaskLater(plugin, () -> {
                     plugin.getGraveManager().openGrave(player, block.getLocation(), finalGrave);
                 }, 1L);
             } catch (Exception e) {

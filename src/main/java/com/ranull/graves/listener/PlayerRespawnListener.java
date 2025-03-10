@@ -70,7 +70,7 @@ public class PlayerRespawnListener implements Listener {
      */
     private void applyPotionEffectIfWithinTime(Player player, List<String> permissionList, Grave grave) {
         // Schedule the task to run after the player has respawned
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskLater(plugin, () -> {
             // Check if potion effect is enabled and player has the appropriate permission
             boolean isPotionEffectEnabled = plugin.getConfig("respawn.potion-effect", player, permissionList)
                     .getBoolean("respawn.potion-effect");
@@ -107,7 +107,7 @@ public class PlayerRespawnListener implements Listener {
      * @param grave The grave associated with the player.
      */
     private void scheduleRespawnFunction(Player player, List<String> permissionList, Grave grave) {
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskLater(plugin, () -> {
             plugin.getEntityManager().runFunction(player, plugin
                     .getConfig("respawn.function", player, permissionList)
                     .getString("respawn.function", "none"), grave);

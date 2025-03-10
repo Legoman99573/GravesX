@@ -74,7 +74,7 @@ public final class GraveManager {
      * Starts the grave timer task that periodically checks and updates graves.
      */
     private void startGraveTimer() {
-        plugin.getServer().getScheduler().runTaskTimer(plugin, this::checkAndUpdateGraves, 20L, 20L); // 10 ticks = 0.5 seconds
+        plugin.getGravesXScheduler().runTaskTimer(plugin, this::checkAndUpdateGraves, 20L, 20L); // 10 ticks = 0.5 seconds
     }
 
     /**
@@ -156,7 +156,7 @@ public final class GraveManager {
                     }
 
                     // Schedule synchronous task to drop items and experience
-                    Bukkit.getScheduler().runTask(plugin, () -> {
+                    plugin.getGravesXScheduler().runTask(plugin, () -> {
                         if (chunk.isLoaded()) {
                             dropGraveItems(location, grave);
                             dropGraveExperience(location, grave);

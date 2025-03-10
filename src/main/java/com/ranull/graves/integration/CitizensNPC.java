@@ -103,7 +103,7 @@ public final class CitizensNPC extends EntityDataManager {
      * @param createEntityData  Whether to create entity data for the NPC.
      */
     public void createCorpse(UUID uuid, Location location, Grave grave, boolean createEntityData) {
-        plugin.getServer().getScheduler().runTask(plugin, () -> {
+        plugin.getGravesXScheduler().runTask(plugin, () -> {
             if (plugin.getConfig("citizens.corpse.enabled", grave).getBoolean("citizens.corpse.enabled")
                     && grave.getOwnerType() == EntityType.PLAYER) {
                 Player player = plugin.getServer().getPlayer(grave.getOwnerUUID());
