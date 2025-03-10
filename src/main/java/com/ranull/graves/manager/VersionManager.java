@@ -134,6 +134,8 @@ public final class VersionManager {
 
     private boolean isPaper;
 
+    private boolean isFolia;
+
     private final boolean isPost1_20_5;
 
     /**
@@ -175,6 +177,13 @@ public final class VersionManager {
             this.isBukkit = false;
         } catch (ClassNotFoundException ignored) {
             this.isBukkit = true;
+        }
+
+        try {
+            Class.forName("ca.spottedleaf.moonrise.common.util.TickThread", false, getClass().getClassLoader());
+            this.isFolia = true;
+        } catch (ClassNotFoundException ignored) {
+            this.isFolia = false;
         }
 
         try {
@@ -240,6 +249,15 @@ public final class VersionManager {
      */
     public boolean isMohist() {
         return isMohist;
+    }
+
+    /**
+     * Checks if the server is running on Folia.
+     *
+     * @return True if the server is running on Folia, otherwise false.
+     */
+    public boolean isFolia() {
+        return isFolia;
     }
 
     /**
