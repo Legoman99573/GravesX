@@ -617,14 +617,16 @@ settings:
       #########
       # Sound effects for various grave interactions.
       sound:
-        open: BLOCK_FENCE_GATE_OPEN
-        close: BLOCK_FENCE_GATE_CLOSE
-        loot: ITEM_FIRECHARGE_USE
-        teleport: ENTITY_ENDERMAN_TELEPORT
-        menu-open: UI_BUTTON_CLICK
-        protection: BLOCK_CHEST_LOCKED
-        protection-change: UI_BUTTON_CLICK
-
+        open: "BLOCK_FENCE_GATE_OPEN"
+        close: "BLOCK_FENCE_GATE_CLOSE"
+        teleport: "ENTITY_ENDERMAN_TELEPORT"
+        menu-open: "UI_BUTTON_CLICK"
+        protection: "BLOCK_CHEST_LOCKED"
+        protection-change: "UI_BUTTON_CLICK"
+        grave-create: ""
+        
+        # Sounds for grave-create previously included BLOCK_BELL_USE and ENTITY_ZOMBIE_AMBIENT.
+        
       ##########
       # Effect #
       ##########

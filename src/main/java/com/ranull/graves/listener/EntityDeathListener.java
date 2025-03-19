@@ -1,5 +1,6 @@
 package com.ranull.graves.listener;
 
+
 import com.ranull.graves.Graves;
 import com.ranull.graves.data.BlockData;
 import com.ranull.graves.event.*;
@@ -745,9 +746,9 @@ public class EntityDeathListener implements Listener {
             } else {
                 plugin.getIntegrationManager().getNoteBlockAPI().playSongForAllPlayers(nbsSound);
             }
-        } else {
-            player.playSound(player.getLocation(), plugin.getVersionManager().getSoundFromVersion("BLOCK_BELL_USE"), 1.0f, 0.93f);
-        }
+            } else { 
+                plugin.getEntityManager().playPlayerSound("sound.grave-create", player, grave);
+            }
 
         if (plugin.getIntegrationManager().hasMultiPaper()) {
             plugin.getIntegrationManager().getMultiPaper().notifyGraveCreation(grave);
