@@ -450,7 +450,7 @@ public final class EntityManager extends EntityDataManager {
      */
     public void playWorldSound(String string, Location location, Grave grave) {
         playWorldSound(string, location, grave != null ? grave.getOwnerType() : null, grave != null
-                ? grave.getPermissionList() : null,  1, 1);
+                ? grave.getPermissionList() : null, 1, 1);
     }
 
     /**

@@ -1,6 +1,5 @@
 package com.ranull.graves.listener;
 
-
 import com.ranull.graves.Graves;
 import com.ranull.graves.data.BlockData;
 import com.ranull.graves.event.*;
