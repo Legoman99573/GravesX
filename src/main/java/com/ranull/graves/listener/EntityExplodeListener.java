@@ -36,44 +36,38 @@ public class EntityExplodeListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityExplode(EntityExplodeEvent event) {
         List<Block> affectedBlocks = event.blockList();
-
         Iterator<Block> iterator = affectedBlocks.iterator();
+
         while (iterator.hasNext()) {
             Block block = iterator.next();
-            Location blockLocation = block.getLocation();
-
             Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
+
             if (grave != null) {
-                if (plugin.getConfig("grave.explode-protection", grave).getBoolean("grave.explode-protection")){
-                    for (Block blocks : affectedBlocks) {
-                        Location blockLocations = block.getLocation();
-                        Grave graves = plugin.getBlockManager().getGraveFromBlock(blocks);
+                boolean shouldProtectRadius = plugin.getConfig("grave.should-protect-radius", grave).getBoolean("grave.should-protect-radius");
+                boolean explodeProtection = plugin.getConfig("grave.explode-protection", grave).getBoolean("grave.explode-protection");
+                int protectionRadius = plugin.getConfig("grave.protection-radius", grave).getInt("grave.protection-radius");
+                Location graveHeadLocation = grave.getLocationDeath();
 
-                        if (graves != null) {
-                            Location graveLocation = plugin.getGraveManager().getGraveLocation(blockLocations, graves);
-                            if (graveLocation != null) {
-                                try {
-                                    double distance = blockLocation.distance(graveLocation);
-                                    int protectionRadius = plugin.getConfig("grave.protection-radius", grave).getInt("grave.protection-radius");
-                                    if (protectionRadius != 0 && distance + 15 <= protectionRadius + 15) {
-                                        event.blockList().clear();
-                                        event.setCancelled(true);
-                                    }
-                                } catch (IllegalArgumentException ignored) {
+                if (graveHeadLocation.equals(block.getLocation())) {
+                    iterator.remove();
+                    continue;
+                }
 
-                                }
-                            }
+                if (shouldProtectRadius && explodeProtection) {
+                    for (Block affectedBlock : affectedBlocks) {
+                        Location affectedBlockLocation = affectedBlock.getLocation();
+                        double distance = graveHeadLocation.distance(affectedBlockLocation);
+
+                        if (distance <= protectionRadius) {
+                            event.blockList().clear();
+                            event.setCancelled(true);
+                            return;
                         }
-                    }
-                } else {
-                    Location graveHeadLocation = grave.getLocationDeath();
-                    if (graveHeadLocation.equals(blockLocation)) {
-                        iterator.remove();
                     }
                 }
 
                 if (shouldExplode(grave)) {
-                    handleGraveExplosion(event, iterator, block, grave, blockLocation);
+                    handleGraveExplosion(event, iterator, block, grave, block.getLocation());
                 }
             }
         }
