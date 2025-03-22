@@ -451,6 +451,10 @@ public class Graves extends JavaPlugin {
             getServer().getPluginManager().registerEvents(new BlockExplodeListener(this), this);
         }
 
+        if (versionManager.isFolia()) {
+            getServer().getLogger().warning("You are running GravesX on Folia. Keep note that folia support is incomplete and is being worked on.");
+        }
+
         //getServer().getPluginManager().registerEvents(new GraveTestListener(this), this); // Test Listener
     }
 

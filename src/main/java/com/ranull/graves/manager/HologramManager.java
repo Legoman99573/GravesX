@@ -146,14 +146,11 @@ public final class HologramManager extends EntityDataManager {
                     armorStand.remove();
                 }
 
-                new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        if (armorStand.isValid()) {
-                            armorStand.remove();
-                        }
+                plugin.getGravesXScheduler().runTask(plugin, () -> {
+                    if (armorStand.isValid()) {
+                        armorStand.remove();
                     }
-                }.runTaskLater(plugin, 1L); // Run a tick later to ensure removal
+                });
             } else {
                 entity.remove();
             }

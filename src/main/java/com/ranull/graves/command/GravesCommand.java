@@ -17,10 +17,7 @@ import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -341,15 +338,20 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
     private void handleTeleportCommand(CommandSender commandSender, String[] args) {
         if (commandSender instanceof Player) {
             Player player = (Player) commandSender;
-            if (args.length == 1 || args.length == 2 && args[1].equals(player.getName())) {
+
+            if (args.length == 1 || (args.length == 2 && args[1].equals(player.getName()))) {
                 if (plugin.hasGrantedPermission("graves.teleport.command", player)) {
-                    if (!plugin.getGraveManager().getGraveList(player).isEmpty()) {
-                        Grave grave = plugin.getGraveManager().getGraveList(player).get(0);
+                    List<Grave> graves = plugin.getGraveManager().getGraveList(player);
+                    if (!graves.isEmpty()) {
+                        Grave grave = graves.get(0);
+
+                        // Asynchronously teleport player to grave based on permissions
                         if (plugin.hasGrantedPermission("graves.teleport.command.free", player)) {
-                            player.teleport(grave.getLocationDeath());
+                            plugin.getGravesXScheduler().runTask(() -> player.teleport(grave.getLocationDeath()));
                         } else {
-                            plugin.getEntityManager().teleportEntity(player, plugin.getGraveManager()
-                                    .getGraveLocationList(player.getLocation(), grave).get(0), grave);
+                            plugin.getGravesXScheduler().runTask(() ->
+                                    plugin.getEntityManager().teleportEntity(player, plugin.getGraveManager()
+                                            .getGraveLocationList(player.getLocation(), grave).get(0), grave));
                         }
                     } else {
                         commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET + "You have no graves.");
@@ -358,20 +360,26 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
                     plugin.getEntityManager().sendMessage("message.permission-denied", player);
                 }
             }
-            if (args.length == 2 && !args[1].equals(player.getName())) {
+
+            else if (args.length == 2 && !args[1].equals(player.getName())) {
                 if (plugin.hasGrantedPermission("graves.teleport.command.others", player)) {
                     OfflinePlayer offlinePlayer = plugin.getServer().getOfflinePlayer(args[1]);
-                    if (!plugin.getGraveManager().getGraveList(offlinePlayer).isEmpty()) {
-                        Grave grave = plugin.getGraveManager().getGraveList(offlinePlayer).get(0);
+                    List<Grave> graves = plugin.getGraveManager().getGraveList(offlinePlayer);
+
+                    if (!graves.isEmpty()) {
+                        Grave grave = graves.get(0);
+
                         if (plugin.hasGrantedPermission("graves.teleport.command.others.free", player)) {
-                            player.teleport(plugin.getGraveManager().getGraveLocation(grave.getLocationDeath().add(1,0,1), grave));
+                            plugin.getGravesXScheduler().runTask(() ->
+                                    player.teleport(plugin.getGraveManager().getGraveLocation(grave.getLocationDeath().add(1, 0, 1), grave)));
                         } else {
-                            plugin.getEntityManager().teleportEntity(player, plugin.getGraveManager()
-                                    .getGraveLocationList(player.getLocation(), grave).get(0), grave);
+                            plugin.getGravesXScheduler().runTask(() ->
+                                    plugin.getEntityManager().teleportEntity(player, plugin.getGraveManager()
+                                            .getGraveLocationList(player.getLocation(), grave).get(0), grave));
                         }
                     } else {
-                        commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » "
-                                + ChatColor.RESET + ChatColor.RED + args[1] + ChatColor.RESET + " has no graves.");
+                        commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
+                                + ChatColor.RED + args[1] + ChatColor.RESET + " has no graves.");
                     }
                 } else {
                     plugin.getEntityManager().sendMessage("message.permission-denied", player);
@@ -460,9 +468,16 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
             if (skriptPlugin != null && skriptPlugin.isEnabled()) {
                 plugin.getLogger().warning("Skript v." + skriptPlugin.getDescription().getVersion() + " detected. Skript Integration option will only take effect on restart.");
             }
-            plugin.reload();
-            commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
-                    + "Reloaded config file.");
+
+            plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
+                plugin.reload();
+
+                // Send a message to the command sender after reloading the config
+                plugin.getGravesXScheduler().runTask(() -> {
+                    commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » "
+                            + ChatColor.RESET + "Reloaded config file.");
+                });
+            });
         } else if (commandSender instanceof Player) {
             plugin.getEntityManager().sendMessage("message.permission-denied", (Player) commandSender);
         }
@@ -514,12 +529,16 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
         if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.cleanup", ((Player) commandSender).getPlayer())) {
             List<Grave> graveList = new ArrayList<>(plugin.getCacheManager().getGraveMap().values());
 
-            for (Grave grave : graveList) {
-                plugin.getGraveManager().removeGrave(grave);
-            }
+            plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
+                for (Grave grave : graveList) {
+                    plugin.getGraveManager().removeGrave(grave);
+                }
 
-            commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » "
-                    + ChatColor.RESET + graveList.size() + " graves cleaned up.");
+                plugin.getGravesXScheduler().runTask(() -> {
+                    commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » "
+                            + ChatColor.RESET + graveList.size() + " graves cleaned up.");
+                });
+            });
         } else if (commandSender instanceof Player) {
             plugin.getEntityManager().sendMessage("message.permission-denied", (Player) commandSender);
         }
@@ -537,17 +556,19 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
             switch (subcommand) {
                 case "holograms":
                 case "hologram":
-                    int count = 0;
-                    for (World world : plugin.getServer().getWorlds()) {
-                        for (Entity entity : world.getEntities()) {
-                            if (entity.getScoreboardTags().contains("graveHologram")) {
-                                entity.remove();
-                                count++;
+                    final int[] count = {0};
+                    plugin.getGravesXScheduler().runTask(() -> {
+                        for (World world : plugin.getServer().getWorlds()) {
+                            for (Entity entity : world.getEntities()) {
+                                if (entity.getScoreboardTags().contains("graveHologram")) {
+                                    entity.remove();
+                                    count[0]++;
+                                }
                             }
                         }
-                    }
-                    commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » "
-                            + ChatColor.RESET + count + " holograms purged.");
+                        commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » "
+                                + ChatColor.RESET + count[0] + " holograms purged.");
+                    });
                     break;
 
                 case "player":
@@ -568,23 +589,26 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
                     }
 
                     UUID offlinePlayerUUID = targetOfflinePlayer.getUniqueId();
-                    boolean offlineGraveFound = false;
+                    AtomicBoolean offlineGraveFound = new AtomicBoolean(false);
 
-                    for (Grave grave : plugin.getCacheManager().getGraveMap().values()) {
-                        if (grave.getOwnerUUID().equals(offlinePlayerUUID)) {
-                            plugin.getGraveManager().removeGrave(grave);
-                            offlineGraveFound = true;
+                    plugin.getGravesXScheduler().runTask(() -> {
+                        for (Grave grave : plugin.getCacheManager().getGraveMap().values()) {
+                            if (grave.getOwnerUUID().equals(offlinePlayerUUID)) {
+                                plugin.getGraveManager().removeGrave(grave);
+                                offlineGraveFound.set(true);
+                            }
                         }
-                    }
 
-                    if (offlineGraveFound) {
-                        commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
-                                + "Graves of offline player " + targetOfflinePlayerName + " purged.");
-                    } else {
-                        commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
-                                + "No graves found for offline player " + targetOfflinePlayerName + ".");
-                    }
+                        if (offlineGraveFound.get()) {
+                            commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
+                                    + "Graves of offline player " + targetOfflinePlayerName + " purged.");
+                        } else {
+                            commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
+                                    + "No graves found for offline player " + targetOfflinePlayerName + ".");
+                        }
+                    });
                     break;
+
                 case "grave-specific":
                 case "grave-uuid":
                     if (args.length < 3) {
@@ -603,89 +627,86 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
                     }
 
                     AtomicBoolean graveFound = new AtomicBoolean(false);
-                    for (Grave grave : plugin.getCacheManager().getGraveMap().values()) {
-                        if (grave.getUUID().equals(graveUUIDTarget)) {
-                            int experience = grave.getExperience();
-                            if (experience > 0) {
-                                grave.getLocationDeath().getWorld().spawn(grave.getLocationDeath(), ExperienceOrb.class,
-                                        orb -> orb.setExperience(experience));
-                            }
+                    CountDownLatch latch = new CountDownLatch(2);
 
-                            Map<EquipmentSlot, ItemStack> items = grave.getEquipmentMap();
-                            ItemStack[] graveInventory = grave.getInventory().getContents();
-
-                            // Create a CountDownLatch to wait for both async tasks to finish
-                            CountDownLatch latch = new CountDownLatch(2);
-
-                            if (items != null && !items.isEmpty()) {
-                                plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
-                                    List<ItemStack> validItems = new ArrayList<>();
-                                    for (ItemStack item : items.values()) {
-                                        if (item != null && item.getType() != Material.AIR) {
-                                            validItems.add(item);
-                                        }
-                                    }
-
-                                    plugin.getGravesXScheduler().runTask(plugin, () -> {
-                                        for (ItemStack item : validItems) {
-                                            if (validItems.isEmpty()) break;
-                                            grave.getLocationDeath().getWorld().dropItem(grave.getLocationDeath(), item);
-                                        }
-                                        // Signal that the task is done
-                                        latch.countDown();
-                                    });
-                                });
-                            } else {
-                                latch.countDown(); // If no items, count down immediately
-                            }
-
-                            if (graveInventory != null && graveInventory.length > 0) {
-                                plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
-                                    for (ItemStack item : graveInventory) {
-                                        if (item != null && item.getAmount() > 0) {
-                                            grave.getLocationDeath().getWorld().dropItem(grave.getLocationDeath(), item);
-                                        }
-                                    }
-                                    // Signal that the task is done
-                                    latch.countDown();
-                                });
-                            } else {
-                                latch.countDown(); // If no grave inventory, count down immediately
-                            }
-
-                            // Wait for both async tasks to complete
-                            plugin.getGravesXScheduler().runTask(plugin, () -> {
-                                try {
-                                    latch.await(); // Wait until both tasks complete
-                                } catch (InterruptedException e) {
-                                    e.printStackTrace();
+                    plugin.getGravesXScheduler().runTask(() -> {
+                        for (Grave grave : plugin.getCacheManager().getGraveMap().values()) {
+                            if (grave.getUUID().equals(graveUUIDTarget)) {
+                                int experience = grave.getExperience();
+                                if (experience > 0) {
+                                    Objects.requireNonNull(grave.getLocationDeath().getWorld()).spawn(grave.getLocationDeath(), ExperienceOrb.class,
+                                            orb -> orb.setExperience(experience));
                                 }
 
-                                // After both async tasks are finished, remove the grave
-                                plugin.getGraveManager().removeGrave(grave);
-                                graveFound.set(true);
-                            });
+                                Map<EquipmentSlot, ItemStack> items = grave.getEquipmentMap();
+                                ItemStack[] graveInventory = grave.getInventory().getContents();
 
-                            break;
+                                if (items != null && !items.isEmpty()) {
+                                    plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
+                                        List<ItemStack> validItems = new ArrayList<>();
+                                        for (ItemStack item : items.values()) {
+                                            if (item != null && item.getType() != Material.AIR) {
+                                                validItems.add(item);
+                                            }
+                                        }
+
+                                        plugin.getGravesXScheduler().runTask(() -> {
+                                            for (ItemStack item : validItems) {
+                                                Objects.requireNonNull(grave.getLocationDeath().getWorld()).dropItem(grave.getLocationDeath(), item);
+                                            }
+                                            latch.countDown();
+                                        });
+                                    });
+                                } else {
+                                    latch.countDown();
+                                }
+
+                                if (graveInventory != null && graveInventory.length > 0) {
+                                    plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
+                                        for (ItemStack item : graveInventory) {
+                                            if (item != null && item.getAmount() > 0) {
+                                                Objects.requireNonNull(grave.getLocationDeath().getWorld()).dropItem(grave.getLocationDeath(), item);
+                                            }
+                                        }
+                                        latch.countDown();
+                                    });
+                                } else {
+                                    latch.countDown();
+                                }
+
+                                plugin.getGravesXScheduler().runTask(() -> {
+                                    try {
+                                        latch.await();
+                                    } catch (InterruptedException e) {
+                                        plugin.logStackTrace(e);
+                                    }
+
+                                    plugin.getGraveManager().removeGrave(grave);
+                                    graveFound.set(true);
+                                });
+                                break;
+                            }
                         }
-                    }
 
-                    if (graveFound.get()) {
-                        commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
-                                + "Grave UUID " + graveUUIDTarget + " purged.");
-                    } else {
-                        commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
-                                + "No graves found for UUID " + args[2] + ".");
-                    }
+                        if (graveFound.get()) {
+                            commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
+                                    + "Grave UUID " + graveUUIDTarget + " purged.");
+                        } else {
+                            commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
+                                    + "No graves found for UUID " + args[2] + ".");
+                        }
+                    });
                     break;
 
                 default:
                     List<Grave> allGraves = new ArrayList<>(plugin.getCacheManager().getGraveMap().values());
-                    for (Grave grave : allGraves) {
-                        plugin.getGraveManager().removeGrave(grave);
-                    }
-                    commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
-                            + allGraves.size() + " graves purged.");
+                    plugin.getGravesXScheduler().runTask(() -> {
+                        for (Grave grave : allGraves) {
+                            plugin.getGraveManager().removeGrave(grave);
+                        }
+                        commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
+                                + allGraves.size() + " graves purged.");
+                    });
                     break;
             }
         } else if (commandSender instanceof Player) {

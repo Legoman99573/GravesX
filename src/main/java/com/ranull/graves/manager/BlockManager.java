@@ -212,25 +212,27 @@ public final class BlockManager {
         }
 
         if (location.getWorld() != null) {
-            if (blockData.getReplaceMaterial() != null) {
-                Material material = Material.matchMaterial(blockData.getReplaceMaterial());
+            plugin.getGravesXScheduler().runTask(plugin, () -> {
+                if (blockData.getReplaceMaterial() != null) {
+                    Material material = Material.matchMaterial(blockData.getReplaceMaterial());
 
-                if (material != null) {
-                    blockData.getLocation().getBlock().setType(material);
+                    if (material != null) {
+                        blockData.getLocation().getBlock().setType(material);
+                    }
+                } else {
+                    blockData.getLocation().getBlock().setType(Material.AIR);
                 }
-            } else {
-                blockData.getLocation().getBlock().setType(Material.AIR);
-            }
 
-            if (blockData.getReplaceData() != null) {
-                blockData.getLocation().getBlock().setBlockData(plugin.getServer()
-                        .createBlockData(blockData.getReplaceData()));
-            }
+                if (blockData.getReplaceData() != null) {
+                    blockData.getLocation().getBlock().setBlockData(plugin.getServer()
+                            .createBlockData(blockData.getReplaceData()));
+                }
 
-            plugin.getDataManager().removeBlockData(location);
-            plugin.debugMessage("Replacing grave block for " + blockData.getGraveUUID() + " at "
-                    + location.getWorld().getName() + ", " + (location.getBlockX() + 0.5) + "x, "
-                    + (location.getBlockY() + 0.5) + "y, " + (location.getBlockZ() + 0.5) + "z", 1);
+                plugin.getDataManager().removeBlockData(location);
+                plugin.debugMessage("Replacing grave block for " + blockData.getGraveUUID() + " at "
+                        + location.getWorld().getName() + ", " + (location.getBlockX() + 0.5) + "x, "
+                        + (location.getBlockY() + 0.5) + "y, " + (location.getBlockZ() + 0.5) + "z", 1);
+            });
         }
     }
 }

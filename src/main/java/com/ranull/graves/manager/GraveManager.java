@@ -316,20 +316,27 @@ public final class GraveManager {
                 List<String> lineList = plugin.getConfig("hologram.line", grave).getStringList("hologram.line");
                 Collections.reverse(lineList);
 
-                for (Entity entity : hologramData.getLocation().getChunk().getEntities()) {
-                    if (entity.getUniqueId().equals(hologramData.getUUIDEntity())) {
-                        if (hologramData.getLine() < lineList.size()) {
-                            if (plugin.getIntegrationManager().hasMiniMessage()) {
-                                String newHologramLine = StringUtil.parseString(lineList.get(hologramData.getLine()), location, grave, plugin);
-                                entity.setCustomName(MiniMessage.parseString(newHologramLine));
+                Runnable process = () -> {
+                    Chunk chunk = location.getChunk();
+
+                    for (Entity entity : chunk.getEntities()) {
+                        if (entity.getUniqueId().equals(hologramData.getUUIDEntity())) {
+                            if (hologramData.getLine() < lineList.size()) {
+                                String parsedString = StringUtil.parseString(lineList.get(hologramData.getLine()), location, grave, plugin);
+                                if (plugin.getIntegrationManager().hasMiniMessage()) {
+                                    entity.setCustomName(MiniMessage.parseString(parsedString));
+                                } else {
+                                    entity.setCustomName(parsedString);
+                                }
                             } else {
-                                entity.setCustomName(StringUtil.parseString(lineList.get(hologramData.getLine()), location, grave, plugin));
+                                entityDataRemoveList.add(hologramData);
                             }
-                        } else {
-                            entityDataRemoveList.add(hologramData);
                         }
                     }
-                }
+                };
+
+                plugin.getGravesXScheduler().runTask(location, process);
+
             }
         } catch (ArrayIndexOutOfBoundsException | IllegalStateException ignored) {
             // ignored

@@ -10,6 +10,8 @@ authors:
 load: POSTWORLD
 website: https://www.spigotmc.org/resources/gravesx.118271/
 
+folia-supported: true
+
 loadbefore:
   - XItemsRemover
   - ExplodeAny
