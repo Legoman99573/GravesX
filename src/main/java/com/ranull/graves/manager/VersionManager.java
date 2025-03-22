@@ -611,25 +611,6 @@ public final class VersionManager {
         return toReturn;
     }
 
-    public Sound getSoundFromVersion(String sound) {
-        Sound toReturn = null;
-        switch (sound) {
-            case "BLOCK_BELL_USE":
-                try {
-                    toReturn = CompatibilitySoundEnum.valueOf("BLOCK_BELL_USE");
-                } catch (NullPointerException | IllegalArgumentException e) {
-                    toReturn = CompatibilitySoundEnum.valueOf("ENTITY_ZOMBIE_AMBIENT");
-                }
-                break;
-                // Add other cases for different sounds here
-        }
-        if (toReturn == null) {
-            throw new IllegalArgumentException("Sound can't be null. This is a bug.");
-        }
-
-        return toReturn;
-    }
-
     public PotionEffectType getPotionEffectTypeFromVersion(String potionEffect) {
         PotionEffectType toReturn = null;
         switch (potionEffect) {

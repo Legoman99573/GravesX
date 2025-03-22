@@ -345,8 +345,8 @@ public class GravesXAPI {
                         } else {
                             plugin.getIntegrationManager().getNoteBlockAPI().playSongForAllPlayers(nbsSound);
                         }
-                    } else {
-                        player.playSound(player.getLocation(), plugin.getVersionManager().getSoundFromVersion("BLOCK_BELL_USE"), 1.0f, 0.93f);
+                    } else { 
+                        plugin.getEntityManager().playPlayerSound("sound.grave-create", player, grave);
                     }
                 }
 
