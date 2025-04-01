@@ -54,16 +54,17 @@ public class EntityExplodeListener implements Listener {
                 }
 
                 if (shouldProtectRadius && explodeProtection) {
-                    for (Block affectedBlock : affectedBlocks) {
-                        Location affectedBlockLocation = affectedBlock.getLocation();
-                        double distance = graveHeadLocation.distance(affectedBlockLocation);
+                    Iterator<Block> protectIterator = affectedBlocks.iterator();
+                    while (protectIterator.hasNext()) {
+                        Block affectedBlock = protectIterator.next();
+                        Location affectedLocation = affectedBlock.getLocation();
 
-                        if (distance <= protectionRadius) {
-                            event.blockList().clear();
-                            event.setCancelled(true);
-                            return;
+                        if (isWithinCube(graveHeadLocation, affectedLocation, protectionRadius)) {
+                            protectIterator.remove();
                         }
                     }
+                    event.setCancelled(true);
+                    return;
                 }
 
                 if (shouldExplode(grave)) {
@@ -71,6 +72,20 @@ public class EntityExplodeListener implements Listener {
                 }
             }
         }
+    }
+
+    /**
+     * Checks if a given location is within a cubic protection radius.
+     *
+     * @param center The center of the cube (grave location).
+     * @param target The target location to check.
+     * @param radius The protection radius.
+     * @return True if the target is inside the cube, false otherwise.
+     */
+    private boolean isWithinCube(Location center, Location target, int radius) {
+        return Math.abs(target.getBlockX() - center.getBlockX()) <= radius &&
+                Math.abs(target.getBlockY() - center.getBlockY()) <= radius &&
+                Math.abs(target.getBlockZ() - center.getBlockZ()) <= radius;
     }
 
     /**
