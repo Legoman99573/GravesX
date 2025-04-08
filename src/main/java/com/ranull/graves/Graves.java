@@ -190,7 +190,7 @@ public class Graves extends JavaPlugin {
         LibraryLoaderUtil libraryLoaderUtil = new LibraryLoaderUtil(this);
 
         libraryLoaderUtil.loadLibrary("com{}zaxxer", "HikariCP", "6.0.0", "com{}zaxxer{}hikari", "com{}ranull{}graves{}libraries{}hikari", false);
-        libraryLoaderUtil.loadLibrary("org{}xerial", "sqlite-jdbc", "3.47.0.0", false);
+        libraryLoaderUtil.loadLibrary("org{}xerial", "sqlite-jdbc", "3.49.1.0", false);
 
         try {
             Class.forName("org.json.JSONObject");
@@ -211,7 +211,7 @@ public class Graves extends JavaPlugin {
         }
 
 
-        libraryLoaderUtil.loadLibrary("com{}github{}oshi", "oshi-core", "6.6.5", false);
+        libraryLoaderUtil.loadLibrary("com{}github{}oshi", "oshi-core", "6.8.0", false);
 
 
         String storageType = Objects.requireNonNull(getConfig().getString("settings.storage.type")).toUpperCase();
@@ -230,9 +230,9 @@ public class Graves extends JavaPlugin {
 
             try {
                 Class.forName("java.nio.file.Files");
-                jdbcVersion = "12.8.1.jre11";
+                jdbcVersion = "12.10.0.jre11";
             } catch (ClassNotFoundException e) {
-                jdbcVersion = "12.8.1.jre8";
+                jdbcVersion = "12.10.0.jre8";
             }
 
             libraryLoaderUtil.loadLibrary("com{}microsoft{}sqlserver", "mssql-jdbc", jdbcVersion, "com{}microsoft", "com{}ranull{}graves{}libraries{}microsoft", false);
