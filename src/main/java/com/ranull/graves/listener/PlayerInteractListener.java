@@ -1,6 +1,7 @@
 package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
+import com.ranull.graves.event.GraveOpenEvent;
 import com.ranull.graves.event.GraveParticleEvent;
 import com.ranull.graves.event.GraveCompassUseEvent;
 import com.ranull.graves.type.Grave;
@@ -126,7 +127,21 @@ public class PlayerInteractListener implements Listener {
             try {
                 Grave finalGrave = grave;
                 plugin.getGravesXScheduler().runTaskLater(plugin, () -> {
-                    plugin.getGraveManager().openGrave(player, block.getLocation(), finalGrave);
+                    if (plugin.getConfig("grave.economy.requires-economy", finalGrave).getBoolean("grave.economy.requires-economy", false)
+                            && plugin.getIntegrationManager().hasVault()
+                            && plugin.getIntegrationManager().hasVaultEconomy()) {
+                        double balanceRequired = plugin.getConfig("grave.economy.open-cost", finalGrave).getDouble("grave.economy.open-cost", 200);
+
+
+                        if (!plugin.getIntegrationManager().getVault().hasBalance(player, balanceRequired)) {
+                            plugin.debugMessage(player.getName() + " couldn't open grave due to insufficient balance.", 3);
+                            plugin.getEntityManager().sendMessage("message.open-insufficient-balance", player, finalGrave.getLocationDeath(), finalGrave);
+                        } else {
+                            plugin.getGraveManager().openGrave(player, block.getLocation(), finalGrave);
+                        }
+                    } else {
+                        plugin.getGraveManager().openGrave(player, block.getLocation(), finalGrave);
+                    }
                 }, 1L);
             } catch (Exception e) {
                 plugin.getLogger().severe("Failed to open grave: " + e.getMessage());

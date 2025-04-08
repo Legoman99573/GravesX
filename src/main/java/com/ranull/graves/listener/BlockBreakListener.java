@@ -4,7 +4,6 @@ import com.ranull.graves.Graves;
 import com.ranull.graves.event.GraveAutoLootEvent;
 import com.ranull.graves.event.GraveBreakEvent;
 import com.ranull.graves.type.Grave;
-import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -46,7 +45,22 @@ public class BlockBreakListener implements Listener {
         if (grave != null) {
             if (isGraveBreakAllowed(grave)) {
                 if (plugin.getEntityManager().canOpenGrave(player, grave)) {
-                    handleGraveBreak(event, player, block, grave);
+                    if (plugin.getConfig("grave.economy.requires-economy", grave).getBoolean("grave.economy.requires-economy", false)
+                            && plugin.getIntegrationManager().hasVault()
+                            && plugin.getIntegrationManager().hasVaultEconomy()) {
+                        double balanceRequired = plugin.getConfig("grave.economy.autoloot-cost", grave).getDouble("grave.economy.autoloot-cost", 500);
+
+
+                        if (!plugin.getIntegrationManager().getVault().hasBalance(player, balanceRequired)) {
+                            plugin.debugMessage(player.getName() + " couldn't autoloot grave due to insufficient balance.", 3);
+                            plugin.getEntityManager().sendMessage("message.autoloot-insufficient-balance", player, grave.getLocationDeath(), grave);
+                            event.setCancelled(true);
+                        } else {
+                            handleGraveBreak(event, player, block, grave);
+                        }
+                    } else {
+                        handleGraveBreak(event, player, block, grave);
+                    }
                 } else {
                     plugin.getEntityManager().sendMessage("message.protection", player, player.getLocation(), grave);
                     event.setCancelled(true);

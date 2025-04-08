@@ -28,6 +28,14 @@ settings:
         replace-oldest: false
         # Should a player be allowed to preview a grave?
         preview: false
+        # Grave Economy Settings
+        economy:
+          # Should we require grave economy?
+          requires-economy: false
+          # Grave Open Cost
+          open-cost: 200
+          # Grave Autoloot Cost
+          autoloot-cost: 500
 
       #############
       # Placement #
@@ -842,6 +850,8 @@ settings:
           - "&cTHERE WILL NOT BE SUPPORT IF YOU LOSE GRAVE DATA FROM DEVELOPMENT OR COMPILED BUILDS. THIS BUILD IS FOR TESTING PURPOSES ONLY"
           - "&cKeep note that you are using a development version when you report bugs."
           - "&cIf the same issue occurs in %plugin_version%, then let us know in https://discord.ranull.com/."
+        open-insufficient-balance: "You do not have a sufficient balance to open your grave."
+        autoloot-insufficient-balance: "You do not have a sufficient balance to autoloot your grave."
 
         # World Message Format
         # Format: WORLD_NAME: World Name
