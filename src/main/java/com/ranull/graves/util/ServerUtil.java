@@ -172,8 +172,6 @@ public final class ServerUtil {
         } catch (Exception e) {
             stringList.add("NMS Version: " + Bukkit.getServer().getVersion());
         }
-        stringList.add("Player Count: " + plugin.getServer().getOnlinePlayers().size());
-        stringList.add("Player List: " + getPlayerList());
         stringList.add("Plugin Count: " + plugin.getServer().getPluginManager().getPlugins().length);
         stringList.add("Plugin List: " + getPluginList());
         stringList.add("Worlds:");
@@ -209,9 +207,9 @@ public final class ServerUtil {
             }
             stringList.add("- " + player.getName());
             stringList.add("  Display Name: " + player.getDisplayName());
-            stringList.add("  Player UUID: " + player.getUniqueId());
+            stringList.add("  UUID: " + player.getUniqueId());
             stringList.add("  Ping: " + (ping != -1 ? ping + "ms" : "0ms"));
-            stringList.add("  Player Current World: " + player.getWorld().getName());
+            stringList.add("  Current World: " + player.getWorld().getName());
         }
         stringList.add("");
 
