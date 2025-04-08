@@ -126,14 +126,16 @@ public final class ServerUtil {
         stringList.add("=======================");
         stringList.add("Number of RAM Sticks: " + ramList.size());
 
+        long memoryCount = 0;
+
         for (PhysicalMemory ram : ramList) {
+            memoryCount += 1;
             String vendor = ram.getManufacturer();
-            stringList.add("=======");
-            stringList.add("Vendor: " + (vendor != null ? vendor : "Unknown Vendor"));
-            stringList.add("Memory Size: " + formatBytes(ram.getCapacity()));
-            stringList.add("Speed: " + formatFrequency(ram.getClockSpeed()));
-            stringList.add("Memory Type: " + ram.getMemoryType());
-            stringList.add("=======");
+            stringList.add("- " + memoryCount);
+            stringList.add("  Vendor: " + (vendor != null ? vendor : "Unknown Vendor"));
+            stringList.add("  Memory Size: " + formatBytes(ram.getCapacity()));
+            stringList.add("  Speed: " + formatFrequency(ram.getClockSpeed()));
+            stringList.add("  Memory Type: " + ram.getMemoryType());
         }
 
         GlobalMemory memory = hal.getMemory();
@@ -152,7 +154,7 @@ public final class ServerUtil {
         for (OSFileStore fs : os.getFileSystem().getFileStores()) {
             stringList.add("Mount Point: " + fs.getMount());
             stringList.add("Name: " + fs.getName());
-            stringList.add("Type: " + fs.getType());
+            stringList.add("Type: " + (fs.getType().isEmpty() ? "Unknown" : fs.getType()));
             stringList.add("Total Space: " + formatBytes(fs.getTotalSpace()));
             stringList.add("Usable Space: " + formatBytes(fs.getUsableSpace()));
             stringList.add("Free Space: " + formatBytes(fs.getFreeSpace()));
