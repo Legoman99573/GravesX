@@ -2,21 +2,20 @@ package com.ranull.graves.util;
 
 import com.ranull.graves.Graves;
 import org.bukkit.Bukkit;
+import org.bukkit.GameRule;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.plugin.PluginDescriptionFile;
 import oshi.SystemInfo;
 import oshi.hardware.*;
+import oshi.software.os.OSFileStore;
+import oshi.software.os.OperatingSystem;
 
 import java.io.*;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.List;
-import java.util.Set;
-import java.util.HashSet;
+import java.time.Instant;
+import java.util.*;
 
 /**
  * Utility class for gathering server information and generating server dumps.
@@ -32,7 +31,6 @@ public final class ServerUtil {
      */
     public static String getServerDumpInfo(Graves plugin) {
         List<String> stringList = new ArrayList<>();
-        // Add basic server information
         stringList.add("=================");
         stringList.add("Java Information:");
         stringList.add("=================");
@@ -48,22 +46,27 @@ public final class ServerUtil {
         stringList.add("Java VM Name: " + getSystemProperty("java.vm.name"));
         stringList.add("");
 
+        OperatingSystem os = new SystemInfo().getOperatingSystem();
+        CentralProcessor processor = new SystemInfo().getHardware().getProcessor();
+
         stringList.add("=============================");
         stringList.add("Operating System Information:");
         stringList.add("=============================");
-        stringList.add("OS Name: " + getOsName());
-        stringList.add("OS Version: " + getSystemProperty("os.version"));
-        stringList.add("OS Architecture: " + getSystemProperty("os.arch"));
-        stringList.add("User Name: " + getSystemProperty("user.name"));
-        stringList.add("User Home: " + getSystemProperty("user.home"));
-        stringList.add("User Directory: " + getSystemProperty("user.dir"));
+        stringList.add("OS Name: " + os);
+        stringList.add("OS Family: " + os.getFamily());
+        stringList.add("OS Version: " + os.getVersionInfo().getVersion());
+        stringList.add("OS Build Number: " + os.getVersionInfo().getBuildNumber());
+        stringList.add("OS Code Name: " + os.getVersionInfo().getCodeName());
+        stringList.add("Bitness: " + os.getBitness() + "-bit");
+        stringList.add("Booted Since: " + Instant.ofEpochSecond(os.getSystemBootTime()));
+        stringList.add("Uptime: " + formatDuration(os.getSystemUptime()));
+        stringList.add("Running Processes: " + os.getProcessCount());
+        stringList.add("Running Threads: " + os.getThreadCount());
         stringList.add("Docker Container: " + isRunningInDocker());
         if (isRunningInDocker()) {
             stringList.add("Rootless Container: " + isRootlessDocker());
             stringList.add("Running with Panel: " + isRunningWithPanel());
         }
-
-        // Check for top-level access
         if (isRunningAsRoot()) {
             stringList.add("WARNING: This " + plugin.getServer().getName() + " server is running with top-level access (root/administrator)");
             plugin.getLogger().warning("This server is running with top-level access (root/administrator), which is unsafe and can lead to security vulnerabilities. We recommend creating a user account or running the server in a rootless Docker container.");
@@ -71,7 +74,6 @@ public final class ServerUtil {
         stringList.add("");
 
         SystemInfo systemInfo = new SystemInfo();
-        CentralProcessor processor = systemInfo.getHardware().getProcessor();
         String cpuName = processor.getProcessorIdentifier().getName();
         String vendorName = processor.getProcessorIdentifier().getVendor();
         CentralProcessor.ProcessorIdentifier identifier = processor.getProcessorIdentifier();
@@ -84,16 +86,20 @@ public final class ServerUtil {
         stringList.add("CPU Identifier: " + (identifier.getIdentifier() != null ? identifier.getIdentifier() : "Not available"));
         // Current frequency for each core
         long[] currentFreqs = processor.getCurrentFreq();
+        long[] maxFreqs = new long[]{processor.getMaxFreq()};
+
         if (currentFreqs != null && currentFreqs.length > 0) {
-            stringList.add("CPU Current Frequencies:");
+            stringList.add("CPU Frequencies:");
             for (int i = 0; i < currentFreqs.length; i++) {
-                stringList.add(" - Core " + i + ": " + formatFrequency(currentFreqs[i]));
+                String current = formatFrequency(currentFreqs[i]);
+                String max = i < maxFreqs.length ? formatFrequency(maxFreqs[i]) : "Unknown Frequency";
+                stringList.add(" - Core " + i + ":");
+                stringList.add("   Current: " + current);
+                stringList.add("   Max: " + max);
             }
         } else {
-            stringList.add("CPU Current Frequencies: Not available");
+            stringList.add("CPU Frequencies: Not available");
         }
-        double maxFreq = processor.getMaxFreq();
-        stringList.add("CPU Maximum Frequency: " + formatFrequency(maxFreq));
         stringList.add("CPU Architecture: " + identifier.getMicroarchitecture());
         stringList.add("CPU Stepping: " + identifier.getStepping());
 
@@ -112,7 +118,6 @@ public final class ServerUtil {
         }
         stringList.add("");
 
-
         HardwareAbstractionLayer hal = systemInfo.getHardware();
         ComputerSystem computerSystem = hal.getComputerSystem();
         List<PhysicalMemory> ramList = hal.getMemory().getPhysicalMemory();
@@ -126,8 +131,8 @@ public final class ServerUtil {
             stringList.add("=======");
             stringList.add(ramList + ":");
             stringList.add("=======");
-            stringList.add("Vendor: " + (vendor != null ? vendor : "Unknown"));
-            stringList.add("System: " + (computerSystem != null ? computerSystem : "Unknown"));
+            stringList.add("Vendor: " + (vendor != null ? vendor : "Unknown Vendor"));
+            stringList.add("System: " + (computerSystem != null ? computerSystem : "Unknown System"));
             stringList.add("Memory Size: " + formatBytes(ram.getCapacity()));
             stringList.add("Speed: " + ram.getClockSpeed() + " MHz");
             stringList.add("Memory Type: " + ram.getMemoryType());
@@ -146,16 +151,16 @@ public final class ServerUtil {
         stringList.add("==============================");
         stringList.add("System Disk Space Information:");
         stringList.add("==============================");
-        for (HWDiskStore disk : hal.getDiskStores()) {
-            stringList.add("Disk: " + disk.getName());
-            stringList.add("Model: " + (disk.getModel() != null ? disk.getModel() : "Not Available"));
-            stringList.add("Total Space: " + formatBytes(disk.getSize()));
-            stringList.add("Total Space: " + formatBytes(disk.getSize()));
-            stringList.add("Free Space: " + formatBytes(disk.getSize() - disk.getWriteBytes()));
-            stringList.add("Read Rate: " + formatBytes(disk.getReadBytes()));
-            stringList.add("Write Rate: " + formatBytes(disk.getWriteBytes()));
+        for (OSFileStore fs : os.getFileSystem().getFileStores()) {
+            stringList.add("Mount Point: " + fs.getMount());
+            stringList.add("Name: " + fs.getName());
+            stringList.add("Type: " + fs.getType());
+            stringList.add("Total Space: " + formatBytes(fs.getTotalSpace()));
+            stringList.add("Usable Space: " + formatBytes(fs.getUsableSpace()));
+            stringList.add("Free Space: " + formatBytes(fs.getFreeSpace()));
             stringList.add("");
         }
+
         stringList.add("");
 
         stringList.add("=============================");
@@ -173,6 +178,30 @@ public final class ServerUtil {
         stringList.add("Player List: " + getPlayerList());
         stringList.add("Plugin Count: " + plugin.getServer().getPluginManager().getPlugins().length);
         stringList.add("Plugin List: " + getPluginList());
+        stringList.add("Worlds:");
+        for (World world : plugin.getServer().getWorlds()) {
+            stringList.add("World Name: " + world.getName());
+            stringList.add("World Type: " + world.getEnvironment());
+            stringList.add("World Time: " + world.getTime());
+            stringList.add("World keepInventory: " + (hasKeepInventory(world) ? "true" : "false"));
+        }
+        double tps = plugin.getServer().getServerTickManager().getTickRate();
+        stringList.add("Server TPS: " + tps);
+        stringList.add("Players Online: " + plugin.getServer().getOnlinePlayers().size() + "/" +  + plugin.getServer().getMaxPlayers());
+        for (Player player : plugin.getServer().getOnlinePlayers()) {
+            int ping;
+
+            try {
+                ping = Objects.requireNonNull(player.getPlayer()).getPing();
+            } catch (Exception ignored) {
+                ping = -1; //Assume there is no ping (likely just joined the server)
+            }
+            stringList.add(" - " + player.getName());
+            stringList.add(" Display Name: " + player.getDisplayName());
+            stringList.add(" Player UUID: " + player.getUniqueId());
+            stringList.add(" Ping: " + (ping != -1 ? ping + "ms" : "0ms"));
+            stringList.add(" Player Current World: " + player.getWorld());
+        }
         stringList.add("");
 
         stringList.add("===================");
@@ -256,6 +285,15 @@ public final class ServerUtil {
         }
     }
 
+    private static String formatDuration(long seconds) {
+        long days = seconds / 86400;
+        seconds %= 86400;
+        long hours = seconds / 3600;
+        seconds %= 3600;
+        long minutes = seconds / 60;
+        seconds %= 60;
+        return String.format("%d days, %02d:%02d:%02d", days, hours, minutes, seconds);
+    }
 
     /**
      * Retrieves the NMS version using reflection to ensure compatibility.
@@ -294,6 +332,10 @@ public final class ServerUtil {
         }
 
         return result.toString();
+    }
+
+    public static boolean hasKeepInventory(World world) {
+        return Boolean.TRUE.equals(world.getGameRuleValue(GameRule.KEEP_INVENTORY));
     }
 
     /**
