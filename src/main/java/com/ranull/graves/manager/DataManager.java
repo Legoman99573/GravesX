@@ -539,7 +539,10 @@ public final class DataManager {
         int maxConnections = plugin.getConfig().getInt("settings.storage.h2.maxConnections", 50); // Increased pool size
         long connectionTimeout = plugin.getConfig().getLong("settings.storage.h2.connectionTimeout", 30000);
 
-        config.setJdbcUrl("jdbc:h2:file:" + filePath + ";AUTO_SERVER=TRUE");
+        String jdbcUrl = "jdbc:h2:file:" + filePath + ";AUTO_SERVER=FALSE;DB_CLOSE_DELAY=-1;";
+
+        // Now, set the final JDBC URL
+        config.setJdbcUrl(jdbcUrl);
         config.setUsername(username);
         config.setPassword(password);
         config.addDataSourceProperty("autoReconnect", "true");
