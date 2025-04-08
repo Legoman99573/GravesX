@@ -86,13 +86,13 @@ public final class ServerUtil {
         stringList.add("CPU Identifier: " + (identifier.getIdentifier() != null ? identifier.getIdentifier() : "Not available"));
         // Current frequency for each core
         long[] currentFreqs = processor.getCurrentFreq();
-        long[] maxFreqs = new long[]{processor.getMaxFreq()};
+        long maxFreqs = processor.getMaxFreq();
 
         if (currentFreqs != null && currentFreqs.length > 0) {
             stringList.add("CPU Frequencies:");
             for (int i = 0; i < currentFreqs.length; i++) {
                 String current = formatFrequency(currentFreqs[i]);
-                String max = i < maxFreqs.length ? formatFrequency(maxFreqs[i]) : "Unknown Frequency";
+                String max = i < maxFreqs ? formatFrequency(maxFreqs) : "Unknown Frequency";
                 stringList.add(" - Core " + i + ":");
                 stringList.add("   Current: " + current);
                 stringList.add("   Max: " + max);
@@ -116,11 +116,11 @@ public final class ServerUtil {
         } catch (Exception e) {
             stringList.add("CPU Cache Sizes: Not available");
         }
-        stringList.add("");
 
         HardwareAbstractionLayer hal = systemInfo.getHardware();
-        ComputerSystem computerSystem = hal.getComputerSystem();
         List<PhysicalMemory> ramList = hal.getMemory().getPhysicalMemory();
+
+        stringList.add("");
         stringList.add("=======================");
         stringList.add("System RAM Information:");
         stringList.add("=======================");
@@ -129,13 +129,11 @@ public final class ServerUtil {
         for (PhysicalMemory ram : ramList) {
             String vendor = ram.getManufacturer();
             stringList.add("=======");
-            stringList.add(ramList + ":");
-            stringList.add("=======");
             stringList.add("Vendor: " + (vendor != null ? vendor : "Unknown Vendor"));
-            stringList.add("System: " + (computerSystem != null ? computerSystem : "Unknown System"));
             stringList.add("Memory Size: " + formatBytes(ram.getCapacity()));
-            stringList.add("Speed: " + ram.getClockSpeed() + " MHz");
+            stringList.add("Speed: " + formatFrequency(ram.getClockSpeed()));
             stringList.add("Memory Type: " + ram.getMemoryType());
+            stringList.add("=======");
         }
 
         GlobalMemory memory = hal.getMemory();
@@ -180,10 +178,23 @@ public final class ServerUtil {
         stringList.add("Plugin List: " + getPluginList());
         stringList.add("Worlds:");
         for (World world : plugin.getServer().getWorlds()) {
-            stringList.add("World Name: " + world.getName());
-            stringList.add("World Type: " + world.getEnvironment());
-            stringList.add("World Time: " + world.getTime());
-            stringList.add("World keepInventory: " + (hasKeepInventory(world) ? "true" : "false"));
+            stringList.add("- " + world.getName() + ":");
+            stringList.add("  Type: " + world.getEnvironment());
+            long ticks = world.getTime();
+            long dayTime = ticks % 24000; // Time of day in ticks (0-23999)
+
+            int hours24 = (int) ((dayTime / 1000 + 6) % 24); // 6 represents sunrise at tick 0 (adjust for Minecraft's time system)
+            int minutes = (int) ((dayTime % 1000) * 60 / 1000); // Get the minute based on the tick of the day
+
+            String formattedTime24 = String.format("%02d:%02d", hours24, minutes);
+
+            int hours12 = hours24 % 12;
+            hours12 = (hours12 == 0) ? 12 : hours12; // Adjust for 12-hour clock (midnight = 12 AM, noon = 12 PM)
+            String amPm = (hours24 < 12) ? "AM" : "PM";
+            String formattedTime12 = String.format("%02d:%02d %s", hours12, minutes, amPm);
+
+            stringList.add("  Time: " + formattedTime24 + " (24-hour), " + formattedTime12 + " (12-hour)");
+            stringList.add("  keepInventory: " + (hasKeepInventory(world) ? "true" : "false"));
         }
         double tps = plugin.getServer().getServerTickManager().getTickRate();
         stringList.add("Server TPS: " + tps);
@@ -196,11 +207,11 @@ public final class ServerUtil {
             } catch (Exception ignored) {
                 ping = -1; //Assume there is no ping (likely just joined the server)
             }
-            stringList.add(" - " + player.getName());
-            stringList.add(" Display Name: " + player.getDisplayName());
-            stringList.add(" Player UUID: " + player.getUniqueId());
-            stringList.add(" Ping: " + (ping != -1 ? ping + "ms" : "0ms"));
-            stringList.add(" Player Current World: " + player.getWorld());
+            stringList.add("- " + player.getName());
+            stringList.add("  Display Name: " + player.getDisplayName());
+            stringList.add("  Player UUID: " + player.getUniqueId());
+            stringList.add("  Ping: " + (ping != -1 ? ping + "ms" : "0ms"));
+            stringList.add("  Player Current World: " + player.getWorld().getName());
         }
         stringList.add("");
 
