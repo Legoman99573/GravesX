@@ -24,6 +24,8 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.NamespacedKey;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -31,6 +33,8 @@ import java.util.UUID;
  */
 public class PlayerMoveListener implements Listener {
     private final Graves plugin;
+
+    private final Map<UUID, Long> compassCheckCooldown = new HashMap<>();
 
     /**
      * Constructs a PlayerMoveListener with the specified Graves plugin.
@@ -154,53 +158,57 @@ public class PlayerMoveListener implements Listener {
         }
     }
 
-    /**
-     * Removes a specific type of compass (e.g., RECOVERY_COMPASS) from the player's inventory if within a configured block radius of a grave.
-     *
-     * @param player   The player to check.
-     * @param location The player's current location.
-     */
     private void removeSpecificCompassNearGrave(Player player, Location location) {
+        long now = System.currentTimeMillis();
+        UUID playerId = player.getUniqueId();
+
+        // Cooldown check (1 second per player)
+        if (compassCheckCooldown.containsKey(playerId) &&
+                now - compassCheckCooldown.get(playerId) < 1000) {
+            return;
+        }
+        compassCheckCooldown.put(playerId, now);
+
         PlayerInventory inventory = player.getInventory();
+        Material recoveryCompass;
+
+        try {
+            recoveryCompass = Material.valueOf(String.valueOf(plugin.getVersionManager().getMaterialForVersion("RECOVERY_COMPASS")));
+        } catch (IllegalArgumentException e) {
+            return;
+        }
+
+        if (location.getWorld() == null) return;
+
         ItemStack[] items = inventory.getContents();
 
         for (ItemStack item : items) {
-            if (item != null && item.hasItemMeta()) {
-                ItemMeta itemMeta = item.getItemMeta();
-                if (itemMeta != null) {
-                    // Check if the item is a compass with the specific name
-                    if ((item.getType() == Material.valueOf(String.valueOf(plugin.getVersionManager().getMaterialForVersion("RECOVERY_COMPASS"))))
-                            && itemMeta.hasDisplayName()) {
+            if (item == null || item.getType() != recoveryCompass) continue;
 
-                        UUID graveUUID = getGraveUUIDFromItemStack(item);
+            ItemMeta meta = item.getItemMeta();
+            if (meta == null || !meta.hasDisplayName()) continue;
 
-                        if (graveUUID != null) {
-                            Grave grave = plugin.getCacheManager().getGraveMap().get(graveUUID);
-                            try {
-                                if (grave != null && location.getWorld() != null) {
-                                    Location graveLocation = plugin.getGraveManager().getGraveLocation(player.getLocation(), grave);
-                                    if (graveLocation != null && location.distance(graveLocation) <= 15) {
-                                        // Remove the specific item from the inventory
-                                        String compassName;
-                                        if (plugin.getIntegrationManager().hasMiniMessage()) {
-                                            String compassNameNew = StringUtil.parseString("&f" + plugin
-                                                    .getConfig("compass.name", grave).getString("compass.name"), grave, plugin);
-                                            compassName = MiniMessage.parseString(compassNameNew);
-                                        } else {
-                                            compassName = StringUtil.parseString("&f" + plugin
-                                                    .getConfig("compass.name", grave).getString("compass.name"), grave, plugin);
-                                        }
-                                        if (itemMeta.getDisplayName().equals(compassName)) {
-                                            inventory.remove(item);
-                                        }
-                                    }
-                                }
-                            } catch (IllegalArgumentException | NullPointerException ignored) {
-                                // ignored
-                            }
-                        }
-                    }
-                }
+            UUID graveUUID = getGraveUUIDFromItemStack(item);
+            if (graveUUID == null) continue;
+
+            Grave grave = plugin.getCacheManager().getGraveMap().get(graveUUID);
+            if (grave == null) continue;
+
+            Location graveLocation = plugin.getGraveManager().getGraveLocation(location, grave);
+            if (graveLocation == null || !location.getWorld().equals(graveLocation.getWorld())) continue;
+
+            if (location.distance(graveLocation) > 15) continue;
+
+            String configuredName = plugin.getConfig("compass.name", grave).getString("compass.name");
+            if (configuredName == null) continue;
+
+            String expectedName = StringUtil.parseString("&f" + configuredName, grave, plugin);
+            if (plugin.getIntegrationManager().hasMiniMessage()) {
+                expectedName = MiniMessage.parseString(expectedName);
+            }
+
+            if (meta.getDisplayName().equals(expectedName)) {
+                inventory.remove(item);
             }
         }
     }
