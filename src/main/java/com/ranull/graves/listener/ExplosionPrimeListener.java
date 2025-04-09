@@ -34,34 +34,56 @@ public class ExplosionPrimeListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onExplosionPrime(ExplosionPrimeEvent event) {
         Location explosionLocation = event.getEntity().getLocation();
-
-        // Check for nearby graves within the explosion radius
         List<Grave> nearbyGraves = plugin.getGraveManager().getAllGraves();
 
-        if (nearbyGraves != null) {
-            for (Grave grave : nearbyGraves) {
-                Location graveLocation = grave.getLocationDeath();
-                double distance = explosionLocation.distance(graveLocation);
+        if (nearbyGraves == null || nearbyGraves.isEmpty()) {
+            return;
+        }
 
-                // Get the protection radius from the configuration
-                int protectionRadius = plugin.getConfig("grave.protection-radius", grave).getInt("grave.protection-radius", 0);
+        for (Grave grave : nearbyGraves) {
+            Location graveLocation = grave.getLocationDeath();
+            int protectionRadius = plugin.getConfig("grave.protection-radius", grave)
+                    .getInt("grave.protection-radius", 0);
+            boolean shouldProtectRadius = plugin.getConfig("grave.should-protect-radius", grave)
+                    .getBoolean("grave.should-protect-radius", false);
 
-                try {
-                    // If the explosion is within the protection radius, cancel the explosion
-                    if (protectionRadius > 0 && distance <= protectionRadius + 15) {
-                        event.setCancelled(true);
-                        return;
-                    }
-                } catch (IllegalArgumentException ignored) {
+            boolean cancelExplosion = false;
 
-                }
+            // Always protect the grave block itself
+            if (explosionLocation.getBlock().getLocation().equals(graveLocation.getBlock().getLocation())) {
+                cancelExplosion = true;
+            }
 
-                // If the explosion is allowed, handle the grave explosion
-                if (shouldExplode(grave)) {
-                    handleGraveExplosion(event, grave, graveLocation);
-                }
+            // Optionally protect blocks within the cube radius
+            if (!cancelExplosion && shouldProtectRadius && isWithinCube(explosionLocation, graveLocation, protectionRadius)) {
+                cancelExplosion = true;
+            }
+
+            if (cancelExplosion) {
+                event.setCancelled(true);
+                return;
+            }
+
+            // If grave is allowed to explode, trigger grave explosion
+            if (shouldExplode(grave)) {
+                handleGraveExplosion(event, grave, graveLocation);
             }
         }
+    }
+
+    /**
+     * Checks if the explosion location is within a cube around the grave location.
+     *
+     * @param loc1   The explosion location.
+     * @param loc2   The grave location.
+     * @param radius The protection radius.
+     * @return True if within the cube, false otherwise.
+     */
+    private boolean isWithinCube(Location loc1, Location loc2, int radius) {
+        int dx = Math.abs(loc1.getBlockX() - loc2.getBlockX());
+        int dy = Math.abs(loc1.getBlockY() - loc2.getBlockY());
+        int dz = Math.abs(loc1.getBlockZ() - loc2.getBlockZ());
+        return dx <= radius && dy <= radius && dz <= radius;
     }
 
     /**
@@ -71,39 +93,37 @@ public class ExplosionPrimeListener implements Listener {
      * @return True if the grave should explode, false otherwise.
      */
     private boolean shouldExplode(Grave grave) {
-        return plugin.getConfig("grave.explode", grave).getBoolean("grave.explode", false);
+        return plugin.getConfig("grave.explode", grave)
+                .getBoolean("grave.explode", false);
     }
 
     /**
      * Handles the explosion of a grave.
      *
-     * @param event        The ExplosionPrimeEvent.
-     * @param grave        The grave associated with the explosion.
+     * @param event         The ExplosionPrimeEvent.
+     * @param grave         The grave associated with the explosion.
      * @param graveLocation The location of the grave.
      */
     private void handleGraveExplosion(ExplosionPrimeEvent event, Grave grave, Location graveLocation) {
-        // Trigger the custom GraveExplodeEvent
         GraveExplodeEvent graveExplodeEvent = new GraveExplodeEvent(graveLocation, event.getEntity(), grave);
         plugin.getServer().getPluginManager().callEvent(graveExplodeEvent);
 
-        // Check if the custom event was cancelled
-        if (!graveExplodeEvent.isCancelled()) {
-            // Handle the grave explosion based on the plugin's configuration
-            if (plugin.getConfig("drop.explode", grave).getBoolean("drop.explode", false)) {
-                plugin.getGraveManager().breakGrave(graveLocation, grave);
-            } else {
-                plugin.getGraveManager().removeGrave(grave);
-            }
+        if (graveExplodeEvent.isCancelled()) {
+            event.setCancelled(true);
+            return;
+        }
 
-            // Execute effects and commands based on the explosion
-            plugin.getGraveManager().playEffect("effect.loot", graveLocation, grave);
-            plugin.getEntityManager().runCommands("event.command.explode", event.getEntity(), graveLocation, grave);
-
-            if (plugin.getConfig("zombie.explode", grave).getBoolean("zombie.explode", false)) {
-                plugin.getEntityManager().spawnZombie(graveLocation, grave);
-            }
+        if (plugin.getConfig("drop.explode", grave).getBoolean("drop.explode", false)) {
+            plugin.getGraveManager().breakGrave(graveLocation, grave);
         } else {
-            event.setCancelled(true);  // Cancel explosion if custom event was cancelled
+            plugin.getGraveManager().removeGrave(grave);
+        }
+
+        plugin.getGraveManager().playEffect("effect.loot", graveLocation, grave);
+        plugin.getEntityManager().runCommands("event.command.explode", event.getEntity(), graveLocation, grave);
+
+        if (plugin.getConfig("zombie.explode", grave).getBoolean("zombie.explode", false)) {
+            plugin.getEntityManager().spawnZombie(graveLocation, grave);
         }
     }
 }
