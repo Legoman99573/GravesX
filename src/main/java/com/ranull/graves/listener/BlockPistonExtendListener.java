@@ -1,6 +1,8 @@
 package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
+import com.ranull.graves.event.GravePistonExtendEvent;
+import com.ranull.graves.type.Grave;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.event.EventHandler;
@@ -33,42 +35,34 @@ public class BlockPistonExtendListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockPistonExtend(BlockPistonExtendEvent event) {
         BlockFace direction = event.getDirection();
-
         Block piston = event.getBlock();
-        // Get all blocks being moved by the piston
         List<Block> blocks = event.getBlocks();
-
         BlockFace[] facesToCheck = {BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST, BlockFace.UP, BlockFace.DOWN};
 
         // Check all faces around the piston
         for (BlockFace face : facesToCheck) {
             Block adjacentBlock = piston.getRelative(face);
+            Grave grave = plugin.getBlockManager().getGraveFromBlock(adjacentBlock);
+            if (grave != null) {
+                if (plugin.getConfig("drop.piston", grave).getBoolean("drop.piston")) {
+                    // Fire the GravePistonExtendEvent
+                    GravePistonExtendEvent gravePistonEvent = new GravePistonExtendEvent(grave, piston.getLocation(), piston, direction, blocks);
 
-            // Check if the adjacent block is part of a grave
-            if (plugin.getBlockManager().getGraveFromBlock(adjacentBlock) != null) {
-                event.setCancelled(true);
+                    plugin.getServer().getPluginManager().callEvent(gravePistonEvent);
+
+                    if (gravePistonEvent.isCancelled() || gravePistonEvent.isAddon()) {
+                        event.setCancelled(true);
+                    } else {
+                        plugin.getGraveManager().breakGrave(grave.getLocationDeath(), grave);
+                        plugin.getGraveManager().closeGrave(grave);
+                        plugin.getGraveManager().playEffect("effect.loot", piston.getLocation(), grave);
+                        plugin.getEntityManager().runCommands("event.command.pistonextend", piston.getType().name(), piston.getLocation(), grave);
+                    }
+                } else {
+                    event.setCancelled(true);
+                }
                 return;
             }
-        }
-
-        // Check each block to see if it's within 12 blocks of a grave or grave hologram
-        for (Block block : blocks) {
-            Block relativeBlock = block.getRelative(direction);
-
-            // Check if the block being moved is part of a grave
-            if (plugin.getBlockManager().getGraveFromBlock(relativeBlock) != null) {
-                event.setCancelled(true);
-                return;
-            }
-
-            // Check for entities (such as holograms) within a 12-block radius around the block
-            // double radius = 12.0;
-            // for (Entity entity : relativeBlock.getWorld().getNearbyEntities(relativeBlock.getLocation(), radius, radius, radius)) {
-            //     if (plugin.getHologramManager().getGrave(entity) != null) {
-            //         event.setCancelled(true);
-            //         return;
-            //     }
-            // }
         }
     }
 }

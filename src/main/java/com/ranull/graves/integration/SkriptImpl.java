@@ -9,11 +9,14 @@ import com.ranull.graves.event.integration.skript.expressions.*;
 import com.ranull.graves.type.Grave;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.InventoryView;
+
+import java.util.List;
 
 public class SkriptImpl {
     private final Graves plugin;
@@ -61,6 +64,9 @@ public class SkriptImpl {
             Skript.registerExpression(ExprEventBlockType.class, BlockData.BlockType.class, ExpressionType.SIMPLE, "[the] event[-]block[-]type");
             Skript.registerExpression(ExprEventBlockExp.class, Integer.class, ExpressionType.SIMPLE, "[the] event[-]blockexp");
             Skript.registerExpression(ExprEventBlock.class, Block.class, ExpressionType.SIMPLE, "[the] event[-]block");
+            Skript.registerExpression(ExprEventPistonBlock.class, Block.class, ExpressionType.SIMPLE, "[the] event[-]piston[-]block");
+            Skript.registerExpression(ExprEventDirection.class, BlockFace.class, ExpressionType.SIMPLE, "[the] event[-]direction");
+            Skript.registerExpression(ExprEventMovedBlocks.class, List.class, ExpressionType.SIMPLE, "[the] event[-]moved[-]blocks");
             Skript.registerExpression(ExprEventPlayer.class, Player.class, ExpressionType.SIMPLE, "[the] event[-]player");
             plugin.integrationMessage("Skript integration loaded successfully.");
         } catch (Exception e) {

@@ -102,6 +102,8 @@ settings:
           living-entity: true
           # Should projectiles from other sources cause the grave to break? (Dispenser)
           other: false
+        # Should pistons break graves?
+        piston-extend: false
 
       #########
       # Block #
@@ -686,6 +688,11 @@ settings:
             # Commands to run when zombies spawn at a grave.
             - ""
             #- "say %interact_name% made zombies spawn at %owner_name%'s grave."
+          pistonextend:
+            # Commands to run when piston extend destroys a grave.
+            - ""
+            #- "say piston broke %owner_name%'s grave."
+
 
       ##########
       # Ignore #
