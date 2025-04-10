@@ -28,7 +28,7 @@ public class BlockPistonExtendListener implements Listener {
     }
 
     /**
-     * Handles BlockPistonExtendEvent to prevent pistons from extending if they are moving a grave block or a block near a grave hologram.
+     * Handles BlockPistonExtendEvent to prevent pistons from extending if they are moving a grave block or a block near a grave hologram unless configured otherwise.
      *
      * @param event The BlockPistonExtendEvent to handle.
      */
@@ -37,32 +37,67 @@ public class BlockPistonExtendListener implements Listener {
         BlockFace direction = event.getDirection();
         Block piston = event.getBlock();
         List<Block> blocks = event.getBlocks();
-        BlockFace[] facesToCheck = {BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST, BlockFace.UP, BlockFace.DOWN};
 
-        // Check all faces around the piston
-        for (BlockFace face : facesToCheck) {
-            Block adjacentBlock = piston.getRelative(face);
-            Grave grave = plugin.getBlockManager().getGraveFromBlock(adjacentBlock);
+        for (Block pushedBlock : blocks) {
+
+            Grave grave = plugin.getBlockManager().getGraveFromBlock(pushedBlock);
             if (grave != null) {
-                if (plugin.getConfig("drop.piston", grave).getBoolean("drop.piston")) {
-                    // Fire the GravePistonExtendEvent
-                    GravePistonExtendEvent gravePistonEvent = new GravePistonExtendEvent(grave, piston.getLocation(), piston, direction, blocks);
+                plugin.debugMessage("Found grave at pushed block: " + pushedBlock.getLocation(), 2);
+                handleGravePistonMove(event, grave, piston, direction, blocks);
+                return;
+            }
 
-                    plugin.getServer().getPluginManager().callEvent(gravePistonEvent);
+            for (int x = -12; x <= 12; x++) {
+                for (int y = -12; y <= 12; y++) {
+                    for (int z = -12; z <= 12; z++) {
+                        Block nearby = pushedBlock.getRelative(x, y, z);
+                        Grave nearbyGrave = plugin.getBlockManager().getGraveFromBlock(nearby);
 
-                    if (gravePistonEvent.isCancelled() || gravePistonEvent.isAddon()) {
-                        event.setCancelled(true);
-                    } else {
-                        plugin.getGraveManager().breakGrave(grave.getLocationDeath(), grave);
-                        plugin.getGraveManager().closeGrave(grave);
-                        plugin.getGraveManager().playEffect("effect.loot", piston.getLocation(), grave);
-                        plugin.getEntityManager().runCommands("event.command.pistonextend", piston.getType().name(), piston.getLocation(), grave);
+                        if (nearbyGrave != null) {
+                            plugin.debugMessage("Found nearby grave at: " + nearby.getLocation(), 2);
+                            handleGravePistonMove(event, nearbyGrave, piston, direction, blocks);
+                            return;
+                        }
                     }
-                } else {
-                    event.setCancelled(true);
                 }
+            }
+
+            Block pistonHead = piston.getRelative(direction);
+            Grave pistonHeadGrave = plugin.getBlockManager().getGraveFromBlock(pistonHead);
+            if (pistonHeadGrave != null) {
+                plugin.debugMessage("Found grave at piston head: " + pistonHead.getLocation(), 2);
+                handleGravePistonMove(event, pistonHeadGrave, piston, direction, blocks);
                 return;
             }
         }
     }
+
+    private void handleGravePistonMove(BlockPistonExtendEvent event, Grave grave, Block piston, BlockFace direction, List<Block> blocks) {
+        boolean allowPush = plugin.getConfig("drop.piston-extend", grave).getBoolean("drop.piston-extend", true);
+        plugin.debugMessage("allowPush value for grave at " + grave.getLocationDeath() + " is: " + allowPush, 2);
+        if (!allowPush) {
+            plugin.debugMessage("Push is forbidden for grave at " + grave.getLocationDeath() + " with piston at " + piston.getLocation(), 2);
+            event.setCancelled(true);
+            return;
+        } else {
+            plugin.debugMessage("Push is allowed for grave at " + grave.getLocationDeath() + " with piston at " + piston.getLocation(), 2);
+        }
+
+        GravePistonExtendEvent gravePistonEvent = new GravePistonExtendEvent(grave, piston.getLocation(), piston, direction, blocks);
+        plugin.debugMessage("Created GravePistonExtendEvent for grave at " + grave.getLocationDeath() + " with piston at " + piston.getLocation(), 2);
+
+        plugin.getServer().getPluginManager().callEvent(gravePistonEvent);
+
+        if (!gravePistonEvent.isCancelled() || !gravePistonEvent.isAddon()) {
+            plugin.debugMessage("Piston move allowed for grave at " + grave.getLocationDeath() + ". Breaking grave...", 2);
+
+            plugin.getGraveManager().breakGrave(grave.getLocationDeath(), grave);
+            plugin.getGraveManager().closeGrave(grave);
+            plugin.getGraveManager().playEffect("effect.loot", piston.getLocation(), grave);
+            plugin.getEntityManager().runCommands("event.command.pistonextend", piston.getType().name(), piston.getLocation(), grave);
+        } else {
+            plugin.debugMessage("Piston move for grave at " + grave.getLocationDeath() + " was cancelled or is an addon. No action taken.", 2);
+        }
+    }
+
 }

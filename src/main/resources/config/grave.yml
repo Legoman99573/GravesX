@@ -103,7 +103,7 @@ settings:
           # Should projectiles from other sources cause the grave to break? (Dispenser)
           other: false
         # Should pistons break graves?
-        piston-extend: false
+        piston-extend: true
 
       #########
       # Block #
