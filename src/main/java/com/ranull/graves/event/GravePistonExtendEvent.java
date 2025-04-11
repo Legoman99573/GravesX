@@ -10,6 +10,13 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
+/**
+ * Represents an event that occurs when a piston extends into a grave location.
+ * <p>
+ * This event extends {@link GraveEvent} and is cancellable, allowing event listeners
+ * to prevent the piston from extending.
+ * </p>
+ */
 public class GravePistonExtendEvent extends GraveEvent {
     /**
      * A static final instance of {@link HandlerList} used to manage event handlers.
@@ -42,14 +49,29 @@ public class GravePistonExtendEvent extends GraveEvent {
         this.movedBlocks = movedBlocks;
     }
 
+    /**
+     * Gets the piston block involved in this event.
+     *
+     * @return The piston block that is extending.
+     */
     public Block getPistonBlock() {
         return pistonBlock;
     }
 
+    /**
+     * Gets the direction in which the piston is extending.
+     *
+     * @return The direction of the piston extension.
+     */
     public BlockFace getDirection() {
         return direction;
     }
 
+    /**
+     * Gets the list of blocks that are being moved by the piston during this extension.
+     *
+     * @return A list of blocks affected by the piston movement.
+     */
     public List<Block> getMovedBlocks() {
         return movedBlocks;
     }
