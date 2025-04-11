@@ -109,8 +109,9 @@ public final class MiniMessage {
         String gradient = MiniTranslator.toMini(format, MiniTranslator.Option.GRADIENT);
         String fast_reset = MiniTranslator.toMini(gradient, MiniTranslator.Option.FAST_RESET);
         String close_color = MiniTranslator.toMini(fast_reset, MiniTranslator.Option.CLOSE_COLORS);
+        String hex_colors = MiniTranslator.toMini(close_color, MiniTranslator.Option.HEX_COLOR_STANDALONE);
 
-        return close_color;
+        return MiniTranslator.toMini(hex_colors, MiniTranslator.Option.VERBOSE_HEX_COLOR);
     }
 
     /**
