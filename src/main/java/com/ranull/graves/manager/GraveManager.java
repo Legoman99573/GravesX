@@ -1300,28 +1300,33 @@ public final class GraveManager {
     public boolean isNearGrave(Location location, Player player, Block block) {
         try {
             for (Grave grave : plugin.getCacheManager().getGraveMap().values()) {
-                Location graveLocation;
-                if (player != null) {
-                    graveLocation = plugin.getGraveManager().getGraveLocation(player.getLocation(), grave);
-                } else if (block != null) {
-                    graveLocation = plugin.getGraveManager().getGraveLocation(block.getLocation(), grave);
-                } else {
-                    graveLocation = plugin.getGraveManager().getGraveLocation(location, grave);
+                if (!plugin.getConfig("grave.should-protect-radius", grave).getBoolean("grave.should-protect-radius")) {
+                    break;
                 }
 
-                if (graveLocation != null && graveLocation.getWorld().equals(location.getWorld())) {
-                    int protectionRadius = plugin.getConfig("grave.protection-radius", grave).getInt("grave.protection-radius");
-                    if (protectionRadius > 0) {
-                        double squaredRadius = protectionRadius * protectionRadius;
-                        if (location.distanceSquared(graveLocation) <= squaredRadius) {
-                            return true;
-                        }
-                    }
+                Location graveLocation = player != null
+                        ? plugin.getGraveManager().getGraveLocation(player.getLocation(), grave)
+                        : block != null
+                        ? plugin.getGraveManager().getGraveLocation(block.getLocation(), grave)
+                        : plugin.getGraveManager().getGraveLocation(location, grave);
+
+                if (graveLocation == null || graveLocation.getWorld() != null && !graveLocation.getWorld().equals(location.getWorld())) {
+                    break;
+                }
+
+                int protectionRadius = plugin.getConfig("grave.protection-radius", grave).getInt("grave.protection-radius");
+                if (protectionRadius <= 0) break;
+
+                if (Math.abs(graveLocation.getBlockX() - location.getBlockX()) <= protectionRadius &&
+                        Math.abs(graveLocation.getBlockY() - location.getBlockY()) <= protectionRadius &&
+                        Math.abs(graveLocation.getBlockZ() - location.getBlockZ()) <= protectionRadius) {
+                    return true;
                 }
             }
         } catch (Exception ignored) {
-            // Handle errors gracefully, such as location in a different world
+            // Graceful fallback in case of error
         }
+
         return false;
     }
 
