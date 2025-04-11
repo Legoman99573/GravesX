@@ -86,9 +86,10 @@ settings:
           # If not all items can be picked up when auto-looting a grave, should we break the grave anyway and drop them on the ground.
           break: true
         # When a grave times out drop everything in it. If false it gets destroyed.
-        timeout: false
+        timeout: true
         # When a grave times out set the grave to an abandoned state instead of dropping everything? If false, nothing changes for this behavior. Must have drop.timeout disabled.
-        abandon: true
+        # Do not enable this option if you are worried about optimization.
+        abandon: false
         # When a grave explodes drop everything in it. If false it gets destroyed.
         explode: true
         # When a grave is broken drop everything in it. If false it gets destroyed.
