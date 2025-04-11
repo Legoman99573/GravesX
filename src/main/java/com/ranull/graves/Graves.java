@@ -1040,7 +1040,7 @@ public class Graves extends JavaPlugin {
                 + graveZ
                 + " has the following missing from grave data: "
                 + String.join(", ", invalidationReason) 
-                + ". This may affect grave behavior. Do not report this as a bug.");
+                + ". This shouldn't affect grave behavior. Do not report this as a bug.");
     }
 
     /**
