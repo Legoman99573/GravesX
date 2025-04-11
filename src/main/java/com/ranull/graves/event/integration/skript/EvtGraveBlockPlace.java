@@ -3,6 +3,7 @@ package com.ranull.graves.event.integration.skript;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
+import com.ranull.graves.event.GraveEvent;
 import org.bukkit.Location;
 import org.bukkit.event.Event;
 import org.jetbrains.annotations.NotNull;
@@ -15,8 +16,8 @@ import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.registrations.EventValues;
-import ch.njol.util.Checker;
-import ch.njol.skript.util.Getter;
+
+import java.util.function.Predicate;
 
 @Name("Grave Block Place Event")
 @Description("Triggered when a block is placed for a grave. Provides access to the grave, block type, and location.")
@@ -29,25 +30,11 @@ public class EvtGraveBlockPlace extends SkriptEvent {
     static {
         Skript.registerEvent("Grave Block Place", EvtGraveBlockPlace.class, GraveBlockPlaceEvent.class, "[grave] bloc(k|ks) plac(e|ing|ed)");
 
-        // Registering event values
-        EventValues.registerEventValue(GraveBlockPlaceEvent.class, Grave.class, new Getter<Grave, GraveBlockPlaceEvent>() {
-            @Override
-            public Grave get(GraveBlockPlaceEvent e) {
-                return e.getGrave();
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveBlockPlaceEvent.class, Location.class, new Getter<Location, GraveBlockPlaceEvent>() {
-            @Override
-            public Location get(GraveBlockPlaceEvent e) {
-                return e.getLocation();
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveBlockPlaceEvent.class, BlockData.BlockType.class, new Getter<BlockData.BlockType, GraveBlockPlaceEvent>() {
-            @Override
-            public BlockData.BlockType get(GraveBlockPlaceEvent e) {
-                return e.getBlockType();
-            }
-        }, 0);
+        EventValues.registerEventValue(GraveBlockPlaceEvent.class, Grave.class, GraveBlockPlaceEvent::getGrave, 0);
+
+        EventValues.registerEventValue(GraveBlockPlaceEvent.class, Location.class, GraveBlockPlaceEvent::getLocation, 0);
+
+        EventValues.registerEventValue(GraveBlockPlaceEvent.class, BlockData.BlockType.class, GraveBlockPlaceEvent::getBlockType, 0);
     }
 
     private Literal<Grave> grave;
@@ -67,29 +54,29 @@ public class EvtGraveBlockPlace extends SkriptEvent {
     public boolean check(Event e) {
         if (e instanceof GraveBlockPlaceEvent) {
             GraveBlockPlaceEvent event = (GraveBlockPlaceEvent) e;
-            if (grave != null && !grave.check(event, new Checker<Grave>() {
-                @Override
-                public boolean check(Grave g) {
-                    return g.equals(event.getGrave());
-                }
-            })) {
-                return false;
+            if (grave != null) {
+                grave.check(event, new Predicate<Grave>() {
+                    @Override
+                    public boolean test(Grave g) {
+                        return g.equals(event.getGrave());
+                    }
+                });
             }
-            if (location != null && !location.check(event, new Checker<Location>() {
-                @Override
-                public boolean check(Location loc) {
-                    return loc.equals(event.getLocation());
-                }
-            })) {
-                return false;
+            if (location != null) {
+                location.check(event, new Predicate<Location>() {
+                    @Override
+                    public boolean test(Location l) {
+                        return l.equals(event.getLocation());
+                    }
+                });
             }
-            if (blockType != null && !blockType.check(event, new Checker<BlockData.BlockType>() {
-                @Override
-                public boolean check(BlockData.BlockType type) {
-                    return type.equals(event.getBlockType());
-                }
-            })) {
-                return false;
+            if (blockType != null) {
+                blockType.check(event, new Predicate<BlockData.BlockType>() {
+                    @Override
+                    public boolean test(BlockData.BlockType b) {
+                        return b.equals(event.getBlockType());
+                    }
+                });
             }
             return true;
         }

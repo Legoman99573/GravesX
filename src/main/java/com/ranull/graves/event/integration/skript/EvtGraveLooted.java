@@ -3,6 +3,7 @@ package com.ranull.graves.event.integration.skript;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
+import com.ranull.graves.event.GraveEvent;
 import com.ranull.graves.event.GraveLootedEvent;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -15,8 +16,8 @@ import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.registrations.EventValues;
-import ch.njol.util.Checker;
-import ch.njol.skript.util.Getter;
+
+import java.util.function.Predicate;
 
 @Name("Grave Looted Event")
 @Description("Triggered when an inventory associated with a grave is completely looted. Provides access to the grave and inventory view.")
@@ -29,25 +30,11 @@ public class EvtGraveLooted extends SkriptEvent {
     static {
         Skript.registerEvent("Grave Looted", EvtGraveLooted.class, GraveLootedEvent.class, "[grave] loo(t|ting|ted)");
 
-        // Registering event values
-        EventValues.registerEventValue(GraveLootedEvent.class, Player.class, new Getter<Player, GraveLootedEvent>() {
-            @Override
-            public Player get(GraveLootedEvent e) {
-                return e.getPlayer();
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveLootedEvent.class, Grave.class, new Getter<Grave, GraveLootedEvent>() {
-            @Override
-            public Grave get(GraveLootedEvent e) {
-                return e.getGrave();
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveLootedEvent.class, InventoryView.class, new Getter<InventoryView, GraveLootedEvent>() {
-            @Override
-            public InventoryView get(GraveLootedEvent e) {
-                return e.getInventoryView();
-            }
-        }, 0);
+        EventValues.registerEventValue(GraveLootedEvent.class, Player.class, GraveLootedEvent::getPlayer, 0);
+
+        EventValues.registerEventValue(GraveLootedEvent.class, Grave.class, GraveLootedEvent::getGrave, 0);
+
+        EventValues.registerEventValue(GraveLootedEvent.class, InventoryView.class, GraveLootedEvent::getInventoryView, 0);
     }
 
     private Literal<Player> player;
@@ -66,29 +53,29 @@ public class EvtGraveLooted extends SkriptEvent {
     public boolean check(Event e) {
         if (e instanceof GraveLootedEvent) {
             GraveLootedEvent event = (GraveLootedEvent) e;
-            if (player != null && !player.check(event, new Checker<Player>() {
-                @Override
-                public boolean check(Player p) {
-                    return p.equals(event.getPlayer());
-                }
-            })) {
-                return false;
+            if (player != null) {
+                player.check(event, new Predicate<Player>() {
+                    @Override
+                    public boolean test(Player p) {
+                        return p.equals(event.getPlayer());
+                    }
+                });
             }
-            if (grave != null && !grave.check(event, new Checker<Grave>() {
-                @Override
-                public boolean check(Grave g) {
-                    return g.equals(event.getGrave());
-                }
-            })) {
-                return false;
+            if (grave != null) {
+                grave.check(event, new Predicate<Grave>() {
+                    @Override
+                    public boolean test(Grave g) {
+                        return g.equals(event.getGrave());
+                    }
+                });
             }
-            if (inventoryView != null && !inventoryView.check(event, new Checker<InventoryView>() {
-                @Override
-                public boolean check(InventoryView view) {
-                    return view.equals(event.getInventoryView());
-                }
-            })) {
-                return false;
+            if (inventoryView != null) {
+                inventoryView.check(event, new Predicate<InventoryView>() {
+                    @Override
+                    public boolean test(InventoryView view) {
+                        return view.equals(event.getInventoryView());
+                    }
+                });
             }
             return true;
         }

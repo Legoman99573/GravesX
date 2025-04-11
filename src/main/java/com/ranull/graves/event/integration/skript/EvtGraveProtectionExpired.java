@@ -3,7 +3,6 @@ package com.ranull.graves.event.integration.skript;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
-import ch.njol.util.Checker;
 import org.bukkit.Location;
 import org.bukkit.event.Event;
 import org.jetbrains.annotations.NotNull;
@@ -15,7 +14,8 @@ import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.registrations.EventValues;
-import ch.njol.skript.util.Getter;
+
+import java.util.function.Predicate;
 
 @Name("Grave Protection Expired Event")
 @Description("Triggered when a grave's protection expires. Provides access to the grave and location.")
@@ -28,19 +28,9 @@ public class EvtGraveProtectionExpired extends SkriptEvent {
     static {
         Skript.registerEvent("Grave Protection Expired", EvtGraveProtectionExpired.class, GraveProtectionExpiredEvent.class, "[grave] protec(t|ting|ted|tion) expir(e|ing|ed)");
 
-        // Registering event values
-        EventValues.registerEventValue(GraveProtectionExpiredEvent.class, Grave.class, new Getter<Grave, GraveProtectionExpiredEvent>() {
-            @Override
-            public Grave get(GraveProtectionExpiredEvent e) {
-                return e.getGrave();
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveProtectionExpiredEvent.class, Location.class, new Getter<Location, GraveProtectionExpiredEvent>() {
-            @Override
-            public Location get(GraveProtectionExpiredEvent e) {
-                return e.getLocation();
-            }
-        }, 0);
+        EventValues.registerEventValue(GraveProtectionExpiredEvent.class, Grave.class, GraveProtectionExpiredEvent::getGrave, 0);
+
+        EventValues.registerEventValue(GraveProtectionExpiredEvent.class, Location.class, GraveProtectionExpiredEvent::getLocation, 0);
     }
 
     private Literal<Grave> grave;
@@ -58,21 +48,21 @@ public class EvtGraveProtectionExpired extends SkriptEvent {
     public boolean check(Event e) {
         if (e instanceof GraveProtectionExpiredEvent) {
             GraveProtectionExpiredEvent event = (GraveProtectionExpiredEvent) e;
-            if (grave != null && !grave.check(event, new Checker<Grave>() {
-                @Override
-                public boolean check(Grave g) {
-                    return g.equals(event.getGrave());
-                }
-            })) {
-                return false;
+            if (grave != null) {
+                grave.check(event, new Predicate<Grave>() {
+                    @Override
+                    public boolean test(Grave g) {
+                        return g.equals(event.getGrave());
+                    }
+                });
             }
-            if (location != null && !location.check(event, new Checker<Location>() {
-                @Override
-                public boolean check(Location loc) {
-                    return loc.equals(event.getLocation());
-                }
-            })) {
-                return false;
+            if (location != null) {
+                location.check(event, new Predicate<Location>() {
+                    @Override
+                    public boolean test(Location l) {
+                        return l.equals(event.getLocation());
+                    }
+                });
             }
             return true;
         }

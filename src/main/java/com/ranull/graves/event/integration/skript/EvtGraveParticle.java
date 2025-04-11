@@ -14,8 +14,8 @@ import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.registrations.EventValues;
-import ch.njol.util.Checker;
-import ch.njol.skript.util.Getter;
+
+import java.util.function.Predicate;
 
 @Name("Grave Particle Event")
 @Description("Triggered when a particle is targeted to a grave location.")
@@ -28,19 +28,9 @@ public class EvtGraveParticle extends SkriptEvent {
     static {
         Skript.registerEvent("Grave Compass Use", EvtGraveParticle.class, GraveParticleEvent.class, "[grave] particl(e|es)");
 
-        // Registering event values
-        EventValues.registerEventValue(GraveParticleEvent.class, Player.class, new Getter<Player, GraveParticleEvent>() {
-            @Override
-            public Player get(GraveParticleEvent e) {
-                return e.getPlayer();
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveParticleEvent.class, Grave.class, new Getter<Grave, GraveParticleEvent>() {
-            @Override
-            public Grave get(GraveParticleEvent e) {
-                return e.getGrave();
-            }
-        }, 0);
+        EventValues.registerEventValue(GraveParticleEvent.class, Player.class, GraveParticleEvent::getPlayer, 0);
+
+        EventValues.registerEventValue(GraveParticleEvent.class, Grave.class, GraveParticleEvent::getGrave, 0);
     }
 
     private Literal<Player> player;
@@ -58,27 +48,22 @@ public class EvtGraveParticle extends SkriptEvent {
     public boolean check(Event e) {
         if (e instanceof GraveParticleEvent) {
             GraveParticleEvent event = (GraveParticleEvent) e;
-
-            // Check for player
-            if (player != null && !player.check(event, new Checker<Player>() {
-                @Override
-                public boolean check(Player p) {
-                    return p.equals(event.getPlayer());
-                }
-            })) {
-                return false;
+            if (player != null) {
+                player.check(event, new Predicate<Player>() {
+                    @Override
+                    public boolean test(Player p) {
+                        return p.equals(event.getPlayer());
+                    }
+                });
             }
-
-            // Check for grave
-            if (grave != null && !grave.check(event, new Checker<Grave>() {
-                @Override
-                public boolean check(Grave g) {
-                    return g.equals(event.getGrave());
-                }
-            })) {
-                return false;
+            if (grave != null) {
+                grave.check(event, new Predicate<Grave>() {
+                    @Override
+                    public boolean test(Grave g) {
+                        return g.equals(event.getGrave());
+                    }
+                });
             }
-
             return true;
         }
         return false;

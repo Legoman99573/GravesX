@@ -8,14 +8,15 @@ import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser;
 import ch.njol.skript.registrations.EventValues;
-import ch.njol.skript.util.Getter;
-import ch.njol.util.Checker;
 import com.ranull.graves.event.GraveAbandonedEvent;
+import com.ranull.graves.event.GraveEvent;
 import com.ranull.graves.type.Grave;
 import org.bukkit.Location;
 import org.bukkit.event.Event;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.function.Predicate;
 
 @Name("Grave Abandoned Event")
 @Description("Triggered when a grave is abandoned. Provides access to the grave and location.")
@@ -28,19 +29,9 @@ public class EvtGraveAbandoned extends SkriptEvent {
     static {
         Skript.registerEvent("Grave Abandoned", EvtGraveAbandoned.class, GraveAbandonedEvent.class, "[grave] aband(on|oned|ed|oning)");
 
-        // Registering event values
-        EventValues.registerEventValue(GraveAbandonedEvent.class, Grave.class, new Getter<Grave, GraveAbandonedEvent>() {
-            @Override
-            public Grave get(GraveAbandonedEvent e) {
-                return e.getGrave();
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveAbandonedEvent.class, Location.class, new Getter<Location, GraveAbandonedEvent>() {
-            @Override
-            public Location get(GraveAbandonedEvent e) {
-                return e.getLocation();
-            }
-        }, 0);
+        EventValues.registerEventValue(GraveAbandonedEvent.class, Grave.class, GraveAbandonedEvent::getGrave, 0);
+
+        EventValues.registerEventValue(GraveAbandonedEvent.class, Location.class, GraveAbandonedEvent::getLocation, 0);
     }
 
     private Literal<Grave> grave;
@@ -58,21 +49,21 @@ public class EvtGraveAbandoned extends SkriptEvent {
     public boolean check(Event e) {
         if (e instanceof GraveAbandonedEvent) {
             GraveAbandonedEvent event = (GraveAbandonedEvent) e;
-            if (grave != null && !grave.check(event, new Checker<Grave>() {
-                @Override
-                public boolean check(Grave g) {
-                    return g.equals(event.getGrave());
-                }
-            })) {
-                return false;
+            if (grave != null) {
+                grave.check(event, new Predicate<Grave>() {
+                    @Override
+                    public boolean test(Grave g) {
+                        return g.equals(event.getGrave());
+                    }
+                });
             }
-            if (location != null && !location.check(event, new Checker<Location>() {
-                @Override
-                public boolean check(Location loc) {
-                    return loc.equals(event.getLocation());
-                }
-            })) {
-                return false;
+            if (location != null) {
+                location.check(event, new Predicate<Location>() {
+                    @Override
+                    public boolean test(Location l) {
+                        return l.equals(event.getLocation());
+                    }
+                });
             }
             return true;
         }

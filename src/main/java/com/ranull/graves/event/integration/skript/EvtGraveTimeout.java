@@ -14,8 +14,8 @@ import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.registrations.EventValues;
-import ch.njol.util.Checker;
-import ch.njol.skript.util.Getter;
+
+import java.util.function.Predicate;
 
 @Name("Grave Timeout Event")
 @Description("Triggered when a grave times out. Provides access to the grave and location.")
@@ -28,19 +28,9 @@ public class EvtGraveTimeout extends SkriptEvent {
     static {
         Skript.registerEvent("Grave Timeout", EvtGraveTimeout.class, GraveTimeoutEvent.class, "[grave] tim(e|ed)(| |-)out");
 
-        // Registering event values
-        EventValues.registerEventValue(GraveTimeoutEvent.class, Grave.class, new Getter<Grave, GraveTimeoutEvent>() {
-            @Override
-            public Grave get(GraveTimeoutEvent e) {
-                return e.getGrave();
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveTimeoutEvent.class, Location.class, new Getter<Location, GraveTimeoutEvent>() {
-            @Override
-            public Location get(GraveTimeoutEvent e) {
-                return e.getLocation();
-            }
-        }, 0);
+        EventValues.registerEventValue(GraveTimeoutEvent.class, Grave.class, GraveTimeoutEvent::getGrave, 0);
+
+        EventValues.registerEventValue(GraveTimeoutEvent.class, Location.class, GraveTimeoutEvent::getLocation, 0);
     }
 
     private Literal<Grave> grave;
@@ -58,21 +48,21 @@ public class EvtGraveTimeout extends SkriptEvent {
     public boolean check(Event e) {
         if (e instanceof GraveTimeoutEvent) {
             GraveTimeoutEvent event = (GraveTimeoutEvent) e;
-            if (grave != null && !grave.check(event, new Checker<Grave>() {
-                @Override
-                public boolean check(Grave g) {
-                    return g.equals(event.getGrave());
-                }
-            })) {
-                return false;
+            if (grave != null) {
+                grave.check(event, new Predicate<Grave>() {
+                    @Override
+                    public boolean test(Grave g) {
+                        return g.equals(event.getGrave());
+                    }
+                });
             }
-            if (location != null && !location.check(event, new Checker<Location>() {
-                @Override
-                public boolean check(Location loc) {
-                    return loc.equals(event.getLocation());
-                }
-            })) {
-                return false;
+            if (location != null) {
+                location.check(event, new Predicate<Location>() {
+                    @Override
+                    public boolean test(Location l) {
+                        return l.equals(event.getLocation());
+                    }
+                });
             }
             return true;
         }

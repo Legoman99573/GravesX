@@ -8,8 +8,6 @@ import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser;
 import ch.njol.skript.registrations.EventValues;
-import ch.njol.skript.util.Getter;
-import ch.njol.util.Checker;
 import com.ranull.graves.event.GraveTeleportEvent;
 import com.ranull.graves.type.Grave;
 import org.bukkit.Location;
@@ -17,6 +15,8 @@ import org.bukkit.entity.Entity;
 import org.bukkit.event.Event;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.function.Predicate;
 
 @Name("Grave Teleport Event")
 @Description("Triggered when an entity teleports to a grave. Provides access to the grave, entity and location.")
@@ -29,25 +29,11 @@ public class EvtGraveTeleport extends SkriptEvent {
     static {
         Skript.registerEvent("Grave Teleport", EvtGraveTeleport.class, GraveTeleportEvent.class, "[grave] telepor(t|ting|ted)");
 
-        // Registering event values
-        EventValues.registerEventValue(GraveTeleportEvent.class, Entity.class, new Getter<Entity, GraveTeleportEvent>() {
-            @Override
-            public Entity get(GraveTeleportEvent e) {
-                return e.getEntity();
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveTeleportEvent.class, Grave.class, new Getter<Grave, GraveTeleportEvent>() {
-            @Override
-            public Grave get(GraveTeleportEvent e) {
-                return e.getGrave();
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveTeleportEvent.class, Location.class, new Getter<Location, GraveTeleportEvent>() {
-            @Override
-            public Location get(GraveTeleportEvent e) {
-                return e.getGrave().getLocationDeath();
-            }
-        }, 0);
+        EventValues.registerEventValue(GraveTeleportEvent.class, Entity.class, GraveTeleportEvent::getEntity, 0);
+
+        EventValues.registerEventValue(GraveTeleportEvent.class, Grave.class, GraveTeleportEvent::getGrave, 0);
+
+        EventValues.registerEventValue(GraveTeleportEvent.class, Location.class, GraveTeleportEvent::getLocation, 0);
     }
 
     private Literal<Entity> entity;
@@ -67,29 +53,29 @@ public class EvtGraveTeleport extends SkriptEvent {
     public boolean check(Event e) {
         if (e instanceof GraveTeleportEvent) {
             GraveTeleportEvent event = (GraveTeleportEvent) e;
-            if (entity != null && !entity.check(event, new Checker<Entity>() {
-                @Override
-                public boolean check(Entity ent) {
-                    return ent.equals(event.getEntity());
-                }
-            })) {
-                return false;
+            if (entity != null) {
+                entity.check(event, new Predicate<Entity>() {
+                    @Override
+                    public boolean test(Entity e) {
+                        return e.equals(event.getEntity());
+                    }
+                });
             }
-            if (grave != null && !grave.check(event, new Checker<Grave>() {
-                @Override
-                public boolean check(Grave g) {
-                    return g.equals(event.getGrave());
-                }
-            })) {
-                return false;
+            if (grave != null) {
+                grave.check(event, new Predicate<Grave>() {
+                    @Override
+                    public boolean test(Grave g) {
+                        return g.equals(event.getGrave());
+                    }
+                });
             }
-            if (location != null && !location.check(event, new Checker<Location>() {
-                @Override
-                public boolean check(Location loc) {
-                    return loc.equals(event.getGrave().getLocationDeath());
-                }
-            })) {
-                return false;
+            if (location != null) {
+                location.check(event, new Predicate<Location>() {
+                    @Override
+                    public boolean test(Location l) {
+                        return l.equals(event.getLocation());
+                    }
+                });
             }
             return true;
         }

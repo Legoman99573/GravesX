@@ -15,8 +15,9 @@ import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.registrations.EventValues;
-import ch.njol.util.Checker;
-import ch.njol.skript.util.Getter;
+
+import java.util.UUID;
+import java.util.function.Predicate;
 
 @Name("Grave Walk Over Event")
 @Description("Triggered when an entity walks over a grave. Provides access to the entity, grave, and location.")
@@ -29,60 +30,21 @@ public class EvtGraveWalkOver extends SkriptEvent {
     static {
         Skript.registerEvent("Grave Walk Over", EvtGraveWalkOver.class, GraveWalkOverEvent.class, "[grave] wal(k|ked|king) over");
 
+        EventValues.registerEventValue(GraveWalkOverEvent.class, Entity.class, GraveWalkOverEvent::getEntity, 0);
 
-        // Registering entity values
-        EventValues.registerEventValue(GraveWalkOverEvent.class, Entity.class, new Getter<Entity, GraveWalkOverEvent>() {
-            @Override
-            public Entity get(GraveWalkOverEvent e) {
-                return e.getEntity();
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveWalkOverEvent.class, String.class, new Getter<String, GraveWalkOverEvent>() {
-            @Override
-            public String get(GraveWalkOverEvent e) {
-                return e.getEntity() != null ? e.getEntity().getName() : null;
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveWalkOverEvent.class, String.class, new Getter<String, GraveWalkOverEvent>() {
-            @Override
-            public String get(GraveWalkOverEvent e) {
-                return e.getEntity() != null ? e.getEntity().getUniqueId().toString() : null;
-            }
-        }, 0);
+        EventValues.registerEventValue(GraveWalkOverEvent.class, String.class, GraveWalkOverEvent::getEntityName, 0);
 
-        // Registering grave values
-        EventValues.registerEventValue(GraveWalkOverEvent.class, Grave.class, new Getter<Grave, GraveWalkOverEvent>() {
-            @Override
-            public Grave get(GraveWalkOverEvent e) {
-                return e.getGrave();
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveWalkOverEvent.class, Location.class, new Getter<Location, GraveWalkOverEvent>() {
-            @Override
-            public Location get(GraveWalkOverEvent e) {
-                return e.getLocation();
-            }
-        }, 0);
+        EventValues.registerEventValue(GraveWalkOverEvent.class, UUID.class, GraveWalkOverEvent::getEntityUniqueId, 0);
 
-        // Registering additional grave values
-        EventValues.registerEventValue(GraveWalkOverEvent.class, String.class, new Getter<String, GraveWalkOverEvent>() {
-            @Override
-            public String get(GraveWalkOverEvent e) {
-                return e.getGrave() != null ? e.getGrave().getOwnerUUID().toString() : null;
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveWalkOverEvent.class, String.class, new Getter<String, GraveWalkOverEvent>() {
-            @Override
-            public String get(GraveWalkOverEvent e) {
-                return e.getGrave() != null ? e.getGrave().getOwnerDisplayName() : null;
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveWalkOverEvent.class, Number.class, new Getter<Number, GraveWalkOverEvent>() {
-            @Override
-            public Number get(GraveWalkOverEvent e) {
-                return e.getGrave() != null ? e.getGrave().getExperience() : null;
-            }
-        }, 0);
+        EventValues.registerEventValue(GraveWalkOverEvent.class, Entity.class, GraveWalkOverEvent::getEntity, 0);
+
+        EventValues.registerEventValue(GraveWalkOverEvent.class, Location.class, GraveWalkOverEvent::getLocation, 0);
+
+        EventValues.registerEventValue(GraveWalkOverEvent.class, UUID.class, GraveWalkOverEvent::getGraveOwnerUniqueId, 0);
+
+        EventValues.registerEventValue(GraveWalkOverEvent.class, String.class, GraveWalkOverEvent::getGraveOwnerDisplayName, 0);
+
+        EventValues.registerEventValue(GraveWalkOverEvent.class, Number.class, GraveWalkOverEvent::getGraveExperience, 0);
     }
 
     private Literal<Entity> entity;
@@ -102,29 +64,29 @@ public class EvtGraveWalkOver extends SkriptEvent {
     public boolean check(Event e) {
         if (e instanceof GraveWalkOverEvent) {
             GraveWalkOverEvent event = (GraveWalkOverEvent) e;
-            if (entity != null && !entity.check(event, new Checker<Entity>() {
-                @Override
-                public boolean check(Entity ent) {
-                    return ent.equals(event.getEntity());
-                }
-            })) {
-                return false;
+            if (entity != null) {
+                entity.check(event, new Predicate<Entity>() {
+                    @Override
+                    public boolean test(Entity e) {
+                        return e.equals(event.getEntity());
+                    }
+                });
             }
-            if (grave != null && !grave.check(event, new Checker<Grave>() {
-                @Override
-                public boolean check(Grave g) {
-                    return g.equals(event.getGrave());
-                }
-            })) {
-                return false;
+            if (grave != null) {
+                grave.check(event, new Predicate<Grave>() {
+                    @Override
+                    public boolean test(Grave g) {
+                        return g.equals(event.getGrave());
+                    }
+                });
             }
-            if (location != null && !location.check(event, new Checker<Location>() {
-                @Override
-                public boolean check(Location loc) {
-                    return loc.equals(event.getLocation());
-                }
-            })) {
-                return false;
+            if (location != null) {
+                location.check(event, new Predicate<Location>() {
+                    @Override
+                    public boolean test(Location l) {
+                        return l.equals(event.getLocation());
+                    }
+                });
             }
             return true;
         }

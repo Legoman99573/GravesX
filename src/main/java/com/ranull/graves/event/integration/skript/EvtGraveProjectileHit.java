@@ -17,8 +17,8 @@ import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.registrations.EventValues;
-import ch.njol.util.Checker;
-import ch.njol.skript.util.Getter;
+
+import java.util.function.Predicate;
 
 @Name("Grave Projectile Hit Event")
 @Description("Triggered when a grave block is broken. Provides access to the grave, player, block, and block type.")
@@ -31,37 +31,15 @@ public class EvtGraveProjectileHit extends SkriptEvent {
     static {
         Skript.registerEvent("Grave Projectile Hit", EvtGraveProjectileHit.class, GraveProjectileHitEvent.class, "[grave] projectil(e|es) hi(t|tting)");
 
-        // Registering event values
-        EventValues.registerEventValue(GraveProjectileHitEvent.class, Player.class, new Getter<Player, GraveProjectileHitEvent>() {
-            @Override
-            public Player get(GraveProjectileHitEvent e) {
-                return e.getPlayer();
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveProjectileHitEvent.class, Grave.class, new Getter<Grave, GraveProjectileHitEvent>() {
-            @Override
-            public Grave get(GraveProjectileHitEvent e) {
-                return e.getGrave();
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveProjectileHitEvent.class, Block.class, new Getter<Block, GraveProjectileHitEvent>() {
-            @Override
-            public Block get(GraveProjectileHitEvent e) {
-                return e.getBlock();
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveProjectileHitEvent.class, Entity.class, new Getter<Entity, GraveProjectileHitEvent>() {
-            @Override
-            public Entity get(GraveProjectileHitEvent e) {
-                return e.getEntity();
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveProjectileHitEvent.class, LivingEntity.class, new Getter<LivingEntity, GraveProjectileHitEvent>() {
-            @Override
-            public LivingEntity get(GraveProjectileHitEvent e) {
-                return e.getLivingEntity();
-            }
-        }, 0);
+        EventValues.registerEventValue(GraveProjectileHitEvent.class, Player.class, GraveProjectileHitEvent::getPlayer, 0);
+
+        EventValues.registerEventValue(GraveProjectileHitEvent.class, Grave.class, GraveProjectileHitEvent::getGrave, 0);
+
+        EventValues.registerEventValue(GraveProjectileHitEvent.class, Block.class, GraveProjectileHitEvent::getBlock, 0);
+
+        EventValues.registerEventValue(GraveProjectileHitEvent.class, Entity.class, GraveProjectileHitEvent::getEntity, 0);
+
+        EventValues.registerEventValue(GraveProjectileHitEvent.class, LivingEntity.class, GraveProjectileHitEvent::getLivingEntity, 0);
     }
 
     private Literal<Player> player;
@@ -85,57 +63,46 @@ public class EvtGraveProjectileHit extends SkriptEvent {
     public boolean check(Event e) {
         if (e instanceof GraveProjectileHitEvent) {
             GraveProjectileHitEvent event = (GraveProjectileHitEvent) e;
-
-            // Check for player
-            if (player != null && !player.check(event, new Checker<Player>() {
-                @Override
-                public boolean check(Player p) {
-                    return p.equals(event.getPlayer());
-                }
-            })) {
-                return false;
+            if (player != null) {
+                player.check(event, new Predicate<Player>() {
+                    @Override
+                    public boolean test(Player p) {
+                        return p.equals(event.getPlayer());
+                    }
+                });
             }
-
-            // Check for grave
-            if (grave != null && !grave.check(event, new Checker<Grave>() {
-                @Override
-                public boolean check(Grave g) {
-                    return g.equals(event.getGrave());
-                }
-            })) {
-                return false;
+            if (grave != null) {
+                grave.check(event, new Predicate<Grave>() {
+                    @Override
+                    public boolean test(Grave g) {
+                        return g.equals(event.getGrave());
+                    }
+                });
             }
-
-            // Check for block
-            if (block != null && !block.check(event, new Checker<Block>() {
-                @Override
-                public boolean check(Block b) {
-                    return b.equals(event.getBlock());
-                }
-            })) {
-                return false;
+            if (block != null) {
+                block.check(event, new Predicate<Block>() {
+                    @Override
+                    public boolean test(Block b) {
+                        return b.equals(event.getBlock());
+                    }
+                });
             }
-
-            // Check for entity
-            if (entity != null && !entity.check(event, new Checker<Entity>() {
-                @Override
-                public boolean check(Entity e) {
-                    return e.equals(event.getEntity());
-                }
-            })) {
-                return false;
+            if (entity != null) {
+                entity.check(event, new Predicate<Entity>() {
+                    @Override
+                    public boolean test(Entity e) {
+                        return e.equals(event.getEntity());
+                    }
+                });
             }
-
-            // Check for living entity
-            if (livingEntity != null && !livingEntity.check(event, new Checker<LivingEntity>() {
-                @Override
-                public boolean check(LivingEntity le) {
-                    return le.equals(event.getLivingEntity());
-                }
-            })) {
-                return false;
+            if (livingEntity != null) {
+                livingEntity.check(event, new Predicate<LivingEntity>() {
+                    @Override
+                    public boolean test(LivingEntity le) {
+                        return le.equals(event.getLivingEntity());
+                    }
+                });
             }
-
             return true;
         }
         return false;

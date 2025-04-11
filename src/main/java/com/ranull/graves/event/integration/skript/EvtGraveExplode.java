@@ -15,8 +15,8 @@ import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.registrations.EventValues;
-import ch.njol.util.Checker;
-import ch.njol.skript.util.Getter;
+
+import java.util.function.Predicate;
 
 @Name("Grave Explode Event")
 @Description("Triggered when a grave explodes. Provides access to the entity, grave, and location.")
@@ -29,25 +29,11 @@ public class EvtGraveExplode extends SkriptEvent {
     static {
         Skript.registerEvent("Grave Explode", EvtGraveExplode.class, GraveExplodeEvent.class, "[grave] explod(e|ing|ed)");
 
-        // Registering event values
-        EventValues.registerEventValue(GraveExplodeEvent.class, Entity.class, new Getter<Entity, GraveExplodeEvent>() {
-            @Override
-            public Entity get(GraveExplodeEvent e) {
-                return e.getEntity();
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveExplodeEvent.class, Grave.class, new Getter<Grave, GraveExplodeEvent>() {
-            @Override
-            public Grave get(GraveExplodeEvent e) {
-                return e.getGrave();
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveExplodeEvent.class, Location.class, new Getter<Location, GraveExplodeEvent>() {
-            @Override
-            public Location get(GraveExplodeEvent e) {
-                return e.getLocation();
-            }
-        }, 0);
+        EventValues.registerEventValue(GraveExplodeEvent.class, Entity.class, GraveExplodeEvent::getEntity, 0);
+
+        EventValues.registerEventValue(GraveExplodeEvent.class, Grave.class, GraveExplodeEvent::getGrave, 0);
+
+        EventValues.registerEventValue(GraveExplodeEvent.class, Location.class, GraveExplodeEvent::getLocation, 0);
     }
 
     private Literal<Entity> entity;
@@ -67,29 +53,21 @@ public class EvtGraveExplode extends SkriptEvent {
     public boolean check(Event e) {
         if (e instanceof GraveExplodeEvent) {
             GraveExplodeEvent event = (GraveExplodeEvent) e;
-            if (entity != null && !entity.check(event, new Checker<Entity>() {
-                @Override
-                public boolean check(Entity ent) {
-                    return ent.equals(event.getEntity());
-                }
-            })) {
-                return false;
+            if (entity != null) {
+               entity.check(event, new Predicate<Entity>() {
+                   @Override
+                   public boolean test(Entity ent) {
+                       return ent.equals(event.getEntity());
+                   }
+               });
             }
-            if (grave != null && !grave.check(event, new Checker<Grave>() {
-                @Override
-                public boolean check(Grave g) {
-                    return g.equals(event.getGrave());
-                }
-            })) {
-                return false;
-            }
-            if (location != null && !location.check(event, new Checker<Location>() {
-                @Override
-                public boolean check(Location loc) {
-                    return loc.equals(event.getLocation());
-                }
-            })) {
-                return false;
+            if (location != null) {
+                location.check(event, new Predicate<Location>() {
+                    @Override
+                    public boolean test(Location l) {
+                        return l.equals(event.getLocation());
+                    }
+                });
             }
             return true;
         }

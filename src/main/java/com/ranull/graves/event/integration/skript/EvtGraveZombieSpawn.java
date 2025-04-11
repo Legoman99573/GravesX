@@ -15,8 +15,8 @@ import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.registrations.EventValues;
-import ch.njol.util.Checker;
-import ch.njol.skript.util.Getter;
+
+import java.util.function.Predicate;
 
 @Name("Grave Zombie Spawn Event")
 @Description("Triggered when a zombie spawns targeting an entity. Provides access to the grave, target entity, and location.")
@@ -29,25 +29,11 @@ public class EvtGraveZombieSpawn extends SkriptEvent {
     static {
         Skript.registerEvent("Grave Zombie Spawn", EvtGraveZombieSpawn.class, GraveZombieSpawnEvent.class, "[grave] zombi(e|es) spaw(n|ning|ned)");
 
-        // Registering event values
-        EventValues.registerEventValue(GraveZombieSpawnEvent.class, LivingEntity.class, new Getter<LivingEntity, GraveZombieSpawnEvent>() {
-            @Override
-            public LivingEntity get(GraveZombieSpawnEvent e) {
-                return e.getTargetEntity();
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveZombieSpawnEvent.class, Grave.class, new Getter<Grave, GraveZombieSpawnEvent>() {
-            @Override
-            public Grave get(GraveZombieSpawnEvent e) {
-                return e.getGrave();
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveZombieSpawnEvent.class, Location.class, new Getter<Location, GraveZombieSpawnEvent>() {
-            @Override
-            public Location get(GraveZombieSpawnEvent e) {
-                return e.getLocation();
-            }
-        }, 0);
+        EventValues.registerEventValue(GraveZombieSpawnEvent.class, LivingEntity.class, GraveZombieSpawnEvent::getTargetEntity, 0);
+
+        EventValues.registerEventValue(GraveZombieSpawnEvent.class, Grave.class, GraveZombieSpawnEvent::getGrave, 0);
+
+        EventValues.registerEventValue(GraveZombieSpawnEvent.class, Location.class, GraveZombieSpawnEvent::getLocation, 0);
     }
 
     private Literal<LivingEntity> targetEntity;
@@ -67,29 +53,37 @@ public class EvtGraveZombieSpawn extends SkriptEvent {
     public boolean check(Event e) {
         if (e instanceof GraveZombieSpawnEvent) {
             GraveZombieSpawnEvent event = (GraveZombieSpawnEvent) e;
-            if (targetEntity != null && !targetEntity.check(event, new Checker<LivingEntity>() {
-                @Override
-                public boolean check(LivingEntity ent) {
-                    return ent.equals(event.getTargetEntity());
-                }
-            })) {
-                return false;
+            if (targetEntity != null) {
+                targetEntity.check(event, new Predicate<LivingEntity>() {
+                    @Override
+                    public boolean test(LivingEntity le) {
+                        return le.equals(event.getTargetEntity());
+                    }
+                });
             }
-            if (grave != null && !grave.check(event, new Checker<Grave>() {
-                @Override
-                public boolean check(Grave g) {
-                    return g.equals(event.getGrave());
-                }
-            })) {
-                return false;
+            if (location != null) {
+                location.check(event, new Predicate<Location>() {
+                    @Override
+                    public boolean test(Location l) {
+                        return l.equals(event.getLocation());
+                    }
+                });
             }
-            if (location != null && !location.check(event, new Checker<Location>() {
-                @Override
-                public boolean check(Location loc) {
-                    return loc.equals(event.getLocation());
-                }
-            })) {
-                return false;
+            if (grave != null) {
+                grave.check(event, new Predicate<Grave>() {
+                    @Override
+                    public boolean test(Grave g) {
+                        return g.equals(event.getGrave());
+                    }
+                });
+            }
+            if (location != null) {
+                location.check(event, new Predicate<Location>() {
+                    @Override
+                    public boolean test(Location l) {
+                        return l.equals(event.getLocation());
+                    }
+                });
             }
             return true;
         }

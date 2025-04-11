@@ -16,6 +16,8 @@ import org.bukkit.inventory.InventoryView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.UUID;
+
 /**
  * The base class for all grave-related events.
  * <p>
@@ -169,12 +171,112 @@ public abstract class GraveEvent extends Event implements Cancellable, Addon {
     }
 
     /**
+     * Gets the grave experience associated with the event.
+     *
+     * @return The grave experience associated with the event.
+     */
+    public int getGraveExperience() {
+        return grave.getExperience();
+    }
+
+    /**
+     * Gets the grave UUID associated with the event.
+     *
+     * @return The grave UUID associated with the event.
+     */
+    public UUID getGraveUUID() {
+        return grave.getUUID();
+    }
+
+    /**
+     * Gets the grave owner display name associated with the event.
+     *
+     * @return The grave owner display name associated with the event.
+     */
+    public String getGraveOwnerDisplayName() {
+        return grave.getOwnerDisplayName();
+    }
+
+    /**
+     * Gets the grave owner name associated with the event.
+     *
+     * @return The grave owner name associated with the event.
+     */
+    public String getGraveOwnerName() {
+        return grave.getOwnerName();
+    }
+
+    /**
+     * Gets the grave owner unique ID associated with the event.
+     *
+     * @return The grave owner unique ID associated with the event.
+     */
+    public UUID getGraveOwnerUniqueId() {
+        return grave.getOwnerUUID();
+    }
+
+    /**
+     * Gets the grave owner name display associated with the event.
+     *
+     * @return The grave owner name display associated with the event.
+     */
+    public String getGraveOwnerNameDisplay() {
+        return grave.getOwnerNameDisplay();
+    }
+
+    /**
+     * Gets the grave owner texture associated with the event.
+     *
+     * @return The grave owner texture display associated with the event.
+     */
+    public String getGraveOwnerTexture() {
+        return grave.getOwnerTexture();
+    }
+
+    /**
+     * Gets the grave owner texture signature associated with the event.
+     *
+     * @return The grave owner texture signature associated with the event.
+     */
+    public String getGraveOwnerTextureSignature() {
+        return grave.getOwnerTextureSignature();
+    }
+
+    /**
      * Gets the entity involved in the event.
      *
      * @return The entity involved in the event, or null if not applicable.
      */
     public Entity getEntity() {
         return entity;
+    }
+
+    /**
+     * Gets the entity name in the event.
+     *
+     * @return The entity name involved in the event, or null if not found.
+     */
+    public String getEntityName() {
+        return entity != null ? entity.getName() : "Unknown";
+    }
+
+    /**
+     * Gets the entity custom name in the event.
+     *
+     * @return The entity custom name involved in the event, or null if not found.
+     */
+    public String getEntityCustomName() {
+        return entity != null ? entity.getCustomName() : "Unknown";
+    }
+
+    /**
+     * Gets the entity unique ID involved in the event.
+     *
+     * @return The  entity unique ID involved in the event, or null if not applicable.
+     */
+    @Nullable
+    public UUID getEntityUniqueId() {
+        return entity != null ? entity.getUniqueId() : null;
     }
 
     /**
@@ -231,6 +333,76 @@ public abstract class GraveEvent extends Event implements Cancellable, Addon {
     @Nullable
     public LivingEntity getLivingEntity() {
         return livingEntity;
+    }
+
+    /**
+     * Gets the living entity victim associated with the event.
+     *
+     * @return The living entity victim, or null if not applicable.
+     */
+    @Nullable
+    public String getLivingEntityVictim() {
+        return livingEntity != null ? livingEntity.getName() : "Unknown";
+    }
+
+    /**
+     * Gets the living entity victim uuid associated with the event.
+     *
+     * @return The living entity victim uuid, or null if not applicable.
+     */
+    @Nullable
+    public UUID getLivingEntityVictimId() {
+        return livingEntity != null ? livingEntity.getUniqueId() : null;
+    }
+
+    /**
+     * Gets the living entity killer associated with the event.
+     *
+     * @return The living entity killer, or null if not applicable.
+     */
+    @Nullable
+    public LivingEntity getLivingEntityKiller() {
+        return livingEntity != null ? livingEntity.getKiller() : null;
+    }
+
+    /**
+     * Gets the living entity killers name associated with the event.
+     *
+     * @return The living entity killers name, or null if not applicable.
+     */
+    @Nullable
+    public String getLivingEntityKillerName() {
+        return livingEntity != null ? (livingEntity.getKiller() != null ? livingEntity.getKiller().getName() : "Unknown") : "Unknown";
+    }
+
+    /**
+     * Gets the living entity killers unique ID associated with the event.
+     *
+     * @return The living entity killers unique ID, or null if not applicable.
+     */
+    @Nullable
+    public UUID getLivingEntityKillerUniqueId() {
+        return livingEntity != null ? (livingEntity.getKiller() != null ? livingEntity.getKiller().getUniqueId() : null) : null;
+    }
+
+    /**
+     * Gets the living entity victim type associated with the event.
+     *
+     * @return The living entity victim type, or null if not applicable.
+     */
+    @Nullable
+    public EntityType getLivingEntityVictimType() {
+        return livingEntity != null ? livingEntity.getType() : null;
+    }
+
+    /**
+     * Gets the living entity killer type associated with the event.
+     *
+     * @return The living entity killer type, or null if not applicable.
+     */
+    @Nullable
+    public EntityType getLivingEntityKillerType() {
+        return livingEntity != null ? (livingEntity.getKiller() != null ? livingEntity.getKiller().getType() : null) : null;
     }
 
     /**
@@ -295,6 +467,36 @@ public abstract class GraveEvent extends Event implements Cancellable, Addon {
     @Nullable
     public Player getPlayer() {
         return player;
+    }
+
+    /**
+     * Gets the player name involved in the event.
+     *
+     * @return The player name involved in the event, or null if not applicable.
+     */
+    @Nullable
+    public String getPlayerName() {
+        return player != null ? player.getName() : null;
+    }
+
+    /**
+     * Gets the player unique ID involved in the event.
+     *
+     * @return The player unique ID involved in the event, or null if not applicable.
+     */
+    @Nullable
+    public UUID getPlayerUniqueId() {
+        return player != null ? player.getUniqueId() : null;
+    }
+
+    /**
+     * Gets the player display name involved in the event.
+     *
+     * @return The player display name involved in the event, or null if not applicable.
+     */
+    @Nullable
+    public String getPlayerDisplayName() {
+        return player != null ? player.getDisplayName() : null;
     }
 
     /**

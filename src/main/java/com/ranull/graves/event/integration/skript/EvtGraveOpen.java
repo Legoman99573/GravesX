@@ -3,6 +3,7 @@ package com.ranull.graves.event.integration.skript;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
+import com.ranull.graves.event.GraveEvent;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.inventory.InventoryView;
@@ -15,8 +16,8 @@ import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.registrations.EventValues;
-import ch.njol.util.Checker;
-import ch.njol.skript.util.Getter;
+
+import java.util.function.Predicate;
 
 @Name("Grave Open Event")
 @Description("Triggered when an inventory associated with a grave is opened. Provides access to the player, grave, and inventory view.")
@@ -29,25 +30,12 @@ public class EvtGraveOpen extends SkriptEvent {
     static {
         Skript.registerEvent("Grave Open", EvtGraveOpen.class, GraveOpenEvent.class, "[grave] ope(n|ning|ned)");
 
-        // Registering event values
-        EventValues.registerEventValue(GraveOpenEvent.class, Player.class, new Getter<Player, GraveOpenEvent>() {
-            @Override
-            public Player get(GraveOpenEvent e) {
-                return e.getPlayer();
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveOpenEvent.class, Grave.class, new Getter<Grave, GraveOpenEvent>() {
-            @Override
-            public Grave get(GraveOpenEvent e) {
-                return e.getGrave();
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveOpenEvent.class, InventoryView.class, new Getter<InventoryView, GraveOpenEvent>() {
-            @Override
-            public InventoryView get(GraveOpenEvent e) {
-                return e.getInventoryView();
-            }
-        }, 0);
+        EventValues.registerEventValue(GraveOpenEvent.class, Player.class, GraveEvent::getPlayer, 0);
+        
+        EventValues.registerEventValue(GraveOpenEvent.class, Grave.class, GraveOpenEvent::getGrave, 0);
+
+        EventValues.registerEventValue(GraveOpenEvent.class, InventoryView.class, GraveOpenEvent::getInventoryView, 0);
+
     }
 
     private Literal<Player> player;
@@ -67,29 +55,29 @@ public class EvtGraveOpen extends SkriptEvent {
     public boolean check(Event e) {
         if (e instanceof GraveOpenEvent) {
             GraveOpenEvent event = (GraveOpenEvent) e;
-            if (player != null && !player.check(event, new Checker<Player>() {
-                @Override
-                public boolean check(Player p) {
-                    return p.equals(event.getPlayer());
-                }
-            })) {
-                return false;
+            if (player != null) {
+                player.check(event, new Predicate<Player>() {
+                    @Override
+                    public boolean test(Player p) {
+                        return p.equals(event.getPlayer());
+                    }
+                });
             }
-            if (grave != null && !grave.check(event, new Checker<Grave>() {
-                @Override
-                public boolean check(Grave g) {
-                    return g.equals(event.getGrave());
-                }
-            })) {
-                return false;
+            if (grave != null) {
+                grave.check(event, new Predicate<Grave>() {
+                    @Override
+                    public boolean test(Grave g) {
+                        return g.equals(event.getGrave());
+                    }
+                });
             }
-            if (inventoryView != null && !inventoryView.check(event, new Checker<InventoryView>() {
-                @Override
-                public boolean check(InventoryView view) {
-                    return view.equals(event.getInventoryView());
-                }
-            })) {
-                return false;
+            if (inventoryView != null) {
+                inventoryView.check(event, new Predicate<InventoryView>() {
+                    @Override
+                    public boolean test(InventoryView view) {
+                        return view.equals(event.getInventoryView());
+                    }
+                });
             }
             return true;
         }

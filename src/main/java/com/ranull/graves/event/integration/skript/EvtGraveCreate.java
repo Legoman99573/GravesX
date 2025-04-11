@@ -14,8 +14,8 @@ import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.registrations.EventValues;
-import ch.njol.util.Checker;
-import ch.njol.skript.util.Getter;
+
+import java.util.function.Predicate;
 
 @Name("Grave Create Event")
 @Description("Triggered when a grave is created. Provides access to the entity and grave.")
@@ -28,19 +28,9 @@ public class EvtGraveCreate extends SkriptEvent {
     static {
         Skript.registerEvent("Grave Create", EvtGraveCreate.class, GraveCreateEvent.class, "[grave] creat(e|ing|ed)");
 
-        // Registering event values
-        EventValues.registerEventValue(GraveCreateEvent.class, Entity.class, new Getter<Entity, GraveCreateEvent>() {
-            @Override
-            public Entity get(GraveCreateEvent e) {
-                return e.getEntity();
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveCreateEvent.class, Grave.class, new Getter<Grave, GraveCreateEvent>() {
-            @Override
-            public Grave get(GraveCreateEvent e) {
-                return e.getGrave();
-            }
-        }, 0);
+        EventValues.registerEventValue(GraveCreateEvent.class, Entity.class, GraveCreateEvent::getEntity, 0);
+
+        EventValues.registerEventValue(GraveCreateEvent.class, Grave.class, GraveCreateEvent::getGrave, 0);
     }
 
     private Literal<Entity> entity;
@@ -58,21 +48,21 @@ public class EvtGraveCreate extends SkriptEvent {
     public boolean check(Event e) {
         if (e instanceof GraveCreateEvent) {
             GraveCreateEvent event = (GraveCreateEvent) e;
-            if (entity != null && !entity.check(event, new Checker<Entity>() {
-                @Override
-                public boolean check(Entity ent) {
-                    return ent.equals(event.getEntity());
-                }
-            })) {
-                return false;
+            if (entity != null) {
+                entity.check(event, new Predicate<Entity>() {
+                    @Override
+                    public boolean test(Entity ent) {
+                        return ent.equals(event.getEntity());
+                    }
+                });
             }
-            if (grave != null && !grave.check(event, new Checker<Grave>() {
-                @Override
-                public boolean check(Grave g) {
-                    return g.equals(event.getGrave());
-                }
-            })) {
-                return false;
+            if (grave != null) {
+                grave.check(event, new Predicate<Grave>() {
+                    @Override
+                    public boolean test(Grave g) {
+                        return g.equals(event.getGrave());
+                    }
+                });
             }
             return true;
         }

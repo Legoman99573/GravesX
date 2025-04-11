@@ -3,6 +3,7 @@ package com.ranull.graves.event.integration.skript;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
+import com.ranull.graves.event.GraveEvent;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -15,8 +16,8 @@ import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.registrations.EventValues;
-import ch.njol.util.Checker;
-import ch.njol.skript.util.Getter;
+
+import java.util.function.Predicate;
 
 @Name("Grave Break Event")
 @Description("Triggered when a grave block is broken. Provides access to the grave, player, block, and block type.")
@@ -29,31 +30,13 @@ public class EvtGraveBreak extends SkriptEvent {
     static {
         Skript.registerEvent("Grave Break", EvtGraveBreak.class, GraveBreakEvent.class, "[grave] br(eak|eaking|oken)");
 
-        // Registering event values
-        EventValues.registerEventValue(GraveBreakEvent.class, Player.class, new Getter<Player, GraveBreakEvent>() {
-            @Override
-            public Player get(GraveBreakEvent e) {
-                return e.getPlayer();
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveBreakEvent.class, Grave.class, new Getter<Grave, GraveBreakEvent>() {
-            @Override
-            public Grave get(GraveBreakEvent e) {
-                return e.getGrave();
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveBreakEvent.class, Block.class, new Getter<Block, GraveBreakEvent>() {
-            @Override
-            public Block get(GraveBreakEvent e) {
-                return e.getBlock();
-            }
-        }, 0);
-        EventValues.registerEventValue(GraveBreakEvent.class, Integer.class, new Getter<Integer, GraveBreakEvent>() {
-            @Override
-            public Integer get(GraveBreakEvent e) {
-                return e.getBlockExp();
-            }
-        }, 0);
+        EventValues.registerEventValue(GraveBreakEvent.class, Player.class, GraveBreakEvent::getPlayer, 0);
+
+        EventValues.registerEventValue(GraveBreakEvent.class, Grave.class, GraveBreakEvent::getGrave, 0);
+
+        EventValues.registerEventValue(GraveBreakEvent.class, Block.class, GraveBreakEvent::getBlock, 0);
+
+        EventValues.registerEventValue(GraveBreakEvent.class, Integer.class, GraveBreakEvent::getBlockExp, 0);
     }
 
     private Literal<Player> player;
@@ -76,46 +59,38 @@ public class EvtGraveBreak extends SkriptEvent {
         if (e instanceof GraveBreakEvent) {
             GraveBreakEvent event = (GraveBreakEvent) e;
 
-            // Check for player
-            if (player != null && !player.check(event, new Checker<Player>() {
-                @Override
-                public boolean check(Player p) {
-                    return p.equals(event.getPlayer());
-                }
-            })) {
-                return false;
+            if (player != null) {
+                player.check(event, new Predicate<Player>() {
+                    @Override
+                    public boolean test(Player p) {
+                        return p.equals(event.getPlayer());
+                    }
+                });
             }
-
-            // Check for grave
-            if (grave != null && !grave.check(event, new Checker<Grave>() {
-                @Override
-                public boolean check(Grave g) {
-                    return g.equals(event.getGrave());
-                }
-            })) {
-                return false;
+            if (grave != null) {
+                grave.check(event, new Predicate<Grave>() {
+                    @Override
+                    public boolean test(Grave g) {
+                        return g.equals(event.getGrave());
+                    }
+                });
             }
-
-            // Check for block
-            if (block != null && !block.check(event, new Checker<Block>() {
-                @Override
-                public boolean check(Block b) {
-                    return b.equals(event.getBlock());
-                }
-            })) {
-                return false;
+            if (block != null) {
+                block.check(event, new Predicate<Block>() {
+                    @Override
+                    public boolean test(Block b) {
+                        return b.equals(event.getBlock());
+                    }
+                });
             }
-
-            // Check for block
-            if (blockExp != null && !blockExp.check(event, new Checker<Integer>() {
-                @Override
-                public boolean check(Integer be) {
-                    return be.equals(event.getBlockExp());
-                }
-            })) {
-                return false;
+            if (blockExp != null) {
+                blockExp.check(event, new Predicate<Integer>() {
+                    @Override
+                    public boolean test(Integer be) {
+                        return be.equals(event.getBlockExp());
+                    }
+                });
             }
-
             return true;
         }
         return false;

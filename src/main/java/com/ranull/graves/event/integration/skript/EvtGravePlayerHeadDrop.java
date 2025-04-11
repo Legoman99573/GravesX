@@ -8,8 +8,6 @@ import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser;
 import ch.njol.skript.registrations.EventValues;
-import ch.njol.skript.util.Getter;
-import ch.njol.util.Checker;
 import com.ranull.graves.event.GravePlayerHeadDropEvent;
 import com.ranull.graves.type.Grave;
 import org.bukkit.Location;
@@ -17,6 +15,8 @@ import org.bukkit.entity.Entity;
 import org.bukkit.event.Event;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.function.Predicate;
 
 @Name("Grave Player Head Drop Event")
 @Description("Triggered when a player head is dropped at a grave site. Provides access to the entity, grave, and location.")
@@ -28,25 +28,11 @@ public class EvtGravePlayerHeadDrop extends SkriptEvent {
     static {
         Skript.registerEvent("Grave Player Head Drop", EvtGravePlayerHeadDrop.class, GravePlayerHeadDropEvent.class, "[grave] playe(r|rs) hea(d|ds) dro(p|ped|pping)");
 
-        // Registering event values
-        EventValues.registerEventValue(GravePlayerHeadDropEvent.class, Entity.class, new Getter<Entity, GravePlayerHeadDropEvent>() {
-            @Override
-            public Entity get(GravePlayerHeadDropEvent e) {
-                return e.getEntity();
-            }
-        }, 0);
-        EventValues.registerEventValue(GravePlayerHeadDropEvent.class, Grave.class, new Getter<Grave, GravePlayerHeadDropEvent>() {
-            @Override
-            public Grave get(GravePlayerHeadDropEvent e) {
-                return e.getGrave();
-            }
-        }, 0);
-        EventValues.registerEventValue(GravePlayerHeadDropEvent.class, Location.class, new Getter<Location, GravePlayerHeadDropEvent>() {
-            @Override
-            public Location get(GravePlayerHeadDropEvent e) {
-                return e.getLocation();
-            }
-        }, 0);
+        EventValues.registerEventValue(GravePlayerHeadDropEvent.class, Entity.class, GravePlayerHeadDropEvent::getEntity, 0);
+
+        EventValues.registerEventValue(GravePlayerHeadDropEvent.class, Grave.class, GravePlayerHeadDropEvent::getGrave, 0);
+
+        EventValues.registerEventValue(GravePlayerHeadDropEvent.class, Location.class, GravePlayerHeadDropEvent::getLocation, 0);
     }
 
     private Literal<Entity> entity;
@@ -66,29 +52,29 @@ public class EvtGravePlayerHeadDrop extends SkriptEvent {
     public boolean check(Event e) {
         if (e instanceof GravePlayerHeadDropEvent) {
             GravePlayerHeadDropEvent event = (GravePlayerHeadDropEvent) e;
-            if (entity != null && !entity.check(event, new Checker<Entity>() {
-                @Override
-                public boolean check(Entity ent) {
-                    return ent.equals(event.getEntity());
-                }
-            })) {
-                return false;
+            if (entity != null) {
+                entity.check(event, new Predicate<Entity>() {
+                    @Override
+                    public boolean test(Entity ent) {
+                        return ent.equals(event.getEntity());
+                    }
+                });
             }
-            if (grave != null && !grave.check(event, new Checker<Grave>() {
-                @Override
-                public boolean check(Grave g) {
-                    return g.equals(event.getGrave());
-                }
-            })) {
-                return false;
+            if (grave != null) {
+                grave.check(event, new Predicate<Grave>() {
+                    @Override
+                    public boolean test(Grave g) {
+                        return g.equals(event.getGrave());
+                    }
+                });
             }
-            if (location != null && !location.check(event, new Checker<Location>() {
-                @Override
-                public boolean check(Location loc) {
-                    return loc.equals(event.getLocation());
-                }
-            })) {
-                return false;
+            if (location != null) {
+                location.check(event, new Predicate<Location>() {
+                    @Override
+                    public boolean test(Location l) {
+                        return l.equals(event.getLocation());
+                    }
+                });
             }
             return true;
         }
