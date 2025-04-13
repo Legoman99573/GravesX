@@ -1527,6 +1527,16 @@ public final class GraveManager {
     /**
      * Checks if a block should be ignored based on the entity and permissions.
      *
+     * @param grave           checks to see if the following grave is abandoned.
+     * @return true if grave is abandoned, false otherwise.
+     */
+    public boolean isGraveAbandoned(Grave grave) {
+        return grave.isAbandoned();
+    }
+
+    /**
+     * Checks if a block should be ignored based on the entity and permissions.
+     *
      * @param block           the block to check.
      * @param entity          the entity.
      * @param permissionList  the list of permissions.

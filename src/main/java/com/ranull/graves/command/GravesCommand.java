@@ -678,7 +678,25 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
                                 + "No graves found for UUID " + args[2] + ".");
                     }
                     break;
+                case "abandon":
+                case "abandoned":
+                    int purged = 0;
+                    List<Grave> gravesToPurge = new ArrayList<>();
 
+                    for (Grave grave : plugin.getCacheManager().getGraveMap().values()) {
+                        if (plugin.getGraveManager().isGraveAbandoned(grave)) {
+                            gravesToPurge.add(grave);
+                        }
+                    }
+
+                    for (Grave grave : gravesToPurge) {
+                        plugin.getGraveManager().removeGrave(grave);
+                        purged++;
+                    }
+
+                    commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " +
+                            ChatColor.RESET + purged + " abandoned grave(s) purged.");
+                    break;
                 default:
                     List<Grave> allGraves = new ArrayList<>(plugin.getCacheManager().getGraveMap().values());
                     for (Grave grave : allGraves) {
