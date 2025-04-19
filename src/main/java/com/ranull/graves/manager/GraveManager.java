@@ -74,7 +74,7 @@ public final class GraveManager {
      * Starts the grave timer task that periodically checks and updates graves.
      */
     private void startGraveTimer() {
-        plugin.getGravesXScheduler().runTaskTimer(plugin, this::checkAndUpdateGraves, 20L, 20L); // 10 ticks = 0.5 seconds
+        plugin.getGravesXScheduler().runTaskTimer(this::checkAndUpdateGraves, 20L, 20L); // 10 ticks = 0.5 seconds
     }
 
     /**
@@ -85,13 +85,16 @@ public final class GraveManager {
         List<EntityData> entityDataRemoveList = new ArrayList<>();
         List<BlockData> blockDataRemoveList = new ArrayList<>();
 
-        // Process Graves
+        // Process graves for timeout and protection expiration
         processGraves(graveRemoveList);
 
-        // Process Chunks
+        // Restore missing graves from cache
+        restoreMissingGraves();
+
+        // Process any entity or block-based timeouts
         processChunks(entityDataRemoveList, blockDataRemoveList);
 
-        // Remove expired graves, entities, and blocks
+        // Remove any elements that have expired or completed their lifecycle
         removeExpiredElements(graveRemoveList, entityDataRemoveList, blockDataRemoveList);
     }
 
@@ -101,30 +104,28 @@ public final class GraveManager {
      * @param graveRemoveList the list to which graves to be removed will be added.
      */
     private void processGraves(List<Grave> graveRemoveList) {
-        for (Grave grave : new ArrayList<>(plugin.getCacheManager().getGraveMap().values())) {
+        Collection<Grave> graves = plugin.getCacheManager().getGraveMap().values();
 
+        for (Grave grave : new ArrayList<>(graves)) {
             long remainingTime = grave.getTimeAliveRemaining();
 
-            // If the remaining time is -1, do not activate the event
             if (remainingTime == -1) {
                 plugin.debugMessage("Grave " + grave.getUUID() + " has infinite time remaining, skipping timeout handling.", 2);
-                return;
+                continue;
             }
 
-            // Log the current state of the grave
             plugin.debugMessage("Checking grave: " + grave.getUUID() + " with remaining time: " + remainingTime, 2);
 
-            // Check if the grave should be removed
             if (remainingTime == 0) {
                 handleGraveTimeout(grave, graveRemoveList);
             }
 
-            // Handle grave protection timeout
             if (grave.getProtection() && grave.getTimeProtectionRemaining() == 0) {
                 toggleGraveProtection(grave);
             }
         }
     }
+
 
     /**
      * Handles the timeout of a grave by calling the GraveTimeoutEvent and removing the grave if not cancelled.
@@ -146,17 +147,20 @@ public final class GraveManager {
 
         if (!graveTimeoutEvent.isCancelled() && !graveTimeoutEvent.isAddon()) {
             plugin.debugMessage("GraveTimeoutEvent not cancelled for grave: " + grave.getUUID(), 2);
-            if (plugin.getConfig("drop.timeout", grave).getBoolean("drop.timeout")) {
-                if (graveTimeoutEvent.getLocation() != null) {
-                    Location location = graveTimeoutEvent.getLocation();
+
+            boolean dropOnTimeout = plugin.getConfig("drop.timeout", grave).getBoolean("drop.timeout");
+            boolean dropOnAbandon = plugin.getConfig("drop.abandon", grave).getBoolean("drop.abandon");
+
+            if (dropOnTimeout) {
+                Location location = graveTimeoutEvent.getLocation();
+                if (location != null) {
                     Chunk chunk = location.getChunk();
                     if (!chunk.isLoaded()) {
                         plugin.debugMessage("Loaded unloaded chunk x: " + chunk.getX() + ", z: " + chunk.getZ() + ". Graves should dump contents.", 2);
-                        chunk.load();
+                        chunk.load(); // This is synchronous in Bukkit API
                     }
 
-                    // Schedule synchronous task to drop items and experience
-                    plugin.getGravesXScheduler().runTask(plugin, () -> {
+                    plugin.getGravesXScheduler().runTask(() -> {
                         if (chunk.isLoaded()) {
                             dropGraveItems(location, grave);
                             dropGraveExperience(location, grave);
@@ -164,49 +168,42 @@ public final class GraveManager {
                     });
                 }
 
-                if (grave.getOwnerType() == EntityType.PLAYER && grave.getOwnerUUID() != null) {
-                    Player player = plugin.getServer().getPlayer(grave.getOwnerUUID());
-                    if (player != null && player.isOnline()) {
-                        plugin.getEntityManager().sendMessage("message.timeout", player, graveTimeoutEvent.getLocation(), grave);
-                    }
-                }
-
+                sendPlayerMessage(grave, "message.timeout", graveTimeoutEvent.getLocation());
                 graveRemoveList.add(grave);
-            } else if (plugin.getConfig("drop.abandon", grave).getBoolean("drop.abandon")) {
+
+            } else if (dropOnAbandon) {
                 GraveAbandonedEvent graveAbandonedEvent = new GraveAbandonedEvent(grave);
                 plugin.getServer().getPluginManager().callEvent(graveAbandonedEvent);
 
                 if (!graveAbandonedEvent.isCancelled() && !graveAbandonedEvent.isAddon()) {
-                    if (grave.getOwnerType() == EntityType.PLAYER && grave.getOwnerUUID() != null) {
-                        Player player = plugin.getServer().getPlayer(grave.getOwnerUUID());
-                        if (player != null && player.isOnline()) {
-                            plugin.getEntityManager().sendMessage("message.abandoned", player, graveAbandonedEvent.getLocation(), grave);
-                        }
-                        grave.setTimeAliveRemaining(-1);
-                        abandonGrave(grave);
-                    }
+                    sendPlayerMessage(grave, "message.abandoned", graveAbandonedEvent.getLocation());
+                    grave.setTimeAliveRemaining(-1);
+                    abandonGrave(grave);
                 } else if (graveAbandonedEvent.isCancelled() && !graveAbandonedEvent.isAddon()) {
-                    if (grave.getOwnerType() == EntityType.PLAYER && grave.getOwnerUUID() != null) {
-                        Player player = plugin.getServer().getPlayer(grave.getOwnerUUID());
-                        if (player != null && player.isOnline()) {
-                            plugin.getEntityManager().sendMessage("message.timeout", player, graveTimeoutEvent.getLocation(), grave);
-                        }
-                    }
+                    sendPlayerMessage(grave, "message.timeout", graveTimeoutEvent.getLocation());
                     graveRemoveList.add(grave);
                 }
+
             } else {
-                if (grave.getOwnerType() == EntityType.PLAYER && grave.getOwnerUUID() != null) {
-                    Player player = plugin.getServer().getPlayer(grave.getOwnerUUID());
-                    if (player != null && player.isOnline()) {
-                        plugin.getEntityManager().sendMessage("message.timeout", player, graveTimeoutEvent.getLocation(), grave);
-                    }
-                }
+                sendPlayerMessage(grave, "message.timeout", graveTimeoutEvent.getLocation());
                 graveRemoveList.add(grave);
             }
+
         } else if (graveTimeoutEvent.isCancelled() && !graveTimeoutEvent.isAddon()) {
-            // Log the cancellation and set the grave's time to -1
             plugin.debugMessage("GraveTimeoutEvent cancelled for grave: " + grave.getUUID() + ", setting time alive to forever.", 2);
             grave.setTimeAliveRemaining(-1);
+        }
+    }
+
+    /**
+     * Utility to send a message to the grave owner if they're online.
+     */
+    private void sendPlayerMessage(Grave grave, String messageKey, Location location) {
+        if (grave.getOwnerType() == EntityType.PLAYER && grave.getOwnerUUID() != null) {
+            Player player = plugin.getServer().getPlayer(grave.getOwnerUUID());
+            if (player != null && player.isOnline()) {
+                plugin.getEntityManager().sendMessage(messageKey, player, location, grave);
+            }
         }
     }
 
@@ -672,6 +669,41 @@ public final class GraveManager {
         plugin.debugMessage("Creating grave " + grave.getUUID() + " for entity " + entityName, 1);
 
         return grave;
+    }
+
+    /**
+     * Restores graves that are in cache but missing from the world.
+     */
+    private void restoreMissingGraves() {
+        for (Grave grave : plugin.getCacheManager().getGraveMap().values()) {
+            if (!isGravePlaced(grave)) {
+                plugin.debugMessage("Grave " + grave.getUUID() + " missing from world. Regenerating at saved location.", 1);
+                plugin.getGraveManager().placeGrave(grave.getLocationDeath(), grave); // Or grave.getLocation()
+            }
+        }
+    }
+
+    /**
+     * Determines if the grave is placed in the world by checking for any physical
+     * block or entity presence at the grave's location. This includes 3rd-party plugin entities.
+     *
+     * @param grave the grave to check.
+     * @return true if a block or entity is present at the grave's location.
+     */
+    public boolean isGravePlaced(Grave grave) {
+        Location location = grave.getLocationDeath(); // Use getLocationDeath() if needed
+
+        if (location == null || location.getWorld() == null) return false;
+
+        // Check if the block is not air or passable
+        Block block = location.getBlock();
+        if (!block.isPassable()) {
+            return true;
+        }
+
+        // Check for any entities within the same block (covers ArmorStands, NPCs, etc.)
+        Collection<Entity> nearbyEntities = location.getWorld().getNearbyEntities(location, 0.49, 0.49, 0.49);
+        return !nearbyEntities.isEmpty();
     }
 
     /**
