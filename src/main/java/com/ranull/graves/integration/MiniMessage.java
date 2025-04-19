@@ -34,6 +34,7 @@ public final class MiniMessage {
         audiences = BukkitAudiences.create(JavaPlugin.getPlugin(Graves.class));
         legacyComponentSerializer = LegacyComponentSerializer.legacySection();
         miniMessage = net.kyori.adventure.text.minimessage.MiniMessage.builder()
+                .strict(false)
                 .tags(
                         TagResolver.builder()
                                 .resolver(StandardTags.defaults())
@@ -53,6 +54,8 @@ public final class MiniMessage {
                                 .resolver(StandardTags.translatable())
                                 .resolver(StandardTags.translatableFallback())
                                 .resolver(StandardTags.reset())
+                                .resolver(StandardTags.pride())
+                                .resolver(StandardTags.shadowColor())
                                 .build()
                 ).build();
     }
