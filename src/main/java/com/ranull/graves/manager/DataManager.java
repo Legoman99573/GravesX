@@ -1793,7 +1793,7 @@ public final class DataManager {
 
             // Validate fields and collect invalidation reasons
             String ownerType = resultSet.getString("owner_type");
-            if (ownerType == null) invalidationReason.add("owner_type is null");
+            if (ownerType == null) invalidationReason.add("owner_type");
             grave.setOwnerType(ownerType != null ? EntityType.valueOf(ownerType) : null);
 
             String ownerName = resultSet.getString("owner_name");
@@ -1804,45 +1804,45 @@ public final class DataManager {
             grave.setOwnerName(ownerName != null ? ownerName.replace(" ", "_") : null);
 
             String ownerNameDisplay = resultSet.getString("owner_name_display");
-            if (ownerNameDisplay == null) invalidationReason.add("owner_name_display is null");
+            if (ownerNameDisplay == null) invalidationReason.add("owner_name_display");
             grave.setOwnerNameDisplay(ownerNameDisplay);
 
             String ownerUUID = resultSet.getString("owner_uuid");
-            if (ownerUUID == null) invalidationReason.add("owner_uuid is null");
+            if (ownerUUID == null) invalidationReason.add("owner_uuid");
             grave.setOwnerUUID(ownerUUID != null ? UUID.fromString(ownerUUID) : null);
 
             String ownerTexture = resultSet.getString("owner_texture");
-            if (ownerTexture == null) invalidationReason.add("owner_texture is null");
+            if (ownerTexture == null) invalidationReason.add("owner_texture");
             grave.setOwnerTexture(ownerTexture);
 
             String ownerTextureSignature = resultSet.getString("owner_texture_signature");
-            if (ownerTextureSignature == null) invalidationReason.add("owner_texture_signature is null");
+            if (ownerTextureSignature == null) invalidationReason.add("owner_texture_signature");
             grave.setOwnerTextureSignature(ownerTextureSignature);
 
             String killerType = resultSet.getString("killer_type");
-            if (killerType == null) invalidationReason.add("killer_type is null");
+            if (killerType == null) invalidationReason.add("killer_type");
             grave.setKillerType(killerType != null ? EntityType.valueOf(killerType) : null);
 
             String killerName = resultSet.getString("killer_name");
-            if (killerName == null) invalidationReason.add("killer_name is null");
+            if (killerName == null) invalidationReason.add("killer_name");
             grave.setKillerName(killerName != null ? killerName.replace(" ", "_") : null);
 
             String killerNameDisplay = resultSet.getString("killer_name_display");
-            if (killerNameDisplay == null) invalidationReason.add("killer_name_display is null");
+            if (killerNameDisplay == null) invalidationReason.add("killer_name_display");
             grave.setKillerNameDisplay(killerNameDisplay != null ? killerNameDisplay.replace(" ", "_") : null);
 
             String killerUUID = resultSet.getString("killer_uuid");
             if ("PLAYER".equalsIgnoreCase(killerType) && killerUUID == null) {
-                invalidationReason.add("killer_uuid is null for killer_type PLAYER");
+                invalidationReason.add("killer_uuid for killer_type PLAYER");
             }
             grave.setKillerUUID(killerUUID != null ? UUID.fromString(killerUUID) : null);
 
             String locationDeath = resultSet.getString("location_death");
-            if (locationDeath == null) invalidationReason.add("location_death is null");
+            if (locationDeath == null) invalidationReason.add("location_death");
             graveLocation = locationDeath != null ? LocationUtil.stringToLocation(locationDeath) : null;
             grave.setLocationDeath(graveLocation);
 
-            if (resultSet.getString("equipment") == null) invalidationReason.add("equipment is null");
+            if (resultSet.getString("equipment") == null) invalidationReason.add("equipment");
             if (resultSet.getString("equipment") != null) {
                 @SuppressWarnings("unchecked")
                 Map<EquipmentSlot, ItemStack> equipmentMap = (Map<EquipmentSlot, ItemStack>) Base64Util
