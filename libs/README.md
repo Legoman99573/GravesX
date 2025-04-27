@@ -5,6 +5,6 @@ mvn install:install-file -Dfile=libs/authlib-6.0.55-graves.jar -DgroupId=com.moj
 mvn install:install-file -Dfile=libs/libby-2.0.1-graves.jar -DgroupId=com.alessiodp -DartifactId=libby -Dversion=2.0.1-graves -Dpackaging=jar
 mvn install:install-file -Dfile=libs/playernpc-2023.6.jar -DgroupId=dev.sergiferry -DartifactId=PlayerNPC -Dversion=2023.6 -Dpackaging=jar
 mvn install:install-file -Dfile=libs/FurnitureEngine-3.3.jar -DgroupId=com.mira -DartifactId=furnitureengine -Dversion=3.3 -Dpackaging=jar
-mvn install:install-file -Dfile=libs/minitranslator-2.5.0-SNAPSHOT-graves.jar -DgroupId=com.github.imDaniX -DartifactId=MiniTranslator -Dversion=v2.5.0-graves -Dpackaging=jar
+mvn install:install-file -Dfile=libs/minitranslator-2.5.1-SNAPSHOT-graves.jar -DgroupId=com.github.imDaniX -DartifactId=MiniTranslator -Dversion=v2.5.1-graves -Dpackaging=jar
 ```
 files that include "-graves" are modified versions of libs that are specifically made to make maintenance of graves more streamlined

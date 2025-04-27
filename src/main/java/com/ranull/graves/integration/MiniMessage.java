@@ -110,54 +110,65 @@ public final class MiniMessage {
         String color = MiniTranslator.toMini(legacyText, MiniTranslator.Option.COLOR);
         String format = MiniTranslator.toMini(color, MiniTranslator.Option.FORMAT);
         String gradient = MiniTranslator.toMini(format, MiniTranslator.Option.GRADIENT);
-        String fast_reset = MiniTranslator.toMini(gradient, MiniTranslator.Option.FAST_RESET);
-        String close_color = MiniTranslator.toMini(fast_reset, MiniTranslator.Option.CLOSE_COLORS);
+        String close_color = MiniTranslator.toMini(gradient, MiniTranslator.Option.CLOSE_COLORS);
         String hex_colors = MiniTranslator.toMini(close_color, MiniTranslator.Option.HEX_COLOR_STANDALONE);
-
-        return MiniTranslator.toMini(hex_colors, MiniTranslator.Option.VERBOSE_HEX_COLOR);
+        String double_to_escape = MiniTranslator.toMini(hex_colors, MiniTranslator.Option.DOUBLE_TO_ESCAPE);
+        String verbose_hex_color = MiniTranslator.toMini(double_to_escape, MiniTranslator.Option.VERBOSE_HEX_COLOR);
+        return MiniTranslator.toMini(verbose_hex_color, MiniTranslator.Option.FAST_RESET);
     }
 
     /**
-     * Formats a book's metadata using MiniMessage formatting.
-     *
-     * @param itemStack  The ItemStack of the book.
-     * @param title      The title of the book.
-     * @param author     The author of the book.
-     * @param pages      The pages of the book, each page represented by a MiniMessage formatted string.
-     * @return           The updated ItemStack with formatted BookMeta.
+     * Attempts to convert legacy color codes to Kyori's Adventure Text MiniMessage format.
+     * @param legacyText    The Legacy Text to be converted.
+     * @return              All text to be converted to StringBuilder, that is required by net.kyori.adventure.text.minimessage
      */
+    public static Component convertLegacyToComponent(String legacyText) {
+        String miniMessageText = MiniTranslator.toMini(legacyText,
+                MiniTranslator.Option.COLOR,
+                MiniTranslator.Option.FORMAT,
+                MiniTranslator.Option.GRADIENT,
+                MiniTranslator.Option.CLOSE_COLORS,
+                MiniTranslator.Option.HEX_COLOR_STANDALONE,
+                MiniTranslator.Option.DOUBLE_TO_ESCAPE,
+                MiniTranslator.Option.VERBOSE_HEX_COLOR,
+                MiniTranslator.Option.FAST_RESET
+        );
+        return MiniMessage.miniMessage().deserialize(miniMessageText);
+    }
+
     public static ItemStack formatBookMeta(ItemStack itemStack, Component title, Component author, List<Component> pages, List<Component> lore) {
-        if (miniMessage != null && legacyComponentSerializer != null) {
-            if (itemStack == null || !(itemStack.getItemMeta() instanceof BookMeta)) {
-                return itemStack;
-            }
-
-            BookMeta bookMeta = (BookMeta) itemStack.getItemMeta();
-
-            // Convert title and author components to legacy format
-            String titleString = legacyComponentSerializer.serialize(title);
-            String authorString = legacyComponentSerializer.serialize(author);
-
-            bookMeta.setTitle(convertLegacyToMiniMessage(titleString));
-            bookMeta.setAuthor(convertLegacyToMiniMessage(authorString));
-
-            // Convert pages components to legacy format
-            List<String> serializedPages = pages.stream()
-                    .map(page -> legacyComponentSerializer.serialize(page))
-                    .collect(Collectors.toList());
-            bookMeta.setPages(serializedPages);
-
-            // Convert lore components to legacy format
-            List<String> serializedLore = lore.stream()
-                    .map(l -> legacyComponentSerializer.serialize(l))
-                    .collect(Collectors.toList());
-            bookMeta.setLore(convertLegacyToMiniMessage(serializedLore));
-
-            itemStack.setItemMeta(bookMeta);
+        if (itemStack == null || !(itemStack.getItemMeta() instanceof BookMeta)) {
+            return itemStack;
         }
 
+        BookMeta bookMeta = (BookMeta) itemStack.getItemMeta();
+
+        if (bookMeta == null) {
+            return itemStack;
+        }
+
+        LegacyComponentSerializer legacySerializer = LegacyComponentSerializer.legacySection();
+
+        String titleString = legacySerializer.serialize(title);
+        String authorString = legacySerializer.serialize(author);
+
+        bookMeta.setTitle(titleString);
+        bookMeta.setAuthor(authorString);
+
+        List<String> serializedPages = pages.stream()
+                .map(legacySerializer::serialize)
+                .collect(Collectors.toList());
+        bookMeta.setPages(serializedPages);
+
+        List<String> serializedLore = lore.stream()
+                .map(legacySerializer::serialize)
+                .collect(Collectors.toList());
+        bookMeta.setLore(serializedLore);
+
+        itemStack.setItemMeta(bookMeta);
         return itemStack;
     }
+
 
     public static void sendMessage(final Player player, final String message) {
         if (miniMessage != null && audiences != null) {

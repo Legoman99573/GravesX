@@ -93,15 +93,6 @@ public final class ItemStackManager extends EntityDataManager {
                     bookMeta.setGeneration(null);
                 }
 
-                // Convert pages from List<List<String>> to List<Component>
-                List<Component> componentPages = pages.stream()
-                        .map(page -> MiniMessage.miniMessage().deserialize(String.join("\n", page)))
-                        .collect(Collectors.toList());
-
-                List<Component> componentList = loreList.stream()
-                        .map(lore -> MiniMessage.miniMessage().deserialize(lore))
-                        .collect(Collectors.toList());
-
                 String title = plugin.getConfig("obituary.title", grave).getString("obituary.title");
 
                 String author = plugin.getConfig("obituary.author", grave).getString("obituary.author");
@@ -110,9 +101,16 @@ public final class ItemStackManager extends EntityDataManager {
 
                 String authorOriginal = StringUtil.parseString(author, grave, plugin);
 
-                Component titleConverted = MiniMessage.miniMessage.deserialize(MiniMessage.convertLegacyToMiniMessage(titleOriginal));
+                Component titleConverted = MiniMessage.convertLegacyToComponent(titleOriginal);
+                Component authorConverted = MiniMessage.convertLegacyToComponent(authorOriginal);
 
-                Component authorConverted = MiniMessage.miniMessage.deserialize(MiniMessage.convertLegacyToMiniMessage(authorOriginal));
+                List<Component> componentPages = pages.stream()
+                        .map(page -> MiniMessage.convertLegacyToComponent(String.join("\n", page)))
+                        .collect(Collectors.toList());
+
+                List<Component> componentList = loreList.stream()
+                        .map(MiniMessage::convertLegacyToComponent)
+                        .collect(Collectors.toList());
 
                 return MiniMessage.formatBookMeta(itemStack,
                         titleConverted,
