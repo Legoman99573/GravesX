@@ -1,6 +1,7 @@
 package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
+import com.ranull.graves.compatibility.CompatibilityInventoryView;
 import com.ranull.graves.data.BlockData;
 import com.ranull.graves.event.*;
 import com.ranull.graves.type.Grave;
@@ -132,7 +133,7 @@ public class EntityDeathListener implements Listener {
                 InventoryView inventoryView = player.getOpenInventory();
 
                 if (inventoryView != null) {
-                    Inventory topInventory = inventoryView.getTopInventory();
+                    Inventory topInventory = CompatibilityInventoryView.getTopInventory(inventoryView);
 
                     // Check if it's a crafting table or a 2x2 crafting grid
                     if (topInventory.getType() == InventoryType.WORKBENCH || topInventory.getType() == InventoryType.CRAFTING) {
