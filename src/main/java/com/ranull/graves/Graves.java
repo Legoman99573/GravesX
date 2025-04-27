@@ -222,7 +222,7 @@ public class Graves extends JavaPlugin {
             libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.1.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
             libraryLoaderUtil.loadLibrary("org{}mariadb{}jdbc", "mariadb-java-client", "3.5.1", "org{}mariadb", "com{}ranull{}graves{}libraries{}mariadb", false);
         } else if ("MYSQL".equals(storageType)) {
-            libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.1.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
+            libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.2.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
         } else if ("H2".equals(storageType)) {
             libraryLoaderUtil.loadLibrary("com{}h2database", "h2", "2.3.232", "org{}h2", "com{}ranull{}graves{}libraries{}h2", false, "https://repo1.maven.org/maven2/");
         } else if ("MSSQL".equals(storageType)) {
