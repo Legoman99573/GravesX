@@ -369,4 +369,14 @@ public final class CitizensNPC extends EntityDataManager {
         }
         return null;
     }
+
+    public boolean getNPCCorpse(Grave grave) {
+        Location location = grave.getLocationDeath();
+        if (location != null) {
+            String npcName = getNPCNameFromLocation(location);
+            NPC npc = getNPCByName(npcName);
+            return npc != null;
+        }
+        return false;
+    }
 }

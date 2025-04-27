@@ -685,25 +685,40 @@ public final class GraveManager {
 
     /**
      * Determines if the grave is placed in the world by checking for any physical
-     * block or entity presence at the grave's location. This includes 3rd-party plugin entities.
+     * block or entity presence at the grave's location. This includes checking for
+     * FancyNPCs plugin entities (corpses).
      *
      * @param grave the grave to check.
-     * @return true if a block or entity is present at the grave's location.
+     * @return true if a block or entity is present at the grave's location, including FancyNPCs.
      */
     public boolean isGravePlaced(Grave grave) {
-        Location location = grave.getLocationDeath(); // Use getLocationDeath() if needed
+        Location location = grave.getLocationDeath();
 
         if (location == null || location.getWorld() == null) return false;
 
-        // Check if the block is not air or passable
         Block block = location.getBlock();
         if (!block.isPassable()) {
             return true;
         }
 
-        // Check for any entities within the same block (covers ArmorStands, NPCs, etc.)
         Collection<Entity> nearbyEntities = location.getWorld().getNearbyEntities(location, 0.49, 0.49, 0.49);
-        return !nearbyEntities.isEmpty();
+        if (!nearbyEntities.isEmpty()) {
+            return true;
+        }
+
+        if (plugin.getIntegrationManager().hasFancyNpcs() && plugin.getConfig("fancynpcs.corpse.enabled", grave).getBoolean("fancynpcs.corpse.enabled", false)) {
+            if (plugin.getIntegrationManager().getFancyNpcs().hasCorpse(grave)) return true;
+        }
+
+        if (plugin.getIntegrationManager().hasCitizensNPC() && plugin.getConfig("citizens.corpse.enabled", grave).getBoolean("citizens.corpse.enabled", false)) {
+            if (plugin.getIntegrationManager().getCitizensNPC().getNPCCorpse(grave)) return true;
+        }
+
+        if (plugin.getIntegrationManager().hasItemsAdder() && plugin.getConfig("citizens.furniture.enabled", grave).getBoolean("citizens.furniture.enabled", false)) {
+            if (plugin.getIntegrationManager().getItemsAdder().isCustomBlock(grave.getLocationDeath())) return true;
+        }
+
+        return false;
     }
 
     /**
