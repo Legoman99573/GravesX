@@ -975,7 +975,7 @@ settings:
                 glow: false
                 model-data: -1
                 lore:
-                  - "Teleport to your grave"
+                  - "Teleport to this grave"
 
               2: # Toggle protection on and off.
                 enabled: false
