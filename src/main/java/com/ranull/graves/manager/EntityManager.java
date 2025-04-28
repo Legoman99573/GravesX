@@ -30,8 +30,6 @@ import org.bukkit.util.NumberConversions;
 
 import java.util.*;
 
-import static org.bukkit.Bukkit.getServer;
-
 /**
  * Manages the operations and lifecycle of entities within the Graves plugin.
  */
