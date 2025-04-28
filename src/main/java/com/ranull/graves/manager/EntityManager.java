@@ -30,6 +30,8 @@ import org.bukkit.util.NumberConversions;
 
 import java.util.*;
 
+import static org.bukkit.Bukkit.getServer;
+
 /**
  * Manages the operations and lifecycle of entities within the Graves plugin.
  */
@@ -737,7 +739,13 @@ public final class EntityManager extends EntityDataManager {
     public boolean runFunction(Entity entity, String function, Grave grave) {
         switch (function.toLowerCase()) {
             case "list": {
-                plugin.getGUIManager().openGraveList(entity);
+                UUID targetUUID = grave.getOwnerUUID();
+                // The attribute grave.ownerUUID isn't marked as @NotNull
+                if (targetUUID == null) {
+                    // If it is null, fall back to the UUID of the entity performing the command
+                    targetUUID = entity.getUniqueId();
+                }
+                plugin.getGUIManager().openGraveList(entity, targetUUID);
                 return true;
             }
             case "menu": {
