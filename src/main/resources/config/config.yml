@@ -276,6 +276,16 @@ settings:
       # Should Graves write its pack into the Oraxen pack folder.
       write: true
 
+    ########
+    # Nexo #
+    ########
+    # Source: https://polymart.org/product/6901/nexo
+    nexo:
+      # Should Nexo integration be enabled.
+      enabled: true
+      # Should Graves write its pack into the Nexo pack folder.
+      write: true
+
     ##################
     # PlaceholderAPI #
     ##################

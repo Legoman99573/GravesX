@@ -1,0 +1,22 @@
+grave:
+  itemname: <red>GravesX-Grave
+  material: PAPER
+  Pack:
+    model: nexo:items/grave
+    custom_model_data: 666
+  Mechanics:
+    furniture:
+      block_sounds:
+        place_sound: block.stone.place
+        break_sound: block.stone.break
+        hit_sound: block.stone.hit
+        step_sound: block.stone.step
+        fall_sound: block.stone.fall
+      hitbox:
+        barriers:
+          - 0,0,0
+      drop:
+        silktouch: false
+        loots:
+          - nexo_item: grave
+            probability: 0.0

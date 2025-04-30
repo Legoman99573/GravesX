@@ -107,6 +107,14 @@ public final class IntegrationManager {
     private Oraxen oraxen;
 
     /**
+     * Integration with Nexo, a plugin for custom items and resource packs.
+     * <p>
+     * This {@link Nexo} instance represents the integration with the Nexo plugin, used for managing custom items and resource packs.
+     * </p>
+     */
+    private Nexo nexo;
+
+    /**
      * Integration with ChestSort, a plugin for sorting chests and inventories.
      * <p>
      * This {@link ChestSort} instance represents the integration with the ChestSort plugin, used for sorting chests and other inventories.
@@ -254,6 +262,7 @@ public final class IntegrationManager {
         loadProtectionLib();
         loadItemsAdder();
         loadOraxen();
+        loadNexo();
         loadMiniMessage();
         loadMineDown();
         loadChestSort();
@@ -300,6 +309,10 @@ public final class IntegrationManager {
 
         if (oraxen != null) {
             oraxen.unregisterListeners();
+        }
+
+        if (nexo != null) {
+            nexo.unregisterListeners();
         }
 
         if (placeholderAPI != null) {
@@ -405,6 +418,15 @@ public final class IntegrationManager {
      */
     public Oraxen getOraxen() {
         return oraxen;
+    }
+
+    /**
+     * Returns the instance of the Nexo integration, if it is loaded.
+     *
+     * @return The {@code Nexo} integration instance, or null if not loaded.
+     */
+    public Nexo getNexo() {
+        return nexo;
     }
 
     /**
@@ -596,6 +618,15 @@ public final class IntegrationManager {
      */
     public boolean hasOraxen() {
         return oraxen != null;
+    }
+
+    /**
+     * Checks if Nexo integration is loaded.
+     *
+     * @return {@code true} if Nexo integration is loaded, {@code false} otherwise.
+     */
+    public boolean hasNexo() {
+        return nexo != null;
     }
 
     /**
@@ -974,6 +1005,23 @@ public final class IntegrationManager {
             }
         } else {
             oraxen = null;
+        }
+    }
+
+    /**
+     * Loads the Nexo integration if enabled in the configuration.
+     */
+    private void loadNexo() {
+        if (plugin.getConfig().getBoolean("settings.integration.nexo.enabled", true)) {
+            Plugin nexoPlugin = plugin.getServer().getPluginManager().getPlugin("Nexo");
+
+            if (nexoPlugin != null && nexoPlugin.isEnabled()) {
+                nexo = new Nexo(plugin, nexoPlugin);
+
+                plugin.integrationMessage("Hooked into " + nexoPlugin.getName() + " " + nexoPlugin.getDescription().getVersion() + ".");
+            }
+        } else {
+            nexo = null;
         }
     }
 

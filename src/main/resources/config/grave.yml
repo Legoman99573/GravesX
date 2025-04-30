@@ -516,6 +516,23 @@ settings:
           # Block name.
           name: "caveblock"
 
+      ##########
+      # Nexo #
+      ##########
+      # The option requires Nexo, you must have this installed to use models.
+      # Graves automatically adds models into Nexo, if you want to use it you will need to re-generate your pack and use "grave" as the furniture name.
+      nexo:
+        furniture:
+          # Should we use Nexo furniture?
+          enabled: false
+          # Block name.
+          name: "grave"
+        block:
+          # Should we use Nexo blocks?
+          enabled: false
+          # Block name.
+          name: "caveblock"
+
       #############
       # PlayerNPC #
       #############

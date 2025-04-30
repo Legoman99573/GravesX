@@ -1,7 +1,7 @@
-package com.ranull.graves.listener.integration.oraxen;
+package com.ranull.graves.listener.integration.nexo;
 
 import com.ranull.graves.Graves;
-import com.ranull.graves.integration.Oraxen;
+import com.ranull.graves.integration.Nexo;
 import com.ranull.graves.type.Grave;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemFrame;
@@ -11,27 +11,24 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 
 /**
- * @deprecated Recommend Nexo
  * Listens for PlayerInteractEntityEvent and cancels the event if the player interacts with an ItemFrame associated with a grave.
  */
 public class PlayerInteractEntityListener implements Listener {
     private final Graves plugin;
-    private final Oraxen oraxen;
+    private final Nexo nexo;
 
     /**
-     * @deprecated Recommend Nexo
-     * Constructs a new PlayerInteractEntityListener with the specified Graves and Oraxen instances.
+     * Constructs a new PlayerInteractEntityListener with the specified Graves and Nexo instances.
      *
      * @param plugin The Graves instance to use.
-     * @param oraxen The Oraxen instance to use.
+     * @param nexo The Nexo instance to use.
      */
-    public PlayerInteractEntityListener(Graves plugin, Oraxen oraxen) {
+    public PlayerInteractEntityListener(Graves plugin, Nexo nexo) {
         this.plugin = plugin;
-        this.oraxen = oraxen;
+        this.nexo = nexo;
     }
 
     /**
-     * @deprecated Recommend Nexo
      * Handles PlayerInteractEntityEvent. If the player interacts with an ItemFrame associated with a grave,
      * it cancels the event and opens the grave for the player.
      *
@@ -47,7 +44,6 @@ public class PlayerInteractEntityListener implements Listener {
     }
 
     /**
-     * @deprecated Recommend Nexo
      * Checks if the entity is an ItemFrame.
      *
      * @param entity The entity to check.
@@ -58,7 +54,6 @@ public class PlayerInteractEntityListener implements Listener {
     }
 
     /**
-     * @deprecated Recommend Nexo
      * Handles the interaction with the furniture. If the furniture is associated with a grave,
      * the event is cancelled and the grave is opened for the player.
      *
@@ -66,7 +61,7 @@ public class PlayerInteractEntityListener implements Listener {
      * @param entity The entity being interacted with.
      */
     private void handleFurnitureInteraction(PlayerInteractEntityEvent event, Entity entity) {
-        Grave grave = oraxen.getGrave(entity);
+        Grave grave = nexo.getGrave(entity);
 
         if (grave != null) {
             event.setCancelled(plugin.getGraveManager().openGrave(event.getPlayer(), entity.getLocation(), grave));

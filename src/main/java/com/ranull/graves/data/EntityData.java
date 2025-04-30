@@ -132,6 +132,11 @@ public class EntityData implements Serializable {
         ORAXEN,
 
         /**
+         * Represents an entity from the Nexo plugin.
+         */
+        NEXO,
+
+        /**
          * Represents an entity from PlayerNPC plugin.
          */
         PLAYERNPC,

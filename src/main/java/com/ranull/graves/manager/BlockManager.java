@@ -123,6 +123,10 @@ public final class BlockManager {
                 plugin.getIntegrationManager().getOraxen().createBlock(location, grave);
             }
 
+            if (plugin.getIntegrationManager().hasNexo()) {
+                plugin.getIntegrationManager().getNexo().createBlock(location, grave);
+            }
+
             if (material != null) {
                 plugin.debugMessage("Placing grave block for " + grave.getUUID() + " at "
                         + location.getWorld().getName() + ", " + (location.getBlockX() + 0.5) + "x, "
@@ -209,6 +213,11 @@ public final class BlockManager {
         if (plugin.getIntegrationManager().hasOraxen() && plugin.getIntegrationManager().getOraxen()
                 .isCustomBlock(location)) {
             plugin.getIntegrationManager().getOraxen().removeBlock(location);
+        }
+
+        if (plugin.getIntegrationManager().hasNexo() && plugin.getIntegrationManager().getNexo()
+                .isCustomBlock(location)) {
+            plugin.getIntegrationManager().getNexo().removeBlock(location);
         }
 
         if (location.getWorld() != null) {

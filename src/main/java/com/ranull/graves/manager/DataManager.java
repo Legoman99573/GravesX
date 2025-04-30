@@ -221,6 +221,7 @@ public final class DataManager {
             integrationMap.put("furnitureengine", EntityData.Type.FURNITUREENGINE);
             integrationMap.put("itemsadder", EntityData.Type.ITEMSADDER);
             integrationMap.put("oraxen", EntityData.Type.ORAXEN);
+            integrationMap.put("nexo", EntityData.Type.NEXO);
             integrationMap.put("playernpc", EntityData.Type.PLAYERNPC);
             integrationMap.put("citizensnpc", EntityData.Type.CITIZENSNPC);
 
@@ -1645,6 +1646,8 @@ public final class DataManager {
                 return "itemsadder";
             case ORAXEN:
                 return "oraxen";
+            case NEXO:
+                return "nexo";
             case PLAYERNPC:
                 return "playernpc";
             case CITIZENSNPC:

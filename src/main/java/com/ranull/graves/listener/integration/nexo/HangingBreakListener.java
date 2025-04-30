@@ -1,6 +1,6 @@
-package com.ranull.graves.listener.integration.oraxen;
+package com.ranull.graves.listener.integration.nexo;
 
-import com.ranull.graves.integration.Oraxen;
+import com.ranull.graves.integration.Nexo;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -8,24 +8,21 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.hanging.HangingBreakEvent;
 
 /**
- * @deprecated Recommend Nexo
  * Listens for HangingBreakEvent and cancels the event if the entity being broken is an ItemFrame associated with a grave.
  */
 public class HangingBreakListener implements Listener {
-    private final Oraxen oraxen;
+    private final Nexo nexo;
 
     /**
-     * @deprecated Recommend Nexo
-     * Constructs a new HangingBreakListener with the specified Oraxen instance.
+     * Constructs a new HangingBreakListener with the specified Nexo instance.
      *
-     * @param oraxen The Oraxen instance to use.
+     * @param nexo The Nexo instance to use.
      */
-    public HangingBreakListener(Oraxen oraxen) {
-        this.oraxen = oraxen;
+    public HangingBreakListener(Nexo nexo) {
+        this.nexo = nexo;
     }
 
     /**
-     * @deprecated Recommend Nexo
      * Handles HangingBreakEvent. If the entity being broken is an ItemFrame and is associated with a grave,
      * it cancels the event.
      *
@@ -39,13 +36,12 @@ public class HangingBreakListener implements Listener {
     }
 
     /**
-     * @deprecated Recommend Nexo
      * Checks if the entity is an ItemFrame and has an associated grave.
      *
      * @param event The HangingBreakEvent.
      * @return True if the entity is an ItemFrame and has an associated grave, false otherwise.
      */
     private boolean isItemFrameAndHasGrave(HangingBreakEvent event) {
-        return event.getEntity() instanceof ItemFrame && oraxen.getGrave(event.getEntity()) != null;
+        return event.getEntity() instanceof ItemFrame && nexo.getGrave(event.getEntity()) != null;
     }
 }
