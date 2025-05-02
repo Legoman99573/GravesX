@@ -230,6 +230,7 @@ public final class DataManager {
                 EntityData.Type type = entry.getValue();
 
                 if (isIntegrationEnabled(integration)) {
+                    createEntityDataMapTable(integration);
                     loadEntityDataMap(integration, type);
                     if (integration.equals("playernpc")) {
                         plugin.getIntegrationManager().getPlayerNPC().createCorpses();
@@ -256,6 +257,8 @@ public final class DataManager {
                 return plugin.getIntegrationManager().hasItemsAdder();
             case "oraxen":
                 return plugin.getIntegrationManager().hasOraxen();
+            case "nexo":
+                return plugin.getIntegrationManager().hasNexo();
             case "playernpc":
                 return plugin.getIntegrationManager().hasPlayerNPC();
             case "citizensnpc":
@@ -290,6 +293,7 @@ public final class DataManager {
         integrationMap.put("furnitureengine", plugin.getIntegrationManager().hasFurnitureEngine());
         integrationMap.put("itemsadder", plugin.getIntegrationManager().hasItemsAdder());
         integrationMap.put("oraxen", plugin.getIntegrationManager().hasOraxen());
+        integrationMap.put("nexo", plugin.getIntegrationManager().hasNexo());
         integrationMap.put("playernpc", plugin.getIntegrationManager().hasPlayerNPC());
         integrationMap.put("citizensnpc", plugin.getIntegrationManager().hasCitizensNPC());
 
@@ -1035,7 +1039,7 @@ public final class DataManager {
 
         // Check if the table exists and create it if it does not
         if (!tableExists(name)) {
-            String createTableQuery = "CREATE TABLE " + name + " (" +
+            String createTableQuery = "CREATE TABLE IF NOT EXISTS " + name + " (" +
                     "location VARCHAR(255),\n" +
                     "uuid_grave VARCHAR(255),\n" +
                     "replace_material VARCHAR(255),\n" +
@@ -1380,6 +1384,64 @@ public final class DataManager {
                 plugin.logStackTrace(exception);
             }
         });
+    }
+
+    /**
+     * Creates the entity data map table if it does not exist.
+     *
+     * @param name the name of the table.
+     */
+    private void createEntityDataMapTable(String name) {
+        String createTableQuery;
+
+        switch (type) {
+            case MYSQL:
+            case MARIADB:
+                createTableQuery = "CREATE TABLE IF NOT EXISTS " + name + " (" +
+                        "location VARCHAR(255), " +
+                        "uuid_entity VARCHAR(255), " +
+                        "uuid_grave VARCHAR(255));";
+                break;
+            case SQLITE:
+                createTableQuery = "CREATE TABLE IF NOT EXISTS " + name + " (" +
+                        "location TEXT, " +
+                        "uuid_entity TEXT, " +
+                        "uuid_grave TEXT);";
+                break;
+            case POSTGRESQL:
+            case H2:
+                createTableQuery = "CREATE TABLE IF NOT EXISTS " + name + " (" +
+                        "location VARCHAR(255), " +
+                        "uuid_entity VARCHAR(255), " +
+                        "uuid_grave VARCHAR(255));";
+                break;
+            case MSSQL:
+                createTableQuery = "IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='" + name + "' AND xtype='U') " +
+                        "CREATE TABLE " + name + " (" +
+                        "location VARCHAR(255), " +
+                        "uuid_entity VARCHAR(255), " +
+                        "uuid_grave VARCHAR(255));";
+                break;
+            default:
+                plugin.getLogger().severe("Unsupported database type: " + type);
+                return;
+        }
+
+        try {
+            executeUpdate(createTableQuery, new Object[0]);
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Failed to create entity data map table: " + e.getMessage());
+            plugin.logStackTrace(e);
+        }
+
+        try {
+            // Ensure all necessary columns exist
+            addColumnIfNotExists(name, "location", "VARCHAR(255)");
+            addColumnIfNotExists(name, "uuid_entity", "VARCHAR(255)");
+            addColumnIfNotExists(name, "uuid_grave", "VARCHAR(255)");
+        } catch (Exception ignored) {
+            // ignored
+        }
     }
 
     /**

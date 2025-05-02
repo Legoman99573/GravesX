@@ -412,6 +412,7 @@ public final class IntegrationManager {
     }
 
     /**
+     * @deprecated Use Nexo
      * Returns the instance of the Oraxen integration, if it is loaded.
      *
      * @return The {@code Oraxen} integration instance, or null if not loaded.
@@ -612,6 +613,7 @@ public final class IntegrationManager {
     }
 
     /**
+     * @deprecated Use Nexo
      * Checks if Oraxen integration is loaded.
      *
      * @return {@code true} if Oraxen integration is loaded, {@code false} otherwise.
@@ -992,6 +994,7 @@ public final class IntegrationManager {
     }
 
     /**
+     * @deprecated Use Nexo
      * Loads the Oraxen integration if enabled in the configuration.
      */
     private void loadOraxen() {

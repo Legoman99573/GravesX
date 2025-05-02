@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @deprecated Recommend Nexo
+ * @deprecated Recommend Nexo as a replacement.
  * Integration class for handling communication with the Oraxen plugin.
  * Manages creation, removal, and verification of Oraxen furniture and blocks.
  */
@@ -39,7 +39,7 @@ public final class Oraxen extends EntityDataManager {
     private final HangingBreakListener hangingBreakListener;
 
     /**
-     * @deprecated Recommend Nexo
+     * @deprecated Recommend Nexo as a replacement.
      * Constructs a new Oraxen instance and initializes listeners.
      *
      * @param plugin       The main Graves plugin instance.
@@ -59,7 +59,7 @@ public final class Oraxen extends EntityDataManager {
     }
 
     /**
-     * @deprecated Recommend Nexo
+     * @deprecated Recommend Nexo as a replacement.
      * Saves the data related to the Oraxen plugin.
      */
     public void saveData() {
@@ -74,7 +74,7 @@ public final class Oraxen extends EntityDataManager {
     }
 
     /**
-     * @deprecated Recommend Nexo
+     * @deprecated Recommend Nexo as a replacement.
      * Registers event listeners for Oraxen-related events.
      */
     public void registerListeners() {
@@ -101,7 +101,7 @@ public final class Oraxen extends EntityDataManager {
     }
 
     /**
-     * @deprecated Recommend Nexo
+     * @deprecated Recommend Nexo as a replacement.
      * Creates and places Oraxen furniture at a specified location.
      *
      * @param location The location where the furniture will be placed.
@@ -134,7 +134,7 @@ public final class Oraxen extends EntityDataManager {
     }
 
     /**
-     * @deprecated Recommend Nexo
+     * @deprecated Recommend Nexo as a replacement.
      * Removes all Oraxen furniture associated with a specified grave.
      *
      * @param grave The grave whose associated furniture will be removed.
@@ -144,7 +144,7 @@ public final class Oraxen extends EntityDataManager {
     }
 
     /**
-     * @deprecated Recommend Nexo
+     * @deprecated Recommend Nexo as a replacement.
      * Removes a specific Oraxen furniture entity based on entity data.
      *
      * @param entityData The entity data of the furniture to be removed.
@@ -154,7 +154,7 @@ public final class Oraxen extends EntityDataManager {
     }
 
     /**
-     * @deprecated Recommend Nexo
+     * @deprecated Recommend Nexo as a replacement.
      * Removes Oraxen furniture entities based on a map of entity data to entities.
      *
      * @param entityDataMap A map of entity data to entities to be removed.
@@ -171,7 +171,7 @@ public final class Oraxen extends EntityDataManager {
     }
 
     /**
-     * @deprecated Recommend Nexo
+     * @deprecated Recommend Nexo as a replacement.
      * Creates and places an Oraxen block at a specified location.
      *
      * @param location The location where the block will be placed.
@@ -195,7 +195,7 @@ public final class Oraxen extends EntityDataManager {
     }
 
     /**
-     * @deprecated Recommend Nexo
+     * @deprecated Recommend Nexo as a replacement.
      * Checks if a block at a specified location is a custom Oraxen block.
      *
      * @param location The location of the block to check.
@@ -214,7 +214,7 @@ public final class Oraxen extends EntityDataManager {
     }
 
     /**
-     * @deprecated Recommend Nexo
+     * @deprecated Recommend Nexo as a replacement.
      * Removes a block at a specified location.
      *
      * @param location The location of the block to be removed.
@@ -224,7 +224,7 @@ public final class Oraxen extends EntityDataManager {
     }
 
     /**
-     * @deprecated Recommend Nexo
+     * @deprecated Recommend Nexo as a replacement.
      * Retrieves a FurnitureMechanic by name from the Oraxen plugin.
      *
      * @param string The name of the furniture mechanic.
@@ -237,7 +237,7 @@ public final class Oraxen extends EntityDataManager {
     }
 
     /**
-     * @deprecated Recommend Nexo
+     * @deprecated Recommend Nexo as a replacement.
      * Retrieves a NoteBlockMechanic by name from the Oraxen plugin.
      *
      * @param string The name of the note block mechanic.

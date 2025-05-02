@@ -714,25 +714,15 @@ public final class GraveManager {
             return true;
         }
 
-        if (plugin.getIntegrationManager().hasFancyNpcs() && plugin.getConfig("fancynpcs.corpse.enabled", grave).getBoolean("fancynpcs.corpse.enabled", false)) {
-            if (plugin.getIntegrationManager().getFancyNpcs().hasCorpse(grave)) return true;
-        }
+        if (plugin.getIntegrationManager().hasFancyNpcs() && plugin.getConfig("fancynpcs.corpse.enabled", grave).getBoolean("fancynpcs.corpse.enabled", false)) return true;
 
-        if (plugin.getIntegrationManager().hasCitizensNPC() && plugin.getConfig("citizens.corpse.enabled", grave).getBoolean("citizens.corpse.enabled", false)) {
-            if (plugin.getIntegrationManager().getCitizensNPC().getNPCCorpse(grave)) return true;
-        }
+        if (plugin.getIntegrationManager().hasCitizensNPC() && plugin.getConfig("citizens.corpse.enabled", grave).getBoolean("citizens.corpse.enabled", false)) return true;
 
-        if (plugin.getIntegrationManager().hasItemsAdder() && plugin.getConfig("itemsadder.furniture.enabled", grave).getBoolean("itemsadder.furniture.enabled") || plugin.getIntegrationManager().hasItemsAdder() && plugin.getConfig("itemsadder.block.enabled", grave).getBoolean("itemsadder.block.enabled")) {
-            if (plugin.getIntegrationManager().getItemsAdder().isCustomBlock(location)) return true;
-        }
+        if (plugin.getIntegrationManager().hasItemsAdder() && plugin.getConfig("itemsadder.furniture.enabled", grave).getBoolean("itemsadder.furniture.enabled") || plugin.getIntegrationManager().hasItemsAdder() && plugin.getConfig("itemsadder.block.enabled", grave).getBoolean("itemsadder.block.enabled")) return true;
 
-        if (plugin.getIntegrationManager().hasOraxen() && plugin.getConfig("oraxen.furniture.enabled", grave).getBoolean("oraxen.furniture.enabled") || plugin.getIntegrationManager().hasOraxen() && plugin.getConfig("oraxen.block.enabled", grave).getBoolean("oraxen.block.enabled")) {
-            if (plugin.getIntegrationManager().getOraxen().isCustomBlock(location)) return true;
-        }
+        if (plugin.getIntegrationManager().hasOraxen() && plugin.getConfig("oraxen.furniture.enabled", grave).getBoolean("oraxen.furniture.enabled") || plugin.getIntegrationManager().hasOraxen() && plugin.getConfig("oraxen.block.enabled", grave).getBoolean("oraxen.block.enabled")) return true;
 
-        if (plugin.getIntegrationManager().hasNexo() && plugin.getConfig("nexo.furniture.enabled", grave).getBoolean("nexo.furniture.enabled") || plugin.getIntegrationManager().hasNexo() && plugin.getConfig("nexo.block.enabled", grave).getBoolean("nexo.block.enabled")) {
-            if (plugin.getIntegrationManager().getNexo().isCustomBlock(location)) return true;
-        }
+        if (plugin.getIntegrationManager().hasNexo() && plugin.getConfig("nexo.furniture.enabled", grave).getBoolean("nexo.furniture.enabled") || plugin.getIntegrationManager().hasNexo() && plugin.getConfig("nexo.block.enabled", grave).getBoolean("nexo.block.enabled")) return true;
 
         return false;
     }
