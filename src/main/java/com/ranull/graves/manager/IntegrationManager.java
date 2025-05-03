@@ -412,11 +412,13 @@ public final class IntegrationManager {
     }
 
     /**
-     * @deprecated Use Nexo
+     * @deprecated Use Nexo instead. Unmaintained and will be for the forseeable future.
+     * 
      * Returns the instance of the Oraxen integration, if it is loaded.
      *
      * @return The {@code Oraxen} integration instance, or null if not loaded.
      */
+    @Deprecated
     public Oraxen getOraxen() {
         return oraxen;
     }
@@ -613,11 +615,13 @@ public final class IntegrationManager {
     }
 
     /**
-     * @deprecated Use Nexo
+     * @deprecated Use Nexo instead. Unmaintained and will be for the forseeable future.
+     * 
      * Checks if Oraxen integration is loaded.
      *
      * @return {@code true} if Oraxen integration is loaded, {@code false} otherwise.
      */
+    @Deprecated
     public boolean hasOraxen() {
         return oraxen != null;
     }
@@ -994,9 +998,11 @@ public final class IntegrationManager {
     }
 
     /**
-     * @deprecated Use Nexo
+     * @deprecated Use Nexo instead. Unmaintained and will be for the forseeable future.
+     * 
      * Loads the Oraxen integration if enabled in the configuration.
      */
+    @Deprecated
     private void loadOraxen() {
         if (plugin.getConfig().getBoolean("settings.integration.oraxen.enabled", true)) {
             Plugin oraxenPlugin = plugin.getServer().getPluginManager().getPlugin("Oraxen");

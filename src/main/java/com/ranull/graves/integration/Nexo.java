@@ -62,10 +62,10 @@ public class Nexo extends EntityDataManager {
             String pluginFolder = plugin.getPluginsFolder() + "/" + nexoPlugin.getName();
 
             try {
-                File gravesDir = new File(pluginFolder + "/items/gravesx");
+                File gravesDir = new File(pluginFolder + "/items");
                 if (!gravesDir.exists()) gravesDir.mkdirs();
 
-                File graveModelDir = new File(pluginFolder + "/pack/external_packs/NexoMC/assets/nexo/models/items");
+                File graveModelDir = new File(pluginFolder + "/pack/assets/minecraft/models/gravesx");
                 if (!graveModelDir.exists()) graveModelDir.mkdirs();
 
                 // Copy resources
@@ -85,6 +85,9 @@ public class Nexo extends EntityDataManager {
         }
     }
 
+    /**
+     * Copies resource from jar to the nexo folder.
+     */
     private void copyResource(String resourcePath, File outFile) {
         try (InputStream in = plugin.getClass().getClassLoader().getResourceAsStream(resourcePath)) {
             if (in == null) {

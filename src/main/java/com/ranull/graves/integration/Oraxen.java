@@ -21,6 +21,11 @@ import org.bukkit.entity.Entity;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.Plugin;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -28,9 +33,11 @@ import java.util.Map;
 
 /**
  * @deprecated Recommend Nexo as a replacement.
+ *
  * Integration class for handling communication with the Oraxen plugin.
  * Manages creation, removal, and verification of Oraxen furniture and blocks.
  */
+@Deprecated
 public final class Oraxen extends EntityDataManager {
     private final Graves plugin;
     private final Plugin oraxenPlugin;
@@ -45,6 +52,7 @@ public final class Oraxen extends EntityDataManager {
      * @param plugin       The main Graves plugin instance.
      * @param oraxenPlugin The Oraxen plugin instance.
      */
+    @Deprecated
     public Oraxen(Graves plugin, Plugin oraxenPlugin) {
         super(plugin);
 
@@ -62,14 +70,50 @@ public final class Oraxen extends EntityDataManager {
      * @deprecated Recommend Nexo as a replacement.
      * Saves the data related to the Oraxen plugin.
      */
+    @Deprecated
     public void saveData() {
         if (plugin.getConfig().getBoolean("settings.integration.oraxen.write")) {
-            ResourceUtil.copyResources("data/plugin/" + oraxenPlugin.getName().toLowerCase() + "/items",
-                    plugin.getPluginsFolder() + "/" + oraxenPlugin.getName() + "/items", plugin);
-            ResourceUtil.copyResources("data/model/grave.json",
-                    plugin.getPluginsFolder() + "/" + oraxenPlugin.getName()
-                            + "/pack/assets/minecraft/models/graves/grave.json", plugin);
+            String pluginFolder = plugin.getPluginsFolder() + "/" + oraxenPlugin.getName();
+
+            try {
+                File itemsDir = new File(pluginFolder + "/items");
+                if (!itemsDir.exists()) itemsDir.mkdirs();
+
+                File modelDir = new File(pluginFolder + "/pack/assets/minecraft/models/gravesx");
+                if (!modelDir.exists()) modelDir.mkdirs();
+
+                // Copy resources
+                copyResource(
+                        "data/plugin/" + oraxenPlugin.getName().toLowerCase() + "/items/graves.yml",
+                        new File(itemsDir, "graves.yml")
+                );
+                copyResource(
+                        "data/model/grave.json",
+                        new File(modelDir, "grave.json")
+                );
+            } catch (Exception e) {
+                plugin.logStackTrace(e);
+            }
+
             plugin.debugMessage("Saving " + oraxenPlugin.getName() + " data.", 1);
+        }
+    }
+
+    /**
+     * @deprecated Recommend Nexo as a replacement.
+     * Copies resource from jar to the oraxen folder.
+     */
+    @Deprecated
+    private void copyResource(String resourcePath, File outFile) {
+        try (InputStream in = plugin.getClass().getClassLoader().getResourceAsStream(resourcePath)) {
+            if (in == null) {
+                plugin.debugMessage("Resource not found: " + resourcePath, 1);
+                return;
+            }
+            Files.copy(in, outFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            plugin.getLogger().info("An error occurred while copying " + resourcePath + " to " + outFile + ".");
+            plugin.logStackTrace(e);
         }
     }
 
@@ -77,6 +121,7 @@ public final class Oraxen extends EntityDataManager {
      * @deprecated Recommend Nexo as a replacement.
      * Registers event listeners for Oraxen-related events.
      */
+    @Deprecated
     public void registerListeners() {
         plugin.getServer().getPluginManager().registerEvents(playerInteractEntityListener, plugin);
         plugin.getServer().getPluginManager().registerEvents(entityDamageListener, plugin);
@@ -86,6 +131,7 @@ public final class Oraxen extends EntityDataManager {
     /**
      * Unregisters event listeners to prevent memory leaks or other issues.
      */
+    @Deprecated
     public void unregisterListeners() {
         if (playerInteractEntityListener != null) {
             HandlerList.unregisterAll(playerInteractEntityListener);
@@ -107,6 +153,7 @@ public final class Oraxen extends EntityDataManager {
      * @param location The location where the furniture will be placed.
      * @param grave    The grave related to the furniture.
      */
+    @Deprecated
     public void createFurniture(Location location, Grave grave) {
         if (plugin.getConfig("oraxen.furniture.enabled", grave)
                 .getBoolean("oraxen.furniture.enabled")) {
@@ -139,6 +186,7 @@ public final class Oraxen extends EntityDataManager {
      *
      * @param grave The grave whose associated furniture will be removed.
      */
+    @Deprecated
     public void removeFurniture(Grave grave) {
         removeFurniture(getEntityDataMap(getLoadedEntityDataList(grave)));
     }
@@ -149,6 +197,7 @@ public final class Oraxen extends EntityDataManager {
      *
      * @param entityData The entity data of the furniture to be removed.
      */
+    @Deprecated
     public void removeFurniture(EntityData entityData) {
         removeFurniture(getEntityDataMap(Collections.singletonList(entityData)));
     }
@@ -159,6 +208,7 @@ public final class Oraxen extends EntityDataManager {
      *
      * @param entityDataMap A map of entity data to entities to be removed.
      */
+    @Deprecated
     public void removeFurniture(Map<EntityData, Entity> entityDataMap) {
         List<EntityData> entityDataList = new ArrayList<>();
 
@@ -177,6 +227,7 @@ public final class Oraxen extends EntityDataManager {
      * @param location The location where the block will be placed.
      * @param grave    The grave related to the block.
      */
+    @Deprecated
     public void createBlock(Location location, Grave grave) {
         if (plugin.getConfig("oraxen.block.enabled", grave)
                 .getBoolean("oraxen.block.enabled")) {
@@ -201,6 +252,7 @@ public final class Oraxen extends EntityDataManager {
      * @param location The location of the block to check.
      * @return True if the block is a custom Oraxen block, false otherwise.
      */
+    @Deprecated
     public boolean isCustomBlock(Location location) {
         if (location.getBlock().getBlockData() instanceof NoteBlock) {
             NoteBlock noteBlock = (NoteBlock) location.getBlock().getBlockData();
@@ -219,6 +271,7 @@ public final class Oraxen extends EntityDataManager {
      *
      * @param location The location of the block to be removed.
      */
+    @Deprecated
     public void removeBlock(Location location) {
         location.getBlock().setType(Material.AIR);
     }
@@ -230,6 +283,7 @@ public final class Oraxen extends EntityDataManager {
      * @param string The name of the furniture mechanic.
      * @return The FurnitureMechanic if found, otherwise null.
      */
+    @Deprecated
     public FurnitureMechanic getFurnitureMechanic(String string) {
         MechanicFactory mechanicFactory = MechanicsManager.getMechanicFactory("furniture");
 
@@ -243,6 +297,7 @@ public final class Oraxen extends EntityDataManager {
      * @param string The name of the note block mechanic.
      * @return The NoteBlockMechanic if found, otherwise null.
      */
+    @Deprecated
     public NoteBlockMechanic getNoteBlockMechanic(String string) {
         MechanicFactory mechanicFactory = MechanicsManager.getMechanicFactory("noteblock");
 

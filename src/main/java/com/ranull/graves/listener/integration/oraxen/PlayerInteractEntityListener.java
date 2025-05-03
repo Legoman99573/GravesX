@@ -12,19 +12,23 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 
 /**
  * @deprecated Recommend Nexo as a replacement.
+ *
  * Listens for PlayerInteractEntityEvent and cancels the event if the player interacts with an ItemFrame associated with a grave.
  */
+@Deprecated
 public class PlayerInteractEntityListener implements Listener {
     private final Graves plugin;
     private final Oraxen oraxen;
 
     /**
      * @deprecated Recommend Nexo as a replacement.
+     *
      * Constructs a new PlayerInteractEntityListener with the specified Graves and Oraxen instances.
      *
      * @param plugin The Graves instance to use.
      * @param oraxen The Oraxen instance to use.
      */
+    @Deprecated
     public PlayerInteractEntityListener(Graves plugin, Oraxen oraxen) {
         this.plugin = plugin;
         this.oraxen = oraxen;
@@ -32,11 +36,13 @@ public class PlayerInteractEntityListener implements Listener {
 
     /**
      * @deprecated Recommend Nexo as a replacement.
+     *
      * Handles PlayerInteractEntityEvent. If the player interacts with an ItemFrame associated with a grave,
      * it cancels the event and opens the grave for the player.
      *
      * @param event The PlayerInteractEntityEvent to handle.
      */
+    @Deprecated
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onFurnitureInteract(PlayerInteractEntityEvent event) {
         Entity entity = event.getRightClicked();
@@ -48,23 +54,27 @@ public class PlayerInteractEntityListener implements Listener {
 
     /**
      * @deprecated Recommend Nexo as a replacement.
+     *
      * Checks if the entity is an ItemFrame.
      *
      * @param entity The entity to check.
      * @return True if the entity is an ItemFrame, false otherwise.
      */
+    @Deprecated
     private boolean isItemFrame(Entity entity) {
         return entity instanceof ItemFrame;
     }
 
     /**
      * @deprecated Recommend Nexo as a replacement.
+     *
      * Handles the interaction with the furniture. If the furniture is associated with a grave,
      * the event is cancelled and the grave is opened for the player.
      *
      * @param event  The PlayerInteractEntityEvent.
      * @param entity The entity being interacted with.
      */
+    @Deprecated
     private void handleFurnitureInteraction(PlayerInteractEntityEvent event, Entity entity) {
         Grave grave = oraxen.getGrave(entity);
 
