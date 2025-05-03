@@ -270,10 +270,21 @@ settings:
     # Oraxen #
     ##########
     # Source: https://www.spigotmc.org/resources/oraxen.72448/
+    # We have fully deprecated this and have no plans to update. This will be retained for those who still want to use oraxen until they feel safe to move over to Nexo. No support will be given when this dependency breaks
     oraxen:
       # Should Oraxen integration be enabled.
-      enabled: true
+      enabled: false
       # Should Graves write its pack into the Oraxen pack folder.
+      write: false
+
+    ########
+    # Nexo #
+    ########
+    # Source: https://polymart.org/product/6901/nexo
+    nexo:
+      # Should Nexo integration be enabled.
+      enabled: true
+      # Should Graves write its pack into the Nexo pack folder.
       write: true
 
     ##################

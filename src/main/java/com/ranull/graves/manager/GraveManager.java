@@ -544,6 +544,10 @@ public final class GraveManager {
             plugin.getIntegrationManager().getOraxen().removeFurniture(grave);
         }
 
+        if (plugin.getIntegrationManager().hasNexo()) {
+            plugin.getIntegrationManager().getNexo().removeFurniture(grave);
+        }
+
         if (plugin.getIntegrationManager().hasPlayerNPC()) {
             plugin.getIntegrationManager().getPlayerNPC().removeCorpse(grave);
         }
@@ -590,6 +594,10 @@ public final class GraveManager {
             }
             case ORAXEN: {
                 plugin.getIntegrationManager().getOraxen().removeEntityData(entityData);
+                break;
+            }
+            case NEXO: {
+                plugin.getIntegrationManager().getNexo().removeEntityData(entityData);
                 break;
             }
             case PLAYERNPC: {
@@ -706,17 +714,15 @@ public final class GraveManager {
             return true;
         }
 
-        if (plugin.getIntegrationManager().hasFancyNpcs() && plugin.getConfig("fancynpcs.corpse.enabled", grave).getBoolean("fancynpcs.corpse.enabled", false)) {
-            if (plugin.getIntegrationManager().getFancyNpcs().hasCorpse(grave)) return true;
-        }
+        if (plugin.getIntegrationManager().hasFancyNpcs() && plugin.getConfig("fancynpcs.corpse.enabled", grave).getBoolean("fancynpcs.corpse.enabled", false)) return true;
 
-        if (plugin.getIntegrationManager().hasCitizensNPC() && plugin.getConfig("citizens.corpse.enabled", grave).getBoolean("citizens.corpse.enabled", false)) {
-            if (plugin.getIntegrationManager().getCitizensNPC().getNPCCorpse(grave)) return true;
-        }
+        if (plugin.getIntegrationManager().hasCitizensNPC() && plugin.getConfig("citizens.corpse.enabled", grave).getBoolean("citizens.corpse.enabled", false)) return true;
 
-        if (plugin.getIntegrationManager().hasItemsAdder() && plugin.getConfig("citizens.furniture.enabled", grave).getBoolean("citizens.furniture.enabled", false)) {
-            if (plugin.getIntegrationManager().getItemsAdder().isCustomBlock(grave.getLocationDeath())) return true;
-        }
+        if (plugin.getIntegrationManager().hasItemsAdder() && plugin.getConfig("itemsadder.furniture.enabled", grave).getBoolean("itemsadder.furniture.enabled") || plugin.getIntegrationManager().hasItemsAdder() && plugin.getConfig("itemsadder.block.enabled", grave).getBoolean("itemsadder.block.enabled")) return true;
+
+        if (plugin.getIntegrationManager().hasOraxen() && plugin.getConfig("oraxen.furniture.enabled", grave).getBoolean("oraxen.furniture.enabled") || plugin.getIntegrationManager().hasOraxen() && plugin.getConfig("oraxen.block.enabled", grave).getBoolean("oraxen.block.enabled")) return true;
+
+        if (plugin.getIntegrationManager().hasNexo() && plugin.getConfig("nexo.furniture.enabled", grave).getBoolean("nexo.furniture.enabled") || plugin.getIntegrationManager().hasNexo() && plugin.getConfig("nexo.block.enabled", grave).getBoolean("nexo.block.enabled")) return true;
 
         return false;
     }
@@ -772,6 +778,10 @@ public final class GraveManager {
 
         if (plugin.getIntegrationManager().hasOraxen()) {
             plugin.getIntegrationManager().getOraxen().createFurniture(location, grave);
+        }
+
+        if (plugin.getIntegrationManager().hasNexo()) {
+            plugin.getIntegrationManager().getNexo().createFurniture(location, grave);
         }
 
         if (plugin.getIntegrationManager().hasPlayerNPC()) {

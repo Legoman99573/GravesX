@@ -1,0 +1,20 @@
+grave:
+  material: PAPER
+  Mechanics:
+    furniture:
+      enabled: true
+      drop:
+        silktouch: false
+        loots:
+          - probability: 1.0
+            nexo_item: grave
+      hitbox:
+        barriers:
+          - 0,0,0
+      lights:
+        lights:
+          - 0,0,0 1
+  Pack:
+    model: gravesx/grave
+    custom_model_data: 666
+  itemname: <red>GravesX-Grave

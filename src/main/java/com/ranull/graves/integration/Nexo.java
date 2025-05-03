@@ -1,20 +1,20 @@
 package com.ranull.graves.integration;
 
+import com.nexomc.nexo.mechanics.MechanicFactory;
+import com.nexomc.nexo.mechanics.MechanicsManager;
+import com.nexomc.nexo.mechanics.custom_block.noteblock.NoteBlockMechanic;
+import com.nexomc.nexo.mechanics.custom_block.noteblock.NoteBlockMechanicFactory;
+import com.nexomc.nexo.mechanics.furniture.FurnitureMechanic;
 import com.ranull.graves.Graves;
 import com.ranull.graves.data.EntityData;
-import com.ranull.graves.listener.integration.oraxen.EntityDamageListener;
-import com.ranull.graves.listener.integration.oraxen.HangingBreakListener;
-import com.ranull.graves.listener.integration.oraxen.PlayerInteractEntityListener;
+import com.ranull.graves.listener.integration.nexo.EntityDamageListener;
+import com.ranull.graves.listener.integration.nexo.HangingBreakListener;
+import com.ranull.graves.listener.integration.nexo.PlayerInteractEntityListener;
 import com.ranull.graves.manager.EntityDataManager;
 import com.ranull.graves.type.Grave;
-import com.ranull.graves.util.ResourceUtil;
-import io.th0rgal.oraxen.mechanics.MechanicFactory;
-import io.th0rgal.oraxen.mechanics.MechanicsManager;
-import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.FurnitureMechanic;
-import io.th0rgal.oraxen.mechanics.provided.gameplay.noteblock.NoteBlockMechanic;
-import io.th0rgal.oraxen.mechanics.provided.gameplay.noteblock.NoteBlockMechanicFactory;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.type.NoteBlock;
 import org.bukkit.entity.Entity;
@@ -31,33 +31,22 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * @deprecated Recommend Nexo as a replacement.
- *
- * Integration class for handling communication with the Oraxen plugin.
- * Manages creation, removal, and verification of Oraxen furniture and blocks.
- */
-@Deprecated
-public final class Oraxen extends EntityDataManager {
+public class Nexo extends EntityDataManager {
     private final Graves plugin;
-    private final Plugin oraxenPlugin;
+    private final Plugin nexoPlugin;
     private final PlayerInteractEntityListener playerInteractEntityListener;
     private final EntityDamageListener entityDamageListener;
     private final HangingBreakListener hangingBreakListener;
 
     /**
-     * @deprecated Recommend Nexo as a replacement.
-     * Constructs a new Oraxen instance and initializes listeners.
+     * Initializes the EntityDataManager with the specified plugin instance.
      *
-     * @param plugin       The main Graves plugin instance.
-     * @param oraxenPlugin The Oraxen plugin instance.
+     * @param plugin the Graves plugin instance.
      */
-    @Deprecated
-    public Oraxen(Graves plugin, Plugin oraxenPlugin) {
+    public Nexo(Graves plugin, Plugin nexoPlugin) {
         super(plugin);
-
         this.plugin = plugin;
-        this.oraxenPlugin = oraxenPlugin;
+        this.nexoPlugin = nexoPlugin;
         this.playerInteractEntityListener = new PlayerInteractEntityListener(plugin, this);
         this.entityDamageListener = new EntityDamageListener(this);
         this.hangingBreakListener = new HangingBreakListener(this);
@@ -67,43 +56,39 @@ public final class Oraxen extends EntityDataManager {
     }
 
     /**
-     * @deprecated Recommend Nexo as a replacement.
-     * Saves the data related to the Oraxen plugin.
+     * Saves the data related to the Nexo plugin.
      */
-    @Deprecated
     public void saveData() {
-        if (plugin.getConfig().getBoolean("settings.integration.oraxen.write")) {
-            String pluginFolder = plugin.getPluginsFolder() + "/" + oraxenPlugin.getName();
+        if (plugin.getConfig().getBoolean("settings.integration.nexo.write")) {
+            String pluginFolder = plugin.getPluginsFolder() + "/" + nexoPlugin.getName();
 
             try {
-                File itemsDir = new File(pluginFolder + "/items");
-                if (!itemsDir.exists()) itemsDir.mkdirs();
+                File gravesDir = new File(pluginFolder + "/items");
+                if (!gravesDir.exists()) gravesDir.mkdirs();
 
-                File modelDir = new File(pluginFolder + "/pack/assets/minecraft/models/gravesx");
-                if (!modelDir.exists()) modelDir.mkdirs();
+                File graveModelDir = new File(pluginFolder + "/pack/assets/minecraft/models/gravesx");
+                if (!graveModelDir.exists()) graveModelDir.mkdirs();
 
                 // Copy resources
                 copyResource(
-                        "data/plugin/" + oraxenPlugin.getName().toLowerCase() + "/items/graves.yml",
-                        new File(itemsDir, "graves.yml")
+                        "data/plugin/" + nexoPlugin.getName().toLowerCase() + "/items/graves.yml",
+                        new File(gravesDir, "graves.yml")
                 );
                 copyResource(
                         "data/model/grave.json",
-                        new File(modelDir, "grave.json")
+                        new File(graveModelDir, "grave.json")
                 );
             } catch (Exception e) {
                 plugin.logStackTrace(e);
             }
 
-            plugin.debugMessage("Saving " + oraxenPlugin.getName() + " data.", 1);
+            plugin.debugMessage("Saving " + nexoPlugin.getName() + " data.", 1);
         }
     }
 
     /**
-     * @deprecated Recommend Nexo as a replacement.
-     * Copies resource from jar to the oraxen folder.
+     * Copies resource from jar to the nexo folder.
      */
-    @Deprecated
     private void copyResource(String resourcePath, File outFile) {
         try (InputStream in = plugin.getClass().getClassLoader().getResourceAsStream(resourcePath)) {
             if (in == null) {
@@ -112,16 +97,14 @@ public final class Oraxen extends EntityDataManager {
             }
             Files.copy(in, outFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            plugin.getLogger().info("An error occurred while copying " + resourcePath + " to " + outFile + ".");
+            plugin.getLogger().info("An error occurred while copying over " + resourcePath + " to " + outFile + ".");
             plugin.logStackTrace(e);
         }
     }
 
     /**
-     * @deprecated Recommend Nexo as a replacement.
-     * Registers event listeners for Oraxen-related events.
+     * Registers event listeners for Nexo-related events.
      */
-    @Deprecated
     public void registerListeners() {
         plugin.getServer().getPluginManager().registerEvents(playerInteractEntityListener, plugin);
         plugin.getServer().getPluginManager().registerEvents(entityDamageListener, plugin);
@@ -131,7 +114,6 @@ public final class Oraxen extends EntityDataManager {
     /**
      * Unregisters event listeners to prevent memory leaks or other issues.
      */
-    @Deprecated
     public void unregisterListeners() {
         if (playerInteractEntityListener != null) {
             HandlerList.unregisterAll(playerInteractEntityListener);
@@ -146,20 +128,19 @@ public final class Oraxen extends EntityDataManager {
         }
     }
 
+
     /**
-     * @deprecated Recommend Nexo as a replacement.
-     * Creates and places Oraxen furniture at a specified location.
+     * Creates and places Nexo furniture at a specified location.
      *
      * @param location The location where the furniture will be placed.
      * @param grave    The grave related to the furniture.
      */
-    @Deprecated
     public void createFurniture(Location location, Grave grave) {
-        if (plugin.getConfig("oraxen.furniture.enabled", grave)
-                .getBoolean("oraxen.furniture.enabled")) {
+        if (plugin.getConfig("nexo.furniture.enabled", grave)
+                .getBoolean("nexo.furniture.enabled")) {
             try {
-                String name = plugin.getConfig("oraxen.furniture.name", grave)
-                        .getString("oraxen.furniture.name", "");
+                String name = plugin.getConfig("nexo.furniture.name", grave)
+                        .getString("nexo.furniture.name", "");
                 FurnitureMechanic furnitureMechanic = getFurnitureMechanic(name);
 
                 if (furnitureMechanic != null && location.getWorld() != null) {
@@ -167,48 +148,42 @@ public final class Oraxen extends EntityDataManager {
 
                     Entity furniture = furnitureMechanic.place(location, location.getYaw(), BlockFace.UP);
                     if (furniture != null) {
-                        createEntityData(location, furniture.getUniqueId(), grave.getUUID(), EntityData.Type.ORAXEN);
-                        plugin.debugMessage("Placing Oraxen furniture for " + grave.getUUID() + " at "
+                        createEntityData(location, furniture.getUniqueId(), grave.getUUID(), EntityData.Type.NEXO);
+                        plugin.debugMessage("Placing Nexo furniture for " + grave.getUUID() + " at "
                                 + location.getWorld().getName() + ", " + (location.getBlockX() + 0.5) + "x, "
                                 + (location.getBlockY() + 0.5) + "y, " + (location.getBlockZ() + 0.5) + "z", 1);
                     }
                 }
             } catch (NoSuchMethodError ignored) {
-                plugin.warningMessage("This version of Minecraft does not support " + oraxenPlugin.getName()
+                plugin.warningMessage("This version of Minecraft does not support " + nexoPlugin.getName()
                         + " furniture");
             }
         }
     }
 
     /**
-     * @deprecated Recommend Nexo as a replacement.
-     * Removes all Oraxen furniture associated with a specified grave.
+     * Removes all Nexo furniture associated with a specified grave.
      *
      * @param grave The grave whose associated furniture will be removed.
      */
-    @Deprecated
     public void removeFurniture(Grave grave) {
         removeFurniture(getEntityDataMap(getLoadedEntityDataList(grave)));
     }
 
     /**
-     * @deprecated Recommend Nexo as a replacement.
-     * Removes a specific Oraxen furniture entity based on entity data.
+     * Removes a specific Nexo furniture entity based on entity data.
      *
      * @param entityData The entity data of the furniture to be removed.
      */
-    @Deprecated
     public void removeFurniture(EntityData entityData) {
         removeFurniture(getEntityDataMap(Collections.singletonList(entityData)));
     }
 
     /**
-     * @deprecated Recommend Nexo as a replacement.
-     * Removes Oraxen furniture entities based on a map of entity data to entities.
+     * Removes Nexo furniture entities based on a map of entity data to entities.
      *
      * @param entityDataMap A map of entity data to entities to be removed.
      */
-    @Deprecated
     public void removeFurniture(Map<EntityData, Entity> entityDataMap) {
         List<EntityData> entityDataList = new ArrayList<>();
 
@@ -221,85 +196,86 @@ public final class Oraxen extends EntityDataManager {
     }
 
     /**
-     * @deprecated Recommend Nexo as a replacement.
-     * Creates and places an Oraxen block at a specified location.
+     * Creates and places a Nexo block at a specified location.
      *
      * @param location The location where the block will be placed.
      * @param grave    The grave related to the block.
      */
-    @Deprecated
     public void createBlock(Location location, Grave grave) {
-        if (plugin.getConfig("oraxen.block.enabled", grave)
-                .getBoolean("oraxen.block.enabled")) {
-            String name = plugin.getConfig("oraxen.block.name", grave)
-                    .getString("oraxen.block.name", "");
-            NoteBlockMechanic noteBlockMechanic = getNoteBlockMechanic(name);
+        if (plugin.getConfig("nexo.block.enabled", grave).getBoolean("nexo.block.enabled")) {
+            String name = plugin.getConfig("nexo.block.name", grave).getString("nexo.block.name", "");
 
-            if (noteBlockMechanic != null && location.getWorld() != null) {
-                location.getBlock().setBlockData(NoteBlockMechanicFactory
-                        .createNoteBlockData(noteBlockMechanic.getCustomVariation()), false);
-                plugin.debugMessage("Placing Oraxen block for " + grave.getUUID() + " at "
-                        + location.getWorld().getName() + ", " + (location.getBlockX() + 0.5) + "x, "
-                        + (location.getBlockY() + 0.5) + "y, " + (location.getBlockZ() + 0.5) + "z", 1);
+            if (!name.isEmpty() && location.getWorld() != null) {
+                Block block = location.getBlock();
+                NoteBlockMechanicFactory.Companion.setBlockModel(block, name);
+
+                plugin.debugMessage(
+                        "Placing nexo block for " + grave.getUUID() + " at " +
+                                location.getWorld().getName() + ", " +
+                                (location.getBlockX() + 0.5) + "x, " +
+                                (location.getBlockY() + 0.5) + "y, " +
+                                (location.getBlockZ() + 0.5) + "z",
+                        1
+                );
             }
         }
     }
 
     /**
-     * @deprecated Recommend Nexo as a replacement.
-     * Checks if a block at a specified location is a custom Oraxen block.
-     *
-     * @param location The location of the block to check.
-     * @return True if the block is a custom Oraxen block, false otherwise.
-     */
-    @Deprecated
-    public boolean isCustomBlock(Location location) {
-        if (location.getBlock().getBlockData() instanceof NoteBlock) {
-            NoteBlock noteBlock = (NoteBlock) location.getBlock().getBlockData();
-
-            return NoteBlockMechanicFactory.getBlockMechanic((int) (noteBlock
-                    .getInstrument().getType()) * 25 + (int) noteBlock.getNote().getId()
-                    + (noteBlock.isPowered() ? 400 : 0) - 26) != null;
-        }
-
-        return false;
-    }
-
-    /**
-     * @deprecated Recommend Nexo as a replacement.
      * Removes a block at a specified location.
      *
      * @param location The location of the block to be removed.
      */
-    @Deprecated
     public void removeBlock(Location location) {
         location.getBlock().setType(Material.AIR);
     }
 
     /**
-     * @deprecated Recommend Nexo as a replacement.
-     * Retrieves a FurnitureMechanic by name from the Oraxen plugin.
+     * Checks if a block at a specified location is a custom Nexo block.
+     *
+     * @param location The location of the block to check.
+     * @return True if the block is a custom Nexo block, false otherwise.
+     */
+    @SuppressWarnings("deprecation")
+    public boolean isCustomBlock(Location location) {
+        if (location.getBlock().getBlockData() instanceof NoteBlock) {
+            NoteBlock noteBlock = (NoteBlock) location.getBlock().getBlockData();
+
+            int id = (int) (noteBlock.getInstrument().getType()) * 25
+                    + (int) noteBlock.getNote().getId()
+                    + (noteBlock.isPowered() ? 400 : 0)
+                    - 26;
+
+            String key = String.valueOf(id); // Convert int to String
+
+            NoteBlockMechanicFactory factory = NoteBlockMechanicFactory.Companion.instance();
+
+            return factory != null && factory.getMechanic(key) != null;
+        }
+
+        return false;
+    }
+    
+    /**
+     * Retrieves a FurnitureMechanic by name from the Nexo plugin.
      *
      * @param string The name of the furniture mechanic.
      * @return The FurnitureMechanic if found, otherwise null.
      */
-    @Deprecated
     public FurnitureMechanic getFurnitureMechanic(String string) {
-        MechanicFactory mechanicFactory = MechanicsManager.getMechanicFactory("furniture");
+        MechanicFactory mechanicFactory = MechanicsManager.INSTANCE.getMechanicFactory("furniture");
 
         return mechanicFactory != null ? (FurnitureMechanic) mechanicFactory.getMechanic(string) : null;
     }
 
     /**
-     * @deprecated Recommend Nexo as a replacement.
-     * Retrieves a NoteBlockMechanic by name from the Oraxen plugin.
+     * Retrieves a NoteBlockMechanic by name from the Nexo plugin.
      *
      * @param string The name of the note block mechanic.
      * @return The NoteBlockMechanic if found, otherwise null.
      */
-    @Deprecated
     public NoteBlockMechanic getNoteBlockMechanic(String string) {
-        MechanicFactory mechanicFactory = MechanicsManager.getMechanicFactory("noteblock");
+        MechanicFactory mechanicFactory = MechanicsManager.INSTANCE.getMechanicFactory("noteblock");
 
         return mechanicFactory != null ? (NoteBlockMechanic) mechanicFactory.getMechanic(string) : null;
     }
