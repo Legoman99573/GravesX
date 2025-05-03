@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -94,7 +95,7 @@ public class Nexo extends EntityDataManager {
                 plugin.debugMessage("Resource not found: " + resourcePath, 1);
                 return;
             }
-            Files.copy(in, outFile.toPath());
+            Files.copy(in, outFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
             plugin.getLogger().info("An error occurred while copying over " + resourcePath + " to " + outFile + ".");
             plugin.logStackTrace(e);
