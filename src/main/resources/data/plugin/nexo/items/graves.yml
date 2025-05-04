@@ -10,7 +10,8 @@ grave:
             nexo_item: grave
       hitbox:
         barriers:
-          - 0,0,0
+          - 0,0,0 BARRIER
+          - 0,1,0 1,1 INTERACTION
       lights:
         lights:
           - 0,0,0 1
