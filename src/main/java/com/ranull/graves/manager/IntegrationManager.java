@@ -1025,9 +1025,15 @@ public final class IntegrationManager {
             Plugin nexoPlugin = plugin.getServer().getPluginManager().getPlugin("Nexo");
 
             if (nexoPlugin != null && nexoPlugin.isEnabled()) {
-                nexo = new Nexo(plugin, nexoPlugin);
+                String version = nexoPlugin.getDescription().getVersion();
 
-                plugin.integrationMessage("Hooked into " + nexoPlugin.getName() + " " + nexoPlugin.getDescription().getVersion() + ".");
+                if (isVersionAtLeast(version, "1.5")) {
+                    nexo = new Nexo(plugin, nexoPlugin);
+                    plugin.integrationMessage("Hooked into " + nexoPlugin.getName() + " " + version + ".");
+                } else {
+                    nexo = null;
+                    plugin.integrationMessage("Failed to hook into " + nexoPlugin.getName() + " " + version + ". You must be on nexo 1.5 or newer.", "warn");
+                }
             }
         } else {
             nexo = null;
@@ -1369,6 +1375,61 @@ public final class IntegrationManager {
 
         if (similarPlugin != null && similarPlugin.isEnabled()) {
             plugin.compatibilityMessage(string + " Detected, Graves listens to the death event after " + string + ", and " + string + " clears the drop list. This means Graves will never be created for players if " + string + " is enabled, only non-player entities will create Graves if configured to do so.");
+        }
+    }
+
+    /**
+     * Compares two version strings to determine if the current version is equal to or newer than the required version.
+     * <p>
+     * Handles version strings with non-numeric prefixes and suffixes (e.g., "v1.5.0-SNAPSHOT", "version-2.0-beta").
+     * Only numeric dot-separated parts are compared (e.g., "1.5.0").
+     * Missing parts are treated as zero (e.g., "1.5" == "1.5.0").
+     * Returns true if versions are equal or {@code version} is greater than {@code requiredVersion}.
+     * </p>
+     *
+     * @param version the current version string (may contain prefix/suffix text)
+     * @param requiredVersion the minimum version required (clean or with text)
+     * @return true if {@code version} is greater than or equal to {@code requiredVersion}, false otherwise
+     */
+    private static boolean isVersionAtLeast(String version, String requiredVersion) {
+        String[] currentParts = extractNumericVersion(version).split("\\.");
+        String[] requiredParts = extractNumericVersion(requiredVersion).split("\\.");
+
+        int length = Math.max(currentParts.length, requiredParts.length);
+        for (int i = 0; i < length; i++) {
+            int currentPart = i < currentParts.length ? parseVersionPart(currentParts[i]) : 0;
+            int requiredPart = i < requiredParts.length ? parseVersionPart(requiredParts[i]) : 0;
+
+            if (currentPart < requiredPart) return false;
+            if (currentPart > requiredPart) return true;
+        }
+        return true;
+    }
+
+    /**
+     * Extracts the numeric version string from a full string (e.g., "v1.5.2-beta" → "1.5.2").
+     * Looks for the first digit and captures following dot-separated numeric components.
+     *
+     * @param input the full version string
+     * @return a sanitized version string with only digits and dots
+     */
+    private static String extractNumericVersion(String input) {
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("(\\d+(\\.\\d+)*)").matcher(input);
+        return matcher.find() ? matcher.group(1) : "0";
+    }
+
+    /**
+     * Parses a single version part to an integer. Non-digit characters are ignored.
+     *
+     * @param part a single segment of a version string (e.g., "1", "2-SNAPSHOT")
+     * @return the numeric value, or 0 if invalid
+     */
+    private static int parseVersionPart(String part) {
+        String cleaned = part.replaceAll("^(\\d+).*", "$1");
+        try {
+            return cleaned.isEmpty() ? 0 : Integer.parseInt(cleaned);
+        } catch (NumberFormatException e) {
+            return 0;
         }
     }
 }
