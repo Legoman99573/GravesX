@@ -502,32 +502,69 @@ public class Graves extends JavaPlugin {
         }
     }
 
+    /**
+     * Logs a warning message to the console with a "Warning" prefix.
+     *
+     * @param string the message to log
+     */
     public void warningMessage(String string) {
         getLogger().warning("Warning: " + string);
     }
 
+    /**
+     * Logs a compatibility-related warning message to the console.
+     *
+     * @param string the message to log
+     */
     public void compatibilityMessage(String string) {
         getLogger().warning("Compatibility: " + string);
     }
 
+    /**
+     * Logs an informational message to the console.
+     *
+     * @param string the message to log
+     */
     public void infoMessage(String string) {
         getLogger().info("Information: " + string);
     }
 
+    /**
+     * Logs a test message to the console. Used for internal/debug purposes.
+     *
+     * @param string the message to log
+     */
     public void testMessage(String string) {
         getLogger().info("Test: " + string);
     }
 
+    /**
+     * Logs an update message to the console.
+     *
+     * @param string the message to log
+     */
     public void updateMessage(String string) {
         getLogger().info("Update: " + string);
     }
 
+    /**
+     * Logs an integration message to the console as an info message by default.
+     *
+     * @param string the message to log
+     */
     public void integrationMessage(String string) {
         integrationMessage(string, "info");
     }
 
+    /**
+     * Logs an integration message to the console with the specified message level.
+     *
+     * @param string      the message to log
+     * @param messageType the type of message: "info", "warn", or "severe"
+     */
     public void integrationMessage(String string, String messageType) {
         switch (messageType) {
+            case "warning":
             case "warn":
                 getLogger().warning("Integration: " + string);
                 break;
@@ -536,13 +573,18 @@ public class Graves extends JavaPlugin {
                 getLogger().severe("Integration: " + string);
                 break;
             case "info":
+            case "debug":
             default:
                 getLogger().info("Integration: " + string);
                 break;
         }
-
     }
 
+    /**
+     * Checks the version of the current configuration file and updates it
+     * if it is outdated. Moves the old configs to an "outdated" directory
+     * and replaces them with updated ones from the plugin's resources.
+     */
     private void updateConfig() {
         int currentConfigVersion = 19;
         File configFolder = new File(getDataFolder(), "config");
@@ -573,6 +615,12 @@ public class Graves extends JavaPlugin {
         }
     }
 
+    /**
+     * Backs up old configuration files to the "outdated" directory, appending
+     * the current config version to their filenames.
+     *
+     * @param configVersion the version number of the outdated config files
+     */
     private void backupOutdatedConfigs(double configVersion) {
         File configFolder = new File(getDataFolder(), "config");
         String[] configFiles = {"config.yml", "entity.yml", "grave.yml"};
@@ -593,6 +641,14 @@ public class Graves extends JavaPlugin {
         }
     }
 
+    /**
+     * Updates a single configuration file from the plugin's internal resources using ConfigUpdater.
+     * Optionally sets the config-version field after updating.
+     *
+     * @param fileName                 the name of the config file to update
+     * @param currentConfigVersion     the current config version to set
+     * @param shouldUpdateConfigVersion whether to update the "config-version" field in the file
+     */
     private void updateConfigFile(String fileName, int currentConfigVersion, boolean shouldUpdateConfigVersion) {
         File configFile = new File(getDataFolder(), "config/" + fileName);
         if (configFile.exists()) {
@@ -632,6 +688,11 @@ public class Graves extends JavaPlugin {
         }
     }
 
+    /**
+     * Asynchronously checks for plugin updates based on the configured update check setting.
+     * Logs messages indicating whether the plugin is outdated, up to date, or a development build.
+     * Also handles malformed version formats gracefully.
+     */
     private void updateChecker() {
         if (getConfig().getBoolean("settings.update.check")) {
             getGravesXScheduler().runTaskAsynchronously(this, () -> {
@@ -676,14 +737,29 @@ public class Graves extends JavaPlugin {
         }
     }
 
+    /**
+     * Compares two semantic version strings (e.g., "1.16.5" vs. "1.18").
+     * <p>
+     * Each version string is split by the period (.) character, and each corresponding
+     * segment is compared numerically. If one version has more segments than the other,
+     * missing or non-numeric segments are treated as 0.
+     * </p>
+     *
+     * @param version1 the first version string to compare
+     * @param version2 the second version string to compare
+     * @return -1 if {@code version1} is lower than {@code version2},
+     *          1 if {@code version1} is higher than {@code version2},
+     *          0 if both versions are equal
+     */
     private int compareVersions(String version1, String version2) {
         String[] levels1 = version1.split("\\.");
         String[] levels2 = version2.split("\\.");
 
         int length = Math.max(levels1.length, levels2.length);
         for (int i = 0; i < length; i++) {
-            int v1 = i < levels1.length ? Integer.parseInt(levels1[i]) : 0;
-            int v2 = i < levels2.length ? Integer.parseInt(levels2[i]) : 0;
+            int v1 = i < levels1.length ? parseVersionPart(levels1[i]) : 0;
+            int v2 = i < levels2.length ? parseVersionPart(levels2[i]) : 0;
+
             if (v1 < v2) {
                 return -1;
             }
@@ -694,6 +770,29 @@ public class Graves extends JavaPlugin {
         return 0;
     }
 
+    /**
+     * Attempts to parse a version segment to an integer.
+     * Returns 0 if parsing fails.
+     *
+     * @param part the version segment as a string
+     * @return the parsed integer or 0 if invalid
+     */
+    private int parseVersionPart(String part) {
+        try {
+            return Integer.parseInt(part);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    /**
+     * Checks for server and version compatibility, and sets the appropriate
+     * compatibility handler depending on whether the server supports {@code BlockData}.
+     * <p>
+     * Outputs informational messages about potential issues when running on legacy versions,
+     * Bukkit, or Mohist servers.
+     * </p>
+     */
     private void compatibilityChecker() {
         compatibility = versionManager.hasBlockData() ? new CompatibilityBlockData() : new CompatibilityMaterialData();
 
@@ -712,9 +811,18 @@ public class Graves extends JavaPlugin {
         }
     }
 
+    /**
+     * Dumps server and plugin-related debug information and provides the result
+     * either as a remote URL (via mclogs or hastebin) or saves it locally if upload fails.
+     * <p>
+     * If the plugin is enabled, the operation is performed asynchronously.
+     * </p>
+     *
+     * @param commandSender the sender (e.g., player or console) who will receive the result message.
+     */
     public void dumpServerInfo(CommandSender commandSender) {
         if (isEnabled()) {
-            getGravesXScheduler().runTaskAsynchronously(this, () -> {
+            getGravesXScheduler().runTaskAsynchronously(() -> {
                 String serverDumpInfo = ServerUtil.getServerDumpInfo(this);
                 String message = serverDumpInfo;
 
@@ -758,74 +866,130 @@ public class Graves extends JavaPlugin {
         }
     }
 
+    /**
+     * @return the {@link VersionManager} responsible for handling Minecraft version compatibility.
+     */
     public VersionManager getVersionManager() {
         return versionManager;
     }
 
+    /**
+     * @return the {@link IntegrationManager} that manages third-party plugin integrations.
+     */
     public IntegrationManager getIntegrationManager() {
         return integrationManager;
     }
 
+    /**
+     * @return the {@link GraveManager} that handles the creation and management of graves.
+     */
     public GraveManager getGraveManager() {
         return graveManager;
     }
 
+    /**
+     * @return the {@link HologramManager} for displaying holographic text or elements above graves.
+     */
     public HologramManager getHologramManager() {
         return hologramManager;
     }
 
+    /**
+     * @return the {@link BlockManager} that manages custom block-related functionality.
+     */
     public BlockManager getBlockManager() {
         return blockManager;
     }
 
+    /**
+     * @return the {@link ItemStackManager} that handles item serialization and manipulation.
+     */
     public ItemStackManager getItemStackManager() {
         return itemStackManager;
     }
 
+    /**
+     * @return the {@link EntityDataManager} used for storing and retrieving entity-specific data.
+     */
     public EntityDataManager getEntityDataManager() {
         return entityDataManager;
     }
 
+    /**
+     * @return the {@link CacheManager} responsible for caching frequently accessed data.
+     */
     public CacheManager getCacheManager() {
         return cacheManager;
     }
 
+    /**
+     * @return the {@link DataManager} that manages persistent plugin data and file I/O.
+     */
     public DataManager getDataManager() {
         return dataManager;
     }
 
+    /**
+     * @return the {@link ImportManager} used for importing data from other plugins or older formats.
+     */
     public ImportManager getImportManager() {
         return importManager;
     }
 
+    /**
+     * @return the {@link GUIManager} that handles graphical user interfaces shown to players.
+     */
     public GUIManager getGUIManager() {
         return guiManager;
     }
 
+    /**
+     * @return the {@link RecipeManager} responsible for managing custom recipes.
+     */
     public RecipeManager getRecipeManager() {
         return recipeManager;
     }
 
+    /**
+     * @return the {@link LocationManager} that handles location serialization and retrieval.
+     */
     public LocationManager getLocationManager() {
         return locationManager;
     }
 
+    /**
+     * @return the {@link EntityManager} for managing in-game entities related to graves.
+     */
     public EntityManager getEntityManager() {
         return entityManager;
     }
 
+    /**
+     * @return the {@link ParticleManager} that manages particle effects used by the plugin.
+     */
     public ParticleManager getParticleManager() {
         return particleManager;
     }
 
+    /**
+     * @return the {@link Compatibility} handler that ensures functionality across Minecraft versions and server platforms.
+     */
     public Compatibility getCompatibility() {
         return compatibility;
     }
 
+    /**
+     * @return the {@link TaskScheduler} used for running asynchronous or scheduled plugin tasks.
+     */
     public TaskScheduler getGravesXScheduler() {
         return graveScheduler;
     }
 
+    /**
+     * Returns the plugin's current release type.
+     *
+     * @return a string indicating whether the build is Development, Outdated, Unknown, or Production.
+     */
     public String getPluginReleaseType() {
         if (isDevelopmentBuild) {
             return "Development Build";
@@ -838,18 +1002,48 @@ public class Graves extends JavaPlugin {
         }
     }
 
+    /**
+     * Gets a configuration section based on a specific grave.
+     *
+     * @param config the config key.
+     * @param grave the grave instance.
+     * @return the matching configuration section, or default if none match.
+     */
     public ConfigurationSection getConfig(String config, Grave grave) {
         return getConfig(config, grave.getOwnerType(), grave.getPermissionList());
     }
 
+    /**
+     * Gets a configuration section based on a specific entity.
+     *
+     * @param config the config key.
+     * @param entity the entity.
+     * @return the matching configuration section, or default if none match.
+     */
     public ConfigurationSection getConfig(String config, Entity entity) {
         return getConfig(config, entity.getType(), getPermissionList(entity));
     }
 
+    /**
+     * Gets a configuration section based on a specific entity and its permission list.
+     *
+     * @param config the config key.
+     * @param entity the entity.
+     * @param permissionList the permissions associated with the entity.
+     * @return the matching configuration section, or default if none match.
+     */
     public ConfigurationSection getConfig(String config, Entity entity, List<String> permissionList) {
         return getConfig(config, entity.getType(), permissionList);
     }
 
+    /**
+     * Resolves the most appropriate configuration section based on entity type and permissions.
+     *
+     * @param config the config key.
+     * @param entityType the type of entity.
+     * @param permissionList a list of permissions to prioritize.
+     * @return the best matching configuration section.
+     */
     public ConfigurationSection getConfig(String config, EntityType entityType, List<String> permissionList) {
         if (permissionList != null && !permissionList.isEmpty()) {
             for (String permission : permissionList) {
@@ -884,6 +1078,12 @@ public class Graves extends JavaPlugin {
         return getConfig().getConfigurationSection("settings.default.default");
     }
 
+    /**
+     * Loads default values from a resource YAML file into the provided configuration.
+     *
+     * @param fileConfiguration the configuration to modify.
+     * @param resource the internal resource path.
+     */
     private void loadResourceDefaults(FileConfiguration fileConfiguration, String resource) {
         InputStream inputStream = getResource(resource);
 
@@ -893,6 +1093,11 @@ public class Graves extends JavaPlugin {
         }
     }
 
+    /**
+     * Forces default values to be copied and applied in the configuration.
+     *
+     * @param fileConfiguration the configuration to apply defaults to.
+     */
     private void bakeDefaults(FileConfiguration fileConfiguration) {
         try {
             fileConfiguration.options().copyDefaults(true);
@@ -901,6 +1106,12 @@ public class Graves extends JavaPlugin {
         }
     }
 
+    /**
+     * Builds a sorted list of permission keys for a given entity (player).
+     *
+     * @param entity the entity (usually a Player).
+     * @return a sorted list of permission keys that match configuration sections.
+     */
     public List<String> getPermissionList(Entity entity) {
         List<String> permissionList = new ArrayList<>();
         List<String> permissionListSorted = new ArrayList<>();
@@ -933,6 +1144,12 @@ public class Graves extends JavaPlugin {
         return permissionListSorted;
     }
 
+    /**
+     * Recursively loads all valid YAML configuration files from a folder and merges them into one configuration.
+     *
+     * @param folder the folder to scan.
+     * @return the resulting merged configuration.
+     */
     private FileConfiguration getConfigFiles(File folder) {
         FileConfiguration fileConfiguration = new YamlConfiguration();
         File[] files = folder.listFiles();
@@ -970,6 +1187,12 @@ public class Graves extends JavaPlugin {
         return fileConfiguration;
     }
 
+    /**
+     * Loads a YAML file into a {@link FileConfiguration} if valid.
+     *
+     * @param file the file to load.
+     * @return the configuration or {@code null} if loading failed.
+     */
     private FileConfiguration getConfigFile(File file) {
         FileConfiguration fileConfiguration = null;
 
@@ -984,40 +1207,73 @@ public class Graves extends JavaPlugin {
         return fileConfiguration;
     }
 
+    /**
+     * @return the folder where Graves configuration files are stored.
+     */
     public final File getConfigFolder() {
         return new File(getDataFolder(), "config");
     }
 
+    /**
+     * @return the parent folder where all plugins are stored.
+     */
     public final File getPluginsFolder() {
         return getDataFolder().getParentFile();
     }
 
+    /**
+     * @return the current version of the Graves plugin from plugin.yml.
+     */
     public String getVersion() {
         return getDescription().getVersion();
     }
 
+    /**
+     * @return the latest available version from Spigot update checking.
+     */
     public String getLatestVersion() {
         return UpdateUtil.getLatestVersion(getSpigotID());
     }
 
+    /**
+     * @return the Spigot plugin resource ID used for update checking.
+     */
     public final int getSpigotID() {
         return 118271;
     }
 
+    /**
+     * @return the bStats plugin ID used for usage metrics.
+     */
     public final int getMetricsID() {
         return 23069; // https://bstats.org/plugin/bukkit/GravesX/23069
     }
 
+    /**
+     * @return the legacy bStats plugin ID (for previous plugin versions).
+     */
     public final int getMetricsIDLegacy() {
         return 12849; // https://bstats.org/plugin/bukkit/Graves/12849
     }
 
+    /**
+     * Logs the full stack trace of an exception to the plugin logger.
+     *
+     * @param e the exception to log.
+     */
     public void logStackTrace(Exception e) {
         for (StackTraceElement element : e.getStackTrace()) {
             getLogger().severe(element.toString());
         }
     }
 
+    /**
+     * Logs information about a grave that has invalid or incomplete data.
+     *
+     * @param grave_uuid the UUID of the affected grave.
+     * @param affectedGraveLocation the location of the grave.
+     * @param invalidationReason reasons the grave is considered invalid.
+     */
     public void logInvalidGraveSite(String grave_uuid, Location affectedGraveLocation, List<String> invalidationReason) {
         String graveWorld;
         try {
@@ -1039,7 +1295,7 @@ public class Graves extends JavaPlugin {
                 + ", z: "
                 + graveZ
                 + " has the following missing from grave data: "
-                + String.join(", ", invalidationReason) 
+                + String.join(", ", invalidationReason)
                 + ". This shouldn't affect grave behavior. Do not report this as a bug.");
     }
 
