@@ -5,6 +5,7 @@ import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.LocationUtil;
 import com.ranull.graves.util.MaterialUtil;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -109,98 +110,104 @@ public final class LocationManager {
     public Location getSafeGraveLocation(LivingEntity livingEntity, Location location, Grave grave) {
         location = LocationUtil.roundLocation(location);
 
-        if (location.getWorld() != null) {
-            Block block = location.getBlock();
+        if (location.getWorld() == null) {
+            return getVoid(location, livingEntity, grave);
+        }
 
-            // Check if the location is valid and doesn't have a grave
-            if (!hasGrave(location) && isLocationSafeGrave(location)) {
-                return getGround(location, livingEntity, grave); // Ensure placement is on the ground
-            } else {
-                // If there is a grave at the location, move it randomly in the x or z direction
-                Random random = new Random();
-                int attempts = 10; // Limit the number of random attempts
+        Block block = location.getBlock();
 
-                while (attempts > 0) {
-                    // Randomly choose to move in x or z direction
-                    int randomX = random.nextInt(3) - 1; // Generates -1, 0, or 1
-                    int randomZ = random.nextInt(3) - 1; // Generates -1, 0, or 1
+        if (isLocationSafeGrave(location)) {
+            return getGround(location, livingEntity, grave);
+        }
 
-                    // Only move if there's an actual shift in position
-                    if (randomX != 0 || randomZ != 0) {
-                        Location newLocation = location.clone().add(randomX, 0, randomZ);
-                        newLocation = LocationUtil.roundLocation(newLocation);
+        Random random = new Random();
+        int attempts = 10;
+        while (attempts > 0) {
+            int randomX = random.nextInt(3) - 1; // Generates -1, 0, or 1
+            int randomZ = random.nextInt(3) - 1;
 
-                        // Ensure the new location is on the ground (find ground below)
-                        newLocation = findGround(newLocation);
+            if (randomX != 0 || randomZ != 0) {
+                Location newLocation = location.clone().add(randomX, 0, randomZ);
+                newLocation = LocationUtil.roundLocation(newLocation);
+                newLocation = findGround(newLocation);
 
-                        if (!hasGrave(newLocation) && isLocationSafeGrave(newLocation)) {
-                            return newLocation;
-                        }
-                    }
-
-                    attempts--;
-                }
-
-                // If random attempts fail, proceed with the default logic
-                if (isVoid(location) || !isInsideBorder(location)) {
-                    return getVoid(location, livingEntity, grave);
-                } else if (MaterialUtil.isLava(block.getType())) {
-                    return getLavaTop(location, livingEntity, grave);
-                } else {
-                    Location graveLocation = (MaterialUtil.isAir(block.getType()) || MaterialUtil.isWater(block.getType()))
-                            ? (plugin.getConfig("placement.ground", grave).getBoolean("placement.ground")
-                            ? getGround(location, livingEntity, grave) : null)
-                            : getRoof(location, livingEntity, grave);
-
-                    if (graveLocation != null) {
-                        return graveLocation;
-                    }
+                if (isLocationSafeGrave(newLocation)) {
+                    return newLocation;
                 }
             }
+
+            attempts--;
+        }
+
+        if (isVoid(location) || !isInsideBorder(location)) {
+            return getVoid(location, livingEntity, grave);
+        }
+
+        if (MaterialUtil.isLava(block.getType())) {
+            return getLavaTop(location, livingEntity, grave);
+        }
+
+        if (MaterialUtil.isWater(block.getType())) {
+            return getWaterTop(location, livingEntity, grave);
+        }
+
+        if (MaterialUtil.isAir(block.getType()) || MaterialUtil.isWater(block.getType())) {
+            if (plugin.getConfig("placement.ground", grave).getBoolean("placement.ground")) {
+                return getGround(location, livingEntity, grave);
+            }
+        } else {
+            return getRoof(location, livingEntity, grave);
         }
 
         return getVoid(location, livingEntity, grave);
     }
 
     /**
-     * Finds the nearest ground below the given location.
+     * Finds the nearest solid ground below the given location.
+     *
+     * Searches downward from the starting location until a solid block is found or the search limit is reached.
      *
      * @param location The starting location.
-     * @return The location on solid ground or the original location if ground is not found.
+     * @return The location on solid ground, or the original location if no ground is found within the search limit.
      */
     private Location findGround(Location location) {
-        Location groundLocation = location.clone();
-        int counter = 0;
-        int maxSearchDistance = 256; // Limit the search to a reasonable height range
-
-        while (counter < maxSearchDistance) {
-            Block blockBelow = groundLocation.getBlock().getRelative(BlockFace.DOWN);
-
-            // Check if the block below is solid (ground)
-            if (MaterialUtil.isSafeSolid(blockBelow.getType())) {
-                return groundLocation; // Found solid ground, return this location
-            }
-
-            // Move the location downward and increment the counter
-            groundLocation.subtract(0, 1, 0);
-            counter++;
+        if (location.getWorld() == null) {
+            return location;
         }
 
-        // If no ground is found within the limit, return the original location
+        Location groundLocation = location.clone();
+        int maxSearchDistance = groundLocation.getWorld().getMaxHeight() - 1;
+
+        for (int counter = 0; counter < maxSearchDistance; counter++) {
+            Block blockBelow = groundLocation.getBlock().getRelative(BlockFace.DOWN);
+
+            if (MaterialUtil.isSafeSolid(blockBelow.getType())) {
+                return groundLocation;
+            }
+
+            groundLocation.subtract(0, 1, 0);
+        }
+
         return location;
     }
 
+
     /**
-     * Gets the top location for placement.
+     * Finds the top location for placement, searching downward from the given location's Y-coordinate.
      *
-     * @param location The location.
+     * @param location The base location.
      * @param entity   The entity.
      * @param grave    The grave.
-     * @return The top location.
+     * @return The found top location, or null if no suitable location is found.
      */
     public Location getTop(Location location, Entity entity, Grave grave) {
-        return findLocationDownFromY(location, entity, location.getWorld() != null
-                ? location.getWorld().getMaxHeight() : location.getBlockY(), grave);
+        if (location.getWorld() == null) {
+            return null;
+        }
+
+        int startY = location.getWorld().getMaxHeight();
+
+        return findLocationDownFromY(location, entity, startY, grave);
     }
 
     /**
@@ -228,68 +235,89 @@ public final class LocationManager {
     }
 
     /**
-     * Finds a location downward from a specified Y-coordinate.
+     * Attempts to find a safe grave location by searching downward from a specified Y-coordinate.
      *
-     * @param location The location.
+     * The search will:
+     * - Start at the given Y level.
+     * - Look for either lava or water (and use getLavaTop or getWaterTop), or a safe and grave-free location.
+     * - Stop once the world’s minimum height is reached.
+     *
+     * @param location The base location.
      * @param entity   The entity.
-     * @param y        The Y-coordinate.
+     * @param y        The starting Y-coordinate.
      * @param grave    The grave.
-     * @return The found location.
+     * @return A safe downward location, or null if none found.
      */
     private Location findLocationDownFromY(Location location, Entity entity, int y, Grave grave) {
-        location = location.clone();
-        int counter = 0;
+        if (location.getWorld() == null) {
+            return null;
+        }
 
-        location.setY(y);
+        World world = location.getWorld();
+        int minY = getMinHeight(location);
 
-        if (location.getWorld() != null) {
-            World world = location.getWorld();
+        Location checkLoc = location.clone();
+        checkLoc.setY(y);
 
-            if (world.getEnvironment() == World.Environment.NETHER && location.getY() > 126) {
-                location.setY(126);
+        // Cap Nether Y to avoid going above the build limit
+        if (world.getEnvironment() == World.Environment.NETHER && checkLoc.getY() > 126) {
+            checkLoc.setY(126);
+        }
+
+        while (checkLoc.getY() >= minY) {
+            Material blockType = checkLoc.getBlock().getType();
+
+            if (MaterialUtil.isLava(blockType)) {
+                return getLavaTop(checkLoc, entity, grave);
+            } else if (MaterialUtil.isWater(blockType)) {
+                return getWaterTop(checkLoc, entity, grave);
+            } else if (isLocationSafeGrave(checkLoc) && !hasGrave(checkLoc)) {
+                return checkLoc;
             }
 
-            while (counter <= (getMinHeight(location) * -1) + location.getWorld().getMaxHeight()) {
-                if (MaterialUtil.isLava(location.getBlock().getType())) {
-                    return getLavaTop(location, entity, grave);
-                } else if (isLocationSafeGrave(location) && !hasGrave(location)) {
-                    return location;
-                }
-
-                location.subtract(0, 1, 0);
-                counter++;
-            }
+            checkLoc.subtract(0, 1, 0);
         }
 
         return null;
     }
 
     /**
-     * Finds a location upward from a specified Y-coordinate.
+     * Attempts to find a safe grave location by searching upward from a specified Y-coordinate.
      *
-     * @param location The location.
+     * The search will:
+     * - Start at the given Y level.
+     * - Look for either lava or water (and use getLavaTop or getWaterTop), or a safe and grave-free location.
+     * - Stop once the world’s max height is reached.
+     *
+     * @param location The base location.
      * @param entity   The entity.
-     * @param y        The Y-coordinate.
+     * @param y        The starting Y-coordinate.
      * @param grave    The grave.
-     * @return The found location.
+     * @return A safe upward location, or null if none found.
      */
     private Location findLocationUpFromY(Location location, Entity entity, int y, Grave grave) {
-        location = location.clone();
-        int counter = 0;
+        if (location.getWorld() == null) {
+            return null;
+        }
 
-        location.setY(y);
+        World world = location.getWorld();
+        int maxY = world.getMaxHeight();
 
-        if (location.getWorld() != null) {
-            while (counter <= (getMinHeight(location) * -1) + location.getWorld().getMaxHeight()) {
-                if (MaterialUtil.isLava(location.getBlock().getType())) {
-                    return getLavaTop(location, entity, grave);
-                } else if (isLocationSafeGrave(location) && !hasGrave(location)) {
-                    return location;
-                }
+        Location checkLoc = location.clone();
+        checkLoc.setY(y);
 
-                location.add(0, 1, 0);
-                counter++;
+        while (checkLoc.getY() <= maxY) {
+            Material blockType = checkLoc.getBlock().getType();
+
+            if (MaterialUtil.isLava(blockType)) {
+                return getLavaTop(checkLoc, entity, grave);
+            } else if (MaterialUtil.isWater(blockType)) {
+                return getWaterTop(checkLoc, entity, grave);
+            } else if (isLocationSafeGrave(checkLoc) && !hasGrave(checkLoc)) {
+                return checkLoc;
             }
+
+            checkLoc.add(0, 1, 0);
         }
 
         return null;
@@ -304,28 +332,43 @@ public final class LocationManager {
      * @return The void location.
      */
     public Location getVoid(Location location, Entity entity, Grave grave) {
-        if (plugin.getConfig("placement.void", grave).getBoolean("placement.void")) {
-            location = location.clone();
+        if (!plugin.getConfig("placement.void", grave).getBoolean("placement.void")) {
+            return null;
+        }
 
-            if (plugin.getConfig("placement.void-smart", grave).getBoolean("placement.void-smart")) {
-                Location solidLocation = plugin.getLocationManager().getLastSolidLocation(entity);
+        location = location.clone();
 
-                if (solidLocation != null) {
-                    return !hasGrave(solidLocation) ? solidLocation : getRoof(solidLocation, entity, grave);
+        if (plugin.getConfig("placement.void-smart", grave).getBoolean("placement.void-smart")) {
+            Location solidLocation = plugin.getLocationManager().getLastSolidLocation(entity);
+            if (solidLocation != null) {
+                return !hasGrave(solidLocation) ? solidLocation : getRoof(solidLocation, entity, grave);
+            }
+        }
+
+        if (location.getWorld() != null) {
+            World.Environment environment = location.getWorld().getEnvironment();
+
+            boolean skipRoof = (environment == World.Environment.NETHER)
+                    && plugin.getConfig("placement.nether-roof", grave).getBoolean("placement.nether-roof");
+
+            if (!skipRoof) {
+                Location roof = getRoof(location, entity, grave);
+                if (roof != null) {
+                    return roof;
                 }
             }
 
-            if (location.getWorld() != null) {
-                Location bottomLocation = getRoof(location, entity, grave);
+            // Final fallback to bottom of world
+            int minY = getMinHeight(location);
+            Location bottom = new Location(location.getWorld(), location.getX(), minY, location.getZ());
 
-                if (bottomLocation != null) {
-                    return bottomLocation;
-                }
-
-                location.setY(getMinHeight(location));
-
-                return location;
+            // Optional: ensure it's not inside bedrock or unsafe
+            Block block = bottom.getBlock();
+            if (MaterialUtil.isAir(block.getType()) || !block.getType().isSolid()) {
+                bottom.setY(minY + 1);
             }
+
+            return bottom;
         }
 
         return null;
@@ -334,10 +377,10 @@ public final class LocationManager {
     /**
      * Gets the top location above lava for placement.
      *
-     * @param location The location.
+     * @param location The location to check.
      * @param entity   The entity.
      * @param grave    The grave.
-     * @return The lava top location.
+     * @return The lava top location, or null if no valid location is found.
      */
     public Location getLavaTop(Location location, Entity entity, Grave grave) {
         if (plugin.getConfig("placement.lava-smart", grave).getBoolean("placement.lava-smart")) {
@@ -349,27 +392,72 @@ public final class LocationManager {
         }
 
         if (plugin.getConfig("placement.lava-top", grave).getBoolean("placement.lava-top")) {
-            location = location.clone();
+            Location checkLoc = location.clone();
 
-            if (location.getWorld() != null) {
-                int counter = 0;
+            if (checkLoc.getWorld() != null) {
+                int maxHeight = checkLoc.getWorld().getMaxHeight();
 
-                while (counter <= location.getWorld().getMaxHeight()) {
-                    Block block = location.getBlock();
+                while (checkLoc.getBlock().getType() == Material.LAVA && checkLoc.getY() < maxHeight) {
+                    checkLoc.add(0, 1, 0);
+                }
 
-                    if ((MaterialUtil.isAir(block.getType()))
-                            && !plugin.getCompatibility().hasTitleData(block)
-                            && !MaterialUtil.isLava(block.getType())) {
-                        return location;
+                while (checkLoc.getY() < maxHeight) {
+                    Block block = checkLoc.getBlock();
+
+                    if (MaterialUtil.isAir(block.getType()) && !plugin.getCompatibility().hasTitleData(block)) {
+                        return checkLoc;
                     }
 
-                    location.add(0, 1, 0);
-                    counter++;
+                    checkLoc.add(0, 1, 0);
                 }
             }
         }
 
         return null;
+    }
+
+    /**
+     * Gets the top location above water for placement.
+     *
+     * @param location The location to check.
+     * @param entity   The entity.
+     * @param grave    The grave.
+     * @return The water top location, or null if no valid location is found.
+     */
+    public Location getWaterTop(Location location, Entity entity, Grave grave) {
+        if (plugin.getConfig("placement.water-smart", grave).getBoolean("placement.water-smart")) {
+            Location solidLocation = plugin.getLocationManager().getLastSolidLocation(entity);
+
+            if (solidLocation != null) {
+                return !hasGrave(solidLocation) ? solidLocation : getRoof(solidLocation, entity, grave);
+            }
+        }
+
+        if (plugin.getConfig("placement.water-top", grave).getBoolean("placement.water-top")) {
+            Location checkLoc = location.clone();
+
+            if (checkLoc.getWorld() != null) {
+                int maxHeight = checkLoc.getWorld().getMaxHeight();
+
+                // Search upwards until we reach a block that is no longer water
+                while (checkLoc.getBlock().getType() == Material.WATER && checkLoc.getY() < maxHeight) {
+                    checkLoc.add(0, 1, 0);
+                }
+
+                // Once we exit the water, check if the space above is air and suitable for placement
+                while (checkLoc.getY() < maxHeight) {
+                    Block block = checkLoc.getBlock();
+
+                    if (MaterialUtil.isAir(block.getType()) && !plugin.getCompatibility().hasTitleData(block)) {
+                        return checkLoc; // Return the valid air location above the water
+                    }
+
+                    checkLoc.add(0, 1, 0);
+                }
+            }
+        }
+
+        return null; // Return null if no valid location is found
     }
 
     /**
@@ -398,24 +486,36 @@ public final class LocationManager {
     }
 
     /**
-     * Determines if a location is safe for a player.
+     * Determines if a location is safe for a player to spawn or teleport to.
      *
-     * @param location The location.
-     * @return True if the location is safe, otherwise false.
+     * A location is considered safe if:
+     * - It is inside the world border.
+     * - The current block and block above are not solid or lava.
+     * - The block below is solid and not lava.
+     *
+     * @param location The location to check.
+     * @return True if the location is safe; otherwise, false.
      */
     public boolean isLocationSafePlayer(Location location) {
-        Block block = location.getBlock();
-
-        if (isInsideBorder(location) && !block.getType().isSolid() && !MaterialUtil.isLava(block.getType())) {
-            Block blockAbove = block.getRelative(BlockFace.UP);
-            Block blockBelow = block.getRelative(BlockFace.DOWN);
-
-            return !block.getType().isSolid() && !MaterialUtil.isLava(blockAbove.getType())
-                    && !MaterialUtil.isAir(blockBelow.getType()) && !MaterialUtil.isLava(blockBelow.getType());
+        if (!isInsideBorder(location)) {
+            return false;
         }
 
-        return false;
+        Block block = location.getBlock();
+        Block blockAbove = block.getRelative(BlockFace.UP);
+        Block blockBelow = block.getRelative(BlockFace.DOWN);
+
+        Material type = block.getType();
+        Material aboveType = blockAbove.getType();
+        Material belowType = blockBelow.getType();
+
+        return !type.isSolid()
+                && !MaterialUtil.isLava(type)
+                && !MaterialUtil.isLava(aboveType)
+                && !belowType.isAir()
+                && !MaterialUtil.isLava(belowType);
     }
+
 
     /**
      * Determines if a location is safe for a grave.
@@ -446,25 +546,41 @@ public final class LocationManager {
     /**
      * Determines if a location is inside the world border.
      *
-     * @param location The location.
-     * @return True if the location is inside the world border, otherwise false.
+     * For versions prior to 1.12, the world border is ignored and this always returns true.
+     *
+     * @param location The location to check.
+     * @return True if the location is inside the world border; otherwise, false.
      */
     public boolean isInsideBorder(Location location) {
-        return plugin.getVersionManager().is_v1_7() || plugin.getVersionManager().is_v1_8()
-                || plugin.getVersionManager().is_v1_9() || plugin.getVersionManager().is_v1_10()
-                || plugin.getVersionManager().is_v1_11()
-                || (location.getWorld() != null && location.getWorld().getWorldBorder().isInside(location));
+        if (plugin.getVersionManager().is_v1_7()
+                || plugin.getVersionManager().is_v1_8()
+                || plugin.getVersionManager().is_v1_9()
+                || plugin.getVersionManager().is_v1_10()
+                || plugin.getVersionManager().is_v1_11()) {
+            return true;
+        }
+
+        World world = location.getWorld();
+        return world != null && world.getWorldBorder().isInside(location);
     }
 
     /**
-     * Determines if a location is in the void.
+     * Determines if the specified location is in the void.
+     * A location is considered in the void if it's below the world's minimum height
+     * or above its maximum build height.
      *
-     * @param location The location.
-     * @return True if the location is in the void, otherwise false.
+     * @param location The location to check.
+     * @return True if the location is in the void; otherwise, false.
      */
     public boolean isVoid(Location location) {
-        return location.getWorld() != null && (location.getY() < getMinHeight(location)
-                || location.getY() > location.getWorld().getMaxHeight());
+        if (location == null || location.getWorld() == null) {
+            return true;
+        }
+
+        int y = location.getBlockY();
+        World world = location.getWorld();
+
+        return y < getMinHeight(location) || y > world.getMaxHeight();
     }
 
     /**

@@ -671,7 +671,6 @@
       <groupId>com.nexomc</groupId>
       <artifactId>nexo</artifactId>
       <version>1.5.0</version>
-
       <scope>provided</scope>
       <exclusions>
         <exclusion>

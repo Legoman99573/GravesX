@@ -49,12 +49,18 @@ settings:
         ground: true
         # If the entity dies in the void, should it place a grave in the air if it can't find anywhere else.
         void: true
-        # If the entity dies in lava should the grave it floats to the top.
+        # If the entity dies in lava should the grave float to the top.
         lava-top: true
+        # If the entity drowns in water should the grave float to the top.
+        water-top: false
         # If the entity dies in the void, should it place a grave in the air if it can't find anywhere else.
         void-smart: true
         # If the entity dies in lava, try place the grave on the last solid block they stood on. (Only works for players)
         lava-smart: true
+        # If the entity drowns in water, try place the grave on the last solid block they stood on. (Only works for players)
+        water-smart: false
+        # Allow grave placement above the Nether roof? (Not recommended, as graves placed here may be inaccessible.)
+        nether-roof: false
         # If a grave tries is trying to be created and can't find a valid location should the player keep their inventory.
         failure-keep-inventory: true
         offset:
