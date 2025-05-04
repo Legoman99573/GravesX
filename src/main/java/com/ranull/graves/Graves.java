@@ -1301,9 +1301,9 @@ public class Graves extends JavaPlugin {
 
     /**
      * Checks if the specified player has been granted the specified permission.
-     * This method first checks if the Vault integration is available and uses it to check permissions.
-     * If Vault is not available, it falls back to the default Bukkit permission check.
-     * Additionally, this method logs debug messages based on the permission check results.
+     * This method first checks if various permission plugins are available and uses them to check permissions.
+     * If no permission plugin is found, it falls back to the default Bukkit permission check.
+     * Additionally, this method logs debug messages based on the permission check results for each permission plugin.
      *
      * @param permission the permission to check for
      * @param player the player whose permissions are being checked
@@ -1328,9 +1328,9 @@ public class Graves extends JavaPlugin {
 
     /**
      * Checks if the specified offline player has been granted the specified permission.
-     * This method first checks if the Vault integration is available and uses it to check permissions.
-     * If Vault is not available, it falls back to the default Bukkit permission check.
-     * Additionally, this method logs debug messages based on the permission check results.
+     * This method first checks if various permission plugins are available and uses them to check permissions.
+     * If no permission plugin is found, it falls back to the default Bukkit permission check.
+     * Additionally, this method logs debug messages based on the permission check results for each permission plugin.
      *
      * @param permission the permission to check for
      * @param offlinePlayer the offline player whose permissions are being checked
@@ -1340,11 +1340,11 @@ public class Graves extends JavaPlugin {
      */
     @Deprecated
     public boolean hasGrantedPermission(String permission, OfflinePlayer offlinePlayer) {
-        boolean hasPermission = false;
+        boolean hasPermission;
 
         if (getIntegrationManager().hasLuckPermsHandler()) {
             hasPermission = getIntegrationManager().getLuckPermsHandler().hasPermission(offlinePlayer, permission);
-            debugMessage("[LuckPerms] Player: " + offlinePlayer.getName() + " | Permission: " + permission + " | Has Permission: " + hasPermission, 4);
+            debugMessage("[LuckPerms] Offline Player: " + offlinePlayer.getName() + " | Permission: " + permission + " | Has Permission: " + hasPermission, 4);
         } else if (getIntegrationManager().hasVaultPermProvider()) {
             hasPermission = getIntegrationManager().getVault().hasPermission(offlinePlayer, permission);
             debugMessage("[Vault] Offline Player: " + offlinePlayer.getName() + " | Permission: " + permission + " | Has Permission: " + hasPermission, 4);
@@ -1353,9 +1353,14 @@ public class Graves extends JavaPlugin {
                 hasPermission = offlinePlayer.getPlayer().hasPermission(permission);
                 debugMessage("[Bukkit] Offline Player: " + offlinePlayer.getName() + " | Permission: " + permission + " | Has Permission: " + hasPermission, 4);
             } else {
+                hasPermission = false;
                 debugMessage("[Bukkit] Failed to get offline player. Assuming player doesn't have permission.", 4);
                 debugMessage("[Bukkit] Offline Player: " + offlinePlayer.getName() + " | Permission: " + permission + " | Has Permission: " + hasPermission, 4);
             }
+        } else {
+            hasPermission = false;
+            debugMessage("[Bukkit] Failed to get offline player. Assuming player doesn't have permission.", 4);
+            debugMessage("[Bukkit] Offline Player: " + offlinePlayer.getName() + " | Permission: " + permission + " | Has Permission: " + hasPermission, 4);
         }
 
         return hasPermission;
