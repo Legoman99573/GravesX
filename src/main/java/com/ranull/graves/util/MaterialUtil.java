@@ -168,6 +168,7 @@ public final class MaterialUtil {
     public static boolean isPlayerHead(String string) {
         switch (string) {
             case "PLAYER_HEAD":
+            case "PLAYER_WALL_HEAD":
             case "SKULL":
                 return true;
             default:
