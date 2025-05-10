@@ -1323,6 +1323,17 @@ public final class IntegrationManager {
                 // ignore
             }
 
+            if (isPaperLikeServer()) {
+                plugin.compatibilityMessage("Paper or a Paper fork detected. To ensure holograms disappear correctly when looting graves, make sure 'armor-stands-tick' or 'armor-stands.tick' is set to true.");
+            }
+
+            try {
+                Class.forName("net.Indyuce.inventory.util");
+                plugin.compatibilityMessage("MMOInventory detected. This plugin can interfere with inventory-related events. Please ensure compatibility settings are correctly configured.");
+            } catch (ClassNotFoundException ignore) {
+                // ignore
+            }
+
             checkForPluginManagers(); // Plugin Manager Jumpscare
 
             similarPluginWarning("DeadChest");
@@ -1331,6 +1342,25 @@ public final class IntegrationManager {
             similarPluginWarning("SavageDeathChest");
             similarPluginWarning("AngelChest");
         }
+    }
+
+    /**
+     * Checks if server is running Paper or Paper related forks.
+     */
+    private boolean isPaperLikeServer() {
+        try {
+            Class.forName("com.destroystokyo.paper.PaperConfig");
+            return true;
+        } catch (ClassNotFoundException ignored) {
+        }
+
+        try {
+            Class.forName("io.papermc.paper.configuration.Configuration");
+            return true;
+        } catch (ClassNotFoundException ignored) {
+        }
+
+        return false;
     }
 
     /**
