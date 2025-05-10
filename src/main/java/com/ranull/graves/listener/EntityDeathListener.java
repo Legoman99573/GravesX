@@ -511,22 +511,34 @@ public class EntityDeathListener implements Listener {
      */
     private void setGraveExperience(Grave grave, EntityDeathEvent event, LivingEntity livingEntity) {
         float experiencePercent = (float) plugin.getConfig("experience.store", grave).getDouble("experience.store");
+
+        experiencePercent = Math.max(0.0f, Math.min(experiencePercent, 1.0f));
+
+        plugin.debugMessage("Experience Percentage for " + grave.getUUID() + ": " + experiencePercent, 2);
+
         if (experiencePercent >= 0) {
             if (livingEntity instanceof Player) {
                 Player player = (Player) livingEntity;
                 if (plugin.hasGrantedPermission("graves.experience", player.getPlayer())) {
-                    grave.setExperience(ExperienceUtil.getDropPercent(ExperienceUtil.getPlayerExperience(player), experiencePercent));
+                    int adjustedExperience = ExperienceUtil.getDropPercent(ExperienceUtil.getPlayerExperience(player), experiencePercent);
+                    grave.setExperience(adjustedExperience);
+
+                    plugin.debugMessage("Set Experience for player grave " + grave.getUUID() + ": " + adjustedExperience, 2);
                 } else {
                     grave.setExperience(event.getDroppedExp());
+                    plugin.debugMessage("Set Experience for player grave " + grave.getUUID() + ": " + event.getDroppedExp(), 2);
                 }
                 if (event instanceof PlayerDeathEvent) {
                     ((PlayerDeathEvent) event).setKeepLevel(false);
                 }
             } else {
-                grave.setExperience(ExperienceUtil.getDropPercent(event.getDroppedExp(), experiencePercent));
+                int adjustedExperience = ExperienceUtil.getDropPercent(event.getDroppedExp(), experiencePercent);
+                grave.setExperience(adjustedExperience);
+                plugin.debugMessage("Set Experience for non player grave " + grave.getUUID() + ": " + adjustedExperience, 2);
             }
         } else {
             grave.setExperience(event.getDroppedExp());
+            plugin.debugMessage("Set Experience for default grave " + grave.getUUID() + ": " + event.getDroppedExp(), 2);
         }
     }
 
