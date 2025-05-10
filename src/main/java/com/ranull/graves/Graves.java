@@ -517,7 +517,7 @@ public class Graves extends JavaPlugin {
      * @param string the message to log
      */
     public void compatibilityMessage(String string) {
-        getLogger().warning("Compatibility: " + string);
+        getLogger().warning("Compatibility: " + string + " This is not a bug.");
     }
 
     /**
