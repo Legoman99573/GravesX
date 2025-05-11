@@ -793,6 +793,16 @@ settings:
           #- DRYOUT
           #- FREEZE
           - ALL # All reasons.
+        # Vault and an Economy Plugin required to use this feature.
+        economy:
+          # Should player's balance be affected upon death?
+          enabled: false
+          # Use percentage of player balance? Otherwise, a fixed amount.
+          use-as-percentage: true
+          # How much money should a player lose upon death. For each option, player will need graves.deduct.<name> in costs.
+          costs:
+            - "newbie:50"
+            - "vip:15"
 
       #########
       # Spawn #

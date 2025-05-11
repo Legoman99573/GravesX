@@ -4,6 +4,7 @@ import com.ranull.graves.Graves;
 import com.ranull.graves.compatibility.CompatibilityInventoryView;
 import com.ranull.graves.data.BlockData;
 import com.ranull.graves.event.*;
+import com.ranull.graves.integration.Vault;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.*;
 import org.bukkit.Location;
@@ -24,6 +25,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.MetadataValue;
 
 import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 
 /**
@@ -615,6 +618,7 @@ public class EntityDeathListener implements Listener {
 
         setupObituary(grave, graveItemStackList, livingEntity, location);
         setupSkull(grave, graveItemStackList, livingEntity, location);
+        performPlayerEconomyWithdrawal(grave, livingEntity);
         grave.setInventory(plugin.getGraveManager().getGraveInventory(grave, livingEntity, graveItemStackList, removedItemStackList, permissionList));
         grave.setEquipmentMap(!plugin.getVersionManager().is_v1_7() ? plugin.getEntityManager().getEquipmentMap(livingEntity, grave) : new HashMap<>());
 
@@ -624,6 +628,67 @@ public class EntityDeathListener implements Listener {
             handleFailedGravePlacement(event, grave, location, livingEntity);
         }
     }
+
+    /**
+     * Performs an economy withdrawal from a player's balance upon death, based on configuration and permissions.
+     * <p>
+     * This method checks if the economy system is enabled and properly integrated via Vault. It then attempts
+     * to deduct an amount from the player's balance depending on the configuration and the first matching
+     * permission under {@code graves.deduct.<name>} from the configured cost list.
+     * <p>
+     * The cost can either be a fixed value or a percentage of the player's balance, controlled via the
+     * {@code death.economy.use-as-percentage} config option.
+     *
+     * @param grave         The grave associated with the player's death.
+     * @param livingEntity  The entity that died (must be a Player to apply economy deductions).
+     */
+    private void performPlayerEconomyWithdrawal(Grave grave, LivingEntity livingEntity) {
+        if (!(livingEntity instanceof Player)) return;
+
+        if (!plugin.getConfig().getBoolean("death.economy.enabled", false)
+                || !plugin.getIntegrationManager().hasVault()
+                || !plugin.getIntegrationManager().hasVaultEconomy()) {
+            return;
+        }
+
+        Player player = (Player) livingEntity;
+        Vault vault = plugin.getIntegrationManager().getVault();
+        if (!vault.hasBalance(player)) return;
+        if (plugin.hasGrantedPermission("graves.deduct-bypass", player)) return;
+
+        boolean usePercentage = plugin.getConfig("death.economy.use-as-percentage", grave).getBoolean("death.economy.use-as-percentage", true);
+        List<String> costs = plugin.getConfig("death.economy.costs", grave).getStringList("death.economy.costs");
+
+        for (String costEntry : costs) {
+            String[] parts = costEntry.split(":");
+            if (parts.length != 2) continue;
+
+            String permission = "graves.deduct." + parts[0];
+            if (!plugin.hasGrantedPermission(permission, player)) continue;
+
+            try {
+                double value = Double.parseDouble(parts[1]);
+                double balance = vault.getBalance(player);
+                double rawAmount = usePercentage ? (value / 100.0) * balance : value;
+
+                double amount = new BigDecimal(rawAmount)
+                        .setScale(2, RoundingMode.HALF_UP)
+                        .doubleValue();
+
+                GraveEconomyEvent economyEvent = new GraveEconomyEvent(grave, player);
+                economyEvent.setEconomyAmount(amount);
+
+                plugin.getServer().getPluginManager().callEvent(economyEvent);
+
+                if (!economyEvent.isCancelled() && economyEvent.getEconomyAmount() > 0 && vault.hasBalance(player, economyEvent.getEconomyAmount())) {
+                    vault.withdrawBalance(player, economyEvent.getEconomyAmount());
+                    plugin.debugMessage("Deducted " + economyEvent.getEconomyAmount() + " from " + player.getName() + " for grave " + grave.getUUID() + ".", 2);
+                }
+            } catch (NumberFormatException ignored) {}
+            break;
+        }
+    }
+
 
     /**
      * Sets up the obituary item for the grave.

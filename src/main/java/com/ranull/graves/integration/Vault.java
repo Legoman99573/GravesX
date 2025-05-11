@@ -46,6 +46,16 @@ public final class Vault {
     }
 
     /**
+     * Checks if a player has any balance (greater than or equal to one cent).
+     *
+     * @param player The player to check.
+     * @return {@code true} if the player has a positive balance, otherwise {@code false}.
+     */
+    public boolean hasBalance(OfflinePlayer player) {
+        return hasBalance(player, 0.01);
+    }
+
+    /**
      * Checks if a player has a balance greater than or equal to the specified amount.
      *
      * @param player  The player whose balance to check.

@@ -185,3 +185,11 @@ permissions:
   graves.download.addon:
     default: op
     description: Allows downloading addons from command.
+
+  graves.deduct.*:
+    default: false
+    description: Deducts based on group
+
+  graves.deduct-bypass:
+    default: op
+    description: Bypasses on death money deduction.
