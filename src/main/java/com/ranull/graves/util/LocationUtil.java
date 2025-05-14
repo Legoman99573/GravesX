@@ -2,6 +2,7 @@ package com.ranull.graves.util;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.World;
 
 import java.util.List;
 
@@ -88,5 +89,40 @@ public final class LocationUtil {
         }
 
         return locationClosest;
+    }
+
+    /**
+     * Deserializes a location from a string format.
+     * The expected format is "world,x,y,z,pitch,yaw".
+     *
+     * @param serializedLocation The serialized location string.
+     * @return The deserialized Location object, or null if the format is invalid.
+     */
+    public static Location deserializeLocation(String serializedLocation) {
+        if (serializedLocation == null || serializedLocation.isEmpty()) {
+            return null;
+        }
+
+        String[] parts = serializedLocation.split(",");
+        if (parts.length != 6) {
+            return null;
+        }
+
+        try {
+            World world = Bukkit.getWorld(parts[0]);
+            if (world == null) {
+                return null;
+            }
+
+            double x = Double.parseDouble(parts[1]);
+            double y = Double.parseDouble(parts[2]);
+            double z = Double.parseDouble(parts[3]);
+            float pitch = Float.parseFloat(parts[4]);
+            float yaw = Float.parseFloat(parts[5]);
+
+            return new Location(world, x, y, z, yaw, pitch);
+        } catch (NumberFormatException e) {
+            return null; // Invalid number format
+        }
     }
 }
