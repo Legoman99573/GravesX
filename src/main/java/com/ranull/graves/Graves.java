@@ -189,7 +189,7 @@ public class Graves extends JavaPlugin {
 
         LibraryLoaderUtil libraryLoaderUtil = new LibraryLoaderUtil(this);
 
-        libraryLoaderUtil.loadLibrary("com{}zaxxer", "HikariCP", "6.0.0", "com{}zaxxer{}hikari", "com{}ranull{}graves{}libraries{}hikari", false);
+        libraryLoaderUtil.loadLibrary("com{}zaxxer", "HikariCP", "6.3.0", "com{}zaxxer{}hikari", "com{}ranull{}graves{}libraries{}hikari", false);
         libraryLoaderUtil.loadLibrary("org{}xerial", "sqlite-jdbc", "3.49.1.0", false);
 
         try {
