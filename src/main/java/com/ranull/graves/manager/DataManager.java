@@ -11,7 +11,6 @@ import org.bukkit.Location;
 import org.bukkit.entity.EntityType;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
-import org.h2.tools.Server;
 
 import java.io.File;
 import java.sql.*;
@@ -50,15 +49,6 @@ public final class DataManager {
      * </p>
      */
     private HikariDataSource dataSource;
-
-    /**
-     * The webserver for H2.
-     * <p>
-     * This {@link Server} provides the connection pool for interacting with the database.
-     * </p>
-     */
-    private Server webServer;  // H2 Web Server
-
 
     /**
      * Initializes the DataManager with the specified plugin instance and sets up the database connection.
@@ -203,7 +193,7 @@ public final class DataManager {
      * Loads data from the database asynchronously.
      */
     private void load() {
-        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
             try {
                 loadTables();
             } catch (SQLException e) {
@@ -1224,7 +1214,7 @@ public final class DataManager {
                  ResultSet resultSet = statement != null ? statement.executeQuery() : null) {
 
                 if (statement == null || resultSet == null) {
-                    plugin.getLogger().severe("Failed to create statement or result set.");
+                    plugin.getLogger().severe("Failed to create statement or result set in Block Map.");
                     return;
                 }
 
@@ -1239,12 +1229,13 @@ public final class DataManager {
                             getChunkData(location).addBlockData(new BlockData(location, uuidGrave, replaceMaterial, replaceData));
                         } else {
                             getChunkData(location).addBlockData(new BlockData(location, uuidGrave, "AIR", "minecraft:air"));
-                            plugin.getLogger().warning("Block Data for grave \"" + uuidGrave + "\" at location \"" + location + "\" is missing or invalid. Material/Block set to Air.");
+                            //plugin.getLogger().warning("Block Data for grave \"" + uuidGrave + "\" at location \"" + location + "\" is missing or invalid. Material/Block set to Air.");
                         }
                         blockCount++;
                     } catch (Exception e) {
                         String uuidGraveStr = resultSet.getString("uuid_grave");
                         plugin.getLogger().warning("Failed to process a block entry for Grave " + uuidGraveStr + ": " + e.getMessage());
+                        plugin.logStackTrace(e);
                     }
                 }
 
@@ -1314,7 +1305,7 @@ public final class DataManager {
                             plugin.getLogger().warning("Missing UUIDs in result set for location: " + location);
                         }
                     } else {
-                        plugin.getLogger().warning("Invalid location data in result set.");
+                        plugin.getLogger().warning("Invalid location data in result set for EntityMap.");
                     }
                 }
 
@@ -1453,7 +1444,7 @@ public final class DataManager {
     private void loadEntityDataMap(String table, EntityData.Type type) {
         String query = "SELECT * FROM " + table + ";";
 
-        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
             plugin.getLogger().info("Loading Entity Data Map Cache for " + table + "...");
             int entityCount = 0;
 
@@ -1525,7 +1516,7 @@ public final class DataManager {
         // Set replace_data
         parameters[3] = blockData.getReplaceData();
 
-        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException exception) {
@@ -1546,7 +1537,7 @@ public final class DataManager {
         String query = "DELETE FROM block WHERE location = ?";
         Object[] parameters = { LocationUtil.locationToString(location) };
 
-        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException exception) {
@@ -1572,7 +1563,7 @@ public final class DataManager {
                 LocationUtil.locationToString(hologramData.getLocation())
         };
 
-        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException exception) {
@@ -1588,7 +1579,7 @@ public final class DataManager {
      * @param entityDataList the list of entity data to remove.
      */
     public void removeHologramData(List<EntityData> entityDataList) {
-        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
             String sql = "DELETE FROM hologram WHERE uuid_entity = ?";
             try (Connection connection = getConnection();
                  PreparedStatement statement = connection != null ? connection.prepareStatement(sql) : null) {
@@ -1625,7 +1616,7 @@ public final class DataManager {
                 entityData.getUUIDGrave()
         };
 
-        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException e) {
@@ -1650,7 +1641,7 @@ public final class DataManager {
      * @param entityDataList the list of entity data to remove.
      */
     public void removeEntityData(List<EntityData> entityDataList) {
-        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
             try (Connection connection = getConnection();
                  Statement statement = connection != null ? connection.createStatement() : null) {
                 if (statement != null) {
@@ -1758,7 +1749,7 @@ public final class DataManager {
                 grave.getPermissionList() != null && !grave.getPermissionList().isEmpty() ? StringUtils.join(grave.getPermissionList(), "|") : null
         };
 
-        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException e) {
@@ -1783,7 +1774,7 @@ public final class DataManager {
         String deleteQuery = "DELETE FROM grave WHERE uuid = ?";
         Object[] deleteParams = { uuid };
 
-        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
             try {
                 plugin.debugMessage("Attempting to remove grave for UUID: " + uuid, 1);
 
@@ -1807,7 +1798,7 @@ public final class DataManager {
         String query = "UPDATE grave SET " + column + " = ? WHERE uuid = ?";
         Object[] parameters = { integer, grave.getUUID() };
 
-        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException e) {
@@ -1828,7 +1819,7 @@ public final class DataManager {
         String query = "UPDATE grave SET " + column + " = ? WHERE uuid = ?";
         Object[] parameters = { string, grave.getUUID() };
 
-        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException e) {
@@ -2037,9 +2028,6 @@ public final class DataManager {
         if (dataSource != null && !dataSource.isClosed()) {
             dataSource.close();
         }
-        if (webServer != null && webServer.isRunning(false)) {
-            webServer.stop();
-        }
     }
 
     /**
@@ -2084,7 +2072,7 @@ public final class DataManager {
      * @throws SQLException if a database access error occurs.
      */
     private void executeUpdate(String sql, Object[] parameters) throws SQLException {
-        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
             try (Connection connection = getConnection();
                  PreparedStatement statement = connection.prepareStatement(sql)) {
 
@@ -2199,7 +2187,7 @@ public final class DataManager {
     private ResultSet executeQuery(String sql, Object[] params) throws SQLException {
         AtomicReference<ResultSet> resultSet = new AtomicReference<>();
         AtomicReference<PreparedStatement> preparedStatement = new AtomicReference<>();
-        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
             try (Connection connection = getConnection()) {
                 if (connection != null) {
                     preparedStatement.set(connection.prepareStatement(sql));
@@ -2387,11 +2375,13 @@ public final class DataManager {
                             plugin.getLogger().severe("Error inserting data into table " + tableName + ": " + e.getMessage());
                             plugin.getLogger().severe("Failed query template: " + insertQueryTemplate);
                             migrationSuccess = false;
+                            plugin.logStackTrace(e);
                         }
                     } catch (SQLException e) {
                         plugin.getLogger().severe("Error migrating table " + tableName + ": " + e.getMessage());
                         plugin.getLogger().severe("Failed query: " + createTableQuery);
                         migrationSuccess = false;
+                        plugin.logStackTrace(e);
                     }
                 }
 
@@ -2405,15 +2395,18 @@ public final class DataManager {
                 }
             } catch (SQLException e) {
                 plugin.getLogger().severe("Error retrieving tables from SQLite: " + e.getMessage());
+                plugin.logStackTrace(e);
             }
 
             try {
                 sqliteConnection.close();
             } catch (SQLException e) {
                 plugin.getLogger().severe("Error closing SQLite connection: " + e.getMessage());
+                plugin.logStackTrace(e);
             }
         } catch (SQLException e) {
             plugin.getLogger().severe("Error migrating SQLite to target DB: " + e.getMessage());
+            plugin.logStackTrace(e);
         }
     }
 
@@ -2616,7 +2609,7 @@ public final class DataManager {
      * Keeps the database connection alive by periodically executing a query.
      */
     private void keepConnectionAlive() {
-        plugin.getGravesXScheduler().runTaskTimerAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskTimerAsynchronously(() -> {
             if (isConnected()) {
                 checkAndUnlockDatabase(); // Good to check
                 try (Connection connection = getConnection();
