@@ -151,7 +151,7 @@ public final class IntegrationManager {
      * This boolean is used to handle bedrock players
      * </p>
      */
-    private boolean floodgate;
+    private Floodgate floodgate;
     /**
      * Integration with FancyNPCs, a plugin for managing player-like NPCs.
      * <p>
@@ -489,9 +489,18 @@ public final class IntegrationManager {
     /**
      * Returns whether you are using floodgate.
      *
-     * @return The boolean value of floodgate var.
+     * @return The boolean value of floodgate.
      */
     public boolean hasFloodgate() {
+        return floodgate != null;
+    }
+
+    /**
+     * Returns the instance of Floodgate integration, if it is loaded.
+     *
+     * @return The {@code Floodgate} integration instance, or null if not loaded.
+     */
+    public Floodgate getFloodgate() {
         return floodgate;
     }
 
@@ -1230,27 +1239,30 @@ public final class IntegrationManager {
     private void loadBedrockSupport() {
         Plugin floodgatePlugin = plugin.getServer().getPluginManager().getPlugin("floodgate");
         Plugin geysermcPlugin = plugin.getServer().getPluginManager().getPlugin("Geyser-Spigot");
-
-        if (geysermcPlugin != null && geysermcPlugin.isEnabled()) {
-            if (floodgatePlugin != null && floodgatePlugin.isEnabled()) {
-                plugin.integrationMessage("Hooked into " + geysermcPlugin.getName() + " " + geysermcPlugin.getDescription().getVersion() + ".");
-                plugin.integrationMessage("Hooked into " + floodgatePlugin.getName() + " " + floodgatePlugin.getDescription().getVersion() + ".");
-                floodgate = true;
-            } else if (floodgatePlugin != null && !floodgatePlugin.isEnabled()) {
-                plugin.integrationMessage("Hooked into " + geysermcPlugin.getName() + " " + geysermcPlugin.getDescription().getVersion() + ".");
-                plugin.integrationMessage("Failed to Hook into " + floodgatePlugin.getName() + " " + floodgatePlugin.getDescription().getVersion() + ".", "severe");
-                floodgate = false;
+        if (plugin.getConfig().getBoolean("settings.integration.floodgate.enabled", true)) {
+            if (geysermcPlugin != null && geysermcPlugin.isEnabled()) {
+                if (floodgatePlugin != null && floodgatePlugin.isEnabled()) {
+                    plugin.integrationMessage("Hooked into " + geysermcPlugin.getName() + " " + geysermcPlugin.getDescription().getVersion() + ".");
+                    plugin.integrationMessage("Hooked into " + floodgatePlugin.getName() + " " + floodgatePlugin.getDescription().getVersion() + ".");
+                    floodgate = new Floodgate(plugin);
+                } else if (floodgatePlugin != null && !floodgatePlugin.isEnabled()) {
+                    plugin.integrationMessage("Hooked into " + geysermcPlugin.getName() + " " + geysermcPlugin.getDescription().getVersion() + ".");
+                    plugin.integrationMessage("Failed to Hook into " + floodgatePlugin.getName() + " " + floodgatePlugin.getDescription().getVersion() + ".", "severe");
+                    floodgate = null;
+                } else {
+                    floodgate = null;
+                }
             } else {
-                floodgate = false;
+                if (floodgatePlugin != null && floodgatePlugin.isEnabled()) {
+                    plugin.integrationMessage("Failed to hook into Geyser-Spigot. Assuming the server runs behind a proxy.", "warning");
+                    plugin.integrationMessage("Hooked into " + floodgatePlugin.getName() + " " + floodgatePlugin.getDescription().getVersion() + ".");
+                    floodgate = null;
+                } else {
+                    floodgate = null;
+                }
             }
         } else {
-            if (floodgatePlugin != null && floodgatePlugin.isEnabled()) {
-                plugin.integrationMessage("Failed to hook into Geyser-Spigot. Assuming the server runs behind a proxy.", "warning");
-                plugin.integrationMessage("Hooked into " + floodgatePlugin.getName() + " " + floodgatePlugin.getDescription().getVersion() + ".");
-                floodgate = true;
-            } else {
-                floodgate = false;
-            }
+            floodgate = null;
         }
     }
 

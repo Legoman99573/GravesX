@@ -6,10 +6,7 @@ import com.ranull.graves.data.BlockData;
 import com.ranull.graves.data.ChunkData;
 import com.ranull.graves.data.EntityData;
 import com.ranull.graves.data.HologramData;
-import com.ranull.graves.event.GraveAbandonedEvent;
-import com.ranull.graves.event.GraveAutoLootEvent;
-import com.ranull.graves.event.GraveProtectionExpiredEvent;
-import com.ranull.graves.event.GraveTimeoutEvent;
+import com.ranull.graves.event.*;
 import com.ranull.graves.integration.MiniMessage;
 import com.ranull.graves.inventory.GraveList;
 import com.ranull.graves.inventory.GraveMenu;
@@ -110,7 +107,7 @@ public final class GraveManager {
             long remainingTime = grave.getTimeAliveRemaining();
 
             if (remainingTime == -1) {
-                plugin.debugMessage("Grave " + grave.getUUID() + " has infinite time remaining, skipping timeout handling.", 2);
+                //plugin.debugMessage("Grave " + grave.getUUID() + " has infinite time remaining, skipping timeout handling.", 2);
                 continue;
             }
 
@@ -138,61 +135,80 @@ public final class GraveManager {
         boolean isAbandoned = grave.isAbandoned();
         plugin.debugMessage("Handling timeout for grave: " + grave.getUUID() + " with remaining time: " + remainingTime, 1);
 
-        if (remainingTime == -1 || isAbandoned) {
+        boolean dropOnTimeout = plugin.getConfig("drop.timeout", grave).getBoolean("drop.timeout", false);
+        boolean dropOnAbandon = plugin.getConfig("drop.abandon", grave).getBoolean("drop.abandon", false);
+        int abandonTimeout = plugin.getConfig("drop.abandon-timeout", grave).getInt("drop.abandon-timeout", -1);
+
+        if (remainingTime == -1 && (!dropOnAbandon || abandonTimeout == -1)) {
             return;
         }
 
-        GraveTimeoutEvent graveTimeoutEvent = new GraveTimeoutEvent(grave);
-        plugin.getServer().getPluginManager().callEvent(graveTimeoutEvent);
+        GraveTimeoutEvent timeoutEvent = new GraveTimeoutEvent(grave);
+        plugin.getServer().getPluginManager().callEvent(timeoutEvent);
 
-        if (!graveTimeoutEvent.isCancelled() && !graveTimeoutEvent.isAddon()) {
-            plugin.debugMessage("GraveTimeoutEvent not cancelled for grave: " + grave.getUUID(), 2);
-
-            boolean dropOnTimeout = plugin.getConfig("drop.timeout", grave).getBoolean("drop.timeout");
-            boolean dropOnAbandon = plugin.getConfig("drop.abandon", grave).getBoolean("drop.abandon");
-
-            if (dropOnTimeout) {
-                Location location = graveTimeoutEvent.getLocation();
-                if (location != null) {
-                    Chunk chunk = location.getChunk();
-                    if (!chunk.isLoaded()) {
-                        plugin.debugMessage("Loaded unloaded chunk x: " + chunk.getX() + ", z: " + chunk.getZ() + ". Graves should dump contents.", 2);
-                        chunk.load(); // This is synchronous in Bukkit API
-                    }
-
-                    plugin.getGravesXScheduler().runTask(() -> {
-                        if (chunk.isLoaded()) {
-                            dropGraveItems(location, grave);
-                            dropGraveExperience(location, grave);
-                        }
-                    });
-                }
-
-                sendPlayerMessage(grave, "message.timeout", graveTimeoutEvent.getLocation());
-                graveRemoveList.add(grave);
-
-            } else if (dropOnAbandon) {
-                GraveAbandonedEvent graveAbandonedEvent = new GraveAbandonedEvent(grave);
-                plugin.getServer().getPluginManager().callEvent(graveAbandonedEvent);
-
-                if (!graveAbandonedEvent.isCancelled() && !graveAbandonedEvent.isAddon()) {
-                    sendPlayerMessage(grave, "message.abandoned", graveAbandonedEvent.getLocation());
-                    grave.setTimeAliveRemaining(-1);
-                    abandonGrave(grave);
-                } else if (graveAbandonedEvent.isCancelled() && !graveAbandonedEvent.isAddon()) {
-                    sendPlayerMessage(grave, "message.timeout", graveTimeoutEvent.getLocation());
-                    graveRemoveList.add(grave);
-                }
-
-            } else {
-                sendPlayerMessage(grave, "message.timeout", graveTimeoutEvent.getLocation());
-                graveRemoveList.add(grave);
-            }
-
-        } else if (graveTimeoutEvent.isCancelled() && !graveTimeoutEvent.isAddon()) {
+        if (timeoutEvent.isCancelled() || timeoutEvent.isAddon()) {
             plugin.debugMessage("GraveTimeoutEvent cancelled for grave: " + grave.getUUID() + ", setting time alive to forever.", 2);
             grave.setTimeAliveRemaining(-1);
+            return;
         }
+
+        plugin.debugMessage("GraveTimeoutEvent not cancelled for grave: " + grave.getUUID(), 2);
+
+        Location location = timeoutEvent.getLocation();
+        if (location == null) return;
+
+        Chunk chunk = location.getChunk();
+        if (!chunk.isLoaded()) {
+            plugin.debugMessage("Loading chunk at x: " + chunk.getX() + ", z: " + chunk.getZ(), 2);
+            chunk.load();
+        }
+
+        plugin.getGravesXScheduler().runTask(() -> {
+            if (!chunk.isLoaded()) return;
+
+            if (dropOnTimeout && !isAbandoned) {
+                dropGraveItems(location, grave);
+                dropGraveExperience(location, grave);
+                sendPlayerMessage(grave, "message.timeout", location);
+                graveRemoveList.add(grave);
+                return;
+            }
+
+            if (isAbandoned && abandonTimeout != -1) {
+                GraveAbandonedExpiredEvent expiredEvent = new GraveAbandonedExpiredEvent(grave);
+                plugin.getServer().getPluginManager().callEvent(expiredEvent);
+
+                if (!expiredEvent.isCancelled() && !expiredEvent.isAddon()) {
+                    dropGraveItems(location, grave);
+                    dropGraveExperience(location, grave);
+                    sendPlayerMessage(grave, "message.abandon-expired", location);
+                    graveRemoveList.add(grave);
+                } else {
+                    plugin.debugMessage("GraveAbandonedExpiredEvent cancelled for " + grave.getUUID(), 2);
+                    grave.setTimeAliveRemaining(-1); // prevent future triggers
+                }
+                return;
+            }
+
+            if (dropOnAbandon && !isAbandoned) {
+                GraveAbandonedEvent abandonedEvent = new GraveAbandonedEvent(grave);
+                plugin.getServer().getPluginManager().callEvent(abandonedEvent);
+
+                if (!abandonedEvent.isCancelled() && !abandonedEvent.isAddon()) {
+                    sendPlayerMessage(grave, "message.abandoned", abandonedEvent.getLocation());
+                    grave.setTimeAliveRemaining(abandonTimeout);
+                    abandonGrave(grave);
+                } else {
+                    sendPlayerMessage(grave, "message.timeout", location);
+                    graveRemoveList.add(grave);
+                }
+                return;
+            }
+
+            // Fallback (likely if no config enabled)
+            sendPlayerMessage(grave, "message.timeout", location);
+            graveRemoveList.add(grave);
+        });
     }
 
     /**
@@ -418,10 +434,11 @@ public final class GraveManager {
      */
     public void abandonGrave(Grave grave) {
         grave.setAbandoned(true);
-        grave.setExperience(0);
+        if (plugin.getConfig("drop.abandon-lose-experience", grave).getBoolean("drop.abandon-lose-experience", true))
+            grave.setExperience(0);
         grave.setTimeProtection(0);
-        grave.setTimeAlive(-1);
-        grave.setTimeAliveRemaining(-1);
+        grave.setTimeAlive(plugin.getConfig("drop.abandon-timeout", grave).getInt("drop.abandon-timeout", -1));
+        grave.setTimeAliveRemaining(plugin.getConfig("drop.abandon-timeout", grave).getInt("drop.abandon-timeout", -1));
         grave.setOwnerName("Abandoned");
         grave.setOwnerDisplayName("Abandoned");
         grave.setOwnerTexture("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZTYxZjFmY2Q0MmY0OGNhNTFmOWRhN2M1NWI3MmYzNWE4MjZlNzViNmEwMjA0OGExZGVhNWQ3MTE5YmM5Y2Q2OSJ9fX0=");
@@ -661,19 +678,50 @@ public final class GraveManager {
      * @param permissionList  the list of permissions associated with the grave.
      * @return the created grave.
      */
+    /**
+     * Creates a new grave for the specified entity, list of item stacks, and permissions.
+     * <p>
+     * This method supports both players and non-player entities. For players, it ensures
+     * Floodgate compatibility by normalizing UUIDs and usernames for Bedrock users.
+     *
+     * @param entity          the entity to create the grave for (can be a Player or any Entity).
+     * @param itemStackList   the list of item stacks to be included in the grave.
+     * @param permissionList  the list of permissions associated with the grave.
+     * @return the created grave.
+     */
     public Grave createGrave(Entity entity, List<ItemStack> itemStackList, List<String> permissionList) {
         Grave grave = new Grave(UUID.randomUUID());
         String entityName = plugin.getEntityManager().getEntityName(entity);
+        UUID ownerUUID = entity.getUniqueId();
+        String ownerName = entityName;
+        String displayName = entity.getCustomName();
+
+        if (entity instanceof Player) {
+            Player player = (Player) entity;
+            displayName = player.getDisplayName();
+            if (plugin.getIntegrationManager().hasFloodgate()) {
+                ownerUUID = plugin.getIntegrationManager().getFloodgate().getCorrectUniqueId(player);
+                ownerName = plugin.getIntegrationManager().getFloodgate().getCorrectUsername(player);
+            } else {
+                ownerName = player.getName();
+            }
+        }
 
         grave.setOwnerType(entity.getType());
-        grave.setOwnerName(entityName);
-        grave.setOwnerNameDisplay(entity instanceof Player ? ((Player) entity).getDisplayName()
-                : entity.getCustomName());
-        grave.setOwnerUUID(entity.getUniqueId());
-        grave.setInventory(createGraveInventory(grave, entity.getLocation(), itemStackList,
-                StringUtil.parseString(plugin.getConfig("gui.grave.title", entity, permissionList)
-                        .getString("gui.grave.title"), entity, entity.getLocation(), grave, plugin),
-                getStorageMode(plugin.getConfig("storage.mode", entity, permissionList).getString("storage.mode"))));
+        grave.setOwnerName(ownerName);
+        grave.setOwnerNameDisplay(displayName);
+        grave.setOwnerUUID(ownerUUID);
+
+        grave.setInventory(createGraveInventory(
+                grave,
+                entity.getLocation(),
+                itemStackList,
+                StringUtil.parseString(
+                        plugin.getConfig("gui.grave.title", entity, permissionList).getString("gui.grave.title"),
+                        entity, entity.getLocation(), grave, plugin),
+                getStorageMode(plugin.getConfig("storage.mode", entity, permissionList).getString("storage.mode"))
+        ));
+
         plugin.debugMessage("Creating grave " + grave.getUUID() + " for entity " + entityName, 1);
 
         return grave;

@@ -888,40 +888,60 @@ public final class EntityManager extends EntityDataManager {
 
     /**
      * Checks if a player can open a specified grave.
+     * Supports both Java and Bedrock players (via Geyser/Floodgate).
      *
-     * @param player the player attempting to open the grave.
-     * @param grave  the grave to check.
-     * @return true if the player can open the grave, false otherwise.
+     * @param player the player attempting to open the grave
+     * @param grave  the grave to check
+     * @return true if the player can open the grave, false otherwise
      */
     public boolean canOpenGrave(Player player, Grave grave) {
-        if (grave.getTimeProtectionRemaining() == 0 || plugin.hasGrantedPermission("graves.bypass", player.getPlayer())) {
-            return true;
-        } else if (grave.getProtection() && grave.getOwnerUUID() != null) {
-            if (grave.getOwnerUUID().equals(player.getUniqueId())
-                    && plugin.getConfig("protection.open.owner", grave)
-                    .getBoolean("protection.open.owner")) {
-                return true;
-            } else {
-                if (grave.getKillerUUID() != null) {
-                    if (grave.getKillerUUID().equals(player.getUniqueId())
-                            && plugin.getConfig("protection.open.killer", grave)
-                            .getBoolean("protection.open.killer")) {
-                        return true;
-                    } else return !grave.getOwnerUUID().equals(player.getUniqueId())
-                            && !grave.getKillerUUID().equals(player.getUniqueId())
-                            && plugin.getConfig("protection.open.other", grave)
-                            .getBoolean("protection.open.other");
-                } else return (grave.getOwnerUUID().equals(player.getUniqueId())
-                        && plugin.getConfig("protection.open.missing.owner", grave)
-                        .getBoolean("protection.open.missing.owner"))
-                        || (!grave.getOwnerUUID().equals(player.getUniqueId())
-                        && plugin.getConfig("protection.open.missing.other", grave)
-                        .getBoolean("protection.open.missing.other"));
+        UUID playerId = plugin.getIntegrationManager().hasFloodgate()
+                ? plugin.getIntegrationManager().getFloodgate().getNormalizedUUID(player)
+                : player.getUniqueId();
+
+        UUID ownerId = grave.getOwnerUUID();
+        UUID killerId = grave.getKillerUUID();
+
+        if (plugin.getIntegrationManager().hasFloodgate()) {
+            if (ownerId != null && plugin.getIntegrationManager().getFloodgate().isFloodgateId(ownerId)) {
+                ownerId = plugin.getIntegrationManager().getFloodgate().getCorrectUniqueId(ownerId);
             }
-        } else {
+
+            if (killerId != null && plugin.getIntegrationManager().getFloodgate().isFloodgateId(killerId)) {
+                killerId = plugin.getIntegrationManager().getFloodgate().getCorrectUniqueId(killerId);
+            }
+        }
+
+        if (grave.getTimeProtectionRemaining() == 0 || plugin.hasGrantedPermission("graves.bypass", player)) {
             return true;
         }
+
+        if (!grave.getProtection() || ownerId == null) {
+            return true;
+        }
+
+        if (ownerId.equals(playerId)
+                && plugin.getConfig("protection.open.owner", grave).getBoolean("protection.open.owner")) {
+            return true;
+        }
+
+        if (killerId != null) {
+            if (killerId.equals(playerId)
+                    && plugin.getConfig("protection.open.killer", grave).getBoolean("protection.open.killer")) {
+                return true;
+            } else {
+                return !ownerId.equals(playerId)
+                        && !killerId.equals(playerId)
+                        && plugin.getConfig("protection.open.other", grave).getBoolean("protection.open.other");
+            }
+        } else {
+            return (ownerId.equals(playerId)
+                    && plugin.getConfig("protection.open.missing.owner", grave).getBoolean("protection.open.missing.owner"))
+                    || (!ownerId.equals(playerId)
+                    && plugin.getConfig("protection.open.missing.other", grave).getBoolean("protection.open.missing.other"));
+        }
     }
+
 
     /**
      * Spawns a zombie at a specified location, targeting a specified entity, and associated with a grave.

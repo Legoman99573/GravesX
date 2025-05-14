@@ -94,8 +94,11 @@ settings:
         # When a grave times out drop everything in it. If false it gets destroyed.
         timeout: true
         # When a grave times out set the grave to an abandoned state instead of dropping everything? If false, nothing changes for this behavior. Must have drop.timeout disabled.
-        # Do not enable this option if you are worried about optimization.
         abandon: false
+        # (Second) How long an abandoned grave should stay alive for, 300 = 5 minutes, 10800 = 3 hours, -1 lasts forever.
+        abandon-timeout: -1
+        # Should a grave lose all of its experience when it goes abandoned?
+        abandon-lose-experience: true
         # When a grave explodes drop everything in it. If false it gets destroyed.
         explode: true
         # When a grave is broken drop everything in it. If false it gets destroyed.

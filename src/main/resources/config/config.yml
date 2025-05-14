@@ -382,3 +382,11 @@ settings:
     noteblockapi:
       # Should NoteBlockAPI integration be enabled.
       enabled: false
+
+    #############
+    # Floodgate #
+    #############
+    # Source: https://geysermc.org/download?project=floodgate
+    floodgate:
+      # Should Floodgate integration be enabled? Geyser Spigot is required.
+      enabled: true
