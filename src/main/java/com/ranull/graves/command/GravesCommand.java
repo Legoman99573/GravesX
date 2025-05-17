@@ -241,6 +241,8 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
                     stringList.add("hologram");
                     stringList.add("grave-specific");
                     stringList.add("grave-uuid");
+                    stringList.add("abandon");
+                    stringList.add("abandoned");
                 }
 
                 if ((args.length == 3 && args[1].equals("offline-player")) || (args.length == 3 && args[1].equals("player"))) {
