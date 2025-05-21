@@ -10,9 +10,11 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.*;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.components.CustomModelDataComponent;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -143,7 +145,15 @@ public final class RecipeManager {
                     }
 
                     if (customModelData > -1) {
-                        itemMeta.setCustomModelData(customModelData);
+                        try {
+                            CustomModelDataComponent cmdComponent = itemMeta.getCustomModelDataComponent();
+
+                            cmdComponent.setFloats(Collections.singletonList((float) customModelData));
+
+                            itemMeta.setCustomModelDataComponent(cmdComponent);
+                        } catch (Exception e) {
+                            itemMeta.setCustomModelData(customModelData);
+                        }
                     }
 
                     itemMeta.setLore(loreList);

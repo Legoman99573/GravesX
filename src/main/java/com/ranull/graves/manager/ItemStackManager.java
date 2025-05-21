@@ -15,6 +15,7 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.components.CustomModelDataComponent;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -77,7 +78,15 @@ public final class ItemStackManager extends EntityDataManager {
                 int customModelData = plugin.getConfig("obituary.model-data", grave).getInt("obituary.model-data", -1);
 
                 if (customModelData > -1) {
-                    bookMeta.setCustomModelData(customModelData);
+                    try {
+                        CustomModelDataComponent cmdComponent = bookMeta.getCustomModelDataComponent();
+
+                        cmdComponent.setFloats(Collections.singletonList((float) customModelData));
+
+                        bookMeta.setCustomModelDataComponent(cmdComponent);
+                    } catch (Exception e) {
+                        bookMeta.setCustomModelData(customModelData);
+                    }
                 }
 
                 if (plugin.getConfig("obituary.glow", grave).getBoolean("obituary.glow")) {
@@ -134,7 +143,15 @@ public final class ItemStackManager extends EntityDataManager {
                 int customModelData = plugin.getConfig("obituary.model-data", grave).getInt("obituary.model-data", -1);
 
                 if (customModelData > -1) {
-                    bookMeta.setCustomModelData(customModelData);
+                    try {
+                        CustomModelDataComponent cmdComponent = bookMeta.getCustomModelDataComponent();
+
+                        cmdComponent.setFloats(Collections.singletonList((float) customModelData));
+
+                        bookMeta.setCustomModelDataComponent(cmdComponent);
+                    } catch (Exception e) {
+                        bookMeta.setCustomModelData(customModelData);
+                    }
                 }
 
                 if (plugin.getConfig("obituary.glow", grave).getBoolean("obituary.glow")) {
@@ -208,7 +225,15 @@ public final class ItemStackManager extends EntityDataManager {
             int customModelData = plugin.getConfig("head.model-data", grave).getInt("head.model-data", -1);
 
             if (customModelData > -1) {
-                itemMeta.setCustomModelData(customModelData);
+                try {
+                    CustomModelDataComponent cmdComponent = itemMeta.getCustomModelDataComponent();
+
+                    cmdComponent.setFloats(Collections.singletonList((float) customModelData));
+
+                    itemMeta.setCustomModelDataComponent(cmdComponent);
+                } catch (Exception e) {
+                    itemMeta.setCustomModelData(customModelData);
+                }
             }
 
             itemMeta.setLore(loreList);
@@ -298,7 +323,15 @@ public final class ItemStackManager extends EntityDataManager {
             }
 
             if (customModelData > -1) {
-                itemMeta.setCustomModelData(customModelData);
+                try {
+                    CustomModelDataComponent cmdComponent = itemMeta.getCustomModelDataComponent();
+
+                    cmdComponent.setFloats(Collections.singletonList((float) customModelData));
+
+                    itemMeta.setCustomModelDataComponent(cmdComponent);
+                } catch (Exception e) {
+                    itemMeta.setCustomModelData(customModelData);
+                }
             }
 
             itemMeta.setDisplayName(name);
@@ -363,7 +396,15 @@ public final class ItemStackManager extends EntityDataManager {
             }
 
             if (customModelData > -1) {
-                itemMeta.setCustomModelData(customModelData);
+                try {
+                    CustomModelDataComponent cmdComponent = itemMeta.getCustomModelDataComponent();
+
+                    cmdComponent.setFloats(Collections.singletonList((float) customModelData));
+
+                    itemMeta.setCustomModelDataComponent(cmdComponent);
+                } catch (Exception e) {
+                    itemMeta.setCustomModelData(customModelData);
+                }
             }
 
             itemMeta.setDisplayName(name);

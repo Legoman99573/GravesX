@@ -22,6 +22,7 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.CompassMeta;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.components.CustomModelDataComponent;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.metadata.MetadataValue;
 import org.bukkit.persistence.PersistentDataType;
@@ -109,7 +110,15 @@ public final class EntityManager extends EntityDataManager {
                     int customModelData = plugin.getConfig("compass.model-data", grave).getInt("compass.model-data", -1);
 
                     if (customModelData > -1) {
-                        itemMeta.setCustomModelData(customModelData);
+                        try {
+                            CustomModelDataComponent cmdComponent = itemMeta.getCustomModelDataComponent();
+
+                            cmdComponent.setFloats(Collections.singletonList((float) customModelData));
+
+                            itemMeta.setCustomModelDataComponent(cmdComponent);
+                        } catch (Exception e) {
+                            itemMeta.setCustomModelData(customModelData);
+                        }
                     }
 
                     if (plugin.getConfig("compass.glow", grave).getBoolean("compass.glow")) {
@@ -1092,7 +1101,15 @@ public final class EntityManager extends EntityDataManager {
 
                     if (itemMeta != null) {
                         if (customModelData > -1) {
-                            itemMeta.setCustomModelData(customModelData);
+                            try {
+                                CustomModelDataComponent cmdComponent = itemMeta.getCustomModelDataComponent();
+
+                                cmdComponent.setFloats(Collections.singletonList((float) customModelData));
+
+                                itemMeta.setCustomModelDataComponent(cmdComponent);
+                            } catch (Exception e) {
+                                itemMeta.setCustomModelData(customModelData);
+                            }
                         }
 
                         itemStack.setItemMeta(itemMeta);
@@ -1170,7 +1187,15 @@ public final class EntityManager extends EntityDataManager {
 
                     if (itemMeta != null) {
                         if (customModelData > -1) {
-                            itemMeta.setCustomModelData(customModelData);
+                            try {
+                                CustomModelDataComponent cmdComponent = itemMeta.getCustomModelDataComponent();
+
+                                cmdComponent.setFloats(Collections.singletonList((float) customModelData));
+
+                                itemMeta.setCustomModelDataComponent(cmdComponent);
+                            } catch (Exception e) {
+                                itemMeta.setCustomModelData(customModelData);
+                            }
                         }
 
                         itemStack.setItemMeta(itemMeta);
