@@ -1536,6 +1536,10 @@ public final class GraveManager {
      * @return true if the item stack should be ignored, false otherwise.
      */
     public boolean shouldIgnoreItemStack(ItemStack itemStack, Entity entity, List<String> permissionList) {
+        if (itemStack == null || itemStack.getType() == Material.AIR) {
+            return true;
+        }
+
         if (plugin.getConfig("ignore.item.material", entity, permissionList)
                 .getStringList("ignore.item.material").contains(itemStack.getType().name())) {
             return true;
@@ -1548,7 +1552,7 @@ public final class GraveManager {
                 if (itemMeta.hasDisplayName()) {
                     for (String string : plugin.getConfig("ignore.item.name", entity, permissionList)
                             .getStringList("ignore.item.name")) {
-                        if (!string.equals("")
+                        if (!string.isEmpty()
                                 && itemMeta.getDisplayName().equals(StringUtil.parseString(string, plugin))) {
                             return true;
                         }
@@ -1556,7 +1560,7 @@ public final class GraveManager {
 
                     for (String string : plugin.getConfig("ignore.item.name-contains", entity, permissionList)
                             .getStringList("ignore.item.name-contains")) {
-                        if (!string.equals("")
+                        if (!string.isEmpty()
                                 && itemMeta.getDisplayName().contains(StringUtil.parseString(string, plugin))) {
                             return true;
                         }
@@ -1564,10 +1568,12 @@ public final class GraveManager {
                 }
 
                 if (itemMeta.hasLore() && itemMeta.getLore() != null) {
+                    List<String> itemLore = itemMeta.getLore();
+
                     for (String string : plugin.getConfig("ignore.item.lore", entity, permissionList)
                             .getStringList("ignore.item.lore")) {
-                        if (!string.equals("")) {
-                            for (String lore : itemMeta.getLore()) {
+                        if (!string.isEmpty()) {
+                            for (String lore : itemLore) {
                                 if (lore.equals(StringUtil.parseString(string, plugin))) {
                                     return true;
                                 }
@@ -1577,14 +1583,51 @@ public final class GraveManager {
 
                     for (String string : plugin.getConfig("ignore.item.lore-contains", entity, permissionList)
                             .getStringList("ignore.item.lore-contains")) {
-                        if (!string.equals("")) {
-                            for (String lore : itemMeta.getLore()) {
+                        if (!string.isEmpty()) {
+                            for (String lore : itemLore) {
                                 if (lore.contains(StringUtil.parseString(string, plugin))) {
                                     return true;
                                 }
                             }
                         }
                     }
+                }
+            }
+        }
+
+        List<String> enchantList = plugin.getConfig("ignore.item.enchantment", entity, permissionList)
+                .getStringList("ignore.item.enchantment");
+
+        List<String> enchantContainsList = plugin.getConfig("ignore.item.enchantment-contains", entity, permissionList)
+                .getStringList("ignore.item.enchantment-contains");
+
+        for (Map.Entry<Enchantment, Integer> entry : itemStack.getEnchantments().entrySet()) {
+            Enchantment enchantment = entry.getKey();
+            int level = entry.getValue();
+
+            String fullKey = enchantment.getKey().toString().toLowerCase();
+            String shortKey = enchantment.getKey().getKey().toLowerCase();
+
+            for (String configKey : enchantList) {
+                configKey = StringUtil.parseString(configKey, plugin).toLowerCase();
+
+                if (configKey.contains("@")) {
+                    String[] parts = configKey.split("@");
+                    if (parts.length == 2) {
+                        String key = parts[0];
+                        String lvl = parts[1];
+                        if ((key.equals(fullKey) || key.equals(shortKey)) && Integer.toString(level).equals(lvl)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            for (String containsKey : enchantContainsList) {
+                containsKey = StringUtil.parseString(containsKey, plugin).toLowerCase();
+                if (!containsKey.isEmpty() &&
+                        (fullKey.contains(containsKey) || shortKey.contains(containsKey))) {
+                    return true;
                 }
             }
         }

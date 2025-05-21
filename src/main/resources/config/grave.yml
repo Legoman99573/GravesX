@@ -720,35 +720,54 @@ settings:
             - ""
             #- "say piston broke %owner_name%'s grave."
 
-
       ##########
       # Ignore #
       ##########
       # Items that graves will ignore from the inventory, these items will be handled normally.
       ignore:
         item:
-          # Items that graves will ignore by material.
+          # Ignore items based on their material type.
           material:
             - ""
             #- BEDROCK  # https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Material.html
-          # Items that graves will ignore by exact name.
+
+          # Ignore items with an exact display name match.
           name:
             - ""
             #- "&4Admin Sword"
-          # Items that graves will ignore by exact lore.
+
+          # Ignore items with an exact lore line match.
           lore:
             - ""
             #- "Soulbound"
-          # Items that graves will ignore if the name contains this string.
+
+          # Ignore items with an exact enchantment (namespace:key@level) match.
+          # Examples:
+          # - "minecraft:sharpness@1" for a vanilla Minecraft enchantment
+          # - "myplugin:custom_enchant@1" for a custom plugin enchantment
+          enchantment:
+            - "minecraft:vanishing_curse@1"
+            - "minecraft:binding_curse@1"
+            #- "minecraft:sharpness@1"
+            #- "myplugin:custom_enchant@1"
+
+          # Ignore items if their display name contains this substring.
           name-contains:
             - ""
             #- "Super Pickaxe"
-          # Items that graves will ignore if the lore contains this string.
+
+          # Ignore items if any lore line contains this substring.
           lore-contains:
             - ""
             #- "Ignore Lore"
+
+          # Ignore items if any enchantment key contains this substring.
+          enchantment-contains:
+            - ""
+            #- "Custom"
+
         block:
-          # Blocks that graves will not spawn in.
+          # Materials in which graves will not be created.
           material:
             - ""
             #- LAVA
