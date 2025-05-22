@@ -121,7 +121,9 @@ public final class ItemStackManager extends EntityDataManager {
                         .map(MiniMessage::convertLegacyToComponent)
                         .collect(Collectors.toList());
 
-                return MiniMessage.formatBookMeta(itemStack,
+                return MiniMessage.formatBookMeta(plugin,
+                        grave,
+                        itemStack,
                         titleConverted,
                         authorConverted,
                         componentPages, componentList);

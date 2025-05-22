@@ -1,6 +1,7 @@
 package com.ranull.graves.integration;
 
 import com.ranull.graves.Graves;
+import com.ranull.graves.type.Grave;
 import me.imdanix.text.MiniTranslator;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.text.Component;
@@ -10,9 +11,11 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
+import org.bukkit.inventory.meta.components.CustomModelDataComponent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -136,7 +139,20 @@ public final class MiniMessage {
         return MiniMessage.miniMessage().deserialize(miniMessageText);
     }
 
-    public static ItemStack formatBookMeta(ItemStack itemStack, Component title, Component author, List<Component> pages, List<Component> lore) {
+    /**
+     * Formats a written book's metadata (title, author, pages, lore, and optionally custom model data)
+     * using Adventure components and legacy section serialization.
+     *
+     * @param plugin     The plugin instance used to access configuration.
+     * @param grave      The Grave instance associated with this book (used for configuration context).
+     * @param itemStack  The ItemStack to modify. Must be a written book or it will be returned unchanged.
+     * @param title      The title of the book, as an Adventure Component.
+     * @param author     The author of the book, as an Adventure Component.
+     * @param pages      A list of Adventure Components representing the pages of the book.
+     * @param lore       A list of Adventure Components representing the lore of the book.
+     * @return The updated ItemStack with modified book metadata, or the original ItemStack if invalid.
+     */
+    public static ItemStack formatBookMeta(Graves plugin, Grave grave, ItemStack itemStack, Component title, Component author, List<Component> pages, List<Component> lore) {
         if (itemStack == null || !(itemStack.getItemMeta() instanceof BookMeta)) {
             return itemStack;
         }
@@ -165,11 +181,30 @@ public final class MiniMessage {
                 .collect(Collectors.toList());
         bookMeta.setLore(serializedLore);
 
+        int customModelData = plugin.getConfig("obituary.model-data", grave).getInt("obituary.model-data", -1);
+
+        if (customModelData > -1) {
+            try {
+                CustomModelDataComponent cmdComponent = bookMeta.getCustomModelDataComponent();
+
+                cmdComponent.setFloats(Collections.singletonList((float) customModelData));
+
+                bookMeta.setCustomModelDataComponent(cmdComponent);
+            } catch (Exception e) {
+                bookMeta.setCustomModelData(customModelData);
+            }
+        }
+
         itemStack.setItemMeta(bookMeta);
         return itemStack;
     }
 
-
+    /**
+     * Sends a formatted message to a player using MiniMessage, falling back to plain legacy format if MiniMessage is unavailable.
+     *
+     * @param player  The player to send the message to.
+     * @param message The message to send. This should be in legacy format if MiniMessage is enabled.
+     */
     public static void sendMessage(final Player player, final String message) {
         if (miniMessage != null && audiences != null) {
             String output = convertLegacyToMiniMessage(message);
@@ -179,6 +214,11 @@ public final class MiniMessage {
         player.sendMessage(message);
     }
 
+    /**
+     * Gets a MiniMessage instance from the Adventure API.
+     *
+     * @return A singleton instance of {@link net.kyori.adventure.text.minimessage.MiniMessage}.
+     */
     public static net.kyori.adventure.text.minimessage.MiniMessage miniMessage() {
         return net.kyori.adventure.text.minimessage.MiniMessage.miniMessage();
     }
