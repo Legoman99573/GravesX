@@ -39,34 +39,11 @@ public class BlockPistonExtendListener implements Listener {
         List<Block> blocks = event.getBlocks();
 
         for (Block pushedBlock : blocks) {
+            Block destination = pushedBlock.getRelative(direction);
 
-            Grave grave = plugin.getBlockManager().getGraveFromBlock(pushedBlock);
+            Grave grave = plugin.getBlockManager().getGraveFromBlock(destination);
             if (grave != null) {
-                plugin.debugMessage("Found grave at pushed block: " + pushedBlock.getLocation(), 2);
                 handleGravePistonMove(event, grave, piston, direction, blocks);
-                return;
-            }
-
-            for (int x = -12; x <= 12; x++) {
-                for (int y = -12; y <= 12; y++) {
-                    for (int z = -12; z <= 12; z++) {
-                        Block nearby = pushedBlock.getRelative(x, y, z);
-                        Grave nearbyGrave = plugin.getBlockManager().getGraveFromBlock(nearby);
-
-                        if (nearbyGrave != null) {
-                            plugin.debugMessage("Found nearby grave at: " + nearby.getLocation(), 2);
-                            handleGravePistonMove(event, nearbyGrave, piston, direction, blocks);
-                            return;
-                        }
-                    }
-                }
-            }
-
-            Block pistonHead = piston.getRelative(direction);
-            Grave pistonHeadGrave = plugin.getBlockManager().getGraveFromBlock(pistonHead);
-            if (pistonHeadGrave != null) {
-                plugin.debugMessage("Found grave at piston head: " + pistonHead.getLocation(), 2);
-                handleGravePistonMove(event, pistonHeadGrave, piston, direction, blocks);
                 return;
             }
         }
@@ -99,5 +76,4 @@ public class BlockPistonExtendListener implements Listener {
             plugin.debugMessage("Piston move for grave at " + grave.getLocationDeath() + " was cancelled or is an addon. No action taken.", 2);
         }
     }
-
 }
