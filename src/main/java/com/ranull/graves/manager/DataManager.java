@@ -11,6 +11,7 @@ import org.bukkit.Location;
 import org.bukkit.entity.EntityType;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.io.File;
 import java.sql.*;
@@ -796,16 +797,16 @@ public final class DataManager {
                 query = "SHOW TABLES LIKE '" + tableName + "';";
                 break;
             case SQLITE:
-                query = "SELECT name FROM sqlite_master WHERE type='table' AND name='" + tableName + "';";
+                query = "SELECT name FROM sqlite_master WHERE type='table' AND name='" + getStoragePrefix() + tableName + "';";
                 break;
             case POSTGRESQL:
-                query = "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = '" + tableName + "');";
+                query = "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = '" + getStoragePrefix() + tableName + "');";
                 break;
             case H2:
-                query = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '" + tableName + "';";
+                query = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '" + getStoragePrefix() + tableName + "';";
                 break;
             case MSSQL:
-                query = "IF OBJECT_ID('" + tableName + "', 'U') IS NOT NULL SELECT 1 AS TableExists ELSE SELECT 0 AS TableExists;";
+                query = "IF OBJECT_ID('" + getStoragePrefix() + tableName + "', 'U') IS NOT NULL SELECT 1 AS TableExists ELSE SELECT 0 AS TableExists;";
                 break;
             default:
                 plugin.getLogger().severe("Unsupported database type: " + type);
@@ -870,18 +871,18 @@ public final class DataManager {
                     break;
                 case POSTGRESQL:
                     query = "DO $$ BEGIN " +
-                            "IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = '" + tableName + "' AND column_name = '" + columnName + "') THEN " +
-                            "ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + columnDefinition + "; " +
+                            "IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = '" + getStoragePrefix() + tableName + "' AND column_name = '" + columnName + "') THEN " +
+                            "ALTER TABLE " + getStoragePrefix() + tableName + " ADD COLUMN " + columnName + " " + columnDefinition + "; " +
                             "END IF; " +
                             "END $$;";
                     break;
                 case H2:
-                    query = "ALTER TABLE " + tableName + " ADD COLUMN IF NOT EXISTS " + columnName + " " + columnDefinition + ";";
+                    query = "ALTER TABLE " + getStoragePrefix() + tableName + " ADD COLUMN IF NOT EXISTS " + columnName + " " + columnDefinition + ";";
                     break;
                 case MSSQL:
-                    query = "IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '" + tableName + "' AND COLUMN_NAME = '" + columnName + "') " +
+                    query = "IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '" + getStoragePrefix() + tableName + "' AND COLUMN_NAME = '" + columnName + "') " +
                             "BEGIN " +
-                            "ALTER TABLE " + tableName + " ADD " + columnName + " " + columnDefinition + ";" +
+                            "ALTER TABLE " + getStoragePrefix() + tableName + " ADD " + columnName + " " + columnDefinition + ";" +
                             "END;";
                     break;
                 default:
@@ -899,7 +900,7 @@ public final class DataManager {
      * @throws SQLException if an SQL error occurs.
      */
     public void setupGraveTable() throws SQLException {
-        String name = "grave";
+        String name = getStoragePrefix() + "grave";
         if (!tableExists(name)) {
             if (type == Type.H2 || type == Type.POSTGRESQL) {
                 executeUpdate("CREATE TABLE IF NOT EXISTS " + name + " (" +
@@ -1025,7 +1026,7 @@ public final class DataManager {
      * @throws SQLException if an SQL error occurs.
      */
     public void setupBlockTable() throws SQLException {
-        String name = "block";
+        String name = getStoragePrefix() + "block";
 
         // Check if the table exists and create it if it does not
         if (!tableExists(name)) {
@@ -1050,7 +1051,7 @@ public final class DataManager {
      * @throws SQLException if an SQL error occurs.
      */
     public void setupHologramTable() throws SQLException {
-        String name = "hologram";
+        String name = getStoragePrefix() + "hologram";
 
         // Check if the table exists and create it if it does not
         if (!tableExists(name)) {
@@ -1089,7 +1090,7 @@ public final class DataManager {
             try {
                 executeUpdate(createTableQuery);
             } catch (SQLException e) {
-                plugin.getLogger().severe("Failed to create hologram table: " + e.getMessage());
+                plugin.getLogger().severe("Failed to create " + getStoragePrefix() + "hologram table: " + e.getMessage());
                 throw e; // rethrowing the exception
             }
         }
@@ -1114,20 +1115,20 @@ public final class DataManager {
         switch (type) {
             case MYSQL:
             case MARIADB:
-                createTableQuery = "CREATE TABLE IF NOT EXISTS " + name + " (" +
+                createTableQuery = "CREATE TABLE IF NOT EXISTS " + getStoragePrefix() + name + " (" +
                         "location VARCHAR(255), " +
                         "uuid_entity VARCHAR(255), " +
                         "uuid_grave VARCHAR(255));";
                 break;
             case SQLITE:
-                createTableQuery = "CREATE TABLE IF NOT EXISTS " + name + " (" +
+                createTableQuery = "CREATE TABLE IF NOT EXISTS " + getStoragePrefix() + name + " (" +
                         "location TEXT, " +  // Use TEXT for SQLite
                         "uuid_entity TEXT, " +
                         "uuid_grave TEXT);";
                 break;
             case POSTGRESQL:
             case H2:
-                createTableQuery = "CREATE TABLE IF NOT EXISTS " + name + " (" +
+                createTableQuery = "CREATE TABLE IF NOT EXISTS " + getStoragePrefix() + name + " (" +
                         "location VARCHAR(255), " +
                         "uuid_entity VARCHAR(255), " +
                         "uuid_grave VARCHAR(255));";
@@ -1141,7 +1142,7 @@ public final class DataManager {
         try {
             executeUpdate(createTableQuery, new Object[0]);
         } catch (SQLException e) {
-            plugin.getLogger().severe("Failed to create entity table: " + e.getMessage());
+            plugin.getLogger().severe("Failed to create " + getStoragePrefix() + "entity table: " + e.getMessage());
             throw e; // rethrowing the exception
         }
 
@@ -1157,7 +1158,7 @@ public final class DataManager {
     public void loadGraveMap() {
         plugin.getCacheManager().getGraveMap().clear();
         plugin.getLogger().info("Loading grave maps...");
-        String query = "SELECT * FROM grave;";
+        String query = "SELECT * FROM " + getStoragePrefix() + "grave;";
         int graveCount = 0;
 
         try (Connection connection = getConnection();
@@ -1203,7 +1204,7 @@ public final class DataManager {
      * Loads the block map from the database.
      */
     public void loadBlockMap() {
-        String query = "SELECT * FROM block;";
+        String query = "SELECT * FROM " + getStoragePrefix() + "block;";
 
         plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
             plugin.getLogger().info("Loading Block Map cache...");
@@ -1270,7 +1271,7 @@ public final class DataManager {
      * @param type  the type of entity data.
      */
     private void loadEntityMap(String table, EntityData.Type type) {
-        String query = "SELECT * FROM " + table + ";";
+        String query = "SELECT * FROM " + getStoragePrefix() + table + ";";
 
         plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
             plugin.getLogger().info("Loading Entity Map Cache for " + table + "...");
@@ -1310,9 +1311,9 @@ public final class DataManager {
                 }
 
                 if (entityCount == 0) {
-                    plugin.getLogger().info("Loaded 0 entities into Entity Map Cache for " + table + ".");
+                    plugin.getLogger().info("Loaded 0 entities into Entity Map Cache for " + getStoragePrefix() + table + ".");
                 } else {
-                    plugin.getLogger().info("Loaded " + entityCount + " entities into Entity Map Cache for " + table + ".");
+                    plugin.getLogger().info("Loaded " + entityCount + " entities into Entity Map Cache for " + getStoragePrefix() + table + ".");
                 }
             } catch (SQLException exception) {
                 plugin.getLogger().severe("Error occurred while loading Entity Map: " + exception.getMessage());
@@ -1325,9 +1326,9 @@ public final class DataManager {
      * Loads the hologram map from the database.
      */
     public void loadHologramMap() {
-        String query = "SELECT * FROM hologram;";
+        String query = "SELECT * FROM " + getStoragePrefix() + "hologram;";
 
-        plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
             plugin.getLogger().info("Loading Holograms into Hologram Map Cache...");
             int hologramCount = 0;
 
@@ -1388,27 +1389,27 @@ public final class DataManager {
         switch (type) {
             case MYSQL:
             case MARIADB:
-                createTableQuery = "CREATE TABLE IF NOT EXISTS " + name + " (" +
+                createTableQuery = "CREATE TABLE IF NOT EXISTS " + getStoragePrefix() + name + " (" +
                         "location VARCHAR(255), " +
                         "uuid_entity VARCHAR(255), " +
                         "uuid_grave VARCHAR(255));";
                 break;
             case SQLITE:
-                createTableQuery = "CREATE TABLE IF NOT EXISTS " + name + " (" +
+                createTableQuery = "CREATE TABLE IF NOT EXISTS " + getStoragePrefix() + name + " (" +
                         "location TEXT, " +
                         "uuid_entity TEXT, " +
                         "uuid_grave TEXT);";
                 break;
             case POSTGRESQL:
             case H2:
-                createTableQuery = "CREATE TABLE IF NOT EXISTS " + name + " (" +
+                createTableQuery = "CREATE TABLE IF NOT EXISTS " + getStoragePrefix() + name + " (" +
                         "location VARCHAR(255), " +
                         "uuid_entity VARCHAR(255), " +
                         "uuid_grave VARCHAR(255));";
                 break;
             case MSSQL:
-                createTableQuery = "IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='" + name + "' AND xtype='U') " +
-                        "CREATE TABLE " + name + " (" +
+                createTableQuery = "IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='" + getStoragePrefix() + name + "' AND xtype='U') " +
+                        "CREATE TABLE " + getStoragePrefix() + name + " (" +
                         "location VARCHAR(255), " +
                         "uuid_entity VARCHAR(255), " +
                         "uuid_grave VARCHAR(255));";
@@ -1442,10 +1443,10 @@ public final class DataManager {
      * @param type  the type of entity data.
      */
     private void loadEntityDataMap(String table, EntityData.Type type) {
-        String query = "SELECT * FROM " + table + ";";
+        String query = "SELECT * FROM " + getStoragePrefix() + table + ";";
 
         plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
-            plugin.getLogger().info("Loading Entity Data Map Cache for " + table + "...");
+            plugin.getLogger().info("Loading Entity Data Map Cache for " + getStoragePrefix() + table + "...");
             int entityCount = 0;
 
             try (Connection connection = getConnection();
@@ -1482,9 +1483,9 @@ public final class DataManager {
                 }
 
                 if (entityCount == 0) {
-                    plugin.getLogger().info("Loaded 0 entities into Entity Data Map Cache for " + table + ".");
+                    plugin.getLogger().info("Loaded 0 entities into Entity Data Map Cache for " + getStoragePrefix() + table + ".");
                 } else {
-                    plugin.getLogger().info("Loaded " + entityCount + " entities into Entity Data Map Cache for " + table + ".");
+                    plugin.getLogger().info("Loaded " + entityCount + " entities into Entity Data Map Cache for " + getStoragePrefix() + table + ".");
                 }
             } catch (SQLException exception) {
                 plugin.getLogger().severe("Error occurred while loading Entity Data Map: " + exception.getMessage());
@@ -1501,7 +1502,7 @@ public final class DataManager {
     public void addBlockData(BlockData blockData) {
         getChunkData(blockData.getLocation()).addBlockData(blockData);
 
-        String query = "INSERT INTO block (location, uuid_grave, replace_material, replace_data) VALUES (?, ?, ?, ?)";
+        String query = "INSERT INTO " + getStoragePrefix() + "block (location, uuid_grave, replace_material, replace_data) VALUES (?, ?, ?, ?)";
         Object[] parameters = new Object[4];
 
         // Set location
@@ -1534,7 +1535,7 @@ public final class DataManager {
     public void removeBlockData(Location location) {
         getChunkData(location).removeBlockData(location);
 
-        String query = "DELETE FROM block WHERE location = ?";
+        String query = "DELETE FROM " + getStoragePrefix() + "block WHERE location = ?";
         Object[] parameters = { LocationUtil.locationToString(location) };
 
         plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
@@ -1555,7 +1556,7 @@ public final class DataManager {
     public void addHologramData(HologramData hologramData) {
         getChunkData(hologramData.getLocation()).addEntityData(hologramData);
 
-        String query = "INSERT INTO hologram (uuid_entity, uuid_grave, line, location) VALUES (?, ?, ?, ?)";
+        String query = "INSERT INTO " + getStoragePrefix() + "hologram (uuid_entity, uuid_grave, line, location) VALUES (?, ?, ?, ?)";
         Object[] parameters = {
                 hologramData.getUUIDEntity().toString(),
                 hologramData.getUUIDGrave().toString(),
@@ -1581,8 +1582,8 @@ public final class DataManager {
      */
     public void removeHologramData(Grave grave) {
         plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
-            String selectSql = "SELECT uuid_entity, location FROM hologram WHERE uuid_grave = ?";
-            String deleteSql = "DELETE FROM hologram WHERE uuid_grave = ?";
+            String selectSql = "SELECT uuid_entity, location FROM " + getStoragePrefix() + "hologram WHERE uuid_grave = ?";
+            String deleteSql = "DELETE FROM " + getStoragePrefix() + "hologram WHERE uuid_grave = ?";
 
             List<EntityData> entityDataList = new ArrayList<>();
 
@@ -1633,7 +1634,7 @@ public final class DataManager {
     @Deprecated (forRemoval = true)
     public void removeHologramData(List<EntityData> entityDataList) {
         plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
-            String sql = "DELETE FROM hologram WHERE uuid_entity = ?";
+            String sql = "DELETE FROM " + getStoragePrefix() + "hologram WHERE uuid_entity = ?";
             try (Connection connection = getConnection();
                  PreparedStatement statement = connection != null ? connection.prepareStatement(sql) : null) {
                 if (statement != null) {
@@ -1660,7 +1661,7 @@ public final class DataManager {
         getChunkData(entityData.getLocation()).addEntityData(entityData);
 
         String table = entityDataTypeTable(entityData.getType());
-        String query = "INSERT INTO " + table + " (location, uuid_entity, uuid_grave) VALUES (?, ?, ?)";
+        String query = "INSERT INTO " + getStoragePrefix()  + table + " (location, uuid_entity, uuid_grave) VALUES (?, ?, ?)";
 
         String location = LocationUtil.locationToString(entityData.getLocation());
         Object[] parameters = {
@@ -1701,10 +1702,10 @@ public final class DataManager {
                     for (EntityData entityData : entityDataList) {
                         getChunkData(entityData.getLocation()).removeEntityData(entityData);
                         String table = entityDataTypeTable(entityData.getType());
-                        String query = "DELETE FROM " + table + " WHERE uuid_entity = ?";
+                        String query = "DELETE FROM " + getStoragePrefix() + table + " WHERE uuid_entity = ?";
                         Object[] parameters = { entityData.getUUIDEntity() };
                         executeUpdate(query, parameters);
-                        plugin.debugMessage("Removing " + table + " for grave " + entityData.getUUIDGrave(), 1);
+                        plugin.debugMessage("Removing " + getStoragePrefix() + table + " for grave " + entityData.getUUIDGrave(), 1);
                     }
                 }
             } catch (SQLException e) {
@@ -1715,7 +1716,7 @@ public final class DataManager {
     }
 
     public boolean hasGraveAtLocation(Location location) {
-        String query = "SELECT COUNT(*) FROM grave WHERE location_death = ?";
+        String query = "SELECT COUNT(*) FROM " + getStoragePrefix() + "grave WHERE location_death = ?";
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setString(1, LocationUtil.locationToString(location));
@@ -1771,7 +1772,7 @@ public final class DataManager {
     public void addGrave(Grave grave) {
         plugin.getCacheManager().getGraveMap().put(grave.getUUID(), grave);
 
-        String query = "INSERT INTO grave (uuid, owner_type, owner_name, owner_name_display, owner_uuid, owner_texture, owner_texture_signature, killer_type, killer_name, killer_name_display, killer_uuid, location_death, yaw, pitch, inventory, equipment, experience, protection, is_abandoned, time_alive, time_protection, time_creation, permissions) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String query = "INSERT INTO " + getStoragePrefix() + "grave (uuid, owner_type, owner_name, owner_name_display, owner_uuid, owner_texture, owner_texture_signature, killer_type, killer_name, killer_name_display, killer_uuid, location_death, yaw, pitch, inventory, equipment, experience, protection, is_abandoned, time_alive, time_protection, time_creation, permissions) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         // Prepare parameters
         Object[] parameters = {
@@ -1829,7 +1830,7 @@ public final class DataManager {
             removeHologramData(grave);
         }
 
-        String deleteQuery = "DELETE FROM grave WHERE uuid = ?";
+        String deleteQuery = "DELETE FROM " + getStoragePrefix() + "grave WHERE uuid = ?";
         Object[] deleteParams = { uuid };
 
         plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
@@ -1853,7 +1854,7 @@ public final class DataManager {
      * @param integer the new integer value for the column.
      */
     public void updateGrave(Grave grave, String column, int integer) {
-        String query = "UPDATE grave SET " + column + " = ? WHERE uuid = ?";
+        String query = "UPDATE " + getStoragePrefix() + "grave SET " + column + " = ? WHERE uuid = ?";
         Object[] parameters = { integer, grave.getUUID() };
 
         plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
@@ -2381,10 +2382,10 @@ public final class DataManager {
 
                     // Using try-with-resources for the statement
                     try (Statement sqliteStatement = sqliteConnection.createStatement();
-                         ResultSet tableData = sqliteStatement.executeQuery("SELECT * FROM " + tableName)) {
+                         ResultSet tableData = sqliteStatement.executeQuery("SELECT * FROM " + getStoragePrefix() + tableName)) {
 
                         ResultSetMetaData tableMetaData = tableData.getMetaData();
-                        createTableQuery.append("CREATE TABLE IF NOT EXISTS ").append(tableName).append(" (");
+                        createTableQuery.append("CREATE TABLE IF NOT EXISTS ").append(getStoragePrefix() + tableName).append(" (");
                         for (int i = 1; i <= tableMetaData.getColumnCount(); i++) {
                             String columnName = tableMetaData.getColumnName(i);
                             String sqliteType = tableMetaData.getColumnTypeName(i);
@@ -2402,7 +2403,7 @@ public final class DataManager {
                         }
 
                         if (columns.isEmpty()) {
-                            plugin.getLogger().warning("No valid columns found for table " + tableName + ". Skipping table creation.");
+                            plugin.getLogger().warning("No valid columns found for table " + getStoragePrefix() + tableName + ". Skipping table creation.");
                             continue;
                         }
 
@@ -2413,7 +2414,7 @@ public final class DataManager {
                             adjustGraveTableForTargetDB();
                         }
 
-                        String insertQueryTemplate = "INSERT INTO " + tableName + " (" + String.join(", ", columns) + ") VALUES (" + String.join(", ", Collections.nCopies(columns.size(), "?")) + ")";
+                        String insertQueryTemplate = "INSERT INTO " + getStoragePrefix() + tableName + " (" + String.join(", ", columns) + ") VALUES (" + String.join(", ", Collections.nCopies(columns.size(), "?")) + ")";
                         try (PreparedStatement insertStatement = getConnection().prepareStatement(insertQueryTemplate)) {
                             while (tableData.next()) {
                                 for (int i = 1; i <= tableMetaData.getColumnCount(); i++) {
@@ -2430,13 +2431,13 @@ public final class DataManager {
                                 insertStatement.executeUpdate();
                             }
                         } catch (SQLException e) {
-                            plugin.getLogger().severe("Error inserting data into table " + tableName + ": " + e.getMessage());
+                            plugin.getLogger().severe("Error inserting data into table " + getStoragePrefix() + tableName + ": " + e.getMessage());
                             plugin.getLogger().severe("Failed query template: " + insertQueryTemplate);
                             migrationSuccess = false;
                             plugin.logStackTrace(e);
                         }
                     } catch (SQLException e) {
-                        plugin.getLogger().severe("Error migrating table " + tableName + ": " + e.getMessage());
+                        plugin.getLogger().severe("Error migrating table " + getStoragePrefix() + tableName + ": " + e.getMessage());
                         plugin.getLogger().severe("Failed query: " + createTableQuery);
                         migrationSuccess = false;
                         plugin.logStackTrace(e);
@@ -2638,28 +2639,28 @@ public final class DataManager {
     private void adjustGraveTableForTargetDB() throws SQLException {
         // Ensure column sizes and types are correct for MSSQL
         if (this.type == Type.MSSQL) {
-            plugin.getLogger().info("Altering table grave to ensure column sizes are correct for MSSQL.");
+            plugin.getLogger().info("Altering table " + getStoragePrefix() +"grave to ensure column sizes are correct for MSSQL.");
 
             // Example SQL commands to alter column types for MSSQL
-            executeUpdate("ALTER TABLE grave ALTER COLUMN owner_texture NVARCHAR(MAX)", new Object[0]);
-            executeUpdate("ALTER TABLE grave ALTER COLUMN owner_texture_signature NVARCHAR(MAX)", new Object[0]);
-            executeUpdate("ALTER TABLE grave ALTER COLUMN time_creation BIGINT", new Object[0]);
-            executeUpdate("ALTER TABLE grave ALTER COLUMN time_protection BIGINT", new Object[0]);
-            executeUpdate("ALTER TABLE grave ALTER COLUMN time_alive BIGINT", new Object[0]);
+            executeUpdate("ALTER TABLE " + getStoragePrefix() + "grave ALTER COLUMN owner_texture NVARCHAR(MAX)", new Object[0]);
+            executeUpdate("ALTER TABLE " + getStoragePrefix() + "grave ALTER COLUMN owner_texture_signature NVARCHAR(MAX)", new Object[0]);
+            executeUpdate("ALTER TABLE " + getStoragePrefix() + "grave ALTER COLUMN time_creation BIGINT", new Object[0]);
+            executeUpdate("ALTER TABLE " + getStoragePrefix() + "grave ALTER COLUMN time_protection BIGINT", new Object[0]);
+            executeUpdate("ALTER TABLE " + getStoragePrefix() + "grave ALTER COLUMN time_alive BIGINT", new Object[0]);
         } else if (this.type == Type.MYSQL || this.type == Type.MARIADB) {
-            plugin.getLogger().info("Altering table grave to ensure column sizes are correct for MySQL/MariaDB.");
-            executeUpdate("ALTER TABLE grave MODIFY owner_texture NVARCHAR(MAX)", new Object[0]);
-            executeUpdate("ALTER TABLE grave MODIFY owner_texture_signature NVARCHAR(MAX)", new Object[0]);
-            executeUpdate("ALTER TABLE grave MODIFY time_creation BIGINT", new Object[0]);
-            executeUpdate("ALTER TABLE grave MODIFY time_protection BIGINT", new Object[0]);
-            executeUpdate("ALTER TABLE grave MODIFY time_alive BIGINT", new Object[0]);
+            plugin.getLogger().info("Altering table " + getStoragePrefix() + "grave to ensure column sizes are correct for MySQL/MariaDB.");
+            executeUpdate("ALTER TABLE " + getStoragePrefix() + "grave MODIFY owner_texture NVARCHAR(MAX)", new Object[0]);
+            executeUpdate("ALTER TABLE " + getStoragePrefix() + "grave MODIFY owner_texture_signature NVARCHAR(MAX)", new Object[0]);
+            executeUpdate("ALTER TABLE " + getStoragePrefix() + "grave MODIFY time_creation BIGINT", new Object[0]);
+            executeUpdate("ALTER TABLE " + getStoragePrefix() + "grave MODIFY time_protection BIGINT", new Object[0]);
+            executeUpdate("ALTER TABLE " + getStoragePrefix() + "grave MODIFY time_alive BIGINT", new Object[0]);
         } else if (this.type == Type.POSTGRESQL || this.type == Type.H2) {
-            plugin.getLogger().info("Altering table grave to ensure column sizes are correct for PostgreSQL/H2.");
-            executeUpdate("ALTER TABLE grave ALTER COLUMN owner_texture TYPE TEXT", new Object[0]);
-            executeUpdate("ALTER TABLE grave ALTER COLUMN owner_texture_signature TYPE TEXT", new Object[0]);
-            executeUpdate("ALTER TABLE grave ALTER COLUMN time_creation TYPE BIGINT", new Object[0]);
-            executeUpdate("ALTER TABLE grave ALTER COLUMN time_protection TYPE BIGINT", new Object[0]);
-            executeUpdate("ALTER TABLE grave ALTER COLUMN time_alive TYPE BIGINT", new Object[0]);
+            plugin.getLogger().info("Altering table " + getStoragePrefix() + "grave to ensure column sizes are correct for PostgreSQL/H2.");
+            executeUpdate("ALTER TABLE " + getStoragePrefix() + "grave ALTER COLUMN owner_texture TYPE TEXT", new Object[0]);
+            executeUpdate("ALTER TABLE " + getStoragePrefix() + "grave ALTER COLUMN owner_texture_signature TYPE TEXT", new Object[0]);
+            executeUpdate("ALTER TABLE " + getStoragePrefix() + "grave ALTER COLUMN time_creation TYPE BIGINT", new Object[0]);
+            executeUpdate("ALTER TABLE " + getStoragePrefix() + "grave ALTER COLUMN time_protection TYPE BIGINT", new Object[0]);
+            executeUpdate("ALTER TABLE " + getStoragePrefix() + "grave ALTER COLUMN time_alive TYPE BIGINT", new Object[0]);
         }
     }
 
@@ -2817,5 +2818,25 @@ public final class DataManager {
             plugin.getLogger().severe("Failed to unlock MSSQL database using COMMIT");
             plugin.logStackTrace(e);
         }
+    }
+
+    /**
+     * Retrieves the configured storage prefix for GravesX from the plugin configuration.
+     * <p>
+     * If the prefix is not set or is empty/whitespace, this method returns an empty string.
+     * If a valid prefix is provided, it appends an underscore to the end (e.g., {@code "gravesx_"}).
+     * <p>
+     * While this is intended to help namespace GravesX database tables, note that
+     * shared databases (e.g., running multiple plugin instances in the same DB) are not supported.
+     *
+     * @return the formatted table prefix with an underscore, or an empty string if no prefix is set.
+     */
+    @ApiStatus.Experimental
+    private String getStoragePrefix() {
+        String prefix = plugin.getConfig().getString("settings.storage.prefix", "");
+        if (prefix == null || prefix.trim().isEmpty()) {
+            return "";
+        }
+        return prefix.trim() + "_";
     }
 }

@@ -17,6 +17,12 @@ settings:
     # Available options: MYSQL, MARIADB, POSTGRESQL, H2, MSSQL.
     # More storage types will be added in the future.
     type: H2
+    # Prefix to use for all database table names. Applies to all database types.
+    # Useful for distinguishing tables when using a shared database (Not Recommended)
+    # Leave empty to use no prefix (default)
+    # NOTE: If using H2, you may need to reset or recreate your database as existing databases may not be compatible.
+    #       If enabling a prefix after tables already exist, you must manually rename or migrate the existing tables to match the prefix set in config.
+    prefix: ""
 
     sqlite:
       # Unless you know what you're doing, leave the options under sqlite default.
