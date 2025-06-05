@@ -641,7 +641,7 @@
         <dependency>
             <groupId>com.github.imDaniX</groupId>
             <artifactId>MiniTranslator</artifactId>
-            <version>v2.5.1-graves</version>
+            <version>v2.6.1-graves</version>
             <scope>compile</scope>
         </dependency>
         <dependency>

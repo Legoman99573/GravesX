@@ -35,7 +35,11 @@ public final class MiniMessage {
      */
     public MiniMessage() {
         audiences = BukkitAudiences.create(JavaPlugin.getPlugin(Graves.class));
-        legacyComponentSerializer = LegacyComponentSerializer.legacySection();
+        legacyComponentSerializer = LegacyComponentSerializer.builder()
+                .hexColors()
+                .useUnusualXRepeatedCharacterHexFormat()
+                .extractUrls()
+                .build();
         miniMessage = net.kyori.adventure.text.minimessage.MiniMessage.builder()
                 .strict(false)
                 .tags(
