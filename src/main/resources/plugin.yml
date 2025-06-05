@@ -15,6 +15,7 @@ loadbefore:
   - ExplodeAny
 
 softdepend:
+  - AdvancedEnchantments
   - Vault
   - ProtocolLib
   - WorldEdit

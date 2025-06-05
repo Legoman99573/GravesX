@@ -14,6 +14,7 @@ import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.ColorUtil;
 import com.ranull.graves.util.InventoryUtil;
 import com.ranull.graves.util.MaterialUtil;
+import com.ranull.graves.util.ReflectSoulboundAE;
 import com.ranull.graves.util.StringUtil;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -1538,6 +1539,12 @@ public final class GraveManager {
     public boolean shouldIgnoreItemStack(ItemStack itemStack, Entity entity, List<String> permissionList) {
         if (itemStack == null || itemStack.getType() == Material.AIR) {
             return true;
+        }
+        if (Bukkit.getPluginManager().isPluginEnabled("AdvancedEnchantments")) {
+            if (ReflectSoulboundAE.isSoulbound(itemStack)) {
+                entity.getWorld().dropItem(entity.getLocation(), itemStack);
+                return true;
+            }
         }
 
         if (plugin.getConfig("ignore.item.material", entity, permissionList)
