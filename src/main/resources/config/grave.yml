@@ -724,7 +724,6 @@ settings:
       # Ignore #
       ##########
       # Items that graves will ignore from the inventory, these items will be handled normally.
-      # If you want to drop an item, use `|dropItem` flag, which will tell GravesX to drop the item, otherwise it's destroyed.
       ignore:
         item:
           # Ignore items based on their material type.
