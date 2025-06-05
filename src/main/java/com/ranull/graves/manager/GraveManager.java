@@ -29,6 +29,7 @@ import org.geysermc.floodgate.api.FloodgateApi;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 /**
  * Manages the operations and lifecycle of graves within the Graves plugin.
@@ -1540,28 +1541,60 @@ public final class GraveManager {
             return true;
         }
 
-        if (plugin.getConfig("ignore.item.material", entity, permissionList)
-                .getStringList("ignore.item.material").contains(itemStack.getType().name())) {
-            return true;
+        Function<String, String[]> splitPipe = rawConfig -> {
+            if (rawConfig == null) return new String[] { "", "" };
+            String parsed = StringUtil.parseString(rawConfig, plugin);
+            String[] parts = parsed.split("\\|", 2);
+            if (parts.length == 1) {
+                return new String[] { parts[0], "" };
+            } else {
+                return new String[] { parts[0], parts[1] };
+            }
+        };
+
+        for (String rawMaterial : plugin
+                .getConfig("ignore.item.material", entity, permissionList)
+                .getStringList("ignore.item.material"))
+        {
+            String[] parsed = splitPipe.apply(rawMaterial);
+            String matName = parsed[0].trim();
+            String action  = parsed[1].trim().toLowerCase();
+
+            if (matName.equalsIgnoreCase(itemStack.getType().name())) {
+                return true;
+            }
         }
 
         if (itemStack.hasItemMeta()) {
             ItemMeta itemMeta = itemStack.getItemMeta();
-
             if (itemMeta != null) {
                 if (itemMeta.hasDisplayName()) {
-                    for (String string : plugin.getConfig("ignore.item.name", entity, permissionList)
-                            .getStringList("ignore.item.name")) {
-                        if (!string.isEmpty()
-                                && itemMeta.getDisplayName().equals(StringUtil.parseString(string, plugin))) {
+                    String displayName = itemMeta.getDisplayName();
+
+                    for (String rawName : plugin
+                            .getConfig("ignore.item.name", entity, permissionList)
+                            .getStringList("ignore.item.name"))
+                    {
+                        String[] parsed = splitPipe.apply(rawName);
+                        String namePattern = parsed[0];
+                        String action      = parsed[1].trim().toLowerCase();
+
+                        if (!namePattern.isEmpty()
+                                && displayName.equals(StringUtil.parseString(namePattern, plugin))) {
                             return true;
                         }
                     }
 
-                    for (String string : plugin.getConfig("ignore.item.name-contains", entity, permissionList)
-                            .getStringList("ignore.item.name-contains")) {
-                        if (!string.isEmpty()
-                                && itemMeta.getDisplayName().contains(StringUtil.parseString(string, plugin))) {
+                    for (String rawContains : plugin
+                            .getConfig("ignore.item.name-contains", entity, permissionList)
+                            .getStringList("ignore.item.name-contains"))
+                    {
+                        String[] parsed = splitPipe.apply(rawContains);
+                        String substring  = parsed[0];
+                        String actionPart = parsed[1].trim().toLowerCase();
+
+                        if (!substring.isEmpty()
+                                && displayName.contains(StringUtil.parseString(substring, plugin))) {
                             return true;
                         }
                     }
@@ -1570,22 +1603,36 @@ public final class GraveManager {
                 if (itemMeta.hasLore() && itemMeta.getLore() != null) {
                     List<String> itemLore = itemMeta.getLore();
 
-                    for (String string : plugin.getConfig("ignore.item.lore", entity, permissionList)
-                            .getStringList("ignore.item.lore")) {
-                        if (!string.isEmpty()) {
-                            for (String lore : itemLore) {
-                                if (lore.equals(StringUtil.parseString(string, plugin))) {
+                    for (String rawLore : plugin
+                            .getConfig("ignore.item.lore", entity, permissionList)
+                            .getStringList("ignore.item.lore"))
+                    {
+                        String[] parsed = splitPipe.apply(rawLore);
+                        String lorePattern = parsed[0];
+                        String actionPart  = parsed[1].trim().toLowerCase();
+
+                        if (!lorePattern.isEmpty()) {
+                            String target = StringUtil.parseString(lorePattern, plugin);
+                            for (String singleLine : itemLore) {
+                                if (singleLine.equals(target)) {
                                     return true;
                                 }
                             }
                         }
                     }
 
-                    for (String string : plugin.getConfig("ignore.item.lore-contains", entity, permissionList)
-                            .getStringList("ignore.item.lore-contains")) {
-                        if (!string.isEmpty()) {
-                            for (String lore : itemLore) {
-                                if (lore.contains(StringUtil.parseString(string, plugin))) {
+                    for (String rawLoreContains : plugin
+                            .getConfig("ignore.item.lore-contains", entity, permissionList)
+                            .getStringList("ignore.item.lore-contains"))
+                    {
+                        String[] parsed = splitPipe.apply(rawLoreContains);
+                        String loreSubstring = parsed[0];
+                        String actionPart    = parsed[1].trim().toLowerCase();
+
+                        if (!loreSubstring.isEmpty()) {
+                            String needle = StringUtil.parseString(loreSubstring, plugin);
+                            for (String singleLine : itemLore) {
+                                if (singleLine.contains(needle)) {
                                     return true;
                                 }
                             }
@@ -1595,38 +1642,47 @@ public final class GraveManager {
             }
         }
 
-        List<String> enchantList = plugin.getConfig("ignore.item.enchantment", entity, permissionList)
+        List<String> enchantExactList = plugin
+                .getConfig("ignore.item.enchantment", entity, permissionList)
                 .getStringList("ignore.item.enchantment");
-
-        List<String> enchantContainsList = plugin.getConfig("ignore.item.enchantment-contains", entity, permissionList)
+        List<String> enchantContainsList = plugin
+                .getConfig("ignore.item.enchantment-contains", entity, permissionList)
                 .getStringList("ignore.item.enchantment-contains");
 
         for (Map.Entry<Enchantment, Integer> entry : itemStack.getEnchantments().entrySet()) {
-            Enchantment enchantment = entry.getKey();
-            int level = entry.getValue();
+            Enchantment ench  = entry.getKey();
+            int level         = entry.getValue();
+            String fullKey    = ench.getKey().toString().toLowerCase();      // e.g. “minecraft:sharpness”
+            String shortKey   = ench.getKey().getKey().toLowerCase();         // e.g. “sharpness”
+            String lvlString  = Integer.toString(level);
 
-            String fullKey = enchantment.getKey().toString().toLowerCase();
-            String shortKey = enchantment.getKey().getKey().toLowerCase();
+            for (String rawEnchant : enchantExactList) {
+                String[] parsed    = splitPipe.apply(rawEnchant);
+                String enchPattern = parsed[0].toLowerCase();
+                String actionPart  = parsed[1].trim().toLowerCase();
 
-            for (String configKey : enchantList) {
-                configKey = StringUtil.parseString(configKey, plugin).toLowerCase();
-
-                if (configKey.contains("@")) {
-                    String[] parts = configKey.split("@");
+                if (enchPattern.contains("@")) {
+                    String[] parts = enchPattern.split("@", 2);
                     if (parts.length == 2) {
-                        String key = parts[0];
-                        String lvl = parts[1];
-                        if ((key.equals(fullKey) || key.equals(shortKey)) && Integer.toString(level).equals(lvl)) {
+                        String keyPart = parts[0];
+                        String lvlPart = parts[1];
+                        if ( (keyPart.equals(fullKey) || keyPart.equals(shortKey))
+                                && lvlPart.equals(lvlString) )
+                        {
                             return true;
                         }
                     }
                 }
             }
 
-            for (String containsKey : enchantContainsList) {
-                containsKey = StringUtil.parseString(containsKey, plugin).toLowerCase();
-                if (!containsKey.isEmpty() &&
-                        (fullKey.contains(containsKey) || shortKey.contains(containsKey))) {
+            for (String rawContains : enchantContainsList) {
+                String[] parsed        = splitPipe.apply(rawContains);
+                String enchSubstring   = parsed[0].toLowerCase();
+                String actionIndicator = parsed[1].trim().toLowerCase();
+
+                if (!enchSubstring.isEmpty()
+                        && (fullKey.contains(enchSubstring) || shortKey.contains(enchSubstring)))
+                {
                     return true;
                 }
             }

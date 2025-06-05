@@ -19,6 +19,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
@@ -423,34 +424,109 @@ public class EntityDeathListener implements Listener {
      */
     private List<ItemStack> getGraveItemStackList(EntityDeathEvent event, LivingEntity livingEntity, List<String> permissionList) {
         List<ItemStack> graveItemStackList = new ArrayList<>();
-        List<ItemStack> eventItemStackList = new ArrayList<>(event.getDrops());
-        List<ItemStack> dropItemStackList = new ArrayList<>(eventItemStackList);
-        Iterator<ItemStack> dropItemStackListIterator = dropItemStackList.iterator();
 
-        try {
-            while (dropItemStackListIterator.hasNext()) {
-                ItemStack itemStack = dropItemStackListIterator.next();
-                if (itemStack != null) {
-                    if (plugin.getEntityManager().getGraveUUIDFromItemStack(itemStack) != null) {
-                        if (plugin.getConfig("compass.destroy", livingEntity, permissionList).getBoolean("compass.destroy")) {
-                            dropItemStackListIterator.remove();
-                            event.getDrops().remove(itemStack);
-                            continue;
-                        } else if (plugin.getConfig("compass.ignore", livingEntity, permissionList).getBoolean("compass.ignore")) {
-                            continue;
-                        }
-                    }
-                    if (!plugin.getGraveManager().shouldIgnoreItemStack(itemStack, livingEntity, permissionList)) {
-                        graveItemStackList.add(itemStack);
-                        dropItemStackListIterator.remove();
-                    }
+        List<ItemStack> itemsToProcess = new ArrayList<>(event.getDrops());
+
+        if (livingEntity instanceof Player) {
+            Player player = (Player) livingEntity;
+            Inventory inventory = player.getInventory();
+
+            for (ItemStack invItem : inventory.getContents()) {
+                if (invItem != null) {
+                    itemsToProcess.add(invItem);
                 }
             }
-        } catch (ArrayIndexOutOfBoundsException ignored) {
-            // End the loop if the exception occurs
+
+            EntityEquipment equipment = player.getEquipment();
+            if (equipment != null) {
+                addIfNotNull(itemsToProcess, equipment.getHelmet());
+                addIfNotNull(itemsToProcess, equipment.getChestplate());
+                addIfNotNull(itemsToProcess, equipment.getLeggings());
+                addIfNotNull(itemsToProcess, equipment.getBoots());
+                addIfNotNull(itemsToProcess, equipment.getItemInMainHand());
+                addIfNotNull(itemsToProcess, equipment.getItemInOffHand());
+            }
+        }
+
+        Iterator<ItemStack> iterator = itemsToProcess.iterator();
+        while (iterator.hasNext()) {
+            ItemStack itemStack = iterator.next();
+            if (itemStack == null) {
+                continue;
+            }
+
+            UUID graveUUID = plugin.getEntityManager().getGraveUUIDFromItemStack(itemStack);
+            if (graveUUID != null) {
+                if (plugin.getConfig("compass.destroy", livingEntity, permissionList).getBoolean("compass.destroy")) {
+                    removeFromDropsAndInventory(event, livingEntity, itemStack);
+                    continue;
+                } else if (plugin.getConfig("compass.ignore", livingEntity, permissionList).getBoolean("compass.ignore")) {
+                    continue;
+                }
+            }
+
+            if (!plugin.getGraveManager().shouldIgnoreItemStack(itemStack, livingEntity, permissionList)) {
+                graveItemStackList.add(itemStack);
+                removeFromDropsAndInventory(event, livingEntity, itemStack);
+            }
         }
 
         return graveItemStackList;
+    }
+
+    /**
+     * Helper to add a single ItemStack to the list if it’s not null
+     */
+    private void addIfNotNull(List<ItemStack> list, ItemStack item) {
+        if (item != null) {
+            list.add(item);
+        }
+    }
+
+    /**
+     * Removes the given item from:
+     *   1) the EntityDeathEvent’s drop list, and
+     *   2) the player’s inventory/equipment if the entity is a Player.
+     */
+    private void removeFromDropsAndInventory(EntityDeathEvent event, LivingEntity livingEntity, ItemStack itemStack) {
+        event.getDrops().remove(itemStack);
+
+        if (livingEntity instanceof Player) {
+            Player player = (Player) livingEntity;
+            Inventory inventory = player.getInventory();
+
+            inventory.removeItem(itemStack);
+
+            EntityEquipment equipment = player.getEquipment();
+            if (equipment != null) {
+                if (isSameItem(equipment.getHelmet(), itemStack)) {
+                    equipment.setHelmet(null);
+                }
+                if (isSameItem(equipment.getChestplate(), itemStack)) {
+                    equipment.setChestplate(null);
+                }
+                if (isSameItem(equipment.getLeggings(), itemStack)) {
+                    equipment.setLeggings(null);
+                }
+                if (isSameItem(equipment.getBoots(), itemStack)) {
+                    equipment.setBoots(null);
+                }
+                if (isSameItem(equipment.getItemInMainHand(), itemStack)) {
+                    equipment.setItemInMainHand(null);
+                }
+                if (isSameItem(equipment.getItemInOffHand(), itemStack)) {
+                    equipment.setItemInOffHand(null);
+                }
+            }
+        }
+    }
+
+    /**
+     * Utility method to compare two ItemStacks.
+     * We treat them as “the same” if neither is null and equals() returns true.
+     */
+    private boolean isSameItem(ItemStack a, ItemStack b) {
+        return a != null && b != null && a.equals(b);
     }
 
     /**
