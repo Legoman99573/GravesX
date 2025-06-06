@@ -1,6 +1,5 @@
 package com.ranull.graves.util;
 
-import net.advancedplugins.ae.api.AEAPI;
 import org.bukkit.inventory.ItemStack;
 
 import java.lang.reflect.InvocationTargetException;
