@@ -14,7 +14,7 @@ import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.ColorUtil;
 import com.ranull.graves.util.InventoryUtil;
 import com.ranull.graves.util.MaterialUtil;
-import com.ranull.graves.util.ReflectSoulboundAE;
+import com.ranull.graves.util.ReflectSupportAE;
 import com.ranull.graves.util.StringUtil;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -1541,8 +1541,11 @@ public final class GraveManager {
             return true;
         }
         if (Bukkit.getPluginManager().isPluginEnabled("AdvancedEnchantments")) {
-            if (ReflectSoulboundAE.isSoulbound(itemStack)) {
+            if (ReflectSupportAE.isSoulbound(itemStack)) {
                 entity.getWorld().dropItem(entity.getLocation(), itemStack);
+                return true;
+            }
+            if (ReflectSupportAE.hasWhitScroll(itemStack)) {
                 return true;
             }
         }

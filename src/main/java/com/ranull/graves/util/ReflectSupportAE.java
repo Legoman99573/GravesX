@@ -1,12 +1,13 @@
 package com.ranull.graves.util;
 
+import net.advancedplugins.ae.api.AEAPI;
 import org.bukkit.inventory.ItemStack;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Map;
 
-public class ReflectSoulboundAE {
+public class ReflectSupportAE {
     /**
      * Checks if the given ItemStack has the "Soulbound" enchantment,
      * without ever statically linking against AEAPI.
@@ -30,6 +31,27 @@ public class ReflectSoulboundAE {
 
             // 4) Check if the Map contains "Soulbound"
             return (enchantMap != null && enchantMap.containsKey("Soulbound"));
+
+        } catch (ClassNotFoundException e) {
+            // AEAPI isn't on the classpath at runtime
+            return false;
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            // AEAPI’s method signatures have changed, or invocation failed
+            return false;
+        }
+    }
+    public static boolean hasWhitScroll(ItemStack itemStack) {
+        try {
+            // 1) Load the AEAPI class by name
+            Class<?> aeapiClass = Class.forName("AEAPI");
+
+            // 2) Find and invoke hasCustomEnchant(String, ItemStack)
+            Method hasWScroll = aeapiClass.getMethod("hasWhitescroll", ItemStack.class);
+            Boolean hasWScrollResult = (Boolean) hasWScroll.invoke(null, itemStack);
+            if (Boolean.TRUE.equals(hasWScrollResult)) {
+                return true;
+            }
+            return hasWScrollResult;
 
         } catch (ClassNotFoundException e) {
             // AEAPI isn't on the classpath at runtime
