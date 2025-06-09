@@ -1,4 +1,4 @@
-package com.ranull.graves.util;
+package com.ranull.graves.util.pluginsthatforceyoutopaytousetheirapibutwedecidetoreflectinstead;
 
 import org.bukkit.inventory.ItemStack;
 
