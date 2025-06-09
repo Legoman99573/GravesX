@@ -1,4 +1,4 @@
-package com.ranull.graves.util.pluginsthatforceyoutopaytousetheirapibutwedecidetoreflectinstead;
+package com.ranull.graves.util.pluginsWithoutMavenReposOrUsefulApiDocsThatCauseBugs;
 
 import org.bukkit.inventory.ItemStack;
 
