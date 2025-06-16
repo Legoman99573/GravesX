@@ -234,7 +234,8 @@ settings:
       ##############
       # Experience #
       ##############
-      # If store is false it will store what Minecraft would normally drop, if you want to fully disable it, set store to false or 0. Valid values between 0.0 - 1.0
+      # If store is false it will store what Minecraft would normally drop, if you want to fully disable it, set store to 0.0
+      # Valid values between 0.0 - 1.0
       experience:
         store: 0.8
 
