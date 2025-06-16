@@ -1046,6 +1046,7 @@ public final class EntityManager extends EntityDataManager {
                 setDataByte(livingEntity, "graveZombie");
                 setDataString(livingEntity, "graveUUID", grave.getUUID().toString());
                 setDataString(livingEntity, "graveEntityType", grave.getOwnerType().name());
+                runCommands("event.command.zombiespawn", targetEntity, location, grave);
 
                 if (grave.getPermissionList() != null && !grave.getPermissionList().isEmpty()) {
                     setDataString(livingEntity, "gravePermissionList", String.join("|", grave.getPermissionList()));
