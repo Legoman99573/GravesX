@@ -140,7 +140,7 @@ public final class GraveManager {
         boolean dropOnAbandon = plugin.getConfig("drop.abandon", grave).getBoolean("drop.abandon", false);
         int abandonTimeout = plugin.getConfig("drop.abandon-timeout", grave).getInt("drop.abandon-timeout", -1);
 
-        if (remainingTime == -1 && (!dropOnAbandon || abandonTimeout == -1)) {
+        if (remainingTime == -1 || isAbandoned || (!dropOnAbandon || abandonTimeout == -1)) {
             return;
         }
 
