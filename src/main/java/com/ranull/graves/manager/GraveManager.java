@@ -155,6 +155,8 @@ public final class GraveManager {
 
         plugin.debugMessage("GraveTimeoutEvent not cancelled for grave: " + grave.getUUID(), 2);
 
+        if (timeoutEvent.getLocation() == null) return;
+        if (timeoutEvent.getLocation().getWorld() == null) return;
         Location location = timeoutEvent.getLocation();
         if (location == null) return;
 
@@ -205,7 +207,6 @@ public final class GraveManager {
                 }
                 return;
             }
-
             // Fallback (likely if no config enabled)
             sendPlayerMessage(grave, "message.timeout", location);
             graveRemoveList.add(grave);
