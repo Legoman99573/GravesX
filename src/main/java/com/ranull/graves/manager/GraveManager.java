@@ -126,135 +126,91 @@ public final class GraveManager {
 
 
     /**
-     * Handles the timeout or abandonment of a grave by firing the
-     * GraveTimeoutEvent and then either dropping its contents (timeout)
-     * or moving it into abandoned/expired logic.
+     * Handles the timeout of a grave by calling the GraveTimeoutEvent and removing the grave if not cancelled.
      *
-     * @param grave            the grave to check.
-     * @param graveRemoveList  graves to remove get added here.
+     * @param grave the grave to check for timeout.
+     * @param graveRemoveList the list to which graves to be removed will be added.
      */
-    private void handleGraveTimeout(final Grave grave, final List<Grave> graveRemoveList) {
-        long remaining = grave.getTimeAliveRemaining();
-        boolean wasAbandoned = grave.isAbandoned();
+    private void handleGraveTimeout(Grave grave, List<Grave> graveRemoveList) {
+        long remainingTime = grave.getTimeAliveRemaining();
+        boolean isAbandoned = grave.isAbandoned();
+        plugin.debugMessage("Handling timeout for grave: " + grave.getUUID() + " with remaining time: " + remainingTime, 1);
 
-        plugin.debugMessage(
-                "GraveTimeout check for " + grave.getUUID()
-                        + " [remaining=" + remaining
-                        + ", abandoned=" + wasAbandoned + "]",
-                1
-        );
+        boolean dropOnTimeout = plugin.getConfig("drop.timeout", grave).getBoolean("drop.timeout", false);
+        boolean dropOnAbandon = plugin.getConfig("drop.abandon", grave).getBoolean("drop.abandon", false);
+        int abandonTimeout = plugin.getConfig("drop.abandon-timeout", grave).getInt("drop.abandon-timeout", -1);
 
-        if (remaining < 0) {
+        if (remainingTime == -1 || isAbandoned || (!dropOnAbandon || abandonTimeout == -1)) {
             return;
         }
 
-        boolean dropOnTimeout  = plugin
-                .getConfig("drop.timeout", grave)
-                .getBoolean("drop.timeout", false);
+        GraveTimeoutEvent timeoutEvent = new GraveTimeoutEvent(grave);
+        plugin.getServer().getPluginManager().callEvent(timeoutEvent);
 
-        boolean abandonEnabled = plugin
-                .getConfig("drop.abandon", grave)
-                .getBoolean("drop.abandon", false);
-
-        if (abandonEnabled && dropOnTimeout) {
-            plugin.debugMessage(
-                    "Config ‘drop.abandon’ ignored because ‘drop.timeout’ is enabled",
-                    2
-            );
-            abandonEnabled = false;
-        }
-
-        if (!dropOnTimeout && !abandonEnabled) {
-            return;
-        }
-
-        if (remaining > 0) {
-            return;
-        }
-
-        GraveTimeoutEvent tev = new GraveTimeoutEvent(grave);
-        plugin.getServer().getPluginManager().callEvent(tev);
-
-        if (tev.isCancelled() || tev.isAddon()) {
-            plugin.debugMessage(
-                    "GraveTimeoutEvent cancelled → infinite life for " + grave.getUUID(),
-                    2
-            );
+        if (timeoutEvent.isCancelled() || timeoutEvent.isAddon()) {
+            plugin.debugMessage("GraveTimeoutEvent cancelled for grave: " + grave.getUUID() + ", setting time alive to forever.", 2);
             grave.setTimeAliveRemaining(-1);
             return;
         }
 
-        final Location loc = tev.getLocation();
-        if (loc == null || loc.getWorld() == null) {
-            plugin.debugMessage("Invalid timeout location for " + grave.getUUID(), 2);
-            return;
+        plugin.debugMessage("GraveTimeoutEvent not cancelled for grave: " + grave.getUUID(), 2);
+
+        if (timeoutEvent.getLocation() == null) return;
+        if (timeoutEvent.getLocation().getWorld() == null) return;
+        Location location = timeoutEvent.getLocation();
+        if (location == null) return;
+        if(location.getWorld() == null) return;
+
+        Chunk chunk = location.getChunk();
+        if (!chunk.isLoaded()) {
+            plugin.debugMessage("Loading chunk at x: " + chunk.getX() + ", z: " + chunk.getZ(), 2);
+            chunk.load();
         }
 
-        loc.getChunk().load(true);
-
-        boolean finalAbandonEnabled = abandonEnabled;
         plugin.getGravesXScheduler().runTask(() -> {
-            Chunk chunk = loc.getChunk();
-            if (!chunk.isLoaded()) {
-                plugin.debugMessage(
-                        "Chunk still not loaded at (" + chunk.getX() + "," + chunk.getZ() + ")",
-                        2
-                );
-                return;
-            }
+            if (!chunk.isLoaded()) return;
 
-            if (!wasAbandoned && dropOnTimeout) {
-                plugin.debugMessage("Dropping on timeout: " + grave.getUUID(), 2);
-                dropGraveItems(loc, grave);
-                dropGraveExperience(loc, grave);
-                sendPlayerMessage(grave, "message.timeout", loc);
+            if (dropOnTimeout && !isAbandoned) {
+                dropGraveItems(location, grave);
+                dropGraveExperience(location, grave);
+                sendPlayerMessage(grave, "message.timeout", location);
                 graveRemoveList.add(grave);
-                removeGrave(grave);
                 return;
             }
 
-            if (!wasAbandoned && !dropOnTimeout && finalAbandonEnabled) {
-                plugin.debugMessage("Abandoning grave: " + grave.getUUID(), 2);
-                GraveAbandonedEvent aev = new GraveAbandonedEvent(grave);
-                plugin.getServer().getPluginManager().callEvent(aev);
+            if (isAbandoned && abandonTimeout != -1) {
+                GraveAbandonedExpiredEvent expiredEvent = new GraveAbandonedExpiredEvent(grave);
+                plugin.getServer().getPluginManager().callEvent(expiredEvent);
 
-                if (aev.isCancelled() || aev.isAddon()) {
-                    plugin.debugMessage("Abandon event cancelled for " + grave.getUUID(), 2);
-                    dropGraveItems(loc, grave);
-                    dropGraveExperience(loc, grave);
-                    sendPlayerMessage(grave, "message.timeout", loc);
+                if (!expiredEvent.isCancelled() && !expiredEvent.isAddon()) {
+                    dropGraveItems(location, grave);
+                    dropGraveExperience(location, grave);
+                    sendPlayerMessage(grave, "message.abandon-expired", location);
                     graveRemoveList.add(grave);
-                    removeGrave(grave);
                 } else {
-                    sendPlayerMessage(grave, "message.grave-abandoned", aev.getLocation());
+                    plugin.debugMessage("GraveAbandonedExpiredEvent cancelled for " + grave.getUUID(), 2);
+                    grave.setTimeAliveRemaining(-1); // prevent future triggers
+                }
+                return;
+            }
+
+            if (dropOnAbandon && !isAbandoned) {
+                GraveAbandonedEvent abandonedEvent = new GraveAbandonedEvent(grave);
+                plugin.getServer().getPluginManager().callEvent(abandonedEvent);
+
+                if (!abandonedEvent.isCancelled() && !abandonedEvent.isAddon()) {
+                    sendPlayerMessage(grave, "message.abandoned", abandonedEvent.getLocation());
+                    grave.setTimeAliveRemaining(abandonTimeout);
                     abandonGrave(grave);
-                }
-                return;
-            }
-
-            if (grave.isAbandoned() && finalAbandonEnabled) {
-                plugin.debugMessage("Expired abandoned → drop: " + grave.getUUID(), 2);
-                GraveAbandonedExpiredEvent eev = new GraveAbandonedExpiredEvent(grave);
-                plugin.getServer().getPluginManager().callEvent(eev);
-
-                if (eev.isCancelled() || eev.isAddon()) {
-                    plugin.debugMessage("Expired event cancelled for " + grave.getUUID(), 2);
-                    grave.setTimeAliveRemaining(-1);
                 } else {
-                    dropGraveItems(loc, grave);
-                    dropGraveExperience(loc, grave);
+                    sendPlayerMessage(grave, "message.timeout", location);
                     graveRemoveList.add(grave);
-                    removeGrave(grave);
                 }
                 return;
             }
-
-            plugin.debugMessage("Fallback drop for " + grave.getUUID(), 2);
-            dropGraveItems(loc, grave);
-            dropGraveExperience(loc, grave);
-            sendPlayerMessage(grave, "message.timeout", loc);
+            // Fallback (likely if no config enabled)
+            sendPlayerMessage(grave, "message.timeout", location);
             graveRemoveList.add(grave);
-            removeGrave(grave);
         });
     }
 
