@@ -128,14 +128,18 @@ public final class GraveManager {
     /**
      * Handles the timeout or abandonment of a grave by firing the
      * GraveTimeoutEvent and then either dropping its contents (timeout)
-     * or moving it into abandoned/expired logic.
+     * or moving it into abandoned logic.
      *
-     * @param grave            the grave to check.
-     * @param graveRemoveList  graves to remove get added here.
+     * @param grave           the grave to check.
+     * @param graveRemoveList graves to remove get added here.
      */
     private void handleGraveTimeout(final Grave grave, final List<Grave> graveRemoveList) {
         long remaining = grave.getTimeAliveRemaining();
         boolean wasAbandoned = grave.isAbandoned();
+
+        if (remaining == -1) {
+            return;
+        }
 
         plugin.debugMessage(
                 "GraveTimeout check for " + grave.getUUID()
@@ -144,14 +148,13 @@ public final class GraveManager {
                 1
         );
 
-        if (remaining < 0) {
+        if (remaining > 0) {
             return;
         }
 
-        boolean dropOnTimeout  = plugin
+        boolean dropOnTimeout = plugin
                 .getConfig("drop.timeout", grave)
                 .getBoolean("drop.timeout", false);
-
         boolean abandonEnabled = plugin
                 .getConfig("drop.abandon", grave)
                 .getBoolean("drop.abandon", false);
@@ -165,10 +168,6 @@ public final class GraveManager {
         }
 
         if (!dropOnTimeout && !abandonEnabled) {
-            return;
-        }
-
-        if (remaining > 0) {
             return;
         }
 
@@ -203,6 +202,7 @@ public final class GraveManager {
                 return;
             }
 
+            // Drop on timeout
             if (!wasAbandoned && dropOnTimeout) {
                 plugin.debugMessage("Dropping on timeout: " + grave.getUUID(), 2);
                 dropGraveItems(loc, grave);
@@ -213,6 +213,7 @@ public final class GraveManager {
                 return;
             }
 
+            // Abandon grave if enabled
             if (!wasAbandoned && !dropOnTimeout && finalAbandonEnabled) {
                 plugin.debugMessage("Abandoning grave: " + grave.getUUID(), 2);
                 GraveAbandonedEvent aev = new GraveAbandonedEvent(grave);
@@ -250,13 +251,13 @@ public final class GraveManager {
             }
 
             plugin.debugMessage("Fallback drop for " + grave.getUUID(), 2);
-            dropGraveItems(loc, grave);
-            dropGraveExperience(loc, grave);
             sendPlayerMessage(grave, "message.timeout", loc);
             graveRemoveList.add(grave);
             removeGrave(grave);
         });
     }
+
+
 
     /**
      * Utility to send a message to the grave owner if they're online.
@@ -484,6 +485,7 @@ public final class GraveManager {
         if (plugin.getConfig("drop.abandon-lose-experience", grave).getBoolean("drop.abandon-lose-experience", true))
             grave.setExperience(0);
         grave.setTimeProtection(0);
+        grave.setTimeCreation(System.currentTimeMillis());
         grave.setTimeAlive(plugin.getConfig("drop.abandon-timeout", grave).getInt("drop.abandon-timeout", -1));
         grave.setTimeAliveRemaining(plugin.getConfig("drop.abandon-timeout", grave).getInt("drop.abandon-timeout", -1));
         grave.setOwnerName("Abandoned");
