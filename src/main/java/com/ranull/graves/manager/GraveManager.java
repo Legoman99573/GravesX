@@ -135,16 +135,13 @@ public final class GraveManager {
      */
     private void handleGraveTimeout(final Grave grave, final List<Grave> graveRemoveList) {
         long remaining = grave.getTimeAliveRemaining();
-        boolean wasAbandoned = grave.isAbandoned();
 
         if (remaining == -1) {
             return;
         }
 
         plugin.debugMessage(
-                "GraveTimeout check for " + grave.getUUID()
-                        + " [remaining=" + remaining
-                        + ", abandoned=" + wasAbandoned + "]",
+                "GraveTimeout check for " + grave.getUUID(),
                 1
         );
 
@@ -202,8 +199,7 @@ public final class GraveManager {
                 return;
             }
 
-            // Drop on timeout
-            if (!wasAbandoned && dropOnTimeout) {
+            if (dropOnTimeout && !finalAbandonEnabled) {
                 plugin.debugMessage("Dropping on timeout: " + grave.getUUID(), 2);
                 dropGraveItems(loc, grave);
                 dropGraveExperience(loc, grave);
@@ -213,8 +209,7 @@ public final class GraveManager {
                 return;
             }
 
-            // Abandon grave if enabled
-            if (!wasAbandoned && !dropOnTimeout && finalAbandonEnabled) {
+            if (!dropOnTimeout && finalAbandonEnabled) {
                 plugin.debugMessage("Abandoning grave: " + grave.getUUID(), 2);
                 GraveAbandonedEvent aev = new GraveAbandonedEvent(grave);
                 plugin.getServer().getPluginManager().callEvent(aev);
@@ -229,23 +224,6 @@ public final class GraveManager {
                 } else {
                     sendPlayerMessage(grave, "message.grave-abandoned", aev.getLocation());
                     abandonGrave(grave);
-                }
-                return;
-            }
-
-            if (grave.isAbandoned() && finalAbandonEnabled) {
-                plugin.debugMessage("Expired abandoned → drop: " + grave.getUUID(), 2);
-                GraveAbandonedExpiredEvent eev = new GraveAbandonedExpiredEvent(grave);
-                plugin.getServer().getPluginManager().callEvent(eev);
-
-                if (eev.isCancelled() || eev.isAddon()) {
-                    plugin.debugMessage("Expired event cancelled for " + grave.getUUID(), 2);
-                    grave.setTimeAliveRemaining(-1);
-                } else {
-                    dropGraveItems(loc, grave);
-                    dropGraveExperience(loc, grave);
-                    graveRemoveList.add(grave);
-                    removeGrave(grave);
                 }
                 return;
             }
@@ -486,8 +464,8 @@ public final class GraveManager {
             grave.setExperience(0);
         grave.setTimeProtection(0);
         grave.setTimeCreation(System.currentTimeMillis());
-        grave.setTimeAlive(plugin.getConfig("drop.abandon-timeout", grave).getInt("drop.abandon-timeout", -1));
-        grave.setTimeAliveRemaining(plugin.getConfig("drop.abandon-timeout", grave).getInt("drop.abandon-timeout", -1));
+        grave.setTimeAlive(-1);
+        grave.setTimeAliveRemaining(-1);
         grave.setOwnerName("Abandoned");
         grave.setOwnerDisplayName("Abandoned");
         grave.setOwnerTexture("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZTYxZjFmY2Q0MmY0OGNhNTFmOWRhN2M1NWI3MmYzNWE4MjZlNzViNmEwMjA0OGExZGVhNWQ3MTE5YmM5Y2Q2OSJ9fX0=");
