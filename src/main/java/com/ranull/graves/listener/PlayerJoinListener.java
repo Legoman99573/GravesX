@@ -96,13 +96,13 @@ public class PlayerJoinListener implements Listener {
                         .getStringList("message.grave-plugin-version-development");
                 if (plugin.getIntegrationManager().hasMiniMessage()) {
                     for (String message : stringList) {
-                        String toConvert = StringUtil.parseString(prefix + message, player.getPlayer(), plugin);
+                        String toConvert = StringUtil.parseString(prefix + message.replace("%public-version", plugin.getLatestVersion()), player.getPlayer(), plugin);
                         String newString = MiniMessage.parseString(toConvert);
                         player.sendMessage(newString);
                     }
                 } else {
                     for (String message : stringList) {
-                        player.sendMessage(StringUtil.parseString(prefix + message, player.getPlayer(), plugin));
+                        player.sendMessage(StringUtil.parseString(prefix + message.replace("%public-version", plugin.getLatestVersion()), player.getPlayer(), plugin));
                     }
                 }
             } else {

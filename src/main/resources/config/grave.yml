@@ -911,7 +911,7 @@ settings:
           - "&cYou are running %plugin_name% version %plugin_version%, which is a development build and is not production safe."
           - "&cTHERE WILL NOT BE SUPPORT IF YOU LOSE GRAVE DATA FROM DEVELOPMENT OR COMPILED BUILDS. THIS BUILD IS FOR TESTING PURPOSES ONLY"
           - "&cKeep note that you are using a development version when you report bugs."
-          - "&cIf the same issue occurs in %plugin_version%, then let us know in https://discord.ranull.com/."
+          - "&cIf the same issue occurs in %public_version%, then let us know in https://discord.ranull.com/."
         open-insufficient-balance: "You do not have a sufficient balance to open your grave."
         autoloot-insufficient-balance: "You do not have a sufficient balance to autoloot your grave."
 
