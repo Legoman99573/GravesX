@@ -28,6 +28,8 @@ settings:
         replace-oldest: false
         # Should a player be allowed to preview a grave?
         preview: false
+        # Should we strike lightning where the player has died?
+        smite-death-location: true
         # Grave Economy Settings
         economy:
           # Should we require grave economy?

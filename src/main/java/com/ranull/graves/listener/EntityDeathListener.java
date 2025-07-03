@@ -7,8 +7,10 @@ import com.ranull.graves.event.*;
 import com.ranull.graves.integration.Vault;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.*;
+import org.bukkit.GameRule;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
@@ -794,6 +796,21 @@ public class EntityDeathListener implements Listener {
         plugin.getEntityManager().runCommands("event.command.create", livingEntity, grave.getLocationDeath(), grave);
         plugin.getDataManager().addGrave(grave);
         Player player = (Player) event.getEntity();
+
+        if (plugin.getConfig("grave.smite-death-location", grave).getBoolean("grave.smite-death-location", true)) {
+            World world = event.getEntity().getWorld();
+
+            switch (world.getEnvironment()) {
+                case NORMAL:
+                    world.strikeLightning(player.getLocation());
+                    break;
+                case CUSTOM:
+                    Boolean weatherCycle = world.getGameRuleValue(GameRule.DO_WEATHER_CYCLE);
+                    if (Boolean.TRUE.equals(weatherCycle)) {
+                        world.strikeLightning(player.getLocation());
+                    }
+            }
+        }
 
         if (plugin.getConfig("noteblockapi.enabled", grave).getBoolean("noteblockapi.enabled")
                 && plugin.getIntegrationManager().hasNoteBlockAPI()) {
