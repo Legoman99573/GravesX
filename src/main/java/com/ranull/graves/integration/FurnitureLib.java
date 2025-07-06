@@ -101,27 +101,33 @@ public final class FurnitureLib extends EntityDataManager {
             if (project != null && project.haveModelSchematic()) {
                 location.getBlock().setType(Material.AIR);
 
-                ObjectID objectID = new ObjectID(project.getName(), project.getPlugin().getName(), location);
-                location.setYaw(furnitureLib.getLocationUtil().FaceToYaw(LocationUtil.yawToFace(location.getYaw())
-                        .getOppositeFace()));
-                furnitureLib.spawn(project, objectID);
-                objectID.setUUID(UUID.randomUUID());
-                objectID.getBlockList().stream()
-                        .filter(signLocation -> signLocation.getBlock().getType().name().contains("SIGN"))
-                        .forEach((signLocation) -> setSign(signLocation.getBlock(),
-                                plugin.getConfig("furniturelib.line", grave)
-                                        .getStringList("furniturelib.line"), grave));
+                try {
+                    ObjectID objectID = new ObjectID(project.getName(), project.getPlugin().getName(), location);
+                    location.setYaw(furnitureLib.getLocationUtil().FaceToYaw(LocationUtil.yawToFace(location.getYaw())
+                            .getOppositeFace()));
+                    furnitureLib.spawn(project, objectID);
+                    objectID.setUUID(UUID.randomUUID());
+                    objectID.getBlockList().stream()
+                            .filter(signLocation -> signLocation.getBlock().getType().name().contains("SIGN"))
+                            .forEach((signLocation) -> setSign(signLocation.getBlock(),
+                                    plugin.getConfig("furniturelib.line", grave)
+                                            .getStringList("furniturelib.line"), grave));
 
-                if (plugin.getConfig("furniturelib.head.replace", grave).getBoolean("furniturelib.head.replace")) {
-                    objectID.getPacketList().stream()
-                            .filter(fEntity -> fEntity instanceof fContainerEntity)
-                            .map(fEntity -> (fContainerEntity) fEntity)
-                            .forEach(fContainerEntity -> setSkull(fContainerEntity, grave));
+                    if (plugin.getConfig("furniturelib.head.replace", grave).getBoolean("furniturelib.head.replace")) {
+                        objectID.getPacketList().stream()
+                                .filter(fEntity -> fEntity instanceof fContainerEntity)
+                                .map(fEntity -> (fContainerEntity) fEntity)
+                                .forEach(fContainerEntity -> setSkull(fContainerEntity, grave));
+                    }
+
+                    furnitureLib.getFurnitureManager().addObjectID(objectID);
+                    createEntityData(objectID.getStartLocation(), objectID.getUUID(), grave.getUUID(),
+                            EntityData.Type.FURNITURELIB);
+                } catch (IllegalArgumentException IAE) {
+                    if (!IAE.getMessage().contains("SADDLE")) {
+                        plugin.getLogger().warning("Failed to create furniture because: " + IAE.getCause());
+                    }
                 }
-
-                furnitureLib.getFurnitureManager().addObjectID(objectID);
-                createEntityData(objectID.getStartLocation(), objectID.getUUID(), grave.getUUID(),
-                        EntityData.Type.FURNITURELIB);
             } else {
                 plugin.debugMessage("Can't find FurnitureLib furniture " + name, 1);
             }
