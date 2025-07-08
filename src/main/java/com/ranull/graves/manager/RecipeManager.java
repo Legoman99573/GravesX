@@ -15,8 +15,10 @@ import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 /**6
  * Manages custom recipes for the Graves plugin.
@@ -193,59 +195,57 @@ public final class RecipeManager {
     public void addTokenRecipe(String token, ItemStack itemStack) {
         NamespacedKey namespacedKey = new NamespacedKey(plugin, token + "GraveToken");
 
-        if (!namespacedKeyList.contains(namespacedKey)) {
-            try {
-                ShapedRecipe shapedRecipe = new ShapedRecipe(namespacedKey, itemStack);
+        if (namespacedKeyList.contains(namespacedKey)) return;
 
-                shapedRecipe.shape("ABC", "DEF", "GHI");
-
-                List<String> lineList = plugin.getConfig().getStringList("settings.token." + token + ".recipe");
-                int recipeKey = 1;
-
-                for (String string : lineList.get(0).split(" ")) {
-                    Material material = Material.matchMaterial(string);
-
-                    if (material == null || material.toString().contains("AIR")) {
-                        shapedRecipe.setIngredient(getChar(recipeKey), Material.AIR);
-                    }
-                    if (material != null && material != Material.AIR) {
-                        shapedRecipe.setIngredient(getChar(recipeKey), material);
-                    }
-
-                    recipeKey++;
-                }
-
-                for (String string : lineList.get(1).split(" ")) {
-                    Material material = Material.matchMaterial(string);
-
-                    if (material != null && material != Material.AIR) {
-                        shapedRecipe.setIngredient(getChar(recipeKey), material);
-                    }
-
-                    recipeKey++;
-                }
-
-                for (String string : lineList.get(2).split(" ")) {
-                    Material material = Material.matchMaterial(string);
-
-                    if (material != null && material != Material.AIR) {
-                        shapedRecipe.setIngredient(getChar(recipeKey), material);
-                    }
-
-                    recipeKey++;
-                }
-
-                if (plugin.getServer().getRecipe(namespacedKey) == null) {
-                    plugin.getServer().addRecipe(shapedRecipe);
-                    namespacedKeyList.add(namespacedKey);
-                } else {
-                    plugin.debugMessage("Unable to add recipe " + namespacedKey.getKey(), 1);
-                }
-            } catch (IllegalArgumentException e) { // Fucking spigot really be trying to break this.
-                plugin.getLogger().severe("Unable to register token recipe for " + token + ". Check your recipe in token.yml");
-                plugin.getLogger().severe("This is likely an invalid Material or a Spigot related bug.");
-                plugin.logStackTrace(e);
+        try {
+            List<String> lineList = plugin.getConfig().getStringList("settings.token." + token + ".recipe");
+            if (lineList.size() < 3) {
+                plugin.getLogger().warning("Invalid recipe format for token " + token + ", expected 3 lines.");
+                return;
             }
+
+            Map<Character, Material> ingredients = new HashMap<>();
+            StringBuilder[] shapeLines = new StringBuilder[] {
+                    new StringBuilder(), new StringBuilder(), new StringBuilder()
+            };
+
+            int recipeKey = 1;
+
+            for (int row = 0; row < 3; row++) {
+                String[] parts = lineList.get(row).split(" ");
+                for (String part : parts) {
+                    char ingredientChar = getChar(recipeKey);
+                    Material material = Material.matchMaterial(part);
+
+                    if (material != null && material != Material.AIR) {
+                        ingredients.put(ingredientChar, material);
+                        shapeLines[row].append(ingredientChar);
+                    } else {
+                        shapeLines[row].append(' ');
+                    }
+
+                    recipeKey++;
+                }
+            }
+
+            ShapedRecipe shapedRecipe = new ShapedRecipe(namespacedKey, itemStack);
+            shapedRecipe.shape(shapeLines[0].toString(), shapeLines[1].toString(), shapeLines[2].toString());
+
+            for (Map.Entry<Character, Material> entry : ingredients.entrySet()) {
+                shapedRecipe.setIngredient(entry.getKey(), entry.getValue());
+            }
+
+            if (plugin.getServer().getRecipe(namespacedKey) == null) {
+                plugin.getServer().addRecipe(shapedRecipe);
+                namespacedKeyList.add(namespacedKey);
+            } else {
+                plugin.debugMessage("Unable to add recipe " + namespacedKey.getKey(), 1);
+            }
+
+        } catch (Exception e) {
+            plugin.getLogger().severe("Unable to register token recipe for " + token + ". Check your recipe in token.yml");
+            plugin.getLogger().severe("This is likely an invalid Material or a Spigot-related bug.");
+            plugin.logStackTrace(e);
         }
     }
 
