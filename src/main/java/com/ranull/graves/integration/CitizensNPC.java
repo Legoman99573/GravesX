@@ -6,34 +6,37 @@ import com.ranull.graves.data.EntityData;
 import com.ranull.graves.listener.integration.citizensnpcs.CitizensNPCInteractListener;
 import com.ranull.graves.manager.EntityDataManager;
 import com.ranull.graves.type.Grave;
-import net.citizensnpcs.api.CitizensAPI;
-import net.citizensnpcs.api.npc.NPC;
-import net.citizensnpcs.api.npc.NPCRegistry;
-import net.citizensnpcs.api.trait.trait.Equipment;
-import net.citizensnpcs.trait.SkinTrait;
-import net.citizensnpcs.util.NMS;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
-import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.scoreboard.Team;
 
+import java.lang.reflect.*;
 import java.util.*;
 
 /**
- * Manages NPC interactions and corpse creation related to player graves using Citizens2.
- * Extends EntityDataManager to handle entity data.
+ * Manages NPC interactions and corpse creation/removal related to player graves using Citizens2.
+ * Utilizes reflection to remain compatible across multiple Citizens versions.
  */
 public final class CitizensNPC extends EntityDataManager {
     private final Graves plugin;
     private final CitizensNPCInteractListener citizensNPCInteractListener;
+
+    private final Class<?> npcClass;
+    private final Class<?> skinTraitClass;
+    private final Method getNPCRegistryMethod;
+    private final Method createNPCMethod;
+    private final Method spawnMethod;
+    private final Method dataMethod;
+    private final Method getOrAddTraitMethod;
+    private final Method destroyMethod;
+    private final Method deregisterMethod;
+    private final Method nmsRemoveMethod;
 
     /**
      * Constructs a new CitizensNPC instance with the specified Graves plugin.
@@ -42,11 +45,54 @@ public final class CitizensNPC extends EntityDataManager {
      */
     public CitizensNPC(Graves plugin) {
         super(plugin);
-
         this.plugin = plugin;
         this.citizensNPCInteractListener = new CitizensNPCInteractListener(plugin, this);
 
+        ClassLoader cl = CitizensNPC.class.getClassLoader();
+        // Reflection metadata
+        Class<?> citizensAPIClass = findClass(new String[]{
+                "net.citizensnpcs.api.CitizensAPI",
+                "net.citizensnpcs.CitizensAPI"
+        }, cl);
+        Class<?> npcRegistryClass = findClass(new String[]{
+                "net.citizensnpcs.api.npc.NPCRegistry",
+                "net.citizensnpcs.NPCRegistry"
+        }, cl);
+        npcClass = findClass(new String[]{
+                "net.citizensnpcs.api.npc.NPC",
+                "net.citizensnpcs.NPC"
+        }, cl);
+        skinTraitClass = findClass(new String[]{
+                "net.citizensnpcs.api.trait.SkinTrait",
+                "net.citizensnpcs.trait.SkinTrait"
+        }, cl);
+        Class<?> nmsClass = findClass(new String[]{
+                "net.citizensnpcs.api.util.NMS",
+                "net.citizensnpcs.util.NMS"
+        }, cl);
+
+        try {
+            getNPCRegistryMethod = citizensAPIClass.getMethod("getNPCRegistry");
+            createNPCMethod = npcRegistryClass.getMethod("createNPC", EntityType.class, String.class);
+            spawnMethod = npcClass.getMethod("spawn", Location.class);
+            dataMethod = npcClass.getMethod("data");
+            getOrAddTraitMethod = npcClass.getMethod("getOrAddTrait", Class.class);
+            destroyMethod = npcClass.getMethod("destroy");
+            deregisterMethod = npcRegistryClass.getMethod("deregister", npcClass);
+            nmsRemoveMethod = nmsClass.getMethod("remove", org.bukkit.entity.Entity.class);
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException("Citizens API methods not found via reflection", e);
+        }
         registerListeners();
+    }
+
+    private Class<?> findClass(String[] names, ClassLoader loader) {
+        for (String name : names) {
+            try {
+                return Class.forName(name, true, loader);
+            } catch (ClassNotFoundException ignored) {}
+        }
+        throw new RuntimeException("None of classes " + Arrays.toString(names) + " found");
     }
 
     /**
@@ -56,9 +102,6 @@ public final class CitizensNPC extends EntityDataManager {
         plugin.getServer().getPluginManager().registerEvents(citizensNPCInteractListener, plugin);
     }
 
-    /**
-     * Unregisters the NPC interaction listeners.
-     */
     public void unregisterListeners() {
         if (citizensNPCInteractListener != null) {
             HandlerList.unregisterAll(citizensNPCInteractListener);
@@ -70,20 +113,16 @@ public final class CitizensNPC extends EntityDataManager {
      */
     public void createCorpses() {
         for (ChunkData chunkData : plugin.getCacheManager().getChunkMap().values()) {
-            for (EntityData entityData : chunkData.getEntityDataMap().values()) {
-                if (entityData.getType() == EntityData.Type.CITIZENSNPC) {
-                    if (plugin.getCacheManager().getGraveMap().containsKey(entityData.getUUIDGrave())) {
-                        Grave grave = plugin.getCacheManager().getGraveMap().get(entityData.getUUIDGrave());
-
-                        if (grave != null) {
-                            createCorpse(entityData.getUUIDEntity(), entityData.getLocation(), grave, false);
-                        }
+            for (EntityData data : chunkData.getEntityDataMap().values()) {
+                if (data.getType() == EntityData.Type.CITIZENSNPC) {
+                    Grave grave = plugin.getCacheManager().getGraveMap().get(data.getUUIDGrave());
+                    if (grave != null) {
+                        createCorpse(data.getUUIDEntity(), data.getLocation(), grave, false);
                     }
                 }
             }
         }
     }
-
     /**
      * Creates a new NPC corpse at the specified location with the given grave data.
      *
@@ -103,279 +142,173 @@ public final class CitizensNPC extends EntityDataManager {
      * @param createEntityData  Whether to create entity data for the NPC.
      */
     public void createCorpse(UUID uuid, Location location, Grave grave, boolean createEntityData) {
-        plugin.getGravesXScheduler().runTask(plugin, () -> {
-            if (plugin.getConfig("citizens.corpse.enabled", grave).getBoolean("citizens.corpse.enabled")
-                    && grave.getOwnerType() == EntityType.PLAYER) {
-                Player player = plugin.getServer().getPlayer(grave.getOwnerUUID());
-                Location npcLocation = location.clone();
+        plugin.getGravesXScheduler().runTask(() -> {
+            if (!plugin.getConfig("citizens.corpse.enabled", grave).getBoolean("citizens.corpse.enabled")
+                    || grave.getOwnerType() != EntityType.PLAYER) return;
 
-                if (player != null && npcLocation.getWorld() != null) {
-                    location.getBlock().setType(Material.AIR);
+            Player player = plugin.getServer().getPlayer(grave.getOwnerUUID());
+            if (player == null || location.getWorld() == null) return;
 
-                    // Create NPC name from location
-                    String npcName = getNPCNameFromLocation(npcLocation);
-                    NPCRegistry npcRegistry = CitizensAPI.getNPCRegistry();
-                    NPC npc = npcRegistry.createNPC(EntityType.PLAYER, npcName);
-                    try {
-                        double x = plugin.getConfig("citizens.corpse.offset.x", grave)
-                                .getDouble("citizens.corpse.offset.x");
-                        double y = plugin.getConfig("citizens.corpse.offset.y", grave)
-                                .getDouble("citizens.corpse.offset.y");
-                        double z = plugin.getConfig("citizens.corpse.offset.z", grave)
-                                .getDouble("citizens.corpse.offset.z");
-                        npcLocation.add( x, y, z);
-                    } catch (IllegalArgumentException handled) {
-                        npcLocation.add(0.5, 0.5, 0.5);
-                    }
-                    npc.spawn(npcLocation);
+            location.getBlock().setType(Material.AIR);
+            String npcName = getNPCNameFromLocation(location);
+            try {
+                Object registry = getNPCRegistryMethod.invoke(null);
+                Object npc = createNPCMethod.invoke(registry, EntityType.PLAYER, npcName);
 
-                    npc.data().setPersistent(NPC.Metadata.DEFAULT_PROTECTED, true);
-                    npc.data().setPersistent(NPC.Metadata.FLYABLE, true);
-                    npc.data().setPersistent(NPC.Metadata.NAMEPLATE_VISIBLE, false);
-                    npc.data().setPersistent(NPC.Metadata.KNOCKBACK, false);
-                    try {
-                        npc.data().setPersistent(NPC.Metadata.valueOf("TARGETABLE"), false);
-                    } catch (IllegalArgumentException e) {
-                        //plugin.getServer().getConsoleSender().sendMessage("Nope");
-                    }
-                    try {
-                        npc.data().setPersistent(NPC.Metadata.DAMAGE_OTHERS, false);
-                    } catch (Exception ignored) {
-                    }
-                    npc.data().setPersistent(NPC.Metadata.FLUID_PUSHABLE, false);
-                    npc.data().setPersistent(NPC.Metadata.SWIM, false);
-                    npc.data().setPersistent(NPC.Metadata.REMOVE_FROM_TABLIST, true);
-                    npc.data().setPersistent(NPC.Metadata.REMOVE_FROM_PLAYERLIST, true);
-                    npc.data().setPersistent(NPC.Metadata.SHOULD_SAVE, true);
-
-                    try {
-                        npc.getOrAddTrait(SkinTrait.class).setSkinPersistent(
-                                grave.getOwnerName(),
-                                grave.getOwnerTextureSignature(),
-                                grave.getOwnerTexture()
-                        );
-                    } catch (Exception handled) {
-                        try {
-                            npc.getOrAddTrait(SkinTrait.class).setSkinName(
-                                    grave.getOwnerName()
-                            );
-                        } catch (Exception ignored) {
-                        }
-                    }
-
-                    // Create a scoreboard team for the NPC
-                    ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
-                    if (scoreboardManager != null) {
-                        Scoreboard scoreboard = scoreboardManager.getMainScoreboard();
-                        Team team = scoreboard.getTeam("npcTeam");
-                        if (team == null) {
-                            team = scoreboard.registerNewTeam("npcTeam");
-                        }
-                        team.addEntry(npc.getName());
-                        NMS.setTeamNameTagVisible(team, false); // doesnt work
-                    }
-
-                    npc.data().setPersistent(NPC.Metadata.COLLIDABLE, plugin.getConfig("citizens.corpse.collide", grave).getBoolean("citizens.corpse.collide"));
-
-                    try {
-                        // Set NPC equipment
-                        setNPCEquipment(npc, grave, "HELMET", "HEAD", "citizens.corpse.armor");
-                        setNPCEquipment(npc, grave, "CHESTPLATE", "CHEST", "citizens.corpse.armor");
-                        setNPCEquipment(npc, grave, "LEGGINGS", "LEGS", "citizens.corpse.armor");
-                        setNPCEquipment(npc, grave, "BOOTS", "FEET", "citizens.corpse.armor");
-                        setNPCEquipment(npc, grave, "HAND", "HAND", "citizens.corpse.hand");
-
-                        if (plugin.getVersionManager().hasSecondHand()) {
-                            setNPCEquipment(npc, grave, "OFF_HAND", "OFF_HAND", "citizens.corpse.hand");
-                        }
-                    } catch (Exception ignored) {
-                    }
-
-                    // Make the NPC perform the configured animation (default is sleeping)
-                    if (npc.getEntity() instanceof Player) {
-                        Player npcPlayer = (Player) npc.getEntity();
-                        String animation = plugin.getConfig().getString("citizens.corpse.pose", "SLEEP").toUpperCase();
-
-                        try {
-                            // Attempt to load the correct PlayerAnimation class
-                            Class<? extends Enum<?>> playerAnimationClass;
-                            try {
-                                playerAnimationClass = (Class<? extends Enum<?>>) Class.forName("net.citizensnpcs.util.PlayerAnimation");
-                            } catch (ClassNotFoundException e) {
-                                playerAnimationClass = (Class<? extends Enum<?>>) Class.forName("net.citizensnpcs.api.util.PlayerAnimation");
-                            }
-
-                            // Use the safer approach to get the enum constant
-                            Enum<?> playerAnimation;
-                            try {
-                                playerAnimation = Enum.valueOf(playerAnimationClass.asSubclass(Enum.class), animation);
-                                // Invoke the play method using reflection
-                                try {
-                                    playerAnimation.getClass().getMethod("play", Player.class).invoke(playerAnimation, npcPlayer);
-                                } catch (NoSuchMethodException nsme) {
-                                    plugin.getLogger().warning("Animation " + animation + " is not supported in this version.");
-                                    // Print all valid enum constants
-                                    Object[] enums = playerAnimationClass.getEnumConstants();
-                                    if (enums != null) {
-                                        plugin.getLogger().warning("Valid animations for " + playerAnimationClass.getSimpleName() + ":");
-                                        for (Object enumConstant : enums) {
-                                            plugin.getLogger().warning("- " + enumConstant.toString());
-                                        }
-                                    }
-                                }
-                            } catch (IllegalArgumentException e) {
-                                plugin.getLogger().warning("Invalid animation: " + animation + ". Please check the available animations.");
-                                Object[] enums = playerAnimationClass.getEnumConstants();
-                                if (enums != null) {
-                                    plugin.getLogger().warning("Valid animations for " + playerAnimationClass.getSimpleName() + ":");
-                                    for (Object enumConstant : enums) {
-                                        plugin.getLogger().warning("- " + enumConstant.toString());
-                                    }
-                                }
-                            }
-
-                        } catch (Exception e) {
-                            plugin.getLogger().severe("An error occurred while performing the animation: " + e.getMessage());
-                            plugin.logStackTrace(e);
-                        }
-                    }
-
-                    if (plugin.getConfig("citizens.corpse.glow.enabled", grave)
-                            .getBoolean("citizens.corpse.glow.enabled")) {
-                        try {
-                            npc.data().setPersistent(NPC.Metadata.GLOWING, true);
-                            npc.data().setPersistent(NPC.Metadata.valueOf("GLOWING_COLOR"), ChatColor.valueOf(plugin
-                                    .getConfig("citizens.corpse.glow.color", grave)
-                                    .getString("citizens.corpse.glow.color")).toString());
-                        } catch (IllegalArgumentException ignored) {
-                            npc.data().setPersistent(NPC.Metadata.GLOWING, true);
-                        }
-                    }
-
-                    npc.data().setPersistent("grave_uuid", grave.getUUID().toString());
-
-                    plugin.debugMessage("Spawning Citizens NPC for " + grave.getUUID() + " at "
-                            + npcLocation.getWorld().getName() + ", " + (npcLocation.getBlockX() + 0.5) + "x, "
-                            + (npcLocation.getBlockY() + 0.5) + "y, " + (npcLocation.getBlockZ() + 0.5) + "z", 1);
-
-                    if (createEntityData) {
-                        createEntityData(location, uuid, grave.getUUID(), EntityData.Type.CITIZENSNPC);
-                    }
+                // Position offset
+                try {
+                    double x = plugin.getConfig("citizens.corpse.offset.x", grave).getDouble("citizens.corpse.offset.x");
+                    double y = plugin.getConfig("citizens.corpse.offset.y", grave).getDouble("citizens.corpse.offset.y");
+                    double z = plugin.getConfig("citizens.corpse.offset.z", grave).getDouble("citizens.corpse.offset.z");
+                    location.add(x, y, z);
+                } catch (IllegalArgumentException ex) {
+                    location.add(0.5, 0.5, 0.5);
                 }
+                spawnMethod.invoke(npc, location);
+
+                // Hide nameplate via NMS
+                ScoreboardManager mgr = Bukkit.getScoreboardManager();
+                if (mgr != null) {
+                    Scoreboard board = mgr.getMainScoreboard();
+                    Team team = board.getTeam("npcTeam");
+                    if (team == null) team = board.registerNewTeam("npcTeam");
+                    team.addEntry(npcName);
+                    nmsRemoveMethod.getDeclaringClass()
+                            .getMethod("setTeamNameTagVisible", Team.class, boolean.class)
+                            .invoke(null, team, false);
+                }
+
+                // Skin
+                Object skinTrait = getOrAddTraitMethod.invoke(npc, skinTraitClass);
+                try {
+                    skinTraitClass.getMethod("setSkinPersistent", String.class, String.class, String.class)
+                            .invoke(skinTrait, grave.getOwnerName(), grave.getOwnerTextureSignature(), grave.getOwnerTexture());
+                } catch (NoSuchMethodException ignore) {
+                    skinTraitClass.getMethod("setSkinName", String.class)
+                            .invoke(skinTrait, grave.getOwnerName());
+                }
+
+                // Store metadata to save state
+                Object meta = dataMethod.invoke(npc);
+                Method setPersistent = meta.getClass().getMethod("setPersistent", String.class, Object.class);
+                setPersistent.invoke(meta, "grave_uuid", grave.getUUID().toString());
+
+                if (createEntityData) {
+                    createEntityData(location, uuid, grave.getUUID(), EntityData.Type.CITIZENSNPC);
+                }
+            } catch (ReflectiveOperationException e) {
+                plugin.getLogger().severe("Error spawning Citizens NPC: " + e.getMessage());
+                plugin.logStackTrace(e);
             }
         });
     }
 
-    private void setNPCEquipment(NPC npc, Grave grave, String slot, String slotBukkit, String configPath) {
-        if (plugin.getConfig(configPath, grave).getBoolean(configPath)) {
-            EquipmentSlot BukkitSlot = EquipmentSlot.valueOf(slotBukkit);
-            Equipment.EquipmentSlot CitizensSlot = Equipment.EquipmentSlot.valueOf(slot);
-            if (grave.getEquipmentMap().containsKey(BukkitSlot)) {
-                ItemStack item = grave.getEquipmentMap().get(BukkitSlot);
-                npc.getOrAddTrait(Equipment.class).set(CitizensSlot, item);
+    /**
+     * Removes the NPC corpse for the given grave.
+     */
+    public void removeCorpse(Grave grave) {
+        Location loc = grave.getLocationDeath();
+        if (loc == null) return;
+        String name = getNPCNameFromLocation(loc);
+        Object npc = getNPCByName(name);
+        if (npc != null) {
+            try {
+                destroyMethod.invoke(npc);
+                Object registry = getNPCRegistryMethod.invoke(null);
+                deregisterMethod.invoke(registry, npc);
+            } catch (ReflectiveOperationException e) {
+                plugin.getLogger().warning("Failed to remove NPC " + name + ": " + e.getMessage());
             }
         }
+        getLoadedEntityDataList(grave).stream()
+                .filter(d -> d.getType() == EntityData.Type.CITIZENSNPC)
+                .findFirst().ifPresent(this::removeCorpse);
+    }
+
+    /**
+     * Removes a specific corpse entity and its data.
+     */
+    public void removeCorpse(EntityData entityData) {
+        Location loc = entityData.getLocation();
+        if (loc != null) {
+            String name = getNPCNameFromLocation(loc);
+            Object npc = getNPCByName(name);
+            try {
+                destroyMethod.invoke(npc);
+                Object registry = getNPCRegistryMethod.invoke(null);
+                deregisterMethod.invoke(registry, npc);
+                nmsRemoveMethod.invoke(null, ((org.bukkit.entity.Entity)npcClass.getMethod("getEntity").invoke(npc)));
+            } catch (ReflectiveOperationException e) {
+                plugin.getLogger().warning("Failed to remove NPC data entity: " + e.getMessage());
+            }
+        }
+        Map<EntityData, Object> map = getEntityDataNPCMap(Collections.singletonList(entityData));
+        removeCorpse(map);
+    }
+
+    /**
+     * Bulk removal using reflection.
+     */
+    public void removeCorpse(Map<EntityData, Object> entityDataMap) {
+        List<EntityData> toRemove = new ArrayList<>();
+        try {
+            Object registry = getNPCRegistryMethod.invoke(null);
+            for (Map.Entry<EntityData, Object> entry : entityDataMap.entrySet()) {
+                Object npc = entry.getValue();
+                destroyMethod.invoke(npc);
+                deregisterMethod.invoke(registry, npc);
+                toRemove.add(entry.getKey());
+            }
+        } catch (ReflectiveOperationException e) {
+            plugin.getLogger().warning("Failed bulk remove NPCs: " + e.getMessage());
+        }
+        plugin.getDataManager().removeEntityData(toRemove);
     }
 
     private String getNPCNameFromLocation(Location location) {
         if (location.getWorld() != null) {
-            String npcName = location.getWorld().getName() + "_" + location.getBlockX() + "_"
-                    + location.getBlockY() + "_" + location.getBlockZ();
-            return npcName.replace("|", "");
+            return (location.getWorld().getName() + "_" + location.getBlockX() + "_"
+                    + location.getBlockY() + "_" + location.getBlockZ()).replace("|", "");
         }
         return "";
     }
 
     /**
-     * Removes the NPC corpse associated with the given grave.
-     *
-     * @param grave The grave whose associated NPC corpse should be removed.
+     * Finds all matching EntityData and NPCs.
      */
-    public void removeCorpse(Grave grave) {
-        Location location = grave.getLocationDeath();
-        if (location != null) {
-            String npcName = getNPCNameFromLocation(location);
-            NPC npc = getNPCByName(npcName);
-            if (npc != null) {
-                npc.destroy();
-            }
+    private Map<EntityData, Object> getEntityDataNPCMap(List<EntityData> list) {
+        Map<EntityData, Object> map = new HashMap<>();
+        for (EntityData d : list) {
+            String name = getNPCNameFromLocation(d.getLocation());
+            Object npc = getNPCByName(name);
+            if (npc != null) map.put(d, npc);
         }
-        removeCorpse(getEntityDataNPCMap(getLoadedEntityDataList(grave)));
+        return map;
     }
 
     /**
-     * Removes the NPC corpse associated with the given entity data.
-     *
-     * @param entityData The entity data whose associated NPC corpse should be removed.
+     * Locates an NPC by name via registry iteration.
      */
-    public void removeCorpse(EntityData entityData) {
-        Location location = entityData.getLocation();
-        if (location != null) {
-            String npcName = getNPCNameFromLocation(location);
-            NPC npc = getNPCByName(npcName);
-            CitizensAPI.getNPCRegistry().deregister(npc);
-            if (npc != null) {
-                npc.destroy();
-            }
-        }
-        removeCorpse(getEntityDataNPCMap(Collections.singletonList(entityData)));
-    }
-
-    /**
-     * Removes multiple NPC corpses based on the provided entity data map.
-     *
-     * @param entityDataMap A map of entity data to NPC instances to be removed.
-     */
-    public void removeCorpse(Map<EntityData, NPC> entityDataMap) {
-        List<EntityData> entityDataList = new ArrayList<>();
-
-        for (Map.Entry<EntityData, NPC> entry : entityDataMap.entrySet()) {
-            NMS.remove(entry.getValue().getEntity());
-            CitizensAPI.getNPCRegistry().deregister(entry.getValue());
-            entityDataList.add(entry.getKey());
-        }
-
-        plugin.getDataManager().removeEntityData(entityDataList);
-    }
-
-    /**
-     * Retrieves a map of entity data to NPC instances based on the provided entity data list.
-     *
-     * @param entityDataList The list of entity data to match with NPC instances.
-     * @return A map of entity data to NPC instances.
-     */
-    private Map<EntityData, NPC> getEntityDataNPCMap(List<EntityData> entityDataList) {
-        Map<EntityData, NPC> entityDataMap = new HashMap<>();
-
-        for (EntityData entityData : entityDataList) {
-            Location location = entityData.getLocation();
-            if (location != null) {
-                String npcName = getNPCNameFromLocation(location);
-                NPC npc = getNPCByName(npcName);
-                if (npc != null) {
-                    entityDataMap.put(entityData, npc);
+    @SuppressWarnings("unchecked")
+    private Object getNPCByName(String name) {
+        try {
+            Object registry = getNPCRegistryMethod.invoke(null);
+            for (Object npc : (Iterable<Object>) registry) {
+                if (name.equals(npcClass.getMethod("getName").invoke(npc))) {
+                    return npc;
                 }
             }
-        }
-
-        return entityDataMap;
-    }
-
-    private NPC getNPCByName(String name) {
-        for (NPC npc : CitizensAPI.getNPCRegistry()) {
-            if (name.equals(npc.getName())) {
-                return npc;
-            }
-        }
+        } catch (ReflectiveOperationException ignore) {}
         return null;
     }
 
+    /**
+     * Checks if a corpse exists for the grave.
+     */
     public boolean getNPCCorpse(Grave grave) {
-        Location location = grave.getLocationDeath();
-        if (location != null) {
-            String npcName = getNPCNameFromLocation(location);
-            NPC npc = getNPCByName(npcName);
-            return npc != null;
+        Location loc = grave.getLocationDeath();
+        if (loc != null) {
+            return getNPCByName(getNPCNameFromLocation(loc)) != null;
         }
         return false;
     }
