@@ -276,9 +276,10 @@ public class GravesXAPI {
         grave.setYaw(victim.getLocation().getYaw());
         grave.setPitch(victim.getLocation().getPitch());
         grave.setExperience(experience);
-        grave.setTimeAliveRemaining(timeAliveRemaining);
         grave.setTimeCreation(System.currentTimeMillis());
-        grave.setTimeAlive(timeAliveRemaining);
+        long truetimeAliveRemaining = timeAliveRemaining > 0 ? timeAliveRemaining : plugin.getConfig("grave.time", grave).getLong("grave.time");
+        grave.setTimeAlive(truetimeAliveRemaining);
+        grave.setTimeAliveRemaining(truetimeAliveRemaining);
         Location finalLocationDeath = locationDeath != null ? locationDeath : locationManager.getSafeGraveLocation((LivingEntity) victim, victim.getLocation(), grave);
         if (killer != null) {
             grave.setKillerType(killerEntityType != null ? killerEntityType : EntityType.PLAYER);
@@ -300,7 +301,7 @@ public class GravesXAPI {
             GraveProtectionCreateEvent graveProtectionCreateEvent = new GraveProtectionCreateEvent(victim, grave);
             plugin.getServer().getPluginManager().callEvent(graveProtectionCreateEvent);
             grave.setProtection(true);
-            grave.setTimeProtection(graveProtectionTime != 0 ? graveProtectionTime : plugin.getConfig("protection.time", grave).getInt("protection.time") * 1000L);
+            grave.setTimeProtection(graveProtectionTime > 0 ? graveProtectionTime : plugin.getConfig("protection.time", grave).getInt("protection.time") * 1000L);
         }
 
         try {
