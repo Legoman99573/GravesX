@@ -2282,19 +2282,6 @@ public final class DataManager {
     }
 
     /**
-     * Executes an update SQL statement (deprecated method).
-     *
-     * @param sql the SQL statement.
-     * @deprecated Use {@link #executeUpdate(String, Object[])} instead for parameterized queries.
-     */
-    @Deprecated
-    private void executeUpdate(String sql) throws SQLException {
-        // Convert the SQL statement to an array of parameters for the new method
-        // This is a simple conversion assuming no parameters were used. For a real case, you'd need a more complex implementation.
-        executeUpdate(sql, new Object[0]);
-    }
-
-    /**
      * Executes an update SQL statement with parameters.
      *
      * @param sql        the SQL statement.
