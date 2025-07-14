@@ -2046,7 +2046,7 @@ public final class DataManager {
      * @param string the new value for the column.
      */
     public void updateGrave(Grave grave, String column, String string) {
-        String query = "UPDATE grave SET " + column + " = ? WHERE uuid = ?";
+        String query = "UPDATE " + getStoragePrefix() + "grave SET " + column + " = ? WHERE uuid = ?";
         Object[] parameters = { string, grave.getUUID() };
 
         plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
@@ -3071,6 +3071,6 @@ public final class DataManager {
         if (prefix == null || prefix.trim().isEmpty()) {
             return "";
         }
-        return prefix.trim() + "_";
+        return prefix.trim();
     }
 }
