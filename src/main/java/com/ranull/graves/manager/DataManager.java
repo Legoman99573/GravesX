@@ -2567,8 +2567,7 @@ public final class DataManager {
                         continue;
                     }
 
-                    // create and adjust
-                    executeUpdate(createSql.toString());
+                    executeUpdate(createSql.toString(), new Object[0]);
                     if (sqliteTable.equals(getStoragePrefix() + "grave")) {
                         adjustGraveTableForTargetDB();
                     }
