@@ -5,7 +5,9 @@ import org.bukkit.inventory.ItemStack;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Map;
-
+/**
+ * Reflected class for AEAPI because you have to pay to use the API. What dumbass thinks that is a good idea. We only include this because people want it.
+ */
 public class ReflectSupportAE {
     /**
      * Checks if the given ItemStack has the "Soulbound" enchantment,
@@ -39,6 +41,11 @@ public class ReflectSupportAE {
             return false;
         }
     }
+
+    /**
+     * Checks if the given ItemStack has the "WhitScroll" enchantment,
+     * without ever statically linking against AEAPI.
+     */
     public static boolean hasWhitScroll(ItemStack itemStack) {
         try {
             // 1) Load the AEAPI class by name
