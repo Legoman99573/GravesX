@@ -237,7 +237,7 @@ public class InventoryClickListener implements Listener {
                                 event.setCancelled(true);
                                 return;
                             } else {
-                                plugin.getGravesXScheduler().runTaskLater(plugin, () ->
+                                plugin.getGravesXScheduler().runTaskLater(() ->
                                         plugin.getDataManager().updateGrave(grave, "inventory",
                                                 InventoryUtil.inventoryToString(grave.getInventory())), 1L);
                             }
@@ -249,7 +249,7 @@ public class InventoryClickListener implements Listener {
                                     || action == InventoryAction.PICKUP_ONE
                                     || action == InventoryAction.MOVE_TO_OTHER_INVENTORY && clickedInventory.equals(topInventory)) {
                                 // Schedule a task to update the grave's inventory in the data manager
-                                plugin.getGravesXScheduler().runTaskLater(plugin, () ->
+                                plugin.getGravesXScheduler().runTaskLater(() ->
                                         plugin.getDataManager().updateGrave(grave, "inventory",
                                                 InventoryUtil.inventoryToString(grave.getInventory())), 1L);
                             }

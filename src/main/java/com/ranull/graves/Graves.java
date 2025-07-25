@@ -147,6 +147,21 @@ public class Graves extends JavaPlugin {
     }
 
     private void runShutdownTasks() {
+        getLogger().info("Saving Grave inventories before shutting down..");
+        getGravesXScheduler().runTask(() -> {
+            for (Grave grave : getCacheManager().getGraveMap().values()) {
+                try {
+                    getDataManager().updateGrave(grave, "inventory",
+                            InventoryUtil.inventoryToString(grave.getInventory()));
+                } catch (Exception e) {
+                    getLogger().severe("Failed to save grave " + grave.getUUID() + " on shutdown: " + e.getMessage());
+                    logStackTrace(e);
+                }
+            }
+        });
+
+        getLogger().info("Grave inventories saved.");
+
         getLogger().info("Shutting Down GravesX...");
         try {
             dataManager.closeConnection();
