@@ -152,6 +152,7 @@ public class Graves extends JavaPlugin {
             try {
                 getDataManager().updateGraveMainThread(grave, "inventory",
                         InventoryUtil.inventoryToString(grave.getInventory()));
+                debugMessage("Saved inventory for grave UUID " + grave.getUUID() + " successfully", 2);
             } catch (Exception e) {
                 getLogger().severe("Failed to save grave " + grave.getUUID() + " on shutdown: " + e.getMessage());
                 logStackTrace(e);
