@@ -2060,6 +2060,26 @@ public final class DataManager {
     }
 
     /**
+     * Updates a grave in the database using the main thread.
+     *
+     * @param grave  the grave to update.
+     * @param column the column to update.
+     * @param string the new value for the column.
+     */
+    @ApiStatus.Experimental
+    public void updateGraveMainThread(Grave grave, String column, String string) {
+        String query = "UPDATE " + getStoragePrefix() + "grave SET " + column + " = ? WHERE uuid = ?";
+        Object[] parameters = { string, grave.getUUID() };
+
+        try {
+            executeUpdateMainThread(query, parameters);
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Failed to update grave over main thread: " + e.getMessage());
+            plugin.logStackTrace(e);
+        }
+    }
+
+    /**
      * Converts a ResultSet to a Grave object.
      *
      * @param resultSet the ResultSet to convert.
@@ -2356,6 +2376,82 @@ public final class DataManager {
                 }
             }
         });
+    }
+
+    /**
+     * Executes an update SQL statement with parameters using the main thread.
+     *
+     * @param sql        the SQL statement.
+     * @param parameters the parameters for the SQL statement.
+     * @throws SQLException if a database access error occurs.
+     */
+    @ApiStatus.Experimental
+    private void executeUpdateMainThread(String sql, Object[] parameters) throws SQLException {
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            if (parameters != null) {
+                for (int i = 0; i < parameters.length; i++) {
+                    Object parameter = parameters[i];
+                    if (parameter == null) {
+                        // Use specific SQL types for null values
+                        statement.setNull(i + 1, Types.VARCHAR); // Adjust based on expected parameter type
+                    } else if (parameter instanceof String) {
+                        statement.setString(i + 1, (String) parameter);
+                    } else if (parameter instanceof Integer) {
+                        statement.setInt(i + 1, (Integer) parameter);
+                    } else if (parameter instanceof Long) {
+                        statement.setLong(i + 1, (Long) parameter);
+                    } else if (parameter instanceof Double) {
+                        statement.setDouble(i + 1, (Double) parameter);
+                    } else if (parameter instanceof Float) {
+                        statement.setFloat(i + 1, (Float) parameter);
+                    } else if (parameter instanceof Boolean) {
+                        statement.setBoolean(i + 1, (Boolean) parameter); // Use setBoolean for MSSQL
+                    } else if (parameter instanceof UUID) {
+                        statement.setObject(i + 1, parameter.toString(), Types.VARCHAR);
+                    } else if (parameter instanceof byte[]) {
+                        statement.setBytes(i + 1, (byte[]) parameter);
+                    } else if (parameter instanceof Date) {
+                        statement.setDate(i + 1, (Date) parameter);
+                    } else if (parameter instanceof Timestamp) {
+                        statement.setTimestamp(i + 1, (Timestamp) parameter);
+                    } else if (parameter instanceof LocalDate) {
+                        statement.setObject(i + 1, parameter, Types.DATE);
+                    } else if (parameter instanceof LocalDateTime) {
+                        statement.setObject(i + 1, parameter, Types.TIMESTAMP);
+                    } else if (parameter instanceof Clob) {
+                        statement.setClob(i + 1, (Clob) parameter);
+                    } else if (parameter instanceof Blob) {
+                        statement.setBlob(i + 1, (Blob) parameter);
+                    } else if (parameter instanceof EntityType) {
+                        statement.setString(i + 1, ((EntityType) parameter).name());
+                    } else {
+                        statement.setObject(i + 1, parameter);
+                    }
+                }
+            }
+
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            String sqlState = exception.getSQLState();
+            String message = exception.getMessage().toLowerCase();
+            // Ignore errors related to existing tables or columns
+            if ("42701".equals(sqlState)
+                    || "42P07".equals(sqlState)
+                    || "42S01".equals(sqlState)
+                    || "42S02".equals(sqlState)
+                    || "42S04".equals(sqlState)
+                    || "X0Y32".equals(sqlState)
+                    || "42000".equals(sqlState)
+                    || (message.contains("duplicate column name") && "SQLITE_ERROR".equals(sqlState))) {
+                // ignore
+            } else {
+                plugin.getLogger().severe("Error executing SQL update: " + exception.getMessage());
+                plugin.getLogger().severe("Failed SQL statement: " + sql);
+                plugin.logStackTrace(exception);
+            }
+        }
     }
 
     /**
