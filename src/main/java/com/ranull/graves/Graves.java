@@ -147,7 +147,7 @@ public class Graves extends JavaPlugin {
     }
 
     private void runShutdownTasks() {
-        getLogger().info("Saving Grave inventories before shutting down..");
+        getLogger().info("Saving Grave inventories before shutting down...");
         for (Grave grave : getCacheManager().getGraveMap().values()) {
             try {
                 getDataManager().updateGraveMainThread(grave, "inventory",
