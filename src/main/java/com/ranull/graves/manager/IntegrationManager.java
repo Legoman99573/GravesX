@@ -209,11 +209,14 @@ public final class IntegrationManager {
     private LuckPermsHandler luckPermsHandler;
 
     /**
+     * @deprecated Unmaintained greedware plugin.
+     *
      * Manages integration with CoreProtect, a plugin for block logging and protection.
      * <p>
      * This {@link CoreProtectIntegration} instance represents the integration with the CoreProtect plugin, used for logging and block protection.
      * </p>
      */
+    @Deprecated
     private CoreProtectIntegration coreProtectIntegration;
 
     /**
@@ -365,10 +368,13 @@ public final class IntegrationManager {
     }
 
     /**
+     * @deprecated Unmaintained greedware plugin.
+     *
      * Returns the instance of the CoreProtect integration, if it is loaded.
      *
      * @return The {@code CoreProtect} integration instance, or null if not loaded.
      */
+    @Deprecated
     public CoreProtectIntegration getCoreProtect(){
         return coreProtectIntegration;
     }
@@ -568,10 +574,13 @@ public final class IntegrationManager {
     }
 
     /**
+     * @deprecated Unmaintained greedware plugin.
+     *
      * Checks if CoreProtect integration is loaded.
      *
      * @return {@code true} if CoreProtect integration is loaded, {@code false} otherwise.
      */
+    @Deprecated
     public boolean hasCoreProtect() {
         return coreProtectIntegration != null;
     }
@@ -906,8 +915,11 @@ public final class IntegrationManager {
     }
 
     /**
+     * @deprecated Unmaintained greedware plugin.
+     *
      * Loads CoreProtect integration if enabled in the configuration and CoreProtect is installed.
      */
+    @Deprecated
     private void loadCoreProtect() {
         if (plugin.getConfig().getBoolean("settings.integration.coreprotect.enabled", true)) {
             Plugin coreProtectPlugin = plugin.getServer().getPluginManager().getPlugin("CoreProtect");

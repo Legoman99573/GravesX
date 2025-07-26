@@ -6,6 +6,8 @@ import net.coreprotect.CoreProtectAPI;
 import org.bukkit.plugin.Plugin;
 
 /**
+ * @deprecated Unmaintained greedware plugin.
+ *
  * Handles integration with the CoreProtect plugin.
  *
  * This class provides methods to obtain and interact with the CoreProtect API.
@@ -17,6 +19,8 @@ public class CoreProtectIntegration {
     private CoreProtectAPI coreProtectAPI;
 
     /**
+     * @deprecated Unmaintained greedware plugin.
+     *
      * Constructs a new {@code CoreProtectIntegration}.
      *
      * @param plugin the {@link Graves} plugin instance
@@ -26,6 +30,8 @@ public class CoreProtectIntegration {
     }
 
     /**
+     * @deprecated Unmaintained greedware plugin.
+     *
      * Retrieves the CoreProtect API instance.
      *
      * If the API instance is not already cached, it attempts to obtain it by checking if the CoreProtect plugin is

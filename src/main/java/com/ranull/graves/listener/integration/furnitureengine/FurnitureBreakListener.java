@@ -7,7 +7,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
 /**
- * @deprecated Plugin no longer exists externally
+ * @deprecated Plugin no longer exists externally. Use FurnitureLib instead.
  *
  * Listens for FurnitureBreakEvent and checks if the furniture being broken is associated with a grave.
  */
@@ -15,7 +15,7 @@ public class FurnitureBreakListener implements Listener {
     private final FurnitureEngine furnitureEngine;
 
     /**
-     * @deprecated Plugin no longer exists externally
+     * @deprecated Plugin no longer exists externally. Use FurnitureLib instead.
      *
      * Constructs a new FurnitureBreakListener with the specified FurnitureEngine instance.
      *
@@ -26,7 +26,7 @@ public class FurnitureBreakListener implements Listener {
     }
 
     /**
-     * @deprecated Plugin no longer exists externally
+     * @deprecated Plugin no longer exists externally. Use FurnitureLib instead.
      *
      * Handles FurnitureBreakEvent. Cancels the event if the furniture being broken is associated with a grave.
      *
@@ -42,7 +42,7 @@ public class FurnitureBreakListener implements Listener {
     }
 
     /**
-     * @deprecated Plugin no longer exists externally
+     * @deprecated Plugin no longer exists externally. Use FurnitureLib instead.
      *
      * Checks if the furniture being broken is associated with a grave.
      *
