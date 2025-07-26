@@ -372,19 +372,19 @@
     <dependency>
       <groupId>org.mariadb.jdbc</groupId>
       <artifactId>mariadb-java-client</artifactId>
-      <version>3.5.0</version>
+      <version>3.5.4</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>com.mysql</groupId>
       <artifactId>mysql-connector-j</artifactId>
-      <version>9.2.0</version>
+      <version>9.3.0</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.xerial</groupId>
       <artifactId>sqlite-jdbc</artifactId>
-      <version>3.49.1.0</version>
+      <version>3.50.3.0</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -444,7 +444,7 @@
     <dependency>
       <groupId>com.comphenix.protocol</groupId>
       <artifactId>ProtocolLib</artifactId>
-      <version>5.2.0-SNAPSHOT</version>
+      <version>5.3.0</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -492,7 +492,7 @@
     <dependency>
       <groupId>com.github.Ste3et</groupId>
       <artifactId>FurnitureLib</artifactId>
-      <version>3.2.7</version>
+      <version>3.2.8</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -568,13 +568,13 @@
     <dependency>
       <groupId>net.kyori</groupId>
       <artifactId>adventure-text-minimessage</artifactId>
-      <version>4.21.0</version>
+      <version>4.23.0</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>net.kyori</groupId>
       <artifactId>adventure-text-serializer-gson</artifactId>
-      <version>4.21.0</version>
+      <version>4.23.0</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -610,7 +610,7 @@
     <dependency>
       <groupId>org.json</groupId>
       <artifactId>json</artifactId>
-      <version>20240303</version>
+      <version>20250517</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -646,7 +646,13 @@
     <dependency>
       <groupId>com.github.oshi</groupId>
       <artifactId>oshi-core</artifactId>
-      <version>6.8.0</version>
+      <version>6.8.2</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>33.4.8-jre</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -658,7 +664,7 @@
     <dependency>
       <groupId>com.microsoft.sqlserver</groupId>
       <artifactId>mssql-jdbc</artifactId>
-      <version>12.10.0.jre8</version>
+      <version>13.1.1.jre8-preview</version>
       <scope>provided</scope>
     </dependency>
     <dependency>

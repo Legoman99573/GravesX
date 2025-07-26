@@ -204,39 +204,37 @@ public class Graves extends JavaPlugin {
         LibraryLoaderUtil libraryLoaderUtil = new LibraryLoaderUtil(this);
 
         libraryLoaderUtil.loadLibrary("com{}zaxxer", "HikariCP", "6.3.0", "com{}zaxxer{}hikari", "com{}ranull{}graves{}libraries{}hikari", false);
-        libraryLoaderUtil.loadLibrary("org{}xerial", "sqlite-jdbc", "3.49.1.0", false);
+        libraryLoaderUtil.loadLibrary("org{}xerial", "sqlite-jdbc", "3.50.3.0", false);
 
         try {
             Class.forName("org.json.JSONObject");
         } catch (ClassNotFoundException e) {
-            libraryLoaderUtil.loadLibrary("org{}json", "json", "20240303");
+            libraryLoaderUtil.loadLibrary("org{}json", "json", "20250517");
         }
 
         try {
             Class.forName("com.google.gson.Gson");
         } catch (ClassNotFoundException e) {
-            libraryLoaderUtil.loadLibrary("com{}google{}code{}gson", "gson", "2.10.1", false);
+            libraryLoaderUtil.loadLibrary("com{}google{}code{}gson", "gson", "2.13.1", false);
         }
 
         try {
             Class.forName("com.google.common.collect.ImmutableList");
         } catch (ClassNotFoundException e) {
-            libraryLoaderUtil.loadLibrary("com{}google{}guava", "guava", "33.3.0-jre", false);
+            libraryLoaderUtil.loadLibrary("com{}google{}guava", "guava", "33.4.8-jre", false);
         }
 
-
-        libraryLoaderUtil.loadLibrary("com{}github{}oshi", "oshi-core", "6.8.0", false);
-
+        libraryLoaderUtil.loadLibrary("com{}github{}oshi", "oshi-core", "6.8.2", false);
 
         String storageType = Objects.requireNonNull(getConfig().getString("settings.storage.type")).toUpperCase();
 
         if ("POSTGRESQL".equals(storageType)) {
             libraryLoaderUtil.loadLibrary("org{}postgresql", "postgresql", "42.7.7", "org{}postgresql", "com{}ranull{}graves{}libraries{}postgresql", false);
         } else if ("MARIADB".equals(storageType)) {
-            libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.1.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
-            libraryLoaderUtil.loadLibrary("org{}mariadb{}jdbc", "mariadb-java-client", "3.5.1", "org{}mariadb", "com{}ranull{}graves{}libraries{}mariadb", false);
+            libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.3.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
+            libraryLoaderUtil.loadLibrary("org{}mariadb{}jdbc", "mariadb-java-client", "3.5.4", "org{}mariadb", "com{}ranull{}graves{}libraries{}mariadb", false);
         } else if ("MYSQL".equals(storageType)) {
-            libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.2.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
+            libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.3.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
         } else if ("H2".equals(storageType)) {
             libraryLoaderUtil.loadLibrary("com{}h2database", "h2", "2.3.232", "org{}h2", "com{}ranull{}graves{}libraries{}h2", false, "https://repo1.maven.org/maven2/");
         } else if ("MSSQL".equals(storageType)) {
@@ -244,16 +242,16 @@ public class Graves extends JavaPlugin {
 
             try {
                 Class.forName("java.nio.file.Files");
-                jdbcVersion = "12.10.0.jre11";
+                jdbcVersion = "13.1.1.jre11-preview";
             } catch (ClassNotFoundException e) {
-                jdbcVersion = "12.10.0.jre8";
+                jdbcVersion = "13.1.1.jre8-preview";
             }
 
             libraryLoaderUtil.loadLibrary("com{}microsoft{}sqlserver", "mssql-jdbc", jdbcVersion, "com{}microsoft", "com{}ranull{}graves{}libraries{}microsoft", false);
         }
-        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-api", "4.21.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
-        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-minimessage", "4.21.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
-        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-serializer-gson", "4.21.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
+        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-api", "4.23.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
+        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-minimessage", "4.23.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
+        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-serializer-gson", "4.23.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
         libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-platform-bukkit", "4.4.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
         // libraryLoaderUtil.loadLibrary("de{}themoep", "minedown-adventure", "1.7.3-graves", "de{}themoep{}minedown", "com{}ranull{}graves{}libraries{}minedown", false, "https://repo.cwhead.dev/repository/maven-public/");
         // libraryLoaderUtil.loadLibrary("me{}imdanix", "MiniTranslator", "2.1-graves", "me{}imdanix{}text", "com{}ranull{}graves{}libraries{}imdanix{}text", false, "https://repo.cwhead.dev/repository/maven-public/", false);
