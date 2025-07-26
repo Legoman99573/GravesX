@@ -4,6 +4,8 @@ import com.ranull.graves.Graves;
 import com.ranull.graves.event.GraveExplodeEvent;
 import com.ranull.graves.type.Grave;
 import org.bukkit.Location;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -12,6 +14,7 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Listens for EntityExplodeEvent to handle interactions with grave blocks when they are affected by entity explosions.
@@ -112,6 +115,21 @@ public class EntityExplodeListener implements Listener {
         plugin.getServer().getPluginManager().callEvent(graveExplodeEvent);
 
         if (!graveExplodeEvent.isCancelled() && !graveExplodeEvent.isAddon()) {
+
+            if (plugin.getConfig("drop.looted-explosion-effect", grave).getBoolean("drop.looted-explosion-effect", false)) {
+                try {
+                    Location loc = grave.getLocationDeath();
+
+                    Objects.requireNonNull(loc.getWorld()).spawnParticle(Particle.valueOf("EXPLOSION_HUGE"), loc, 1);
+                    try {
+                        loc.getWorld().playSound(loc, Sound.valueOf("ENTITY_GENERIC_EXPLODE"), 1.0f, 1.0f);
+                    } catch (Exception e) {
+                        loc.getWorld().playSound(loc, Sound.valueOf("EXPLODE"), 1.0f, 1.0f); // pre 1.9
+                    }
+                } catch (Exception ignored) {
+                    //ignored
+                }
+            }
             if (plugin.getConfig("drop.explode", grave).getBoolean("drop.explode")) {
                 plugin.getGraveManager().breakGrave(location, grave);
             } else {

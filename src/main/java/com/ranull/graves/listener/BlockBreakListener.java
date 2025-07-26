@@ -4,12 +4,17 @@ import com.ranull.graves.Graves;
 import com.ranull.graves.event.GraveAutoLootEvent;
 import com.ranull.graves.event.GraveBreakEvent;
 import com.ranull.graves.type.Grave;
+import org.bukkit.Location;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+
+import java.util.Objects;
 
 /**
  * Listens for BlockBreakEvent to handle interactions with grave blocks and
@@ -133,6 +138,18 @@ public class BlockBreakListener implements Listener {
             plugin.getGraveManager().autoLootGrave(player, block.getLocation(), grave);
 
             if (graveBreakEvent.isDropItems() && plugin.getConfig("drop.auto-loot.break", grave).getBoolean("drop.auto-loot.break")) {
+                try {
+                    Location loc = grave.getLocationDeath();
+
+                    Objects.requireNonNull(loc.getWorld()).spawnParticle(Particle.valueOf("EXPLOSION_HUGE"), loc, 1);
+                    try {
+                        loc.getWorld().playSound(loc, Sound.valueOf("ENTITY_GENERIC_EXPLODE"), 1.0f, 1.0f);
+                    } catch (Exception e) {
+                        loc.getWorld().playSound(loc, Sound.valueOf("EXPLODE"), 1.0f, 1.0f); // pre 1.9
+                    }
+                } catch (Exception ignored) {
+                    //ignored
+                }
                 plugin.getGraveManager().breakGrave(block.getLocation(), grave);
                 if (plugin.getIntegrationManager().hasNoteBlockAPI()) {
                     if (plugin.getIntegrationManager().getNoteBlockAPI().isSongPlayingForPlayer(player)) {

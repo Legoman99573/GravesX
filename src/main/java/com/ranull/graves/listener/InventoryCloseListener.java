@@ -5,6 +5,9 @@ import com.ranull.graves.compatibility.CompatibilityInventoryView;
 import com.ranull.graves.event.GraveCloseEvent;
 import com.ranull.graves.event.GraveLootedEvent;
 import com.ranull.graves.type.Grave;
+import org.bukkit.Location;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -12,6 +15,8 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
+
+import java.util.Objects;
 
 /**
  * Listener for handling InventoryCloseEvent to manage actions when a grave inventory is closed.
@@ -139,6 +144,21 @@ public class InventoryCloseListener implements Listener {
 
             // Spawn a zombie at the grave's death location
             plugin.getEntityManager().spawnZombie(grave.getLocationDeath(), player, player, grave);
+
+            if (plugin.getConfig("drop.looted-explosion-effect", grave).getBoolean("drop.looted-explosion-effect", false)) {
+                try {
+                    Location location = grave.getLocationDeath();
+
+                    Objects.requireNonNull(location.getWorld()).spawnParticle(Particle.valueOf("EXPLOSION_HUGE"), location, 1);
+                    try {
+                        location.getWorld().playSound(location, Sound.valueOf("ENTITY_GENERIC_EXPLODE"), 1.0f, 1.0f);
+                    } catch (Exception e) {
+                        location.getWorld().playSound(location, Sound.valueOf("EXPLODE"), 1.0f, 1.0f); // pre 1.9
+                    }
+                } catch (Exception ignored) {
+                    //ignored
+                }
+            }
 
             // Award experience and remove the grave
             plugin.getGraveManager().giveGraveExperience(player, grave);

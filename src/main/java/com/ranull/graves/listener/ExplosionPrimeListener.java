@@ -4,12 +4,15 @@ import com.ranull.graves.Graves;
 import com.ranull.graves.event.GraveExplodeEvent;
 import com.ranull.graves.type.Grave;
 import org.bukkit.Location;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.ExplosionPrimeEvent;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Listens for ExplosionPrimeEvent to handle interactions with grave blocks when an explosion is triggered.
@@ -111,6 +114,22 @@ public class ExplosionPrimeListener implements Listener {
         if (graveExplodeEvent.isCancelled()) {
             event.setCancelled(true);
             return;
+        }
+
+
+        if (plugin.getConfig("drop.looted-explosion-effect", grave).getBoolean("drop.looted-explosion-effect", false)) {
+            try {
+                Location location = grave.getLocationDeath();
+
+                Objects.requireNonNull(location.getWorld()).spawnParticle(Particle.valueOf("EXPLOSION_HUGE"), location, 1);
+                try {
+                    location.getWorld().playSound(location, Sound.valueOf("ENTITY_GENERIC_EXPLODE"), 1.0f, 1.0f);
+                } catch (Exception e) {
+                    location.getWorld().playSound(location, Sound.valueOf("EXPLODE"), 1.0f, 1.0f); // pre 1.9
+                }
+            } catch (Exception ignored) {
+                //ignored
+            }
         }
 
         if (plugin.getConfig("drop.explode", grave).getBoolean("drop.explode", false)) {

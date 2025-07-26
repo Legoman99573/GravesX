@@ -4,6 +4,8 @@ import com.ranull.graves.Graves;
 import com.ranull.graves.event.GraveProjectileHitEvent;
 import com.ranull.graves.type.Grave;
 import org.bukkit.Location;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -12,6 +14,8 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.projectiles.ProjectileSource;
+
+import java.util.Objects;
 
 public class ProjectileHitListener implements Listener {
     private final Graves plugin;
@@ -45,6 +49,21 @@ public class ProjectileHitListener implements Listener {
                 plugin.getServer().getPluginManager().callEvent(graveProjectileHitEvent);
 
                 if (!graveProjectileHitEvent.isCancelled() && !graveProjectileHitEvent.isAddon()) {
+
+                    if (plugin.getConfig("drop.looted-explosion-effect", grave).getBoolean("drop.looted-explosion-effect", false)) {
+                        try {
+                            Location loc = grave.getLocationDeath();
+
+                            Objects.requireNonNull(loc.getWorld()).spawnParticle(Particle.valueOf("EXPLOSION_HUGE"), loc, 1);
+                            try {
+                                loc.getWorld().playSound(loc, Sound.valueOf("ENTITY_GENERIC_EXPLODE"), 1.0f, 1.0f);
+                            } catch (Exception e) {
+                                loc.getWorld().playSound(loc, Sound.valueOf("EXPLODE"), 1.0f, 1.0f); // pre 1.9
+                            }
+                        } catch (Exception ignored) {
+                            //ignored
+                        }
+                    }
                     plugin.getGraveManager().breakGrave(location, grave);
                     plugin.getGraveManager().closeGrave(grave);
                     plugin.getGraveManager().playEffect("effect.loot", location, grave);

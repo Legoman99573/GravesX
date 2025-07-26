@@ -114,6 +114,8 @@ settings:
           other: false
         # Should pistons break graves?
         piston-extend: true
+        # Should we have an explosion effect occur on looting a grave?
+        looted-explosion-effect: false
 
       #########
       # Block #

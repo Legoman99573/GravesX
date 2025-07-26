@@ -126,7 +126,7 @@ public class PlayerInteractListener implements Listener {
             event.setCancelled(true);
             try {
                 Grave finalGrave = grave;
-                plugin.getGravesXScheduler().runTaskLater(plugin, () -> {
+                plugin.getGravesXScheduler().runTaskLater(() -> {
                     if (plugin.getConfig("grave.economy.requires-economy", finalGrave).getBoolean("grave.economy.requires-economy", false)
                             && plugin.getIntegrationManager().hasVault()
                             && plugin.getIntegrationManager().hasVaultEconomy()) {
