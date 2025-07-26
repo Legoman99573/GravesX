@@ -106,8 +106,10 @@ public class BlockBreakListener implements Listener {
             if (plugin.getConfig("drop.auto-loot.enabled", grave).getBoolean("drop.auto-loot.enabled")) {
                 handleAutoLoot(event, player, block, grave, graveBreakEvent);
             } else if (graveBreakEvent.isDropItems()) {
+                explodeEffectGrave(grave);
                 plugin.getGraveManager().breakGrave(block.getLocation(), grave);
             } else {
+                explodeEffectGrave(grave);
                 plugin.getGraveManager().removeGrave(grave);
             }
 
@@ -118,6 +120,21 @@ public class BlockBreakListener implements Listener {
             finalizeGraveBreak(player, block, grave);
         } else if (graveBreakEvent.isCancelled() && !graveBreakEvent.isAddon()) {
             event.setCancelled(true);
+        }
+    }
+
+    private void explodeEffectGrave(Grave grave) {
+        try {
+            Location loc = grave.getLocationDeath();
+
+            Objects.requireNonNull(loc.getWorld()).spawnParticle(Particle.valueOf("EXPLOSION_HUGE"), loc, 1);
+            try {
+                loc.getWorld().playSound(loc, Sound.valueOf("ENTITY_GENERIC_EXPLODE"), 1.0f, 1.0f);
+            } catch (Exception e) {
+                loc.getWorld().playSound(loc, Sound.valueOf("EXPLODE"), 1.0f, 1.0f); // pre 1.9
+            }
+        } catch (Exception ignored) {
+            //ignored
         }
     }
 
