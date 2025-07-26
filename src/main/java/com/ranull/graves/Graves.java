@@ -113,8 +113,8 @@ public class Graves extends JavaPlugin {
 
         getGravesXScheduler().runTask(this, () -> {
             compatibilityChecker();
-            updateConfig();
             updateChecker();
+            updateConfig();
             RegisterSoftCrashHandler();
         });
 
@@ -608,7 +608,7 @@ public class Graves extends JavaPlugin {
         FileConfiguration mainConfig = YamlConfiguration.loadConfiguration(mainConfigFile);
         int configVersion = mainConfig.getInt("config-version", 0);
 
-        if (configVersion != currentConfigVersion) {
+        if (configVersion != currentConfigVersion || isDevelopmentBuild) {
             // Create the outdated folder if it doesn't exist
             new File(getDataFolder(), "outdated").mkdirs();
 
