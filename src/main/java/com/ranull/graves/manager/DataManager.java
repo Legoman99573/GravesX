@@ -906,29 +906,35 @@ public final class DataManager {
         List<String> columnList = getColumnList(tableName);
         if (columnList.contains(columnName)) {
             String query;
+
             switch (type) {
                 case MYSQL:
                 case MARIADB:
-                case SQLITE:
                     query = "ALTER TABLE " + tableName + " MODIFY COLUMN " + columnName + " " + columnDefinition + ";";
                     break;
+
                 case POSTGRESQL:
                     query = "ALTER TABLE " + getStoragePrefix() + tableName + " ALTER COLUMN " + columnName + " TYPE " + columnDefinition + ";";
                     break;
+
                 case H2:
-                    query = "ALTER TABLE " + getStoragePrefix() + tableName + " ALTER COLUMN " + columnName + " " + columnDefinition + ";";
-                    break;
                 case MSSQL:
                     query = "ALTER TABLE " + getStoragePrefix() + tableName + " ALTER COLUMN " + columnName + " " + columnDefinition + ";";
                     break;
+
+                case SQLITE:
+                    plugin.debugMessage("SQLite does not support altering columns. Skipping alteration of column '" +
+                            columnName + "' in table '" + getStoragePrefix()  + tableName + "'.", 2);
+                    return;
+
                 default:
                     plugin.getLogger().severe("Unsupported database type: " + type);
                     return;
             }
+
             executeUpdate(query, new Object[0]);
         }
     }
-
 
     /**
      * Sets up the grave table in the database.
