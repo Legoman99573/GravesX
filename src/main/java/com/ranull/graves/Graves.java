@@ -231,7 +231,7 @@ public class Graves extends JavaPlugin {
         if ("POSTGRESQL".equals(storageType)) {
             libraryLoaderUtil.loadLibrary("org{}postgresql", "postgresql", "42.7.7", "org{}postgresql", "com{}ranull{}graves{}libraries{}postgresql", false);
         } else if ("MARIADB".equals(storageType)) {
-            libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.3.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
+            libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.4.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
             libraryLoaderUtil.loadLibrary("org{}mariadb{}jdbc", "mariadb-java-client", "3.5.4", "org{}mariadb", "com{}ranull{}graves{}libraries{}mariadb", false);
         } else if ("MYSQL".equals(storageType)) {
             libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.3.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
@@ -598,7 +598,7 @@ public class Graves extends JavaPlugin {
      * and replaces them with updated ones from the plugin's resources.
      */
     private void updateConfig() {
-        int currentConfigVersion = 19;
+        int currentConfigVersion = 20;
         File configFolder = new File(getDataFolder(), "config");
 
         // Load the main config file to check the version
