@@ -349,7 +349,7 @@ public final class LocationManager {
             World.Environment environment = location.getWorld().getEnvironment();
 
             boolean skipRoof = (environment == World.Environment.NETHER)
-                    && plugin.getConfig("placement.nether-roof", grave).getBoolean("placement.nether-roof");
+                    && !plugin.getConfig("placement.nether-roof", grave).getBoolean("placement.nether-roof");
 
             if (!skipRoof) {
                 Location roof = getRoof(location, entity, grave);
