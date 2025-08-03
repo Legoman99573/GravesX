@@ -653,7 +653,7 @@
         <dependency>
             <groupId>de.themoep</groupId>
             <artifactId>minedown-adventure</artifactId>
-            <version>1.7.3-SNAPSHOT</version>
+            <version>1.7.5-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
