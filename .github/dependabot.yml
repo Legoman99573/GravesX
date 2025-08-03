@@ -13,11 +13,10 @@ updates:
     commit-message:
       prefix: dependabot
 
-  - package-ecosystem: "maven"
-    directory: "/"
+  - package-ecosystem: "maven" # See documentation for possible values
+    directory: "/" # Location of package manifests
     schedule:
       interval: "daily"
     commit-message:
       prefix: dependabot
-    versioning-strategy: "increase"
     open-pull-requests-limit: 10
