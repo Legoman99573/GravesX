@@ -34,7 +34,7 @@
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.13.0</version>
+        <version>3.14.0</version>
         <configuration>
           <source>${java.version}</source>
           <target>${java.version}</target>
@@ -354,7 +354,7 @@
     <dependency>
       <groupId>de.oliver</groupId>
       <artifactId>FancyNpcs</artifactId>
-      <version>2.5.0</version>
+      <version>2.7.0</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -486,7 +486,7 @@
     <dependency>
       <groupId>com.github.SkriptLang</groupId>
       <artifactId>Skript</artifactId>
-      <version>2.11.0-pre1</version>
+      <version>2.12.1</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -534,10 +534,6 @@
           <groupId>io.th0rgal</groupId>
         </exclusion>
         <exclusion>
-          <artifactId>triumph-gui</artifactId>
-          <groupId>dev.triumphteam</groupId>
-        </exclusion>
-        <exclusion>
           <artifactId>bstats-bukkit</artifactId>
           <groupId>org.bstats</groupId>
         </exclusion>
@@ -568,25 +564,25 @@
     <dependency>
       <groupId>net.kyori</groupId>
       <artifactId>adventure-text-minimessage</artifactId>
-      <version>4.23.0</version>
+      <version>4.24.0</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>net.kyori</groupId>
       <artifactId>adventure-text-serializer-gson</artifactId>
-      <version>4.23.0</version>
+      <version>4.24.0</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>net.kyori</groupId>
       <artifactId>adventure-platform-bukkit</artifactId>
-      <version>4.4.0</version>
+      <version>4.4.1</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>2.17.0</version>
+      <version>2.20.0</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -616,13 +612,13 @@
     <dependency>
       <groupId>net.luckperms</groupId>
       <artifactId>api</artifactId>
-      <version>5.4</version>
+      <version>5.5</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-resolver-provider</artifactId>
-      <version>3.9.9</version>
+      <version>4.0.0-rc-4</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -634,7 +630,7 @@
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-transport-http</artifactId>
-      <version>1.9.22</version>
+      <version>2.0.0-alpha-2</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -658,7 +654,7 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-text</artifactId>
-      <version>1.12.0</version>
+      <version>1.14.0</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -676,7 +672,7 @@
     <dependency>
       <groupId>com.nexomc</groupId>
       <artifactId>nexo</artifactId>
-      <version>1.5.0</version>
+      <version>1.9.0</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>

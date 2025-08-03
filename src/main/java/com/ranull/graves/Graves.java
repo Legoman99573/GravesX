@@ -234,7 +234,7 @@ public class Graves extends JavaPlugin {
             libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.4.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
             libraryLoaderUtil.loadLibrary("org{}mariadb{}jdbc", "mariadb-java-client", "3.5.4", "org{}mariadb", "com{}ranull{}graves{}libraries{}mariadb", false);
         } else if ("MYSQL".equals(storageType)) {
-            libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.3.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
+            libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.4.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
         } else if ("H2".equals(storageType)) {
             libraryLoaderUtil.loadLibrary("com{}h2database", "h2", "2.3.232", "org{}h2", "com{}ranull{}graves{}libraries{}h2", false, "https://repo1.maven.org/maven2/");
         } else if ("MSSQL".equals(storageType)) {
@@ -249,14 +249,14 @@ public class Graves extends JavaPlugin {
 
             libraryLoaderUtil.loadLibrary("com{}microsoft{}sqlserver", "mssql-jdbc", jdbcVersion, "com{}microsoft", "com{}ranull{}graves{}libraries{}microsoft", false);
         }
-        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-api", "4.23.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
-        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-minimessage", "4.23.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
-        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-serializer-gson", "4.23.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
-        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-platform-bukkit", "4.4.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
+        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-api", "4.24.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
+        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-minimessage", "4.24.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
+        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-serializer-gson", "4.24.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
+        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-platform-bukkit", "4.4.1", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
         // libraryLoaderUtil.loadLibrary("de{}themoep", "minedown-adventure", "1.7.3-graves", "de{}themoep{}minedown", "com{}ranull{}graves{}libraries{}minedown", false, "https://repo.cwhead.dev/repository/maven-public/");
         // libraryLoaderUtil.loadLibrary("me{}imdanix", "MiniTranslator", "2.1-graves", "me{}imdanix{}text", "com{}ranull{}graves{}libraries{}imdanix{}text", false, "https://repo.cwhead.dev/repository/maven-public/", false);
         libraryLoaderUtil.loadLibrary("com{}github{}puregero", "multilib", "1.2.4", "com{}github{}puregero{}multilib", "com{}ranull{}graves{}libraries{}multilib", false, "https://repo.clojars.org/");
-        libraryLoaderUtil.loadLibrary("org{}apache{}commons", "commons-text", "1.12.0", "org{}apache{}commons{}text", "com{}ranull{}graves{}libraries{}commonstext", false);
+        libraryLoaderUtil.loadLibrary("org{}apache{}commons", "commons-text", "1.14.0", "org{}apache{}commons{}text", "com{}ranull{}graves{}libraries{}commonstext", false);
 
         getLogger().info("Finished Loading Libraries for GravesX.");
     }
