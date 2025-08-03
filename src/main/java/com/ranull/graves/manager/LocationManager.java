@@ -259,8 +259,9 @@ public final class LocationManager {
         Location checkLoc = location.clone();
         checkLoc.setY(y);
 
-        // Cap Nether Y to avoid going above the build limit
-        if (world.getEnvironment() == World.Environment.NETHER && checkLoc.getY() > 126) {
+        boolean allowNetherRoof = plugin.getConfig("placement.nether-roof", grave)
+                .getBoolean("placement.nether-roof");
+        if (world.getEnvironment() == World.Environment.NETHER && !allowNetherRoof && checkLoc.getY() > 126) {
             checkLoc.setY(126);
         }
 
