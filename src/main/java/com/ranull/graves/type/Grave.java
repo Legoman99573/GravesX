@@ -736,12 +736,14 @@ public class Grave implements InventoryHolder, Serializable {
         COMPACT,
 
         /**
+         * @deprecated Unmaintained by Author. Read here: https://www.spigotmc.org/profile-posts/239137/
          * Storage mode designed for sorting chests.
          * <p>
          * In this mode, the storage or inventory system will utilize features specific to sorting chests and
          * organizing items within them in a sorted manner. Requires the plugin ChestSort.
          * </p>
          */
+        @Deprecated
         CHESTSORT
     }
 }
