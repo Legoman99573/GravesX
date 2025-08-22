@@ -592,6 +592,10 @@
                     <groupId>gs.mclo</groupId>
                     <artifactId>java</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>dev.triumphteam</groupId>
+                    <artifactId>triumph-gui</artifactId>
+                </exclusion>
             </exclusions>
             <scope>provided</scope>
         </dependency>
@@ -736,11 +740,15 @@
         <dependency>
             <groupId>com.nexomc</groupId>
             <artifactId>nexo</artifactId>
-            <version>1.9.0</version>
+            <version>1.10.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>net.byteflux</groupId>
                     <artifactId>libby-bukkit</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>dev.triumphteam</groupId>
+                    <artifactId>triumph-gui</artifactId>
                 </exclusion>
             </exclusions>
             <scope>provided</scope>
