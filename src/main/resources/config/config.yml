@@ -1,5 +1,5 @@
 # Config version, you should never manually change this.
-config-version: 20
+config-version: 21
 
 ###############
 # Core Config #
@@ -312,7 +312,7 @@ settings:
     #############
     # ChestSort #
     #############
-    # Source: https://www.spigotmc.org/resources/chestsort.59773/
+    # Source: https://www.spigotmc.org/resources/chestsort.59773/ - Unsupported by main author
     chestsort:
       # Should ChestSort integration be enabled.
       enabled: true

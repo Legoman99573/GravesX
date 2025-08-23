@@ -596,7 +596,7 @@ public class Graves extends JavaPlugin {
      * and replaces them with updated ones from the plugin's resources.
      */
     private void updateConfig() {
-        int currentConfigVersion = 20;
+        int currentConfigVersion = 21;
         File configFolder = new File(getDataFolder(), "config");
 
         // Load the main config file to check the version
