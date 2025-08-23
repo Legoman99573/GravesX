@@ -30,6 +30,8 @@ settings:
         preview: false
         # Should we strike lightning where the player has died?
         smite-death-location: true
+        # Should we actually smite a death location? Keep note enabling this will hurt entities or destroy ground items if items are ignored. Retained as some use it.
+        actually-smite-death-location: false
         # Grave Economy Settings
         economy:
           # Should we require grave economy?
