@@ -14,12 +14,20 @@ public final class LocationUtil {
     /**
      * Rounds the given location's coordinates to the nearest whole numbers.
      *
-     * @param location The location to be rounded.
-     * @return A new location with rounded coordinates.
+     * @param location The location to be rounded. May be null.
+     * @return A new location with rounded coordinates, or null if the input is null.
      */
     public static Location roundLocation(Location location) {
-        return new Location(location.getWorld(), Math.round(location.getBlockX()), Math.round(location.getY()),
-                Math.round(location.getBlockZ()));
+        if (location == null || location.getWorld() == null) {
+            return null;
+        }
+
+        return new Location(
+                location.getWorld(),
+                Math.round(location.getX()),
+                Math.round(location.getY()),
+                Math.round(location.getZ())
+        );
     }
 
     /**

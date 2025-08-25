@@ -56,6 +56,11 @@ public class EntityDeathListener implements Listener {
         LivingEntity livingEntity = event.getEntity();
         String entityName = plugin.getEntityManager().getEntityName(livingEntity);
         Location location = LocationUtil.roundLocation(livingEntity.getLocation());
+        if (location == null) {
+            plugin.debugMessage("Grave not created for " + entityName + " because the location couldn't be determined.", 2);
+            return;
+        }
+
         List<String> permissionList = livingEntity instanceof Player ? plugin.getPermissionList(livingEntity) : null;
         List<String> worldList = plugin.getConfig("world", livingEntity, permissionList).getStringList("world");
         List<ItemStack> removedItemStackList = getRemovedItemStacks(livingEntity);
