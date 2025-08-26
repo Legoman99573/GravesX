@@ -27,101 +27,104 @@ public class LibraryLoaderUtil {
     }
 
     /**
-     * Loads a library with the specified group ID, artifact ID, and version.
+     * Loads a library using the given group ID, artifact ID, and version.
      * <p>
-     * Uses default settings for relocation, ID, and isolation.
+     * Uses default values: no relocation, no loader ID, non-isolated,
+     * no custom repository URL, and resolves transitive dependencies.
      * </p>
      *
-     * @param groupID    The group ID of the library.
-     * @param artifactID The artifact ID of the library.
-     * @param version    The version of the library.
+     * @param groupID    (Required) Maven group ID of the library.
+     * @param artifactID (Required) Maven artifact ID of the library.
+     * @param version    (Required) Version of the library.
      */
     public void loadLibrary(String groupID, String artifactID, String version) {
         loadLibrary(groupID, artifactID, version, null, null, null, false, null, true);
     }
 
     /**
-     * Loads a library with the specified group ID, artifact ID, version, and isolation setting.
+     * Loads a library with the specified group ID, artifact ID, version, and isolation flag.
      * <p>
-     * Uses default settings for relocation and ID.
+     * Uses default values: no relocation, no loader ID, no custom repository URL,
+     * and resolves transitive dependencies.
      * </p>
      *
-     * @param groupID    The group ID of the library.
-     * @param artifactID The artifact ID of the library.
-     * @param version    The version of the library.
-     * @param isIsolated Whether to load the library in an isolated class loader.
+     * @param groupID    (Required) Maven group ID of the library.
+     * @param artifactID (Required) Maven artifact ID of the library.
+     * @param version    (Required) Version of the library.
+     * @param isIsolated (Required) Whether the library should be loaded in an isolated class loader.
      */
     public void loadLibrary(String groupID, String artifactID, String version, boolean isIsolated) {
         loadLibrary(groupID, artifactID, version, null, null, null, isIsolated, null, true);
     }
 
     /**
-     * Loads a library with the specified group ID, artifact ID, version, relocation patterns, and isolation setting.
+     * Loads a library with relocation and isolation settings.
      * <p>
-     * Uses default settings for ID.
+     * Uses default values: no loader ID, no custom repository URL,
+     * and resolves transitive dependencies.
      * </p>
      *
-     * @param groupID                   The group ID of the library.
-     * @param artifactID                The artifact ID of the library.
-     * @param version                   The version of the library.
-     * @param relocatePattern           The package pattern to relocate.
-     * @param relocateRelocatedPattern  The relocated package pattern.
-     * @param isIsolated                Whether to load the library in an isolated class loader.
+     * @param groupID                  (Required) Maven group ID of the library.
+     * @param artifactID               (Required) Maven artifact ID of the library.
+     * @param version                  (Required) Version of the library.
+     * @param relocatePattern          (Optional) Original package pattern to relocate (requires relocated pattern).
+     * @param relocateRelocatedPattern (Optional) Target package pattern for relocation (requires original pattern).
+     * @param isIsolated               (Required) Whether the library should be loaded in an isolated class loader.
      */
     public void loadLibrary(String groupID, String artifactID, String version, String relocatePattern, String relocateRelocatedPattern, boolean isIsolated) {
         loadLibrary(groupID, artifactID, version, null, relocatePattern, relocateRelocatedPattern, isIsolated, null, true);
     }
 
     /**
-     * Loads a library with the specified group ID, artifact ID, version, relocation patterns, and isolation setting.
+     * Loads a library with relocation, isolation, and transitive dependency settings.
      * <p>
-     * Uses default settings for ID.
+     * Uses default values: no loader ID, no custom repository URL.
      * </p>
      *
-     * @param groupID                       The group ID of the library.
-     * @param artifactID                    The artifact ID of the library.
-     * @param version                       The version of the library.
-     * @param relocatePattern               The package pattern to relocate.
-     * @param relocateRelocatedPattern      The relocated package pattern.
-     * @param isIsolated                    Whether to load the library in an isolated class loader.
-     * @param resolveTransitiveDependencies Determines whether to resolve Transitive Dependencies.
+     * @param groupID                       (Required) Maven group ID of the library.
+     * @param artifactID                    (Required) Maven artifact ID of the library.
+     * @param version                       (Required) Version of the library.
+     * @param relocatePattern               (Optional) Original package pattern to relocate (requires relocated pattern).
+     * @param relocateRelocatedPattern      (Optional) Target package pattern for relocation (requires original pattern).
+     * @param isIsolated                    (Required) Whether the library should be loaded in an isolated class loader.
+     * @param resolveTransitiveDependencies (Required) Whether to resolve transitive dependencies.
      */
     public void loadLibrary(String groupID, String artifactID, String version, String relocatePattern, String relocateRelocatedPattern, boolean isIsolated, boolean resolveTransitiveDependencies) {
         loadLibrary(groupID, artifactID, version, null, relocatePattern, relocateRelocatedPattern, isIsolated, null, resolveTransitiveDependencies);
     }
 
     /**
-     * Loads a library with the specified group ID, artifact ID, version, relocation patterns, and isolation setting.
+     * Loads a library with relocation, isolation, and custom repository URL.
      * <p>
-     * Uses default settings for ID.
+     * Uses default values: no loader ID, resolves transitive dependencies.
      * </p>
      *
-     * @param groupID                   The group ID of the library.
-     * @param artifactID                The artifact ID of the library.
-     * @param version                   The version of the library.
-     * @param relocatePattern           The package pattern to relocate.
-     * @param relocateRelocatedPattern  The relocated package pattern.
-     * @param isIsolated                Whether to load the library in an isolated class loader.
-     * @param libraryURL                Points to an external library URL to a repository.
+     * @param groupID                  (Required) Maven group ID of the library.
+     * @param artifactID               (Required) Maven artifact ID of the library.
+     * @param version                  (Required) Version of the library.
+     * @param relocatePattern          (Optional) Original package pattern to relocate (requires relocated pattern).
+     * @param relocateRelocatedPattern (Optional) Target package pattern for relocation (requires original pattern).
+     * @param isIsolated               (Required) Whether the library should be loaded in an isolated class loader.
+     * @param libraryURL               (Optional) Custom repository URL; if null, defaults are used.
      */
     public void loadLibrary(String groupID, String artifactID, String version, String relocatePattern, String relocateRelocatedPattern, boolean isIsolated, String libraryURL) {
         loadLibrary(groupID, artifactID, version, null, relocatePattern, relocateRelocatedPattern, isIsolated, libraryURL, true);
     }
 
     /**
-     * Loads a library with the specified group ID, artifact ID, version, relocation patterns, and isolation setting.
+     * Loads a library with relocation, isolation, custom repository URL, and transitive dependency settings.
      * <p>
-     * Uses default settings for ID.
+     * Uses default values: no loader ID.
      * </p>
      *
-     * @param groupID                       The group ID of the library.
-     * @param artifactID                    The artifact ID of the library.
-     * @param version                       The version of the library.
-     * @param relocatePattern               The package pattern to relocate.
-     * @param relocateRelocatedPattern      The relocated package pattern.
-     * @param isIsolated                    Whether to load the library in an isolated class loader.
-     * @param libraryURL                    Points to an external library URL to a repository.
-     * @param resolveTransitiveDependencies Determines whether to resolve Transitive Dependencies.
+     * @param groupID                       (Required) Maven group ID of the library.
+     * @param artifactID                    (Required) Maven artifact ID of the library.
+     * @param version                       (Required) Version of the library.
+     * @param relocatePattern               (Optional) Original package pattern to relocate (requires relocated pattern).
+     * @param relocateRelocatedPattern      (Optional) Target package pattern for relocation (requires original pattern).
+     * @param isIsolated                    (Required) Whether the library should be loaded in an isolated class loader.
+     * @param libraryURL                    (Optional) Custom repository URL; if null, defaults are used.
+     * @param resolveTransitiveDependencies (Required) Whether to resolve transitive dependencies.
      */
     public void loadLibrary(String groupID, String artifactID, String version, String relocatePattern, String relocateRelocatedPattern, boolean isIsolated, String libraryURL, boolean resolveTransitiveDependencies) {
         loadLibrary(groupID, artifactID, version, null, relocatePattern, relocateRelocatedPattern, isIsolated, libraryURL, resolveTransitiveDependencies);
@@ -129,25 +132,57 @@ public class LibraryLoaderUtil {
 
 
     /**
-     * Loads a library with the specified group ID, artifact ID, version, ID, relocation patterns, and isolation setting.
-     * <p>
-     * Configures the library with optional ID and relocation settings, and loads it using the BukkitLibraryManager.
-     * </p>
+     * Loads a library into the runtime using the BukkitLibraryManager.
      *
-     * @param groupID                       The group ID of the library.
-     * @param artifactID                    The artifact ID of the library.
-     * @param version                       The version of the library.
-     * @param ID                            Optional ID for the library.
-     * @param relocatePattern               Optional package pattern to relocate.
-     * @param relocateRelocatedPattern      Optional relocated package pattern.
-     * @param isIsolated                    Whether to load the library in an isolated class loader.
-     * @param libraryURL                    Points to an external library URL to a repository.
-     * @param resolveTransitiveDependencies Determines whether to resolve Transitive Dependencies.
+     * <p><b>Required:</b> {@code groupID}, {@code artifactID}, {@code version}, {@code isIsolated},
+     * {@code resolveTransitiveDependencies}.<br>
+     * <b>Optional:</b> {@code ID}, {@code relocatePattern} + {@code relocateRelocatedPattern} (must be provided together),
+     * {@code libraryURL}.</p>
+     *
+     * <p>If {@code libraryURL} is null or blank, common repositories (Maven Central, Sonatype, JCenter, JitPack)
+     * are registered. If relocation is requested, both patterns must be non-blank. When {@code isIsolated} is true and
+     * {@code ID} is blank, a stable loaderId of {@code artifactID + "-isolated"} is used.</p>
+     *
+     * @param groupID                       (Required) Maven group ID (use "{}" as dot placeholders; replaced with "."
+     *                                      in logs/messages only).
+     * @param artifactID                    (Required) Maven artifact ID.
+     * @param version                       (Required) Library version to resolve.
+     * @param ID                            (Optional) Loader ID for namespacing (recommended when isolated).
+     * @param relocatePattern               (Optional) Original package pattern to relocate; requires {@code relocateRelocatedPattern}.
+     * @param relocateRelocatedPattern      (Optional) Target package pattern for relocation; requires {@code relocatePattern}.
+     * @param isIsolated                    (Required) Whether to load the library in an isolated class loader.
+     * @param libraryURL                    (Optional) Custom repository URL to resolve from; if blank, defaults are used.
+     * @param resolveTransitiveDependencies (Required) Whether to resolve transitive dependencies.
+     * @throws IllegalArgumentException if any required parameter is null/blank, or only one relocation pattern is provided.
      */
-    public void loadLibrary(String groupID, String artifactID, String version, String ID, String relocatePattern, String relocateRelocatedPattern, boolean isIsolated, String libraryURL, boolean resolveTransitiveDependencies) {
+    public void loadLibrary(String groupID,
+                            String artifactID,
+                            String version,
+                            String ID,
+                            String relocatePattern,
+                            String relocateRelocatedPattern,
+                            boolean isIsolated,
+                            String libraryURL,
+                            boolean resolveTransitiveDependencies) {
+
+        if (groupID == null || groupID.isBlank()) {
+            throw new IllegalArgumentException("groupID is required and cannot be blank.");
+        }
+        if (artifactID == null || artifactID.isBlank()) {
+            throw new IllegalArgumentException("artifactID is required and cannot be blank.");
+        }
+        final boolean doRelocate = isDoRelocate(version, relocatePattern, relocateRelocatedPattern);
+
+        final String groupPretty = groupID.replace("{}", ".");
+        final String libLabel = groupPretty + "." + artifactID + ":" + version;
+
+        final boolean hasId = ID != null && !ID.isBlank();
+        final String caseKey = (hasId ? "ID" : "PLAIN") + (doRelocate ? "+RELOC" : "");
+
         try {
-            LibraryManager libraryManager = new BukkitLibraryManager(plugin);
-            if (libraryURL != null) {
+            final LibraryManager libraryManager = new BukkitLibraryManager(plugin);
+
+            if (libraryURL != null && !libraryURL.isBlank()) {
                 libraryManager.addRepository(libraryURL);
             } else {
                 libraryManager.addMavenCentral();
@@ -155,113 +190,79 @@ public class LibraryLoaderUtil {
                 libraryManager.addJCenter();
                 libraryManager.addJitPack();
             }
-            libraryManager.getRepositories();
-            if (ID != null) {
-                plugin.getLogger().info("Loading library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + " with ID " + ID + ".");
-                if (relocatePattern != null) {
-                    libraryManager.loadLibrary(Library.builder()
-                            .groupId(groupID)
-                            .artifactId(artifactID)
-                            .version(version)
-                            .loaderId(ID)
-                            .relocate(relocatePattern, relocateRelocatedPattern)
-                            .isolatedLoad(isIsolated)
-                            .resolveTransitiveDependencies(resolveTransitiveDependencies)
-                            .build()
-                    );
-                    if (isIsolated) {
-                        try {
-                            Class<?> clazz = Class.forName(relocateRelocatedPattern.replace("{}", "."));
-                            clazz.getClassLoader();
-                            plugin.getLogger().info("Loaded library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + " and shaded successfully with ID " + ID + ".");
-                        } catch (ClassNotFoundException e) {
-                            Bukkit.getLogger().severe("Shaded library could not be loaded.");
-                        } catch (Exception e) {
-                            Bukkit.getLogger().severe("Shaded library could not be loaded.");
-                            e.printStackTrace();
-                        }
-                    } else {
-                        plugin.getLogger().info("Loaded library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + " and shaded successfully with ID " + ID + ".");
-                    }
-                } else {
-                    libraryManager.loadLibrary(Library.builder()
-                            .groupId(groupID)
-                            .artifactId(artifactID)
-                            .version(version)
-                            .loaderId(ID)
-                            .isolatedLoad(isIsolated)
-                            .resolveTransitiveDependencies(resolveTransitiveDependencies)
-                            .build()
-                    );
-                    if (isIsolated) {
-                        try {
-                            Class<?> clazz = Class.forName(relocateRelocatedPattern.replace("{}", "."));
-                            clazz.getClassLoader();
-                            plugin.getLogger().info("Loaded library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + " successfully with ID " + ID + ".");
-                        } catch (ClassNotFoundException e) {
-                            Bukkit.getLogger().severe("Shaded library could not be loaded.");
-                        } catch (Exception e) {
-                            Bukkit.getLogger().severe("Shaded library could not be loaded.");
-                            e.printStackTrace();
-                        }
-                    } else {
-                        plugin.getLogger().info("Loaded library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + " successfully with ID " + ID + ".");
-                    }
+
+            Library.Builder builder = Library.builder()
+                    .groupId(groupID)
+                    .artifactId(artifactID)
+                    .version(version)
+                    .resolveTransitiveDependencies(resolveTransitiveDependencies);
+
+            switch (caseKey) {
+                case "ID+RELOC":
+                    builder.loaderId(ID).relocate(relocatePattern, relocateRelocatedPattern);
+                    break;
+                case "ID":
+                    builder.loaderId(ID);
+                    break;
+                case "PLAIN+RELOC":
+                    builder.relocate(relocatePattern, relocateRelocatedPattern);
+                    break;
+                case "PLAIN":
+                default:
+                    break;
+            }
+
+            if (isIsolated) {
+                if (!hasId) {
+                    builder.loaderId(artifactID + "-isolated");
+                }
+                builder.isolatedLoad(true);
+            }
+
+            final Library lib = builder.build();
+            plugin.debugMessage("Loading library " + libLabel +
+                    (isIsolated ? " [isolated]" : "") +
+                    (doRelocate ? " [relocated]" : "") +
+                    ((hasId || isIsolated) ? " (loaderId=" + lib.getLoaderId() + ")" : ""), 1);
+
+            libraryManager.loadLibrary(lib);
+
+            if (isIsolated && doRelocate) {
+                try {
+                    final String probe = relocateRelocatedPattern.replace("{}", ".");
+                    Class.forName(probe, false, Thread.currentThread().getContextClassLoader());
+                    plugin.debugMessage("Verified shaded library " + libLabel + ".", 1);
+                } catch (Exception e) {
+                    Bukkit.getLogger().severe("Shaded verification failed for " + libLabel + ": " +
+                            e.getClass().getSimpleName() + " - " + e.getMessage());
+                    plugin.logStackTrace(e);
+                    plugin.getServer().getPluginManager().disablePlugin(plugin);
                 }
             } else {
-                plugin.getLogger().info("Loading library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + ".");
-                if (relocatePattern != null) {
-                    libraryManager.loadLibrary(Library.builder()
-                            .groupId(groupID)
-                            .artifactId(artifactID)
-                            .version(version)
-                            .relocate(relocatePattern, relocateRelocatedPattern)
-                            .isolatedLoad(isIsolated)
-                            .resolveTransitiveDependencies(resolveTransitiveDependencies)
-                            .build()
-                    );
-                    if (isIsolated) {
-                        try {
-                            Class<?> clazz = Class.forName(relocateRelocatedPattern.replace("{}", "."));
-                            clazz.getClassLoader();
-                            plugin.getLogger().info("Loaded library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + " and shaded successfully.");
-                        } catch (ClassNotFoundException e) {
-                            Bukkit.getLogger().severe("Shaded library could not be loaded.");
-                        } catch (Exception e) {
-                            Bukkit.getLogger().severe("Shaded library could not be loaded.");
-                            e.printStackTrace();
-                        }
-                    } else {
-                        plugin.getLogger().info("Loaded library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + " and shaded successfully.");
-                    }
-                } else {
-                    libraryManager.loadLibrary(Library.builder()
-                            .groupId(groupID)
-                            .artifactId(artifactID)
-                            .version(version)
-                            .isolatedLoad(isIsolated)
-                            .resolveTransitiveDependencies(resolveTransitiveDependencies)
-                            .build()
-                    );
-                    if (isIsolated) {
-                        try {
-                            Class<?> clazz = Class.forName(relocateRelocatedPattern.replace("{}", "."));
-                            clazz.getClassLoader();
-                            plugin.getLogger().info("Loaded library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + " successfully.");
-                        } catch (ClassNotFoundException e) {
-                            Bukkit.getLogger().severe("Shaded library could not be loaded.");
-                        } catch (Exception e) {
-                            Bukkit.getLogger().severe("Shaded library could not be loaded.");
-                            e.printStackTrace();
-                        }
-                    } else {
-                        plugin.getLogger().info("Loaded library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + " successfully.");
-                    }
-                }
+                plugin.debugMessage("Loaded library " + libLabel + ".", 1);
             }
+
         } catch (Exception e) {
-            plugin.getLogger().severe("Failed to download or load library " + groupID.replace("{}", ".") + "." + artifactID + " version " + version + ". Cause: " + e.getCause());
+            plugin.getLogger().severe("Failed to load " + libLabel + ": " +
+                    e.getClass().getSimpleName() + " - " + e.getMessage());
             plugin.logStackTrace(e);
+            plugin.getServer().getPluginManager().disablePlugin(plugin);
         }
     }
+
+    private static boolean isDoRelocate(String version, String relocatePattern, String relocateRelocatedPattern) {
+        if (version == null || version.isBlank()) {
+            throw new IllegalArgumentException("version is required and cannot be blank.");
+        }
+
+        final boolean hasRelocatePattern = relocatePattern != null && !relocatePattern.isBlank();
+        final boolean hasRelocateTarget = relocateRelocatedPattern != null && !relocateRelocatedPattern.isBlank();
+
+        if (hasRelocatePattern ^ hasRelocateTarget) {
+            throw new IllegalArgumentException("If relocation is used, both relocatePattern and relocateRelocatedPattern must be provided.");
+        }
+
+        return hasRelocatePattern;
+    }
+
 }
