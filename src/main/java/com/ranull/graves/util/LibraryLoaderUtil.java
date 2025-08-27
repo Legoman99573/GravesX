@@ -244,12 +244,7 @@ public class LibraryLoaderUtil {
     }
 
     private static @NotNull LibraryManager getLibraryManager(String libraryURL, Graves plugin) {
-        final LibraryManager libraryManager;
-        if (plugin.getVersionManager().isPaper()) {
-            libraryManager = new PaperLibraryManager(plugin);
-        } else {
-            libraryManager = new BukkitLibraryManager(plugin);
-        }
+        final LibraryManager libraryManager = new BukkitLibraryManager(plugin);
         if (libraryURL != null && !libraryURL.isBlank()) {
             libraryManager.addRepository(libraryURL);
         }
