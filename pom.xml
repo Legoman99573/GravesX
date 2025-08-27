@@ -698,7 +698,7 @@
         <dependency>
             <groupId>com.alessiodp</groupId>
             <artifactId>libby</artifactId>
-            <version>2.0.1-graves</version>
+            <version>2.0.1-graves2</version>
             <scope>compile</scope>
         </dependency>
         <dependency>

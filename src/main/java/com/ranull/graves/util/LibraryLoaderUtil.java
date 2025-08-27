@@ -3,8 +3,10 @@ package com.ranull.graves.util;
 import com.alessiodp.libby.BukkitLibraryManager;
 import com.alessiodp.libby.Library;
 import com.alessiodp.libby.LibraryManager;
+import com.alessiodp.libby.PaperLibraryManager;
 import com.ranull.graves.Graves;
 import org.bukkit.Bukkit;
+import org.jetbrains.annotations.NotNull;
 
 
 /**
@@ -180,16 +182,7 @@ public class LibraryLoaderUtil {
         final String caseKey = (hasId ? "ID" : "PLAIN") + (doRelocate ? "+RELOC" : "");
 
         try {
-            final LibraryManager libraryManager = new BukkitLibraryManager(plugin);
-
-            if (libraryURL != null && !libraryURL.isBlank()) {
-                libraryManager.addRepository(libraryURL);
-            } else {
-                libraryManager.addMavenCentral();
-                libraryManager.addSonatype();
-                libraryManager.addJCenter();
-                libraryManager.addJitPack();
-            }
+            final LibraryManager libraryManager = getLibraryManager(libraryURL, plugin);
 
             Library.Builder builder = Library.builder()
                     .groupId(groupID)
@@ -248,6 +241,23 @@ public class LibraryLoaderUtil {
             plugin.logStackTrace(e);
             plugin.getServer().getPluginManager().disablePlugin(plugin);
         }
+    }
+
+    private static @NotNull LibraryManager getLibraryManager(String libraryURL, Graves plugin) {
+        final LibraryManager libraryManager;
+        if (plugin.getVersionManager().isPaper()) {
+            libraryManager = new PaperLibraryManager(plugin);
+        } else{
+            libraryManager = new BukkitLibraryManager(plugin);
+        }
+        if (libraryURL != null && !libraryURL.isBlank()) {
+            libraryManager.addRepository(libraryURL);
+        }
+        libraryManager.addMavenCentral();
+        libraryManager.addSonatype();
+        libraryManager.addJCenter();
+        libraryManager.addJitPack();
+        return libraryManager;
     }
 
     private static boolean isDoRelocate(String version, String relocatePattern, String relocateRelocatedPattern) {
