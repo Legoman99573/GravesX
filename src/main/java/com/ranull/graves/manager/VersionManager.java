@@ -194,7 +194,7 @@ public final class VersionManager {
         }
 
         try {
-            Class.forName("io.papermc.paper.ServerVersion", false, getClass().getClassLoader());
+            Class.forName("io.papermc.paper.configuration.ServerConfiguration", false, getClass().getClassLoader());
             this.isPaper = true;
         } catch (ClassNotFoundException ignored) {
             this.isPaper = false;
