@@ -34,6 +34,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
@@ -85,6 +86,7 @@ public class Graves extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        versionManager = new VersionManager();
         loadLibraries();
 
         graveScheduler = UniversalScheduler.getScheduler(this);
@@ -92,7 +94,6 @@ public class Graves extends JavaPlugin {
         integrationManager.load();
         integrationManager.loadNoReload();
 
-        versionManager = new VersionManager();
         cacheManager = new CacheManager();
         dataManager = new DataManager(this);
         importManager = new ImportManager(this);
@@ -821,59 +822,76 @@ public class Graves extends JavaPlugin {
         }
     }
 
-    /**
-     * Dumps server and plugin-related debug information and provides the result
-     * either as a remote URL (via mclogs or hastebin) or saves it locally if upload fails.
-     * <p>
-     * If the plugin is enabled, the operation is performed asynchronously.
-     * </p>
-     *
-     * @param commandSender the sender (e.g., player or console) who will receive the result message.
-     */
     public void dumpServerInfo(CommandSender commandSender) {
-        if (isEnabled()) {
-            getGravesXScheduler().runTaskAsynchronously(() -> {
-                String serverDumpInfo = ServerUtil.getServerDumpInfo(this);
-                String message = serverDumpInfo;
+        if (!isEnabled()) return;
 
-                if (getConfig().getString("settings.dump.method", "MCLOGS").equalsIgnoreCase("MCLOGS") ||
-                    getConfig().getString("settings.dump.method", "MCLOGS").equalsIgnoreCase("HASTEBIN")) {
-                    String response = MclogsUtil.postLogToMclogs(serverDumpInfo);
+        getGravesXScheduler().runTaskAsynchronously(() -> {
+            final String serverDumpInfo = ServerUtil.getServerDumpInfo(this);
+            String message = serverDumpInfo;
 
-                    if (response != null) {
-                        message = response;
-                        getLogger().info("Log uploaded successfully. URL: " + response);
-                    } else {
-                        getLogger().warning("Log upload failed. No response received.");
+            final String method = getConfig().getString("settings.dump.method", "MCLOGS").trim().toUpperCase();
+
+            String response = null;
+            try {
+                switch (method) {
+                    case "HASTEBIN":
+                    case "TOPTAL": {
+                        org.bukkit.configuration.ConfigurationSection tp =
+                                getConfig().getConfigurationSection("settings.dump.toptal");
+                        String token = tp != null ? tp.getString("token", "") : "";
+                        response = ToptalUtil.post(serverDumpInfo, token);
+                        break;
                     }
-                }
+                    case "MCLOGS":
+                        response = MclogsUtil.postLogToMclogs(serverDumpInfo);
+                        break;
+                    case "PASTEBIN": {
+                        org.bukkit.configuration.ConfigurationSection pb =
+                                getConfig().getConfigurationSection("settings.dump.pastebin");
+                        String devKey  = pb != null ? pb.getString("dev-key", "") : "";
+                        String userKey = pb != null ? pb.getString("user-key", "") : "";
+                        String privacy = pb != null ? pb.getString("privacy", "UNLISTED") : "UNLISTED";
+                        String expire  = pb != null ? pb.getString("expire", "1W") : "1W";
+                        String title   = "GravesX Dump " + System.currentTimeMillis();
 
-                if (serverDumpInfo.equals(message)) {
-                    try {
-                        // Create the directory if it doesn't exist
-                        File dumpDir = new File(getDataFolder(), "dump");
-                        if (!dumpDir.exists()) {
-                            dumpDir.mkdirs();
-                        }
-
-                        // Create the file within the dump directory
-                        String name = "graves-dump-" + System.currentTimeMillis() + ".txt";
-                        File dumpFile = new File(dumpDir, name);
-
-                        PrintWriter printWriter = new PrintWriter(dumpFile, "UTF-8");
-                        printWriter.write(serverDumpInfo);
-                        printWriter.close();
-
-                        message = dumpFile.getAbsolutePath();
-                    } catch (FileNotFoundException | UnsupportedEncodingException exception) {
-                        logStackTrace(exception);
+                        response = PastebinUtil.post(
+                                devKey, userKey, title, serverDumpInfo, privacy, expire
+                        );
+                        break;
                     }
+                    default:
+                        getLogger().warning("Unknown dump method '" + method + "', falling back to local file.");
                 }
+            } catch (Exception ex) {
+                getLogger().severe("Failed to dump info. You will need to either switch provider or provide the plugin version when reporting dump info.");
+                logStackTrace(ex);
+            }
 
-                commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
-                        + "Dumped: " + message);
-            });
-        }
+            if (response != null && !response.isBlank()) {
+                message = response;
+                getLogger().info("Log uploaded successfully. URL: " + response);
+            } else {
+                try {
+                    File dumpDir = new File(getDataFolder(), "dump");
+                    if (!dumpDir.exists() && !dumpDir.mkdirs()) {
+                        throw new IOException("Could not create dump directory: " + dumpDir.getAbsolutePath());
+                    }
+                    String name = "gravesx-dump-" + System.currentTimeMillis() + ".txt";
+                    File dumpFile = new File(dumpDir, name);
+                    try (OutputStream os = new FileOutputStream(dumpFile);
+                         Writer w = new OutputStreamWriter(os, StandardCharsets.UTF_8)) {
+                        w.write(serverDumpInfo);
+                    }
+                    message = dumpFile.getAbsolutePath();
+                } catch (IOException ioe) {
+                    logStackTrace(ioe);
+                }
+            }
+
+            commandSender.sendMessage(
+                    ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET + "Dumped: " + message
+            );
+        });
     }
 
     /**

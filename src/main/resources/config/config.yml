@@ -159,12 +159,23 @@ settings:
     level: 0
 
   #########
-  # Dump #
+  # Dump  #
   #########
   # Dump server information to help debug the plugin.
-  # Methods: MCLOGS, FILE
+  # Methods: MCLOGS, FILE, PASTEBIN, TOPTAL
   dump:
     method: MCLOGS
+
+    # Only used when method = TOPTAL
+    toptal:
+      token: ""     # Required Bearer token or else will fail
+
+    # Only used when method = PASTEBIN
+    pastebin:
+      dev-key: ""        # REQUIRED (get from https://pastebin.com/doc_api)
+      user-key: ""       # OPTIONAL; required for PRIVATE pastes
+      privacy: UNLISTED  # PUBLIC | UNLISTED | PRIVATE
+      expire: 1W         # N | 10M | 1H | 1D | 1W | 2W | 1M | 6M | 1Y
 
   ##########
   # Update #
