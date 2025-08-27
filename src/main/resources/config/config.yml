@@ -162,26 +162,33 @@ settings:
   # Dump  #
   #########
   # Dump server information to help debug the plugin.
-  # Methods: MCLOGS, FILE, PASTEBIN, TOPTAL
+  # Methods: MCLOGS, FILE, PASTEBIN, TOPTAL/HASTEBIN
   dump:
     method: MCLOGS
 
-    # Only used when method = TOPTAL
+    # Only used when method is TOPTAL or HASTEBIN (former name, but will use TOPTAL. Added back for legacy naming)
     toptal:
-      token: ""     # Required Bearer token or else will fail
+      # Required Bearer token or else will fail (get from https://www.toptal.com/developers/hastebin/documentation)
+      token: ""
 
-    # Only used when method = PASTEBIN
+    # Only used when method is PASTEBIN
     pastebin:
-      dev-key: ""        # REQUIRED (get from https://pastebin.com/doc_api)
-      user-key: ""       # OPTIONAL; required for PRIVATE pastes
-      privacy: UNLISTED  # PUBLIC | UNLISTED | PRIVATE
-      expire: 1W         # N | 10M | 1H | 1D | 1W | 2W | 1M | 6M | 1Y
+      # REQUIRED (get from https://pastebin.com/doc_api)
+      dev-key: ""
+      # OPTIONAL; required for PRIVATE pastes
+      user-key: ""
+      # Valid Options:
+      # PUBLIC | UNLISTED | PRIVATE
+      privacy: UNLISTED
+      # Valid Options:
+      # N | 10M | 1H | 1D | 1W | 2W | 1M | 6M | 1Y
+      expire: 1W
 
   ##########
   # Update #
   ##########
   update:
-    # Should Graves try and check for an update.
+    # Should GravesX try and check for an update.
     check: true
 
   ###########
