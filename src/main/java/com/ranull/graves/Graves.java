@@ -11,6 +11,7 @@ import com.ranull.graves.manager.*;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.*;
 import com.tchristofferson.configupdater.ConfigUpdater;
+import dev.cwhead.GravesX.GravesXAddon;
 import org.bstats.bukkit.Metrics;
 import org.bstats.charts.DrilldownPie;
 import org.bstats.charts.SimplePie;
@@ -80,6 +81,7 @@ public class Graves extends JavaPlugin {
         }
 
         saveDefaultConfig();
+        GravesXAddon.ensureAddonRoot(this);
 
         integrationManager = new IntegrationManager(this);
     }
@@ -112,7 +114,7 @@ public class Graves extends JavaPlugin {
         registerRecipes();
         saveTextFiles();
 
-        getGravesXScheduler().runTask(this, () -> {
+        getGravesXScheduler().runTask(() -> {
             compatibilityChecker();
             updateChecker();
             updateConfig();

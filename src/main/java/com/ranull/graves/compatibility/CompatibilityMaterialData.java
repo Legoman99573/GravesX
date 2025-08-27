@@ -16,6 +16,7 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.material.Openable;
+import org.bukkit.plugin.Plugin;
 
 import java.lang.reflect.Field;
 import java.util.Collection;
@@ -73,6 +74,8 @@ public final class CompatibilityMaterialData implements Compatibility {
      */
     @Override
     public boolean canBuild(Player player, Location location, Graves plugin) {
+        Plugin landProtectionAddonPlugin = plugin.getServer().getPluginManager().getPlugin("GravesXAddon-LandProtection");
+        if (landProtectionAddonPlugin != null && landProtectionAddonPlugin.isEnabled()) return true;
         Block placedBlock = location.getBlock();
         BlockState replacedBlockState = placedBlock.getState();
         Block placedAgainst = null;

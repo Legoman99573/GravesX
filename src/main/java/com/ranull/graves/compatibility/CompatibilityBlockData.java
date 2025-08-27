@@ -24,6 +24,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.plugin.Plugin;
 
 import java.lang.reflect.Field;
 import java.util.Collection;
@@ -131,6 +132,8 @@ public final class CompatibilityBlockData implements Compatibility {
      */
     @Override
     public boolean canBuild(Player player, Location location, Graves plugin) {
+        Plugin landProtectionAddonPlugin = plugin.getServer().getPluginManager().getPlugin("GravesXAddon-LandProtection");
+        if (landProtectionAddonPlugin != null && landProtectionAddonPlugin.isEnabled()) return true;
         BlockPlaceEvent blockPlaceEvent = new BlockPlaceEvent(location.getBlock(),
                 location.getBlock().getState(), location.getBlock(), player.getInventory().getItemInMainHand(),
                 player, true, EquipmentSlot.HAND);

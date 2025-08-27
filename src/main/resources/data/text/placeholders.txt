@@ -28,7 +28,6 @@
 %y% - Y cord
 %z% - Z cord
 %distance% - Distance
-%teleport_cost% - Teleport cost
 %interact_name% - Interact name
 %interact_type% - Interact type
 %interact_uuid% - Interact UUID

@@ -25,6 +25,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.jetbrains.annotations.ApiStatus.Experimental;
 import org.jetbrains.annotations.NotNull;
@@ -1203,6 +1204,33 @@ public class GravesXAPI {
      */
     public static void downloadAndReplacePlugin(String pluginId, String pluginName, String pluginsFolder, CommandSender commandSender) throws IOException {
         PluginDownloadUtil.downloadAndReplacePlugin(pluginId, pluginName, pluginsFolder, commandSender);
+    }
+
+    /**
+     * Ensures creation of an addon folder.
+     * @param addon The addon to register
+     */
+    public void ensureGravesXAddonFolder(Plugin addon) {
+        GravesXAddon.ensureAddonFolder(plugin, addon.getDescription().getName());
+    }
+
+    /**
+     * exports addon configs
+     * @param addon the addon to get configs from
+     * @return the addons exported
+     */
+    public int exportAddonConfigs(Plugin addon) {
+        return exportAddonConfigs(addon, false);
+    }
+
+    /**
+     * exports addon configs
+     * @param addon the addon to get configs from
+     * @param replaceIfExists replace configs even if they exist
+     * @return the addons exported
+     */
+    public int exportAddonConfigs(Plugin addon, boolean replaceIfExists) {
+        return GravesXAddon.exportAddonConfigs(plugin, addon.getDescription().getName(), replaceIfExists);
     }
 
     /**

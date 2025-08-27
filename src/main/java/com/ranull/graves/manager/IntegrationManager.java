@@ -6,7 +6,6 @@ import com.ranull.graves.integration.*;
 import com.ranull.graves.listener.integration.coreprotect.CoreProtectListener;
 import com.ranull.graves.listener.integration.itemsadder.CustomBlockBreakListener;
 import com.ranull.graves.listener.integration.itemsadder.FurnitureBreakListener;
-import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.permission.Permission;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -41,9 +40,9 @@ public final class IntegrationManager {
     private MultiPaper multiPaper;
 
     /**
-     * Integration with Vault, a permissions and economy API.
+     * Integration with Vault's Permission API.
      * <p>
-     * This {@link Vault} instance represents the integration with the Vault API, used for permissions and economy functionalities.
+     * This {@link Vault} instance represents the integration with the Vault API, used for permission functionalities.
      * </p>
      */
     private Vault vault;
@@ -218,14 +217,6 @@ public final class IntegrationManager {
      */
     @Deprecated
     private CoreProtectIntegration coreProtectIntegration;
-
-    /**
-     * Indicates whether Vault Economy are available.
-     * <p>
-     * This {@code boolean} flag indicates if Vault permissions are present and can be used within the plugin.
-     * </p>
-     */
-    private boolean hasVaultEconomy;
 
     /**
      * Handles integration with NoteBlockAPI, a permissions management plugin.
@@ -689,10 +680,6 @@ public final class IntegrationManager {
         return playerNPC != null;
     }
 
-    public boolean hasVaultEconomy() {
-        return hasVaultEconomy;
-    }
-
     /**
      * Checks if CitizensNPC integration is loaded.
      *
@@ -789,51 +776,12 @@ public final class IntegrationManager {
      */
     private void handleVaultIntegration(Plugin vaultPlugin) {
         RegisteredServiceProvider<Permission> permissionProvider = Bukkit.getServer().getServicesManager().getRegistration(Permission.class);
-        RegisteredServiceProvider<Economy> economyProvider = Bukkit.getServer().getServicesManager().getRegistration(Economy.class);
 
-        if (economyProvider != null && permissionProvider != null) {
-            enableFullVaultIntegration(vaultPlugin, economyProvider, permissionProvider);
-        } else if (economyProvider != null) {
-            enableEconomyOnlyVaultIntegration(vaultPlugin, economyProvider);
-        } else if (permissionProvider != null) {
+        if (permissionProvider != null) {
             enablePermissionsOnlyVaultIntegration(vaultPlugin, permissionProvider);
         } else {
             disableVaultIntegration(vaultPlugin);
         }
-    }
-
-    /**
-     * Enables full Vault integration with both economy and permissions.
-     *
-     * @param vaultPlugin      The Vault plugin instance.
-     * @param economyProvider  The economy service provider.
-     * @param permissionProvider The permissions service provider.
-     */
-    private void enableFullVaultIntegration(Plugin vaultPlugin, RegisteredServiceProvider<Economy> economyProvider, RegisteredServiceProvider<Permission> permissionProvider) {
-        Economy economy = economyProvider.getProvider();
-        Permission permission = permissionProvider.getProvider();
-        vault = new Vault(economy, permission);
-        hasVaultPermissions = true;
-        hasVaultEconomy = true;
-
-        plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + ". Economy is enabled.");
-        plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions provider.");
-    }
-
-    /**
-     * Enables Vault integration with only economy support.
-     *
-     * @param vaultPlugin     The Vault plugin instance.
-     * @param economyProvider The economy service provider.
-     */
-    private void enableEconomyOnlyVaultIntegration(Plugin vaultPlugin, RegisteredServiceProvider<Economy> economyProvider) {
-        Economy economy = economyProvider.getProvider();
-        vault = new Vault(economy);
-        hasVaultPermissions = false;
-        hasVaultEconomy = true;
-
-        plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + ". Economy is enabled.");
-        plugin.getLogger().severe("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions provider. Vault will not be used as a Permissions Provider.");
     }
 
     /**
@@ -846,23 +794,19 @@ public final class IntegrationManager {
         Permission permission = permissionProvider.getProvider();
         vault = new Vault(permission);
         hasVaultPermissions = true;
-        hasVaultEconomy = false;
 
-        plugin.integrationMessage("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s economy. This is likely because you are missing an economy plugin. Economy will be disabled.", "severe");
         plugin.integrationMessage("Hooked into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions provider.");
     }
 
     /**
-     * Disables the Vault integration if both economy and permissions are unavailable.
+     * Disables the Vault integration if permissions are unavailable.
      *
      * @param vaultPlugin The Vault plugin instance.
      */
     private void disableVaultIntegration(Plugin vaultPlugin) {
         vault = null;
         hasVaultPermissions = false;
-        hasVaultEconomy = false;
 
-        plugin.integrationMessage("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s economy. This is likely because you are missing an economy plugin. Economy will be disabled.", "severe");
         plugin.integrationMessage("Failed to hook into " + vaultPlugin.getName() + " " + vaultPlugin.getDescription().getVersion() + "'s permissions provider. Vault will not be used as a Permissions Provider.", "severe");
     }
 

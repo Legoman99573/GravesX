@@ -50,22 +50,7 @@ public class BlockBreakListener implements Listener {
         if (grave != null) {
             if (isGraveBreakAllowed(grave)) {
                 if (plugin.getEntityManager().canOpenGrave(player, grave)) {
-                    if (plugin.getConfig("grave.economy.requires-economy", grave).getBoolean("grave.economy.requires-economy", false)
-                            && plugin.getIntegrationManager().hasVault()
-                            && plugin.getIntegrationManager().hasVaultEconomy()) {
-                        double balanceRequired = plugin.getConfig("grave.economy.autoloot-cost", grave).getDouble("grave.economy.autoloot-cost", 500);
-
-
-                        if (!plugin.getIntegrationManager().getVault().hasBalance(player, balanceRequired)) {
-                            plugin.debugMessage(player.getName() + " couldn't autoloot grave due to insufficient balance.", 3);
-                            plugin.getEntityManager().sendMessage("message.autoloot-insufficient-balance", player, grave.getLocationDeath(), grave);
-                            event.setCancelled(true);
-                        } else {
-                            handleGraveBreak(event, player, block, grave);
-                        }
-                    } else {
-                        handleGraveBreak(event, player, block, grave);
-                    }
+                    handleGraveBreak(event, player, block, grave);
                 } else {
                     plugin.getEntityManager().sendMessage("message.protection", player, player.getLocation(), grave);
                     event.setCancelled(true);

@@ -32,14 +32,6 @@ settings:
         smite-death-location: true
         # Should we actually smite a death location? Keep note enabling this will hurt entities or destroy ground items if items are ignored. Retained as some use it.
         actually-smite-death-location: false
-        # Grave Economy Settings
-        economy:
-          # Should we require grave economy?
-          requires-economy: false
-          # Grave Open Cost
-          open-cost: 200
-          # Grave Autoloot Cost
-          autoloot-cost: 500
 
       #############
       # Placement #
@@ -210,16 +202,10 @@ settings:
       teleport:
         # Can the entity teleport to their grave from the Graves GUI.
         enabled: true
-        # How much it costs to teleport to a grave, you need Vault for this.
-        cost: 2
         # How long should it be before a player is teleported to a grave in seconds? Set to 0 to make teleportation instant.
         delay: 0
         # Should we detect yaw and pitch when delay is enabled? Recommend leaving this as false as this may affect players who are on Vivecraft or using Mods that allows controllers (Stick Drift)
         strict: false
-        # Extra cost added on top of cost if the grave is in a different world.
-        cost-different-world: 0
-        # Increase the price the further away the grave is.
-        cost-distance-increase: false
         # Should entities be allowed to always teleport to a grave even if unsafe.
         unsafe: false
         # If the grave is in an unsafe location, should the entity be teleported to the top.
@@ -820,16 +806,6 @@ settings:
           #- DRYOUT
           #- FREEZE
           - ALL # All reasons.
-        # Vault and an Economy Plugin required to use this feature.
-        economy:
-          # Should player's balance be affected upon death?
-          enabled: false
-          # Use percentage of player balance? Otherwise, a fixed amount.
-          use-as-percentage: true
-          # How much money should a player lose upon death. For each option, player will need graves.deduct.<name> in costs.
-          costs:
-            - "newbie:50"
-            - "vip:15"
 
       #########
       # Spawn #
@@ -892,7 +868,6 @@ settings:
         max: "A grave was not created, you have reached the maximum."
         failure-keep-inventory: "A grave was unable to find a suitable location, preserving inventory."
         failure: "A grave was unable to find a suitable location, item's dropped on ground."
-        no-money: "You don't have enough money, you need &c%teleport_cost%&r."
         no-token: "A grave was not created because you didn't have a grave token."
         give-token: "You were given a Grave Token."
         distance: "You are &c%distance% &rblocks away."

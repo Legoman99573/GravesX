@@ -12,6 +12,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 
 import java.util.List;
 import java.util.Random;
@@ -471,6 +472,8 @@ public final class LocationManager {
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean canBuild(LivingEntity livingEntity, Location location, List<String> permissionList) {
+        Plugin landProtectionAddonPlugin = plugin.getServer().getPluginManager().getPlugin("GravesXAddon-LandProtection");
+        if (landProtectionAddonPlugin != null && landProtectionAddonPlugin.isEnabled()) return true;
         if (livingEntity instanceof Player) {
             Player player = (Player) livingEntity;
 

@@ -89,13 +89,6 @@ public final class StringUtil {
                             "Wrong dimension");
                 }
             }
-
-            if (string.contains("%teleport_cost%")) {
-                string = string.replace("%teleport_cost%", String.valueOf(plugin.getEntityManager()
-                        .getTeleportCost(
-                                Bukkit.getServer().getEntity(grave.getOwnerUUID()).getLocation(),
-                                grave.getLocationDeath(), grave)));
-            }
         }
 
         if (grave != null) {

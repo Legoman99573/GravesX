@@ -2641,8 +2641,8 @@ public final class DataManager {
                 boolean allSuccess = true;
 
                 while (tables.next()) {
-                    String sqliteTable = tables.getString("TABLE_NAME");           // already includes prefix
-                    String targetTable = sqliteTable;                             // use same name in target
+                    String sqliteTable = tables.getString("TABLE_NAME");
+                    String targetTable = sqliteTable;
 
                     // build CREATE TABLE
                     StringBuilder createSql = new StringBuilder("CREATE TABLE IF NOT EXISTS ")
