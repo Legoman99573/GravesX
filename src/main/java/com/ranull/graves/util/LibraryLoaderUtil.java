@@ -247,9 +247,7 @@ public class LibraryLoaderUtil {
         final LibraryManager libraryManager;
         if (plugin.getVersionManager().isPaper()) {
             libraryManager = new PaperLibraryManager(plugin);
-            plugin.getLogger().info("Paper or Paper fork detected. Using PaperLibraryManager to download and load libraries.");
         } else {
-            plugin.getLogger().info("Bukkit/Spigot or a fork using Bukkit/Spigot detected. Using BukkitLibraryManager to download and load libraries.");
             libraryManager = new BukkitLibraryManager(plugin);
         }
         if (libraryURL != null && !libraryURL.isBlank()) {

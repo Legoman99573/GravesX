@@ -204,6 +204,12 @@ public class Graves extends JavaPlugin {
 
         LibraryLoaderUtil libraryLoaderUtil = new LibraryLoaderUtil(this);
 
+        if (getVersionManager().isPaper()) {
+            getLogger().warning(getServer().getName() + " v." + getServer().getVersion() + " detected. Using PaperLibraryManager to download and load libraries.");
+        } else {
+            getLogger().warning(getServer().getName() + " v." + getServer().getVersion() + " detected. Using BukkitLibraryManager to download and load libraries.");
+        }
+
         libraryLoaderUtil.loadLibrary("com{}zaxxer", "HikariCP", "6.3.0", "com{}zaxxer{}hikari", "com{}ranull{}graves{}libraries{}hikari", false);
         libraryLoaderUtil.loadLibrary("org{}xerial", "sqlite-jdbc", "3.50.3.0", false);
 
