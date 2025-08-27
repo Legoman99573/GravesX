@@ -2,6 +2,7 @@ package com.ranull.graves.event;
 
 import com.ranull.graves.data.BlockData;
 import com.ranull.graves.event.interfaces.Addon;
+import com.ranull.graves.exception.GraveMethodNotSupportedException;
 import com.ranull.graves.type.Grave;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
@@ -16,6 +17,7 @@ import org.bukkit.inventory.InventoryView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -146,7 +148,7 @@ public abstract class GraveEvent extends Event implements Cancellable, Addon {
      * @param targetEntity    The entity targeted by the event, if any.
      * @param player          The player involved in the event, if any.
      */
-    public GraveEvent(Grave grave, @Nullable Entity entity, @Nullable Location location, @Nullable InventoryView inventoryView, @Nullable LivingEntity livingEntity, @Nullable BlockData.BlockType blockType, @Nullable Block block, @Nullable LivingEntity targetEntity, @Nullable Player player) {
+    public GraveEvent(@NotNull Grave grave, @Nullable Entity entity, @Nullable Location location, @Nullable InventoryView inventoryView, @Nullable LivingEntity livingEntity, @Nullable BlockData.BlockType blockType, @Nullable Block block, @Nullable LivingEntity targetEntity, @Nullable Player player) {
         this.grave = grave;
         this.entity = entity;
         this.location = location;
@@ -247,7 +249,9 @@ public abstract class GraveEvent extends Event implements Cancellable, Addon {
      *
      * @return The entity involved in the event, or null if not applicable.
      */
-    public Entity getEntity() {
+    public @NotNull Entity getEntity() {
+        if (entity == null)
+            throw new GraveMethodNotSupportedException("This event does not involve an Entity.");
         return entity;
     }
 
@@ -256,8 +260,10 @@ public abstract class GraveEvent extends Event implements Cancellable, Addon {
      *
      * @return The entity name involved in the event, or null if not found.
      */
-    public String getEntityName() {
-        return entity != null ? entity.getName() : "Unknown";
+    public @NotNull String getEntityName() {
+        if (entity == null)
+            throw new GraveMethodNotSupportedException("This event does not involve an Entity name.");
+        return entity.getName();
     }
 
     /**
@@ -265,8 +271,13 @@ public abstract class GraveEvent extends Event implements Cancellable, Addon {
      *
      * @return The entity custom name involved in the event, or null if not found.
      */
-    public String getEntityCustomName() {
-        return entity != null ? entity.getCustomName() : "Unknown";
+    public @NotNull String getEntityCustomName() {
+        if (entity == null)
+            throw new GraveMethodNotSupportedException("This event does not involve an Entity custom name.");
+        String custom = entity.getCustomName();
+        if (custom == null)
+            throw new GraveMethodNotSupportedException("Entity has no custom name.");
+        return custom;
     }
 
     /**
@@ -298,11 +309,20 @@ public abstract class GraveEvent extends Event implements Cancellable, Addon {
     }
 
     /**
+     * Checks if there is a location.
+     *
+     * @return The location of the event.
+     */
+    public boolean hasLocation() { return location != null; }
+
+    /**
      * Gets the location of the event.
      *
      * @return The location of the event.
      */
-    public Location getLocation() {
+    public @NotNull Location getLocation() {
+        if (location == null)
+            throw new GraveMethodNotSupportedException("This event does not have a Location.");
         return location;
     }
 
@@ -311,27 +331,43 @@ public abstract class GraveEvent extends Event implements Cancellable, Addon {
      *
      * @param location The new location of the event.
      */
-    public void setLocation(Location location) {
-        this.location = location;
+    public void setLocation(@NotNull Location location) {
+        this.location = Objects.requireNonNull(location, "location");
     }
+
+    /**
+     * Checks inventory view associated with the event.
+     *
+     * @return The inventory view, or null if not applicable.
+     */
+    public boolean hasInventoryView() { return inventoryView != null; }
 
     /**
      * Gets the inventory view associated with the event.
      *
      * @return The inventory view, or null if not applicable.
      */
-    @Nullable
-    public InventoryView getInventoryView() {
+    public @NotNull InventoryView getInventoryView() {
+        if (inventoryView == null)
+            throw new GraveMethodNotSupportedException("This event does not support InventoryView access.");
         return inventoryView;
     }
+
+    /**
+     * Checks the living entity associated with the event.
+     *
+     * @return The living entity, or null if not applicable.
+     */
+    public boolean hasLivingEntity() { return livingEntity != null; }
 
     /**
      * Gets the living entity associated with the event.
      *
      * @return The living entity, or null if not applicable.
      */
-    @Nullable
-    public LivingEntity getLivingEntity() {
+    public @NotNull LivingEntity getLivingEntity() {
+        if (livingEntity == null)
+            throw new GraveMethodNotSupportedException("This event has no LivingEntity.");
         return livingEntity;
     }
 
@@ -340,9 +376,10 @@ public abstract class GraveEvent extends Event implements Cancellable, Addon {
      *
      * @return The living entity victim, or null if not applicable.
      */
-    @Nullable
-    public String getLivingEntityVictim() {
-        return livingEntity != null ? livingEntity.getName() : "Unknown";
+    public @NotNull String getLivingEntityVictim() {
+        if (livingEntity == null)
+            throw new GraveMethodNotSupportedException("This event has no victim LivingEntity.");
+        return livingEntity.getName();
     }
 
     /**
@@ -350,9 +387,19 @@ public abstract class GraveEvent extends Event implements Cancellable, Addon {
      *
      * @return The living entity victim uuid, or null if not applicable.
      */
-    @Nullable
-    public UUID getLivingEntityVictimId() {
-        return livingEntity != null ? livingEntity.getUniqueId() : null;
+    public @NotNull UUID getLivingEntityVictimId() {
+        if (livingEntity == null)
+            throw new GraveMethodNotSupportedException("This event has no victim UUID.");
+        return livingEntity.getUniqueId();
+    }
+
+    /**
+     * Checks the living entity killer associated with the event.
+     *
+     * @return The living entity killer, or null if not applicable.
+     */
+    public boolean hasKiller() {
+        return livingEntity != null && livingEntity.getKiller() != null;
     }
 
     /**
@@ -360,9 +407,10 @@ public abstract class GraveEvent extends Event implements Cancellable, Addon {
      *
      * @return The living entity killer, or null if not applicable.
      */
-    @Nullable
-    public LivingEntity getLivingEntityKiller() {
-        return livingEntity != null ? livingEntity.getKiller() : null;
+    public @NotNull LivingEntity getLivingEntityKiller() {
+        if (livingEntity == null || livingEntity.getKiller() == null)
+            throw new GraveMethodNotSupportedException("This event has no killer.");
+        return livingEntity.getKiller();
     }
 
     /**
@@ -370,9 +418,10 @@ public abstract class GraveEvent extends Event implements Cancellable, Addon {
      *
      * @return The living entity killers name, or null if not applicable.
      */
-    @Nullable
-    public String getLivingEntityKillerName() {
-        return livingEntity != null ? (livingEntity.getKiller() != null ? livingEntity.getKiller().getName() : "Unknown") : "Unknown";
+    public @NotNull String getLivingEntityKillerName() {
+        if (livingEntity == null || livingEntity.getKiller() == null)
+            throw new GraveMethodNotSupportedException("This event has no killer name.");
+        return livingEntity.getKiller().getName();
     }
 
     /**
@@ -380,9 +429,10 @@ public abstract class GraveEvent extends Event implements Cancellable, Addon {
      *
      * @return The living entity killers unique ID, or null if not applicable.
      */
-    @Nullable
-    public UUID getLivingEntityKillerUniqueId() {
-        return livingEntity != null ? (livingEntity.getKiller() != null ? livingEntity.getKiller().getUniqueId() : null) : null;
+    public @NotNull UUID getLivingEntityKillerUniqueId() {
+        if (livingEntity == null || livingEntity.getKiller() == null)
+            throw new GraveMethodNotSupportedException("This event has no killer unique ID.");
+        return livingEntity.getKiller().getUniqueId();
     }
 
     /**
@@ -390,9 +440,10 @@ public abstract class GraveEvent extends Event implements Cancellable, Addon {
      *
      * @return The living entity victim type, or null if not applicable.
      */
-    @Nullable
-    public EntityType getLivingEntityVictimType() {
-        return livingEntity != null ? livingEntity.getType() : null;
+    public @NotNull EntityType getLivingEntityVictimType() {
+        if (livingEntity == null)
+            throw new GraveMethodNotSupportedException("This event has no victim type.");
+        return livingEntity.getType();
     }
 
     /**
@@ -400,28 +451,45 @@ public abstract class GraveEvent extends Event implements Cancellable, Addon {
      *
      * @return The living entity killer type, or null if not applicable.
      */
-    @Nullable
-    public EntityType getLivingEntityKillerType() {
-        return livingEntity != null ? (livingEntity.getKiller() != null ? livingEntity.getKiller().getType() : null) : null;
+    public @NotNull EntityType getLivingEntityKillerType() {
+        if (livingEntity == null || livingEntity.getKiller() == null)
+            throw new GraveMethodNotSupportedException("This event has no killer type.");
+        return livingEntity.getKiller().getType();
     }
+
+    /**
+     * Checks the type of block involved in the event.
+     *
+     * @return The block type, or null if not applicable.
+     */
+    public boolean hasBlockType() { return blockType != null; }
 
     /**
      * Gets the type of block involved in the event.
      *
      * @return The block type, or null if not applicable.
      */
-    @Nullable
-    public BlockData.BlockType getBlockType() {
+    public @NotNull BlockData.BlockType getBlockType() {
+        if (blockType == null)
+            throw new GraveMethodNotSupportedException("This event has no BlockType.");
         return blockType;
     }
+
+    /**
+     * Checks the block involved in the event.
+     *
+     * @return The block involved in the event, or null if not applicable.
+     */
+    public boolean hasBlock() { return block != null; }
 
     /**
      * Gets the block involved in the event.
      *
      * @return The block involved in the event, or null if not applicable.
      */
-    @Nullable
-    public Block getBlock() {
+    public @NotNull Block getBlock() {
+        if (block == null)
+            throw new GraveMethodNotSupportedException("This event has no Block.");
         return block;
     }
 
@@ -460,12 +528,20 @@ public abstract class GraveEvent extends Event implements Cancellable, Addon {
     }
 
     /**
+     * Checks the player involved in the event.
+     *
+     * @return The player involved in the event, or null if not applicable.
+     */
+    public boolean hasPlayer() { return player != null; }
+
+    /**
      * Gets the player involved in the event.
      *
      * @return The player involved in the event, or null if not applicable.
      */
-    @Nullable
-    public Player getPlayer() {
+    public @NotNull Player getPlayer() {
+        if (player == null)
+            throw new GraveMethodNotSupportedException("This event does not involve a Player.");
         return player;
     }
 
@@ -474,9 +550,10 @@ public abstract class GraveEvent extends Event implements Cancellable, Addon {
      *
      * @return The player name involved in the event, or null if not applicable.
      */
-    @Nullable
-    public String getPlayerName() {
-        return player != null ? player.getName() : null;
+    public @NotNull String getPlayerName() {
+        if (player == null)
+            throw new GraveMethodNotSupportedException("This event has no Player name.");
+        return player.getName();
     }
 
     /**
@@ -484,9 +561,10 @@ public abstract class GraveEvent extends Event implements Cancellable, Addon {
      *
      * @return The player unique ID involved in the event, or null if not applicable.
      */
-    @Nullable
-    public UUID getPlayerUniqueId() {
-        return player != null ? player.getUniqueId() : null;
+    public @NotNull UUID getPlayerUniqueId() {
+        if (player == null)
+            throw new GraveMethodNotSupportedException("This event has no Player unique ID.");
+        return player.getUniqueId();
     }
 
     /**
@@ -494,9 +572,10 @@ public abstract class GraveEvent extends Event implements Cancellable, Addon {
      *
      * @return The player display name involved in the event, or null if not applicable.
      */
-    @Nullable
-    public String getPlayerDisplayName() {
-        return player != null ? player.getDisplayName() : null;
+    public @NotNull String getPlayerDisplayName() {
+        if (player == null)
+            throw new GraveMethodNotSupportedException("This event has no Player display name.");
+        return player.getDisplayName();
     }
 
     /**
