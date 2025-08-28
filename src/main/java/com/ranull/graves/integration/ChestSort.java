@@ -1,6 +1,6 @@
 package com.ranull.graves.integration;
 
-import com.ranull.graves.util.pluginsthatgoabandonedandtheirlicenseiscrapsoreflectionitis.ChestSortAPI;
+import dev.cwhead.GravesX.util.pluginsthatgoabandonedandtheirlicenseiscrapsoreflectionitis.ChestSortAPI;
 import org.bukkit.inventory.Inventory;
 
 /**

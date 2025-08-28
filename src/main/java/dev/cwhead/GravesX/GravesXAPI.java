@@ -3,12 +3,8 @@ package dev.cwhead.GravesX;
 import com.mojang.authlib.GameProfile;
 import com.ranull.graves.Graves;
 import com.ranull.graves.data.*;
-import com.ranull.graves.event.GraveBlockPlaceEvent;
-import com.ranull.graves.event.GraveCreateEvent;
-import com.ranull.graves.event.GraveProtectionCreateEvent;
-import com.ranull.graves.manager.*;
 import com.ranull.graves.type.Grave;
-import com.ranull.graves.util.*;
+import dev.cwhead.GravesX.util.PluginDownloadUtil;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -18,7 +14,6 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
@@ -27,7 +22,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
-import org.jetbrains.annotations.ApiStatus.Experimental;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,57 +36,85 @@ import java.util.*;
  * <p>
  * Graves are created with various configurations, including equipment, items, experience, protection, and more.
  * The API also handles event triggering when graves are created and ensures data is stored correctly.
+ * </p>
+ *
+ * @deprecated Since 4.9.9.1, this class is replaced by the modular APIs under
+ * {@link dev.cwhead.GravesX.api.GravesXAPI}. Use:
+ * <ul>
+ *     <li>{@code GravesXApi#gravesCreate} for grave creation</li>
+ *     <li>{@code GravesXApi#gravesManage} for management actions</li>
+ *     <li>{@code GravesXApi#world} for location/block-face helpers</li>
+ *     <li>{@code GravesXApi#inventory} for inventory helpers</li>
+ *     <li>{@code GravesXApi#skin} for textures and profiles</li>
+ *     <li>{@code GravesXApi#addon} for addon folder/config export</li>
+ *     <li>{@code GravesXApi#util} for utilities (permissions, XP, colors, files, YAML, paste, etc.)</li>
+ * </ul>
  */
+@Deprecated(forRemoval = true, since = "4.9.9.1")
 public class GravesXAPI {
-    private final GravesXAPI instance;
 
     private final Graves plugin;
+    private final dev.cwhead.GravesX.api.GravesXAPI api;
 
     /**
      * Constructor for initializing the GravesXAPI with the main plugin instance.
      *
      * @param plugin The main Graves plugin instance.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.GravesXAPI#GravesXAPI(Graves)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public GravesXAPI(Graves plugin) {
         this.plugin = plugin;
-        instance = this;
+        this.api = new dev.cwhead.GravesX.api.GravesXAPI(plugin);
     }
+
+    /* ----------------------------------------
+     * Grave Creation (original overloads)
+     * ---------------------------------------- */
 
     /**
      * Creates a grave for an entity with the basic parameters.
      *
-     * @param victim              The entity that died.
-     * @param killerEntityType    The entity type of the killer.
-     * @param timeAliveRemaining  The remaining time the grave will stay alive.
+     * @param victim             The entity that died.
+     * @param killerEntityType   The entity type of the killer.
+     * @param timeAliveRemaining The remaining time the grave will stay alive.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.grave.GraveCreationAPI#createGrave(Entity, EntityType, long)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public void createGrave(@NotNull Entity victim, @Nullable EntityType killerEntityType, long timeAliveRemaining) {
-        createGrave(victim, null, killerEntityType,  null, null, null, 0, timeAliveRemaining, null, false, 0);
+        api.gravesCreate.createGrave(victim, killerEntityType, timeAliveRemaining);
     }
 
     /**
      * Creates a grave for an entity with the basic parameters.
      *
-     * @param victim              The entity that died.
-     * @param killerEntityType    The entity type of the killer.
-     * @param experience          The experience the victim had.
-     * @param timeAliveRemaining  The remaining time the grave will stay alive.
+     * @param victim             The entity that died.
+     * @param killerEntityType   The entity type of the killer.
+     * @param experience         The experience the victim had.
+     * @param timeAliveRemaining The remaining time the grave will stay alive.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.grave.GraveCreationAPI#createGrave(Entity, EntityType, int, long)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public void createGrave(@NotNull Entity victim, @Nullable EntityType killerEntityType, int experience, long timeAliveRemaining) {
-        createGrave(victim, null, killerEntityType,  null, null, null, experience, timeAliveRemaining, null, false, 0);
+        api.gravesCreate.createGrave(victim, killerEntityType, experience, timeAliveRemaining);
     }
 
     /**
      * Creates a grave for an entity with the basic parameters.
      *
-     * @param victim              The entity that died.
-     * @param killerEntityType    The entity type of the killer.
-     * @param equipmentMap        The equipment the victim had at the time of death.
-     * @param itemStackList       The list of items the victim had at the time of death.
-     * @param experience          The experience the victim had.
-     * @param timeAliveRemaining  The remaining time the grave will stay alive.
+     * @param victim             The entity that died.
+     * @param killerEntityType   The entity type of the killer.
+     * @param equipmentMap       The equipment the victim had at the time of death.
+     * @param itemStackList      The list of items the victim had at the time of death.
+     * @param experience         The experience the victim had.
+     * @param timeAliveRemaining The remaining time the grave will stay alive.
+     * @deprecated Since 4.9.9.1. Use the equivalent in {@link dev.cwhead.GravesX.api.grave.GraveCreationAPI}.
      */
-    public void createGrave(@NotNull Entity victim, @Nullable EntityType killerEntityType, @Nullable Map<EquipmentSlot, ItemStack> equipmentMap, @Nullable List<ItemStack> itemStackList, int experience, long timeAliveRemaining) {
-        createGrave(victim, null, killerEntityType,  null, equipmentMap, itemStackList, experience, timeAliveRemaining, null, false, 0);
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
+    public void createGrave(@NotNull Entity victim, @Nullable EntityType killerEntityType,
+                            @Nullable Map<EquipmentSlot, ItemStack> equipmentMap,
+                            @Nullable List<ItemStack> itemStackList, int experience, long timeAliveRemaining) {
+        api.gravesCreate.createGrave(victim, killerEntityType, equipmentMap, itemStackList, experience, timeAliveRemaining);
     }
 
     /**
@@ -105,24 +128,36 @@ public class GravesXAPI {
      * @param timeAliveRemaining  The remaining time the grave will stay alive.
      * @param graveProtection     Whether the grave is protected.
      * @param graveProtectionTime The time for which the grave remains protected.
+     * @deprecated Since 4.9.9.1. Use the equivalent in {@link dev.cwhead.GravesX.api.grave.GraveCreationAPI}.
      */
-    public void createGrave(@NotNull Entity victim, @Nullable EntityType killerEntityType, @Nullable Map<EquipmentSlot, ItemStack> equipmentMap, @Nullable List<ItemStack> itemStackList, int experience, long timeAliveRemaining, boolean graveProtection, long graveProtectionTime) {
-        createGrave(victim, null, killerEntityType,  null, equipmentMap, itemStackList, experience, timeAliveRemaining, null, graveProtection, graveProtectionTime);
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
+    public void createGrave(@NotNull Entity victim, @Nullable EntityType killerEntityType,
+                            @Nullable Map<EquipmentSlot, ItemStack> equipmentMap,
+                            @Nullable List<ItemStack> itemStackList,
+                            int experience, long timeAliveRemaining,
+                            boolean graveProtection, long graveProtectionTime) {
+        api.gravesCreate.createGrave(victim, killerEntityType, equipmentMap, itemStackList, experience, timeAliveRemaining, graveProtection, graveProtectionTime);
     }
 
     /**
      * Creates a grave for an entity with a specific storage type.
      *
-     * @param victim              The entity that died.
-     * @param killerEntityType    The entity type of the killer.
-     * @param equipmentMap        The equipment the victim had at the time of death.
-     * @param itemStackList       The list of items the victim had at the time of death.
-     * @param experience          The experience the victim had.
-     * @param timeAliveRemaining  The remaining time the grave will stay alive.
-     * @param damageCause         Damage Caused (nullable).
+     * @param victim             The entity that died.
+     * @param killerEntityType   The entity type of the killer.
+     * @param equipmentMap       The equipment the victim had at the time of death.
+     * @param itemStackList      The list of items the victim had at the time of death.
+     * @param experience         The experience the victim had.
+     * @param timeAliveRemaining The remaining time the grave will stay alive.
+     * @param damageCause        Damage Caused (nullable).
+     * @deprecated Since 4.9.9.1. Use the equivalent in {@link dev.cwhead.GravesX.api.grave.GraveCreationAPI}.
      */
-    public void createGrave(@NotNull Entity victim, @Nullable EntityType killerEntityType, @Nullable Map<EquipmentSlot, ItemStack> equipmentMap, @Nullable List<ItemStack> itemStackList, int experience, long timeAliveRemaining, @Nullable EntityDamageEvent.DamageCause damageCause) {
-        createGrave(victim, null, killerEntityType,  null, equipmentMap, itemStackList, experience, timeAliveRemaining, damageCause, false, 0);
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
+    public void createGrave(@NotNull Entity victim, @Nullable EntityType killerEntityType,
+                            @Nullable Map<EquipmentSlot, ItemStack> equipmentMap,
+                            @Nullable List<ItemStack> itemStackList,
+                            int experience, long timeAliveRemaining,
+                            @Nullable EntityDamageEvent.DamageCause damageCause) {
+        api.gravesCreate.createGrave(victim, killerEntityType, equipmentMap, itemStackList, experience, timeAliveRemaining, damageCause);
     }
 
     /**
@@ -137,24 +172,39 @@ public class GravesXAPI {
      * @param damageCause         Damage Caused (nullable).
      * @param graveProtection     Whether the grave is protected.
      * @param graveProtectionTime The time for which the grave remains protected.
+     * @deprecated Since 4.9.9.1. Use the equivalent in {@link dev.cwhead.GravesX.api.grave.GraveCreationAPI}.
      */
-    public void createGrave(@NotNull Entity victim, @Nullable EntityType killerEntityType, @Nullable Map<EquipmentSlot, ItemStack> equipmentMap, @Nullable List<ItemStack> itemStackList, int experience, long timeAliveRemaining, @Nullable EntityDamageEvent.DamageCause damageCause, boolean graveProtection, long graveProtectionTime) {
-        createGrave(victim, null, killerEntityType,  null, equipmentMap, itemStackList, experience, timeAliveRemaining, damageCause, graveProtection, graveProtectionTime);
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
+    public void createGrave(@NotNull Entity victim, @Nullable EntityType killerEntityType,
+                            @Nullable Map<EquipmentSlot, ItemStack> equipmentMap,
+                            @Nullable List<ItemStack> itemStackList,
+                            int experience, long timeAliveRemaining,
+                            @Nullable EntityDamageEvent.DamageCause damageCause,
+                            boolean graveProtection, long graveProtectionTime) {
+        api.gravesCreate.createGrave(victim, killerEntityType, equipmentMap, itemStackList, experience, timeAliveRemaining, damageCause, graveProtection, graveProtectionTime);
     }
 
     /**
      * Creates a grave for an entity at a specific location where the victim died.
      *
-     * @param victim              The entity that died.
-     * @param killerEntityType    The entity type of the killer.
-     * @param locationDeath       The location where the victim died (nullable).
-     * @param equipmentMap        The equipment the victim had at the time of death.
-     * @param itemStackList       The list of items the victim had at the time of death.
-     * @param experience          The experience the victim had.
-     * @param timeAliveRemaining  The remaining time the grave will stay alive.
+     * @param victim             The entity that died.
+     * @param killerEntityType   The entity type of the killer.
+     * @param locationDeath      The location where the victim died (nullable).
+     * @param equipmentMap       The equipment the victim had at the time of death.
+     * @param itemStackList      The list of items the victim had at the time of death.
+     * @param experience         The experience the victim had.
+     * @param timeAliveRemaining The remaining time the grave will stay alive.
+     * @param damageCause        Damage Caused (nullable).
+     * @deprecated Since 4.9.9.1. Use the equivalent in {@link dev.cwhead.GravesX.api.grave.GraveCreationAPI}.
      */
-    public void createGrave(@NotNull Entity victim, @Nullable EntityType killerEntityType, @Nullable Location locationDeath, @Nullable Map<EquipmentSlot, ItemStack> equipmentMap, @Nullable List<ItemStack> itemStackList, int experience, long timeAliveRemaining, @Nullable EntityDamageEvent.DamageCause damageCause) {
-        createGrave(victim, null, killerEntityType, locationDeath, equipmentMap, itemStackList, experience, timeAliveRemaining, damageCause, false, 0);
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
+    public void createGrave(@NotNull Entity victim, @Nullable EntityType killerEntityType,
+                            @Nullable Location locationDeath,
+                            @Nullable Map<EquipmentSlot, ItemStack> equipmentMap,
+                            @Nullable List<ItemStack> itemStackList,
+                            int experience, long timeAliveRemaining,
+                            @Nullable EntityDamageEvent.DamageCause damageCause) {
+        api.gravesCreate.createGrave(victim, killerEntityType, locationDeath, equipmentMap, itemStackList, experience, timeAliveRemaining, damageCause);
     }
 
     /**
@@ -167,59 +217,63 @@ public class GravesXAPI {
      * @param itemStackList       The list of items the victim had at the time of death.
      * @param experience          The experience the victim had.
      * @param timeAliveRemaining  The remaining time the grave will stay alive.
+     * @param damageCause         Damage Caused (nullable).
      * @param graveProtection     Whether the grave is protected.
      * @param graveProtectionTime The time for which the grave remains protected.
+     * @deprecated Since 4.9.9.1. Use the equivalent in {@link dev.cwhead.GravesX.api.grave.GraveCreationAPI}.
      */
-    public void createGrave(@NotNull Entity victim, @Nullable EntityType killerEntityType, @Nullable Location locationDeath, @NotNull Map<EquipmentSlot, ItemStack> equipmentMap, @NotNull List<ItemStack> itemStackList, int experience, long timeAliveRemaining, @Nullable EntityDamageEvent.DamageCause damageCause, boolean graveProtection, long graveProtectionTime) {
-        createGrave(victim, null, killerEntityType, locationDeath, equipmentMap, itemStackList, experience, timeAliveRemaining, damageCause, graveProtection, graveProtectionTime);
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
+    public void createGrave(@NotNull Entity victim, @Nullable EntityType killerEntityType,
+                            @Nullable Location locationDeath,
+                            @Nullable Map<EquipmentSlot, ItemStack> equipmentMap,
+                            @Nullable List<ItemStack> itemStackList,
+                            int experience, long timeAliveRemaining,
+                            @Nullable EntityDamageEvent.DamageCause damageCause,
+                            boolean graveProtection, long graveProtectionTime) {
+        api.gravesCreate.createGrave(victim, killerEntityType, locationDeath, equipmentMap, itemStackList, experience, timeAliveRemaining, damageCause, graveProtection, graveProtectionTime);
     }
 
     /**
      * Creates a grave for an entity at a specific location without a killer and no storage type.
      *
-     * @param victim              The entity that died.
-     * @param killerEntityType    The entity type of the killer.
-     * @param locationDeath       The location where the victim died (nullable).
-     * @param equipmentMap        The equipment the victim had at the time of death.
-     * @param itemStackList       The list of items the victim had at the time of death.
-     * @param experience          The experience the victim had.
-     * @param timeAliveRemaining  The remaining time the grave will stay alive.
+     * @param victim             The entity that died.
+     * @param killerEntityType   The entity type of the killer.
+     * @param locationDeath      The location where the victim died (nullable).
+     * @param equipmentMap       The equipment the victim had at the time of death.
+     * @param itemStackList      The list of items the victim had at the time of death.
+     * @param experience         The experience the victim had.
+     * @param timeAliveRemaining The remaining time the grave will stay alive.
+     * @deprecated Since 4.9.9.1. Use the equivalent in {@link dev.cwhead.GravesX.api.grave.GraveCreationAPI}.
      */
-    public void createGrave(@NotNull Entity victim, @Nullable EntityType killerEntityType, @Nullable Location locationDeath, @NotNull Map<EquipmentSlot, ItemStack> equipmentMap, @NotNull List<ItemStack> itemStackList, int experience, long timeAliveRemaining) {
-        createGrave(victim, null, killerEntityType, locationDeath, equipmentMap, itemStackList, experience, timeAliveRemaining, null, false, 0);
-    }
-
-    /**
-     * Creates a grave for an entity at a specific location with grave protection, no killer, and no storage type.
-     *
-     * @param victim              The entity that died.
-     * @param killerEntityType    The entity type of the killer.
-     * @param locationDeath       The location where the victim died (nullable).
-     * @param equipmentMap        The equipment the victim had at the time of death.
-     * @param itemStackList       The list of items the victim had at the time of death.
-     * @param experience          The experience the victim had.
-     * @param timeAliveRemaining  The remaining time the grave will stay alive.
-     * @param graveProtection     Whether the grave is protected.
-     * @param graveProtectionTime The time for which the grave remains protected.
-     */
-    public void createGrave(@NotNull Entity victim, @Nullable EntityType killerEntityType, @Nullable Location locationDeath, @Nullable Map<EquipmentSlot, ItemStack> equipmentMap, @Nullable List<ItemStack> itemStackList, int experience, long timeAliveRemaining, boolean graveProtection, long graveProtectionTime) {
-        createGrave(victim, null, killerEntityType, locationDeath, equipmentMap, itemStackList, experience, timeAliveRemaining, null, graveProtection, graveProtectionTime);
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
+    public void createGrave(@NotNull Entity victim, @Nullable EntityType killerEntityType,
+                            @Nullable Location locationDeath,
+                            @Nullable Map<EquipmentSlot, ItemStack> equipmentMap,
+                            @Nullable List<ItemStack> itemStackList,
+                            int experience, long timeAliveRemaining) {
+        api.gravesCreate.createGrave(victim, killerEntityType, locationDeath, equipmentMap, itemStackList, experience, timeAliveRemaining);
     }
 
     /**
      * Creates a grave for an entity killed by another entity.
      *
-     * @param victim              The entity that died.
-     * @param killer              The entity that killed the victim (nullable).
-     * @param killerEntityType    The entity type of the killer.
-     * @param locationDeath       The location where the victim died (nullable).
-     * @param equipmentMap        The equipment the victim had at the time of death.
-     * @param itemStackList       The list of items the victim had at the time of death.
-     * @param experience          The experience the victim had.
-     * @param timeAliveRemaining  The remaining time the grave will stay alive.
+     * @param victim             The entity that died.
+     * @param killer             The entity that killed the victim (nullable).
+     * @param killerEntityType   The entity type of the killer.
+     * @param locationDeath      The location where the victim died (nullable).
+     * @param equipmentMap       The equipment the victim had at the time of death.
+     * @param itemStackList      The list of items the victim had at the time of death.
+     * @param experience         The experience the victim had.
+     * @param timeAliveRemaining The remaining time the grave will stay alive.
+     * @deprecated Since 4.9.9.1. Use the equivalent in {@link dev.cwhead.GravesX.api.grave.GraveCreationAPI}.
      */
-    public void createGrave(@NotNull Entity victim, @Nullable Entity killer, @Nullable EntityType killerEntityType, @Nullable Location locationDeath, @Nullable Map<EquipmentSlot, ItemStack> equipmentMap, @Nullable List<ItemStack> itemStackList, int experience, long timeAliveRemaining) {
-        createGrave(victim, killer, killerEntityType, locationDeath, equipmentMap, itemStackList, experience, timeAliveRemaining, null, false, 0);
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
+    public void createGrave(@NotNull Entity victim, @Nullable Entity killer, @Nullable EntityType killerEntityType,
+                            @Nullable Location locationDeath,
+                            @Nullable Map<EquipmentSlot, ItemStack> equipmentMap,
+                            @Nullable List<ItemStack> itemStackList,
+                            int experience, long timeAliveRemaining) {
+        api.gravesCreate.createGrave(victim, killer, killerEntityType, locationDeath, equipmentMap, itemStackList, experience, timeAliveRemaining);
     }
 
     /**
@@ -235,9 +289,17 @@ public class GravesXAPI {
      * @param timeAliveRemaining  The remaining time the grave will stay alive.
      * @param graveProtection     Whether the grave is protected.
      * @param graveProtectionTime The time for which the grave remains protected.
+     * @deprecated Since 4.9.9.1. Use the equivalent in {@link dev.cwhead.GravesX.api.grave.GraveCreationAPI}.
      */
-    public void createGrave(@NotNull Entity victim, @Nullable Entity killer, @Nullable EntityType killerEntityType, @Nullable Location locationDeath, @Nullable Map<EquipmentSlot, ItemStack> equipmentMap, @Nullable List<ItemStack> itemStackList, int experience, long timeAliveRemaining, boolean graveProtection, long graveProtectionTime) {
-        createGrave(victim, killer, killerEntityType, locationDeath, equipmentMap, itemStackList, experience, timeAliveRemaining, null, graveProtection, graveProtectionTime);
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
+    public void createGrave(@NotNull Entity victim, @Nullable Entity killer, @Nullable EntityType killerEntityType,
+                            @Nullable Location locationDeath,
+                            @Nullable Map<EquipmentSlot, ItemStack> equipmentMap,
+                            @Nullable List<ItemStack> itemStackList,
+                            int experience, long timeAliveRemaining,
+                            boolean graveProtection, long graveProtectionTime) {
+        api.gravesCreate.createGrave(victim, killer, killerEntityType, locationDeath, equipmentMap, itemStackList, experience, timeAliveRemaining, false, 0L);
+        api.gravesCreate.createGrave(victim, killer, killerEntityType, locationDeath, equipmentMap, itemStackList, experience, timeAliveRemaining, null, graveProtection, graveProtectionTime);
     }
 
     /**
@@ -254,232 +316,100 @@ public class GravesXAPI {
      * @param damageCause         Damage Caused (nullable).
      * @param graveProtection     Whether the grave is protected.
      * @param graveProtectionTime The time for which the grave remains protected.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.grave.GraveCreationAPI#createGrave(Entity, Entity, EntityType, Location, Map, List, int, long, EntityDamageEvent.DamageCause, boolean, long)}.
      */
-    public void createGrave(@NotNull Entity victim, @Nullable Entity killer, @Nullable EntityType killerEntityType, @Nullable Location locationDeath, @Nullable Map<EquipmentSlot, ItemStack> equipmentMap, @Nullable List<ItemStack> itemStackList, int experience, long timeAliveRemaining, @Nullable EntityDamageEvent.DamageCause damageCause, boolean graveProtection, long graveProtectionTime) {
-        GraveManager graveManager = plugin.getGraveManager();
-        DataManager dataManager = plugin.getDataManager();
-        IntegrationManager integrationManager = plugin.getIntegrationManager();
-        VersionManager versionManager = plugin.getVersionManager();
-        LocationManager locationManager = plugin.getLocationManager();
-        EntityManager entityManager = plugin.getEntityManager();
-        CacheManager cacheManager = plugin.getCacheManager();
-
-        Map<Location, BlockData.BlockType> locationMap = new HashMap<>();
-        Grave grave = graveManager.createGrave(victim, itemStackList);
-
-        grave.setOwnerType(victim.getType());
-        grave.setOwnerName(victim.getName());
-        grave.setOwnerNameDisplay(victim instanceof Player ? ((Player) victim).getDisplayName() : grave.getOwnerName());
-        grave.setOwnerUUID(victim.getUniqueId());
-        grave.setOwnerTexture(SkinTextureUtil.getTexture(victim));
-        grave.setOwnerTextureSignature(SkinSignatureUtil.getSignature(victim));
-        grave.setPermissionList(null);
-        grave.setYaw(victim.getLocation().getYaw());
-        grave.setPitch(victim.getLocation().getPitch());
-        grave.setExperience(experience);
-        grave.setTimeCreation(System.currentTimeMillis());
-        long truetimeAliveRemaining = timeAliveRemaining > 0 ? timeAliveRemaining : plugin.getConfig("grave.time", grave).getLong("grave.time");
-        grave.setTimeAlive(truetimeAliveRemaining);
-        grave.setTimeAliveRemaining(truetimeAliveRemaining);
-        Location finalLocationDeath = locationDeath != null ? locationDeath : locationManager.getSafeGraveLocation((LivingEntity) victim, victim.getLocation(), grave);
-        if (killer != null) {
-            grave.setKillerType(killerEntityType != null ? killerEntityType : EntityType.PLAYER);
-            grave.setKillerName(killer.getName());
-            grave.setKillerNameDisplay(killer.getCustomName());
-            grave.setKillerUUID(killer.getUniqueId());
-        } else {
-            grave.setKillerUUID(victim.getUniqueId());
-            grave.setKillerType(EntityType.PLAYER);
-            EntityDamageEvent.DamageCause finalDamageCause = EntityDamageEvent.DamageCause.valueOf("KILL");
-            if (damageCause != null) {
-                finalDamageCause = damageCause;
-            }
-            grave.setKillerName(graveManager.getDamageReason(victim.getLastDamageCause() != null ? victim.getLastDamageCause().getCause() : EntityDamageEvent.DamageCause.valueOf(String.valueOf(finalDamageCause)), grave));
-            grave.setKillerNameDisplay(grave.getKillerName());
-        }
-
-        if (graveProtection && plugin.getConfig("protection.enabled", grave).getBoolean("protection.enabled")) {
-            GraveProtectionCreateEvent graveProtectionCreateEvent = new GraveProtectionCreateEvent(victim, grave);
-            plugin.getServer().getPluginManager().callEvent(graveProtectionCreateEvent);
-            grave.setProtection(true);
-            grave.setTimeProtection(graveProtectionTime > 0 ? graveProtectionTime : plugin.getConfig("protection.time", grave).getInt("protection.time") * 1000L);
-        }
-
-        try {
-            GraveCreateEvent createGrave = new GraveCreateEvent(victim, grave);
-            Bukkit.getPluginManager().callEvent(createGrave);
-            if (!createGrave.isCancelled()) {
-                locationMap.put(finalLocationDeath, BlockData.BlockType.DEATH);
-
-                cacheManager.getGraveMap().put(grave.getUUID(), grave);
-                grave.setLocationDeath(finalLocationDeath);
-                grave.setInventory(graveManager.getGraveInventory(grave, (LivingEntity) victim, itemStackList, getRemovedItemStacks((LivingEntity) victim), null));
-                grave.setEquipmentMap(equipmentMap != null ? equipmentMap : !versionManager.is_v1_7() ? entityManager.getEquipmentMap((LivingEntity) victim, grave) : new HashMap<>());
-                dataManager.addGrave(grave);
-                if (victim instanceof Player) {
-                    Player player = (Player) victim;
-                    player.getPlayer();
-                    if (plugin.getConfig("noteblockapi.enabled", grave).getBoolean("noteblockapi.enabled")
-                            && plugin.getIntegrationManager().hasNoteBlockAPI()) {
-
-                        String deathReason = victim.getLastDamageCause() != null
-                                ? victim.getLastDamageCause().getCause().name()
-                                : "UNKNOWN";
-                        String nbsSound = null;
-
-                        List<String> deathCauses = plugin.getConfig("noteblockapi.death-causes", grave)
-                                .getStringList("noteblockapi.death-causes");
-                        for (String cause : deathCauses) {
-                            String[] parts = cause.split(": ");
-                            if (parts.length == 2 && parts[0].equalsIgnoreCase(deathReason)) {
-                                nbsSound = parts[1].trim();
-                                break;
-                            }
-                        }
-
-                        if (nbsSound == null) {
-                            nbsSound = plugin.getConfig("noteblockapi.nbs-sound", grave)
-                                    .getString("noteblockapi.nbs-sound");
-                        }
-
-                        if (plugin.getConfig("noteblockapi.play-locally", grave).getBoolean("noteblockapi.play-locally")) {
-                            plugin.getIntegrationManager().getNoteBlockAPI().playSongForPlayer(player, nbsSound);
-                        } else {
-                            plugin.getIntegrationManager().getNoteBlockAPI().playSongForAllPlayers(nbsSound);
-                        }
-                    } else { 
-                        plugin.getEntityManager().playPlayerSound("sound.grave-create", player, grave);
-                    }
-                }
-
-                if (integrationManager.hasMultiPaper()) {
-                    integrationManager.getMultiPaper().notifyGraveCreation(grave);
-                }
-                placeGraveBlocks(grave, locationMap, (LivingEntity) victim);
-
-                plugin.debugMessage("Creating grave " + grave.getUUID() + " for entity " + victim + " through the GravesX API", 1);
-
-            }
-        } catch (Exception e) {
-            plugin.getLogger().severe("An error occurred while creating grave " + grave.getUUID() + " for entity " + victim + " through the GravesX API. Cause: " + e.getCause());
-            plugin.getLogger().severe("Exception Message: " + e.getMessage());
-            plugin.logStackTrace(e);
-        }
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
+    public void createGrave(@NotNull Entity victim, @Nullable Entity killer, @Nullable EntityType killerEntityType,
+                            @Nullable Location locationDeath, @Nullable Map<EquipmentSlot, ItemStack> equipmentMap,
+                            @Nullable List<ItemStack> itemStackList, int experience, long timeAliveRemaining,
+                            @Nullable EntityDamageEvent.DamageCause damageCause, boolean graveProtection, long graveProtectionTime) {
+        api.gravesCreate.createGrave(victim, killer, killerEntityType, locationDeath, equipmentMap, itemStackList,
+                experience, timeAliveRemaining, damageCause, graveProtection, graveProtectionTime);
     }
 
-    /**
-     * Retrieves the list of removed item stacks for the specified entity.
-     *
-     * @param livingEntity The entity whose removed item stacks are to be retrieved.
-     * @return The list of removed item stacks.
-     */
-    private List<ItemStack> getRemovedItemStacks(@NotNull LivingEntity livingEntity) {
-        List<ItemStack> removedItemStackList = new ArrayList<>();
-        if (plugin.getCacheManager().getRemovedItemStackMap().containsKey(livingEntity.getUniqueId())) {
-            removedItemStackList.addAll(plugin.getCacheManager().getRemovedItemStackMap().get(livingEntity.getUniqueId()));
-            plugin.getCacheManager().getRemovedItemStackMap().remove(livingEntity.getUniqueId());
-        }
-        return removedItemStackList;
-    }
-
-    private void placeGraveBlocks(@NotNull Grave grave, @NotNull Map<Location, BlockData.BlockType> locationMap, @NotNull LivingEntity livingEntity) {
-        for (Map.Entry<Location, BlockData.BlockType> entry : locationMap.entrySet()) {
-            Location location = entry.getKey().clone();
-            int offsetX = 0;
-            int offsetY = 0;
-            int offsetZ = 0;
-            switch (entry.getValue()) {
-                case DEATH:
-                    break;
-                case NORMAL:
-                    offsetX = plugin.getConfig("placement.offset.x", grave).getInt("placement.offset.x");
-                    offsetY = plugin.getConfig("placement.offset.y", grave).getInt("placement.offset.y");
-                    offsetZ = plugin.getConfig("placement.offset.z", grave).getInt("placement.offset.z");
-                    break;
-            }
-            location.add(offsetX, offsetY, offsetZ);
-            GraveBlockPlaceEvent graveBlockPlaceEvent = new GraveBlockPlaceEvent(grave, location, entry.getValue(), entry.getKey().getBlock(), livingEntity);
-            plugin.getServer().getPluginManager().callEvent(graveBlockPlaceEvent);
-            if (!graveBlockPlaceEvent.isCancelled()) {
-                plugin.getGraveManager().placeGrave(graveBlockPlaceEvent.getLocation(), grave);
-                plugin.getEntityManager().sendMessage("message.block", livingEntity, location, grave);
-                plugin.getEntityManager().runCommands("event.command.block", livingEntity, graveBlockPlaceEvent.getLocation(), grave);
-            }
-        }
-    }
+    /* ----------------------------------------
+     * Management
+     * ---------------------------------------- */
 
     /**
      * Removes the specified grave from the grave manager.
      *
      * @param grave the grave to be removed
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.grave.GraveManagementAPI#removeGrave(Grave)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public void removeGrave(@NotNull Grave grave) {
-        GraveManager graveManager = plugin.getGraveManager();
-        graveManager.removeGrave(grave);
+        api.gravesManage.removeGrave(grave);
     }
 
     /**
      * Breaks the specified grave, triggering its removal and handling any related events.
      *
      * @param grave the grave to be broken
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.grave.GraveManagementAPI#breakGrave(Grave)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public void breakGrave(@NotNull Grave grave) {
-        GraveManager graveManager = plugin.getGraveManager();
-        graveManager.breakGrave(grave);
+        api.gravesManage.breakGrave(grave);
     }
 
     /**
      * Breaks the specified grave at a given location.
      *
      * @param location the location where the grave is located
-     * @param grave the grave to be broken
+     * @param grave    the grave to be broken
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.grave.GraveManagementAPI#breakGrave(Location, Grave)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public void breakGrave(@NotNull Location location, @NotNull Grave grave) {
-        GraveManager graveManager = plugin.getGraveManager();
-        graveManager.breakGrave(location, grave);
+        api.gravesManage.breakGrave(location, grave);
     }
 
     /**
      * Automatically loots the specified grave for the given entity at the given location.
      *
-     * @param entity the entity that will loot the grave
+     * @param entity   the entity that will loot the grave
      * @param location the location of the grave
-     * @param grave the grave to be looted
+     * @param grave    the grave to be looted
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.grave.GraveManagementAPI#autoLootGrave(Entity, Location, Grave)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public void autoLootGrave(@NotNull Entity entity, @NotNull Location location, @NotNull Grave grave) {
-        GraveManager graveManager = plugin.getGraveManager();
-        graveManager.autoLootGrave(entity, location, grave);
+        api.gravesManage.autoLootGrave(entity, location, grave);
     }
 
     /**
      * Marks the specified grave as abandoned, preventing further interaction.
      *
      * @param grave the grave to be abandoned
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.grave.GraveManagementAPI#abandonGrave(Grave)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public void abandonGrave(@NotNull Grave grave) {
-        GraveManager graveManager = plugin.getGraveManager();
-        graveManager.abandonGrave(grave);
+        api.gravesManage.abandonGrave(grave);
     }
 
     /**
      * Drops the items stored in the specified grave at the given location.
      *
      * @param location the location where the items will be dropped
-     * @param grave the grave whose items are to be dropped
+     * @param grave    the grave whose items are to be dropped
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.grave.GraveManagementAPI#dropGraveItems(Location, Grave)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public void dropGraveItems(@NotNull Location location, @NotNull Grave grave) {
-        GraveManager graveManager = plugin.getGraveManager();
-        graveManager.dropGraveItems(location, grave);
+        api.gravesManage.dropGraveItems(location, grave);
     }
 
     /**
      * Removes the oldest grave associated with the specified living entity.
      *
      * @param livingEntity the entity whose oldest grave will be removed
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.grave.GraveManagementAPI#removeOldestGrave(LivingEntity)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public void removeOldestGrave(@NotNull LivingEntity livingEntity) {
-        GraveManager graveManager = plugin.getGraveManager();
-        graveManager.removeOldestGrave(livingEntity);
+        api.gravesManage.removeOldestGrave(livingEntity);
     }
 
     /**
@@ -492,9 +422,11 @@ public class GravesXAPI {
      * @param player   the player to consider in the proximity check (optional; nullable).
      * @param block    the block to consider in the proximity check (optional; nullable).
      * @return {@code true} if the location is near a grave, otherwise {@code false}.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.grave.GraveManagementAPI#isNearGrave(Location, Player, org.bukkit.block.Block)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public boolean isNearGrave(@NotNull Location location, @Nullable Player player, @Nullable Block block) {
-        return plugin.getGraveManager().isNearGrave(location, player, block);
+        return api.gravesManage.isNearGrave(location, player, block);
     }
 
     /**
@@ -504,9 +436,11 @@ public class GravesXAPI {
      *
      * @param location the location to check for nearby graves (required).
      * @return {@code true} if the location is near a grave, otherwise {@code false}.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.grave.GraveManagementAPI#isNearGrave(Location)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public boolean isNearGrave(@NotNull Location location) {
-        return isNearGrave(location, null, null);
+        return api.gravesManage.isNearGrave(location);
     }
 
     /**
@@ -517,9 +451,11 @@ public class GravesXAPI {
      * @param location the location to check for nearby graves (required).
      * @param player   the player to consider in the proximity check (required).
      * @return {@code true} if the location is near a grave, otherwise {@code false}.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.grave.GraveManagementAPI#isNearGrave(Location, Player)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public boolean isNearGrave(@NotNull Location location, @NotNull Player player) {
-        return isNearGrave(location, player, null);
+        return api.gravesManage.isNearGrave(location, player);
     }
 
     /**
@@ -530,30 +466,37 @@ public class GravesXAPI {
      * @param location the location to check for nearby graves (required).
      * @param block    the block to consider in the proximity check (required).
      * @return {@code true} if the location is near a grave, otherwise {@code false}.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.grave.GraveManagementAPI#isNearGrave(Location, org.bukkit.block.Block)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public boolean isNearGrave(@NotNull Location location, @NotNull Block block) {
-        return isNearGrave(location, null, block);
+        return api.gravesManage.isNearGrave(location, block);
     }
 
     /**
      * Gets the grave type
      *
      * @param uuid the uuid of the grave
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.grave.GraveManagementAPI#getGrave(UUID)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public Grave getGrave(@NotNull UUID uuid) {
-        return new Grave(uuid);
+        return api.gravesManage.getGrave(uuid);
     }
 
     /**
      * Retrieves the BlockData associated with a grave at a given location.
      *
-     * @param location       The location of the grave.
-     * @param graveUUID      The unique identifier of the grave.
+     * @param location        The location of the grave.
+     * @param graveUUID       The unique identifier of the grave.
      * @param replaceMaterial The material to replace in the BlockData.
-     * @param replaceData    Additional data to apply to the BlockData.
+     * @param replaceData     Additional data to apply to the BlockData.
      * @return A BlockData instance representing the grave at the specified location.
+     * @deprecated Since 4.9.9.1. Access data classes directly as needed; no replacement API.
      */
-    public BlockData getBlockData(@NotNull Location location, @NotNull UUID graveUUID, @NotNull String replaceMaterial, @NotNull String replaceData) {
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
+    public BlockData getBlockData(@NotNull Location location, @NotNull UUID graveUUID,
+                                  @NotNull String replaceMaterial, @NotNull String replaceData) {
         return new BlockData(location, graveUUID, replaceMaterial, replaceData);
     }
 
@@ -562,7 +505,9 @@ public class GravesXAPI {
      *
      * @param location The location for which to retrieve the chunk data.
      * @return A ChunkData instance representing the chunk at the specified location.
+     * @deprecated Since 4.9.9.1. Access data classes directly as needed; no replacement API.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public ChunkData getChunkData(@NotNull Location location) {
         return new ChunkData(location);
     }
@@ -570,26 +515,32 @@ public class GravesXAPI {
     /**
      * Retrieves the EntityData for an entity associated with a grave.
      *
-     * @param location     The location of the entity.
-     * @param uuidEntity   The unique identifier of the entity.
-     * @param uuidGrave    The unique identifier of the grave.
-     * @param type         The type of the entity.
+     * @param location   The location of the entity.
+     * @param uuidEntity The unique identifier of the entity.
+     * @param uuidGrave  The unique identifier of the grave.
+     * @param type       The type of the entity.
      * @return An EntityData instance representing the entity associated with the grave.
+     * @deprecated Since 4.9.9.1. Access data classes directly as needed; no replacement API.
      */
-    public EntityData getEntityData(@NotNull Location location, @NotNull UUID uuidEntity, @NotNull UUID uuidGrave, @NotNull EntityData.Type type) {
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
+    public EntityData getEntityData(@NotNull Location location, @NotNull UUID uuidEntity,
+                                    @NotNull UUID uuidGrave, @NotNull EntityData.Type type) {
         return new EntityData(location, uuidEntity, uuidGrave, type);
     }
 
     /**
      * Retrieves the HologramData for a hologram associated with a grave.
      *
-     * @param location    The location of the hologram.
-     * @param uuidEntity  The unique identifier of the entity associated with the hologram.
-     * @param uuidGrave   The unique identifier of the grave.
-     * @param line        The line number of the hologram to retrieve.
+     * @param location   The location of the hologram.
+     * @param uuidEntity The unique identifier of the entity associated with the hologram.
+     * @param uuidGrave  The unique identifier of the grave.
+     * @param line       The line number of the hologram to retrieve.
      * @return A HologramData instance representing the hologram associated with the grave.
+     * @deprecated Since 4.9.9.1. Access data classes directly as needed; no replacement API.
      */
-    public HologramData getHologramData(@NotNull Location location, @NotNull UUID uuidEntity, @NotNull UUID uuidGrave, int line) {
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
+    public HologramData getHologramData(@NotNull Location location, @NotNull UUID uuidEntity,
+                                        @NotNull UUID uuidGrave, int line) {
         return new HologramData(location, uuidEntity, uuidGrave, line);
     }
 
@@ -598,7 +549,9 @@ public class GravesXAPI {
      *
      * @param location The location for which to retrieve data.
      * @return A LocationData instance representing the specified location.
+     * @deprecated Since 4.9.9.1. Access data classes directly as needed; no replacement API.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public LocationData getLocationData(@NotNull Location location) {
         return new LocationData(location);
     }
@@ -608,9 +561,11 @@ public class GravesXAPI {
      *
      * @param face The BlockFace to simplify.
      * @return The simplified BlockFace.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.world.LocationAPI#simplifyBlockFace(BlockFace)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public BlockFace simplifyBlockFace(@NotNull BlockFace face) {
-        return BlockFaceUtil.getSimpleBlockFace(face);
+        return api.world.simplifyBlockFace(face);
     }
 
     /**
@@ -618,9 +573,11 @@ public class GravesXAPI {
      *
      * @param face The BlockFace for which to retrieve the rotation.
      * @return The corresponding Rotation for the specified BlockFace.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.world.LocationAPI#getRotationFromBlockFace(BlockFace)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public Rotation getRotationFromBlockFace(@NotNull BlockFace face) {
-        return BlockFaceUtil.getBlockFaceRotation(face);
+        return api.world.getRotationFromBlockFace(face);
     }
 
     /**
@@ -628,9 +585,11 @@ public class GravesXAPI {
      *
      * @param object The object to encode.
      * @return The Base64 encoded string, or null if encoding fails.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.util.UtilAPI#objectToBase64(Object)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public String encodeObjectToBase64(@NotNull Object object) {
-        return Base64Util.objectToBase64(object);
+        return api.util.objectToBase64(object);
     }
 
     /**
@@ -638,18 +597,22 @@ public class GravesXAPI {
      *
      * @param base64String The Base64 string to decode.
      * @return The decoded object, or null if decoding fails.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.util.UtilAPI#base64ToObject(String)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public Object decodeBase64ToObject(@NotNull String base64String) {
-        return Base64Util.base64ToObject(base64String);
+        return api.util.base64ToObject(base64String);
     }
 
     /**
      * Loads a class with the specified name using ClassUtil.
      *
      * @param className The fully qualified name of the class to be loaded.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.util.UtilAPI#loadClass(String)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public void loadClass(@NotNull String className) {
-        ClassUtil.loadClass(className);
+        api.util.loadClass(className);
     }
 
     /**
@@ -657,9 +620,11 @@ public class GravesXAPI {
      *
      * @param colorName The name of the color as a string.
      * @return The Color corresponding to the given name, or null if no match is found.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.util.UtilAPI#getColor(String)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public Color getColor(@NotNull String colorName) {
-        return ColorUtil.getColor(colorName);
+        return api.util.getColor(colorName);
     }
 
     /**
@@ -667,20 +632,24 @@ public class GravesXAPI {
      *
      * @param hex The hex color code as a string (e.g., "#FF5733").
      * @return The Color corresponding to the hex color code, or null if the code is invalid.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.util.UtilAPI#getColorFromHex(String)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public Color getColorFromHex(@NotNull String hex) {
-        return ColorUtil.getColorFromHex(hex);
+        return api.util.getColorFromHex(hex);
     }
 
     /**
      * Creates a Particle.DustOptions object using a hex color code.
      *
      * @param hexColor The hex color code as a string (e.g., "#FF5733").
-     * @param size The size of the dust particle.
+     * @param size     The size of the dust particle.
      * @return A Particle.DustOptions object with the specified color and size, or null if the color code is invalid.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.util.UtilAPI#dustFromHex(String, float)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public Particle.DustOptions createDustOptionsFromHex(@NotNull String hexColor, float size) {
-        return ColorUtil.createDustOptionsFromHex(hexColor, size);
+        return api.util.dustFromHex(hexColor, size);
     }
 
     /**
@@ -689,11 +658,13 @@ public class GravesXAPI {
      * @param entity     The entity to check.
      * @param permission The permission to check for.
      * @return {@code true} if the entity has the specified permission,
-     *         {@code true} if the method is not found,
-     *         or {@code false} if an exception occurs.
+     * {@code true} if the method is not found,
+     * or {@code false} if an exception occurs.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.util.UtilAPI#hasPermission(Entity, String)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public boolean hasPermission(@NotNull Entity entity, @NotNull String permission) {
-        return EntityUtil.hasPermission(entity, permission);
+        return api.util.hasPermission(entity, permission);
     }
 
     /**
@@ -701,9 +672,11 @@ public class GravesXAPI {
      *
      * @param player The player to get the experience from.
      * @return The total experience of the player.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.util.UtilAPI#playerTotalXp(Player)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public int getPlayerExperience(@NotNull Player player) {
-        return ExperienceUtil.getPlayerExperience(player);
+        return api.util.playerTotalXp(player);
     }
 
     /**
@@ -711,9 +684,11 @@ public class GravesXAPI {
      *
      * @param level The level to get the experience for.
      * @return The experience required to reach the specified level.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.util.UtilAPI#xpAtLevel(int)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public int getExperienceAtLevel(int level) {
-        return ExperienceUtil.getExperienceAtLevel(level);
+        return api.util.xpAtLevel(level);
     }
 
     /**
@@ -721,9 +696,11 @@ public class GravesXAPI {
      *
      * @param experience The experience to calculate the level from.
      * @return The level corresponding to the given experience.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.util.UtilAPI#levelFromXp(long)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public long getLevelFromExperience(long experience) {
-        return ExperienceUtil.getLevelFromExperience(experience);
+        return api.util.levelFromXp(experience);
     }
 
     /**
@@ -732,27 +709,24 @@ public class GravesXAPI {
      * @param experience The total experience.
      * @param percent    The percentage to drop.
      * @return The experience drop amount.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.util.UtilAPI#dropPercent(int, float)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public int getDropPercent(int experience, float percent) {
-        return ExperienceUtil.getDropPercent(experience, percent);
+        return api.util.dropPercent(experience, percent);
     }
 
     /**
-     * @deprecated
-     * <p>
-     * This method is deprecated and will be removed in a future version.
-     * Use {@link #getLevelFromExperience(long)} instead.
-     * </p>
-     *
      * Gets the amount of experience a player will drop upon death based on a percentage.
      *
      * @param player          The player to get the drop experience from.
      * @param expStorePercent The percentage of experience to drop.
      * @return The amount of experience to drop.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.util.UtilAPI#playerDropXp(Player, float)}.
      */
-    @Deprecated
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public int getPlayerDropExperience(@NotNull Player player, float expStorePercent) {
-        return ExperienceUtil.getPlayerDropExperience(player, expStorePercent);
+        return api.util.playerDropXp(player, expStorePercent);
     }
 
     /**
@@ -760,26 +734,23 @@ public class GravesXAPI {
      *
      * @param file The file to be moved.
      * @param name The new name for the file.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.util.UtilAPI#moveFile(File, String)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public void moveFile(@NotNull File file, @NotNull String name) {
-        FileUtil.moveFile(file, name);
+        api.util.moveFile(file, name);
     }
 
     /**
-     * @deprecated
-     * <p>
-     * This method is deprecated and will be removed in a future version.
-     * Use {@link #moveFile(File, String)} instead.
-     * </p>
-     *
      * Copies a file to a new location with a new name using FileUtil.
      *
      * @param file The file to be copied.
      * @param name The new name for the copied file.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.util.UtilAPI#copyFile(File, String)} (deprecated).
      */
-    @Deprecated
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public void copyFile(@NotNull File file, @NotNull String name) {
-        FileUtil.copyFile(file, name);
+        api.util.copyFile(file, name);
     }
 
     /**
@@ -787,9 +758,11 @@ public class GravesXAPI {
      *
      * @param size The size to be used for determining the inventory size.
      * @return The appropriate inventory size.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.inventory.InventoryAPI#getInventorySize(int)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public int getInventorySize(int size) {
-        return InventoryUtil.getInventorySize(size);
+        return api.inventory.getInventorySize(size);
     }
 
     /**
@@ -797,9 +770,11 @@ public class GravesXAPI {
      *
      * @param inventory The inventory containing the armor items.
      * @param player    The player to be equipped with armor.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.inventory.InventoryAPI#equipArmor(Inventory, Player)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public void equipArmor(@NotNull Inventory inventory, @NotNull Player player) {
-        InventoryUtil.equipArmor(inventory, player);
+        api.inventory.equipArmor(inventory, player);
     }
 
     /**
@@ -807,9 +782,11 @@ public class GravesXAPI {
      *
      * @param inventory The inventory containing the items.
      * @param player    The player to be equipped with items.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.inventory.InventoryAPI#equipItems(Inventory, Player)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public void equipItems(@NotNull Inventory inventory, @NotNull Player player) {
-        InventoryUtil.equipItems(inventory, player);
+        api.inventory.equipItems(inventory, player);
     }
 
     /**
@@ -817,9 +794,11 @@ public class GravesXAPI {
      *
      * @param inventory The inventory to be converted.
      * @return The string representation of the inventory.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.inventory.InventoryAPI#inventoryToString(Inventory)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public String inventoryToString(@NotNull Inventory inventory) {
-        return InventoryUtil.inventoryToString(inventory);
+        return api.inventory.inventoryToString(inventory);
     }
 
     /**
@@ -829,13 +808,11 @@ public class GravesXAPI {
      * @param string          The string representation of the inventory.
      * @param title           The title of the inventory.
      * @return The Inventory object.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.inventory.InventoryAPI#stringToInventory(InventoryHolder, String, String)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public Inventory stringToInventory(@NotNull InventoryHolder inventoryHolder, @NotNull String string, @NotNull String title) {
-        return InventoryUtil.stringToInventory(inventoryHolder, string, title, plugin);
-    }
-
-    public LibraryLoaderUtil getLibraryLoaderUtil() {
-        return new LibraryLoaderUtil(plugin);
+        return api.inventory.stringToInventory(inventoryHolder, string, title);
     }
 
     /**
@@ -843,9 +820,11 @@ public class GravesXAPI {
      *
      * @param location The location to be rounded.
      * @return A new location with rounded coordinates.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.world.LocationAPI#roundLocation(Location)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public Location roundLocation(@NotNull Location location) {
-        return LocationUtil.roundLocation(location);
+        return api.world.roundLocation(location);
     }
 
     /**
@@ -853,9 +832,11 @@ public class GravesXAPI {
      *
      * @param location The location to be converted.
      * @return A string representation of the location in the format "world|x|y|z".
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.world.LocationAPI#locationToString(Location)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public String locationToString(@NotNull Location location) {
-        return LocationUtil.locationToString(location);
+        return api.world.locationToString(location);
     }
 
     /**
@@ -863,9 +844,11 @@ public class GravesXAPI {
      *
      * @param location The location within the chunk.
      * @return A string representation of the chunk in the format "world|chunkX|chunkZ".
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.world.LocationAPI#chunkToString(Location)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public String chunkToString(@NotNull Location location) {
-        return LocationUtil.chunkToString(location);
+        return api.world.chunkToString(location);
     }
 
     /**
@@ -873,9 +856,11 @@ public class GravesXAPI {
      *
      * @param string The string representation of the chunk in the format "world|chunkX|chunkZ".
      * @return A Location object representing the chunk.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.world.LocationAPI#chunkStringToLocation(String)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public Location chunkStringToLocation(@NotNull String string) {
-        return LocationUtil.chunkStringToLocation(string);
+        return api.world.chunkStringToLocation(string);
     }
 
     /**
@@ -883,9 +868,11 @@ public class GravesXAPI {
      *
      * @param string The string representation of the location in the format "world|x|y|z".
      * @return A Location object.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.world.LocationAPI#stringToLocation(String)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public Location stringToLocation(@NotNull String string) {
-        return LocationUtil.stringToLocation(string);
+        return api.world.stringToLocation(string);
     }
 
     /**
@@ -894,9 +881,11 @@ public class GravesXAPI {
      * @param locationBase The base location to compare against.
      * @param locationList The list of locations to search through.
      * @return The closest location to the base location, or null if the list is empty.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.world.LocationAPI#getClosestLocation(Location, List)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public Location getClosestLocation(@NotNull Location locationBase, @NotNull List<Location> locationList) {
-        return LocationUtil.getClosestLocation(locationBase, locationList);
+        return api.world.getClosestLocation(locationBase, locationList);
     }
 
     /**
@@ -904,9 +893,11 @@ public class GravesXAPI {
      *
      * @param material The material to check.
      * @return True if the material is air, false otherwise.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.util.UtilAPI#isAir(Material)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public boolean isAir(@NotNull Material material) {
-        return MaterialUtil.isAir(material);
+        return api.util.isAir(material);
     }
 
     /**
@@ -914,9 +905,11 @@ public class GravesXAPI {
      *
      * @param material The material to check.
      * @return True if the material is lava, false otherwise.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.util.UtilAPI#isLava(Material)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public boolean isLava(@NotNull Material material) {
-        return MaterialUtil.isLava(material);
+        return api.util.isLava(material);
     }
 
     /**
@@ -924,9 +917,11 @@ public class GravesXAPI {
      *
      * @param material The material to check.
      * @return True if the material is not solid and safe, false otherwise.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.util.UtilAPI#isSafeNotSolid(Material)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public boolean isSafeNotSolid(@NotNull Material material) {
-        return MaterialUtil.isSafeNotSolid(material);
+        return api.util.isSafeNotSolid(material);
     }
 
     /**
@@ -934,9 +929,11 @@ public class GravesXAPI {
      *
      * @param material The material to check.
      * @return True if the material is solid and safe, false otherwise.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.util.UtilAPI#isSafeSolid(Material)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public boolean isSafeSolid(@NotNull Material material) {
-        return MaterialUtil.isSafeSolid(material);
+        return api.util.isSafeSolid(material);
     }
 
     /**
@@ -944,9 +941,11 @@ public class GravesXAPI {
      *
      * @param material The material to check.
      * @return True if the material is water, false otherwise.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.util.UtilAPI#isWater(Material)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public boolean isWater(@NotNull Material material) {
-        return MaterialUtil.isWater(material);
+        return api.util.isWater(material);
     }
 
     /**
@@ -954,9 +953,11 @@ public class GravesXAPI {
      *
      * @param material The material to check.
      * @return True if the material is a player head, false otherwise.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.util.UtilAPI#isPlayerHead(Material)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public boolean isPlayerHead(@NotNull Material material) {
-        return MaterialUtil.isPlayerHead(material);
+        return api.util.isPlayerHead(material);
     }
 
     /**
@@ -964,9 +965,11 @@ public class GravesXAPI {
      *
      * @param material The material to check via string.
      * @return True if the material is a player head, false otherwise.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.util.UtilAPI#isPlayerHead(String)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public boolean isPlayerHead(@NotNull String material) {
-        return MaterialUtil.isPlayerHead(material);
+        return api.util.isPlayerHead(material);
     }
 
     /**
@@ -974,9 +977,11 @@ public class GravesXAPI {
      *
      * @param content The log content to be posted.
      * @return The URL of the posted log, or null if the post was unsuccessful.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.util.UtilAPI#postLog(String)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public String postLog(@NotNull String content) {
-        return MclogsUtil.postLogToMclogs(content);
+        return api.util.postLog(content);
     }
 
     /**
@@ -985,9 +990,11 @@ public class GravesXAPI {
      * @param player     The player whose permissions are being checked.
      * @param permission The permission prefix to search for.
      * @return The highest integer value found for the specified permission prefix. Returns 0 if no such permission is found.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.util.UtilAPI#highestInt(Player, String)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public int getHighestInt(@NotNull Player player, @Nullable String permission) {
-        return PermissionUtil.getHighestInt(player, permission);
+        return api.util.highestInt(player, permission);
     }
 
     /**
@@ -996,18 +1003,22 @@ public class GravesXAPI {
      * @param player     The player whose permissions are being checked.
      * @param permission The permission prefix to search for.
      * @return The highest double value found for the specified permission prefix. Returns 0 if no such permission is found.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.util.UtilAPI#highestDouble(Player, String)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public double getHighestDouble(@NotNull Player player, String permission) {
-        return PermissionUtil.getHighestDouble(player, permission);
+        return api.util.highestDouble(player, permission);
     }
 
     /**
      * Triggers the main hand swing animation for the specified player.
      *
      * @param player The player whose main hand swing animation is to be triggered.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.util.UtilAPI#swingMainHand(Player)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public void swingMainHand(@NotNull Player player) {
-        ReflectionUtil.swingMainHand(player);
+        api.util.swingMainHand(player);
     }
 
     /**
@@ -1015,9 +1026,11 @@ public class GravesXAPI {
      *
      * @param inputPath  The path inside the JAR file to copy from.
      * @param outputPath The path on the file system to copy to.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.util.UtilAPI#copyResources(String, String)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public void copyResources(@NotNull String inputPath, @NotNull String outputPath) {
-        ResourceUtil.copyResources(inputPath, outputPath, plugin);
+        api.util.copyResources(inputPath, outputPath);
     }
 
     /**
@@ -1026,9 +1039,11 @@ public class GravesXAPI {
      * @param inputPath  The path inside the JAR file to copy from.
      * @param outputPath The path on the file system to copy to.
      * @param overwrite  Whether to overwrite existing files.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.util.UtilAPI#copyResources(String, String, boolean)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public void copyResources(@NotNull String inputPath, @NotNull String outputPath, boolean overwrite) {
-        ResourceUtil.copyResources(inputPath, outputPath, overwrite, plugin);
+        api.util.copyResources(inputPath, outputPath, overwrite);
     }
 
     /**
@@ -1036,9 +1051,11 @@ public class GravesXAPI {
      *
      * @param entity The entity whose skin signature is to be retrieved.
      * @return The skin signature of the player, or null if the entity is not a player or the signature could not be retrieved.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.skin.SkinAPI#getSkinSignature(Entity)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public String getSkinSignature(@NotNull Entity entity) {
-        return SkinSignatureUtil.getSignature(entity);
+        return api.skin.getSkinSignature(entity);
     }
 
     /**
@@ -1047,9 +1064,11 @@ public class GravesXAPI {
      * @param skull  The Skull block.
      * @param name   The name associated with the texture.
      * @param base64 The Base64 encoded texture.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.skin.SkinAPI#setSkullTexture(Skull, String, String)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public void setSkullTexture(@NotNull Skull skull, @NotNull String name, @NotNull String base64) {
-        SkinTextureUtil.setSkullBlockTexture(skull, name, base64);
+        api.skin.setSkullTexture(skull, name, base64);
     }
 
     /**
@@ -1058,9 +1077,11 @@ public class GravesXAPI {
      * @param skullMeta The SkullMeta item meta.
      * @param name      The name associated with the texture.
      * @param base64    The Base64 encoded texture.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.skin.SkinAPI#setSkullTexture(SkullMeta, String, String)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public void setSkullTexture(@NotNull SkullMeta skullMeta, @NotNull String name, @NotNull String base64) {
-        SkinTextureUtil.setSkullBlockTexture(skullMeta, name, base64);
+        api.skin.setSkullTexture(skullMeta, name, base64);
     }
 
     /**
@@ -1068,9 +1089,11 @@ public class GravesXAPI {
      *
      * @param entity The entity from which to get the texture.
      * @return The Base64 encoded texture string, or null if not found.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.skin.SkinAPI#getTexture(Entity)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public String getTexture(@NotNull Entity entity) {
-        return SkinTextureUtil.getTexture(entity);
+        return api.skin.getTexture(entity);
     }
 
     /**
@@ -1078,9 +1101,11 @@ public class GravesXAPI {
      *
      * @param player The player from which to get the GameProfile.
      * @return The GameProfile of the player, or null if not found.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.skin.SkinAPI#getPlayerGameProfile(Player)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public GameProfile getPlayerGameProfile(@NotNull Player player) {
-        return SkinTextureUtil.getPlayerGameProfile(player);
+        return api.skin.getPlayerGameProfile(player);
     }
 
     /**
@@ -1088,9 +1113,11 @@ public class GravesXAPI {
      *
      * @param string The string to convert to a UUID.
      * @return The UUID if the string is a valid UUID format, otherwise null.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.util.UtilAPI#uuidOf(String)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public UUID getUUID(@NotNull String string) {
-        return UUIDUtil.getUUID(string);
+        return api.util.uuidOf(string);
     }
 
     /**
@@ -1098,9 +1125,11 @@ public class GravesXAPI {
      *
      * @param resourceId The ID of the resource on SpigotMC.
      * @return The latest version of the resource as a String, or null if an error occurs.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.util.UtilAPI#latestSpigotVersion(int)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public String getLatestVersion(int resourceId) {
-        return UpdateUtil.getLatestVersion(resourceId);
+        return api.util.latestSpigotVersion(resourceId);
     }
 
     /**
@@ -1108,35 +1137,38 @@ public class GravesXAPI {
      *
      * @param file The file to check.
      * @return True if the file is a valid YAML file, otherwise false.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.util.UtilAPI#isValidYaml(File)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public boolean isValidYAML(@NotNull File file) {
-        return YAMLUtil.isValidYAML(file);
+        return api.util.isValidYaml(file);
     }
 
     /**
-     * @deprecated Use {@link #isGrave(Grave, Location)} instead for precise location checking.
      * This code is added for debugging purposes.
-     *
      * Checks if the specified location is a grave's location.
      *
      * @param grave the grave to check. This always returns true for the provided grave's death location.
      *              For more precise checking, use {@link #isGrave(Grave, Location)} with a specific location.
      * @return true if the location matches the grave's death location, false otherwise.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.grave.GraveManagementAPI#isGrave(Grave)}.
      */
-    @Deprecated
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public boolean isGrave(@NotNull Grave grave) {
-        return isGrave(grave, grave.getLocationDeath());
+        return api.gravesManage.isGrave(grave);
     }
 
     /**
      * Checks if a given location matches the death location of a specific grave.
      *
-     * @param grave the grave to check
+     * @param grave    the grave to check
      * @param location the location to compare with the grave's death location
      * @return true if the location matches the grave's death location, false otherwise.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.grave.GraveManagementAPI#isGrave(Grave, Location)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public boolean isGrave(@NotNull Grave grave, @NotNull Location location) {
-        return location.equals(grave.getLocationDeath());
+        return api.gravesManage.isGrave(grave, location);
     }
 
     /**
@@ -1146,9 +1178,11 @@ public class GravesXAPI {
      * to count graves without filtering by any specific player.
      *
      * @return the total count of graves for all players.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.grave.GraveManagementAPI#getGraveAmount()}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public long getGraveAmount() {
-        return getGraveAmount(null);
+        return api.gravesManage.getGraveAmount();
     }
 
     /**
@@ -1160,26 +1194,12 @@ public class GravesXAPI {
      * @param targetPlayer the player whose graves should be counted; if {@code null},
      *                     counts graves for all players.
      * @return the number of graves associated with {@code targetPlayer}, or the total
-     *         count of all graves if {@code targetPlayer} is {@code null}.
+     * count of all graves if {@code targetPlayer} is {@code null}.
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.grave.GraveManagementAPI#getGraveAmount(Player)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public long getGraveAmount(@Nullable Player targetPlayer) {
-        List<Grave> graveList = new ArrayList<>(plugin.getCacheManager().getGraveMap().values());
-        UUID playerUUID = null;
-        if (targetPlayer != null) {
-            playerUUID = targetPlayer.getUniqueId();
-        }
-        long graveCount = 0;
-
-        for (Grave grave : graveList) {
-            if (playerUUID != null) {
-                if (grave.getOwnerUUID().equals(playerUUID)) {
-                    graveCount++; // Filter to the current player
-                }
-            } else {
-                graveCount++; // Count all graves
-            }
-        }
-        return graveCount;
+        return api.gravesManage.getGraveAmount(targetPlayer);
     }
 
     /**
@@ -1188,8 +1208,11 @@ public class GravesXAPI {
      * @param pluginId      The Spigot resource ID of the plugin.
      * @param pluginName    The name of the plugin file (without the ".jar" extension).
      * @param pluginsFolder The path to the plugins' folder.
+     * @param commandSender The sender to message about progress/result.
      * @throws IOException If the download or file operations fail.
+     * @deprecated Since 4.9.9.1. Call {@link PluginDownloadUtil} directly from your code.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public static void downloadAndReplacePlugin(long pluginId, String pluginName, String pluginsFolder, CommandSender commandSender) throws IOException {
         PluginDownloadUtil.downloadAndReplacePlugin(pluginId, pluginName, pluginsFolder, commandSender);
     }
@@ -1200,47 +1223,61 @@ public class GravesXAPI {
      * @param pluginId      The Spigot resource ID of the plugin.
      * @param pluginName    The name of the plugin file (without the ".jar" extension).
      * @param pluginsFolder The path to the plugins' folder.
+     * @param commandSender The sender to message about progress/result.
      * @throws IOException If the download or file operations fail.
+     * @deprecated Since 4.9.9.1. Call {@link PluginDownloadUtil} directly from your code.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public static void downloadAndReplacePlugin(String pluginId, String pluginName, String pluginsFolder, CommandSender commandSender) throws IOException {
         PluginDownloadUtil.downloadAndReplacePlugin(pluginId, pluginName, pluginsFolder, commandSender);
     }
 
     /**
      * Ensures creation of an addon folder.
+     *
      * @param addon The addon to register
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.addon.AddonAPI#ensureAddonFolder(Plugin)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public void ensureGravesXAddonFolder(Plugin addon) {
-        GravesXAddon.ensureAddonFolder(plugin, addon.getDescription().getName());
+        api.addon.ensureAddonFolder(addon);
     }
 
     /**
-     * exports addon configs
+     * Exports addon configs
+     *
      * @param addon the addon to get configs from
      * @return the addons exported
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.addon.AddonAPI#exportAddonConfigs(Plugin)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public int exportAddonConfigs(Plugin addon) {
-        return exportAddonConfigs(addon, false);
+        return api.addon.exportAddonConfigs(addon);
     }
 
     /**
-     * exports addon configs
-     * @param addon the addon to get configs from
+     * Exports addon configs
+     *
+     * @param addon           the addon to get configs from
      * @param replaceIfExists replace configs even if they exist
      * @return the addons exported
+     * @deprecated Since 4.9.9.1. Use {@link dev.cwhead.GravesX.api.addon.AddonAPI#exportAddonConfigs(Plugin, boolean)}.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public int exportAddonConfigs(Plugin addon, boolean replaceIfExists) {
-        return GravesXAddon.exportAddonConfigs(plugin, addon.getDescription().getName(), replaceIfExists);
+        return api.addon.exportAddonConfigs(addon, replaceIfExists);
     }
 
     /**
      * Retrieves the instance of the {@link Graves} class.
      *
-     * <p><strong>Warning:</strong> Using this method can have undesirable results. Unless you know what you are doing, We recommend using other methods.</p>
+     * <p><strong>Warning:</strong> Using this method can have undesirable results. Unless you know what you are doing, we recommend using other methods.</p>
      *
      * @return the {@link Graves} instance.
+     * @deprecated Since 4.9.9.1. Prefer using the typed sub-APIs from {@link dev.cwhead.GravesX.api.GravesXAPI}.
      */
-    @Experimental
+    @ApiStatus.Experimental
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public Graves getGravesX() {
         return plugin;
     }
@@ -1249,16 +1286,21 @@ public class GravesXAPI {
      * Gets the instance of the GravesXAPI.
      *
      * @return The instance of the API.
+     * @deprecated Since 4.9.9.1. This self-reference is obsolete; hold {@link dev.cwhead.GravesX.api.GravesXAPI} instead.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public GravesXAPI getInstance() {
-        return instance;
+        return this;
     }
 
     /**
      * Registers the API as an event listener in the plugin manager.
+     *
+     * @deprecated Since 4.9.9.1. Register your own listeners where needed; this API class is being removed.
      */
+    @Deprecated(forRemoval = true, since = "4.9.9.1")
     public void register() {
         PluginManager pm = plugin.getServer().getPluginManager();
-        pm.registerEvents((Listener) this, plugin);
+        pm.registerEvents((org.bukkit.event.Listener) this, plugin);
     }
 }

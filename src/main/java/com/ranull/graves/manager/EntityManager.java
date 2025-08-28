@@ -1,7 +1,7 @@
 package com.ranull.graves.manager;
 
 import com.ranull.graves.Graves;
-import com.ranull.graves.compatibility.CompatibilitySoundEnum;
+import dev.cwhead.GravesX.compatibility.CompatibilitySoundEnum;
 import com.ranull.graves.data.EntityData;
 import com.ranull.graves.event.*;
 import com.ranull.graves.integration.MiniMessage;
@@ -26,8 +26,6 @@ import org.bukkit.inventory.meta.components.CustomModelDataComponent;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.metadata.MetadataValue;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.util.NumberConversions;
 
 import java.util.*;
 

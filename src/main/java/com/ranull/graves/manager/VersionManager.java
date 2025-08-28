@@ -1,10 +1,8 @@
 package com.ranull.graves.manager;
 
-import com.ranull.graves.compatibility.CompatibilitySoundEnum;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Particle;
-import org.bukkit.Sound;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.potion.PotionEffectType;
 

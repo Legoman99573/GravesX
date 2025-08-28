@@ -1,6 +1,7 @@
 package com.ranull.graves.event;
 
 import com.ranull.graves.type.Grave;
+import dev.cwhead.GravesX.event.GraveEvent;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;

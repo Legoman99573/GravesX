@@ -2,7 +2,7 @@ package com.ranull.graves.command;
 
 import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
-import com.ranull.graves.util.PluginDownloadUtil;
+import dev.cwhead.GravesX.util.PluginDownloadUtil;
 import org.bukkit.*;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
