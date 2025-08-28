@@ -2,8 +2,8 @@ package com.ranull.graves.manager;
 
 import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
-import com.ranull.graves.util.SkinTextureUtil;
-import com.ranull.graves.util.SkinSignatureUtil;
+import me.jay.GravesX.util.SkinTextureUtil;
+import me.jay.GravesX.util.SkinSignatureUtil;
 import com.ranull.graves.util.StringUtil;
 import com.ranull.graves.util.UUIDUtil;
 import com.ranull.graves.util.YAMLUtil;

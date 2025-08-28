@@ -7,7 +7,7 @@ import com.ranull.graves.data.BlockData;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.BlockFaceUtil;
 import com.ranull.graves.util.MaterialUtil;
-import com.ranull.graves.util.SkinTextureUtil;
+import me.jay.GravesX.util.SkinTextureUtil;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;

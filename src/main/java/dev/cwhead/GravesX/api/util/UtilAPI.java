@@ -5,6 +5,8 @@ import com.ranull.graves.util.*;
 import dev.cwhead.GravesX.api.world.LocationAPI;
 import dev.cwhead.GravesX.util.LibraryLoaderUtil;
 import dev.cwhead.GravesX.util.MclogsUtil;
+import me.jay.GravesX.util.SkinSignatureUtil;
+import me.jay.GravesX.util.SkinTextureUtil;
 import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.Particle;

@@ -1,4 +1,4 @@
-package com.ranull.graves.util;
+package me.jay.GravesX.util;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;

@@ -1,8 +1,8 @@
 package dev.cwhead.GravesX.api.skin;
 
 import com.mojang.authlib.GameProfile;
-import com.ranull.graves.util.SkinSignatureUtil;
-import com.ranull.graves.util.SkinTextureUtil;
+import me.jay.GravesX.util.SkinSignatureUtil;
+import me.jay.GravesX.util.SkinTextureUtil;
 import org.bukkit.block.Skull;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
