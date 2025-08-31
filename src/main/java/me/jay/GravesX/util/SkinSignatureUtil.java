@@ -51,7 +51,6 @@ public final class SkinSignatureUtil {
                 }
             }
         }
-
         return null;
     }
 

@@ -49,7 +49,8 @@ public final class SkinTextureUtil {
                 } else {
                     profileField.set(skull, gameProfile);
                 }
-            } catch (Exception e) {
+            } catch (NoSuchMethodError | IllegalAccessException | NoSuchMethodException | ClassNotFoundException |
+                     InstantiationException | InvocationTargetException e) {
                 gameProfile.getProperties().put("textures", new Property("textures", base64));
                 Field profileField = skull.getClass().getDeclaredField("profile");
 
@@ -64,7 +65,8 @@ public final class SkinTextureUtil {
                     profileField.set(skull, gameProfile);
                 }
             }
-        } catch (Exception exception) {
+        } catch (NoSuchMethodError | IllegalAccessException | NoSuchFieldException | InstantiationException |
+                 InvocationTargetException | ClassNotFoundException | NoSuchMethodException exception) {
             Bukkit.getLogger().warning("Failed to set the Skull texture. Cause: " + exception.getCause());
             exception.printStackTrace();
         }
@@ -95,7 +97,8 @@ public final class SkinTextureUtil {
                 } else {
                     profileField.set(skullMeta, gameProfile);
                 }
-            } catch (Exception e) {
+            } catch (NoSuchMethodError | IllegalAccessException | NoSuchMethodException | ClassNotFoundException |
+                     InstantiationException | InvocationTargetException e) {
                 gameProfile.getProperties().put("textures", new Property("textures", base64));
                 Field profileField = skullMeta.getClass().getDeclaredField("profile");
                 profileField.setAccessible(true);
@@ -109,7 +112,8 @@ public final class SkinTextureUtil {
                     profileField.set(skullMeta, gameProfile);
                 }
             }
-        } catch (Exception exception) {
+        } catch (NoSuchMethodError | IllegalAccessException | NoSuchFieldException | InstantiationException |
+                 InvocationTargetException | ClassNotFoundException | NoSuchMethodException exception) {
             Bukkit.getLogger().warning("Failed to set the SkullMeta texture. Cause: " + exception.getCause());
             exception.printStackTrace();
         }
