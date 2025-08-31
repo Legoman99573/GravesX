@@ -32,22 +32,37 @@ public final class SkinTextureUtil {
      * @param base64 The Base64 encoded texture.
      */
     public static void setSkullBlockTexture(Skull skull, String name, String base64) {
-        GameProfile gameProfile = new GameProfile(UUID.randomUUID(), name);
-
-        gameProfile.getProperties().put("textures", new Property("textures", base64));
-
         try {
-            Field profileField = skull.getClass().getDeclaredField("profile");
+            GameProfile gameProfile = new GameProfile(UUID.randomUUID(), name);
 
-            profileField.setAccessible(true);
-            if (profileField.getType().getSimpleName().contains("ResolvableProfile")) {
-                Constructor<?> resolvableProfileConstructor = Class.forName("net.minecraft.world.item.component.ResolvableProfile")
-                        .getDeclaredConstructor(GameProfile.class);
-                resolvableProfileConstructor.setAccessible(true);
-                Object resolvableProfileInstance = resolvableProfileConstructor.newInstance(gameProfile);
-                profileField.set(skull, resolvableProfileInstance);
-            } else {
-                profileField.set(skull, gameProfile);
+            try {
+                gameProfile.properties().put("textures", new Property("textures", base64));
+                Field profileField = skull.getClass().getDeclaredField("profile");
+
+                profileField.setAccessible(true);
+                if (profileField.getType().getSimpleName().contains("ResolvableProfile")) {
+                    Constructor<?> resolvableProfileConstructor = Class.forName("net.minecraft.world.item.component.ResolvableProfile")
+                            .getDeclaredConstructor(GameProfile.class);
+                    resolvableProfileConstructor.setAccessible(true);
+                    Object resolvableProfileInstance = resolvableProfileConstructor.newInstance(gameProfile);
+                    profileField.set(skull, resolvableProfileInstance);
+                } else {
+                    profileField.set(skull, gameProfile);
+                }
+            } catch (Exception e) {
+                gameProfile.getProperties().put("textures", new Property("textures", base64));
+                Field profileField = skull.getClass().getDeclaredField("profile");
+
+                profileField.setAccessible(true);
+                if (profileField.getType().getSimpleName().contains("ResolvableProfile")) {
+                    Constructor<?> resolvableProfileConstructor = Class.forName("net.minecraft.world.item.component.ResolvableProfile")
+                            .getDeclaredConstructor(GameProfile.class);
+                    resolvableProfileConstructor.setAccessible(true);
+                    Object resolvableProfileInstance = resolvableProfileConstructor.newInstance(gameProfile);
+                    profileField.set(skull, resolvableProfileInstance);
+                } else {
+                    profileField.set(skull, gameProfile);
+                }
             }
         } catch (Exception exception) {
             Bukkit.getLogger().warning("Failed to set the Skull texture. Cause: " + exception.getCause());
@@ -64,20 +79,35 @@ public final class SkinTextureUtil {
      * @param base64    The Base64 encoded texture.
      */
     public static void setSkullBlockTexture(SkullMeta skullMeta, String name, String base64) {
-        GameProfile gameProfile = new GameProfile(UUID.randomUUID(), name);
-        gameProfile.getProperties().put("textures", new Property("textures", base64));
-
         try {
-            Field profileField = skullMeta.getClass().getDeclaredField("profile");
-            profileField.setAccessible(true);
-            if (profileField.getType().getSimpleName().contains("ResolvableProfile")) {
-                Constructor<?> resolvableProfileConstructor = Class.forName("net.minecraft.world.item.component.ResolvableProfile")
-                        .getDeclaredConstructor(GameProfile.class);
-                resolvableProfileConstructor.setAccessible(true);
-                Object resolvableProfileInstance = resolvableProfileConstructor.newInstance(gameProfile);
-                profileField.set(skullMeta, resolvableProfileInstance);
-            } else {
-                profileField.set(skullMeta, gameProfile);
+            GameProfile gameProfile = new GameProfile(UUID.randomUUID(), name);
+
+            try {
+                gameProfile.properties().put("textures", new Property("textures", base64));
+                Field profileField = skullMeta.getClass().getDeclaredField("profile");
+                profileField.setAccessible(true);
+                if (profileField.getType().getSimpleName().contains("ResolvableProfile")) {
+                    Constructor<?> resolvableProfileConstructor = Class.forName("net.minecraft.world.item.component.ResolvableProfile")
+                            .getDeclaredConstructor(GameProfile.class);
+                    resolvableProfileConstructor.setAccessible(true);
+                    Object resolvableProfileInstance = resolvableProfileConstructor.newInstance(gameProfile);
+                    profileField.set(skullMeta, resolvableProfileInstance);
+                } else {
+                    profileField.set(skullMeta, gameProfile);
+                }
+            } catch (Exception e) {
+                gameProfile.getProperties().put("textures", new Property("textures", base64));
+                Field profileField = skullMeta.getClass().getDeclaredField("profile");
+                profileField.setAccessible(true);
+                if (profileField.getType().getSimpleName().contains("ResolvableProfile")) {
+                    Constructor<?> resolvableProfileConstructor = Class.forName("net.minecraft.world.item.component.ResolvableProfile")
+                            .getDeclaredConstructor(GameProfile.class);
+                    resolvableProfileConstructor.setAccessible(true);
+                    Object resolvableProfileInstance = resolvableProfileConstructor.newInstance(gameProfile);
+                    profileField.set(skullMeta, resolvableProfileInstance);
+                } else {
+                    profileField.set(skullMeta, gameProfile);
+                }
             }
         } catch (Exception exception) {
             Bukkit.getLogger().warning("Failed to set the SkullMeta texture. Cause: " + exception.getCause());
@@ -96,16 +126,31 @@ public final class SkinTextureUtil {
             GameProfile gameProfile = getPlayerGameProfile((Player) entity);
 
             if (gameProfile != null) {
-                PropertyMap propertyMap = gameProfile.getProperties();
+                try {
+                    PropertyMap propertyMap = gameProfile.properties();
 
-                if (propertyMap.containsKey("textures")) {
-                    Collection<Property> propertyCollection = propertyMap.get("textures");
-                    try {
-                        return !propertyCollection.isEmpty()
-                                ? propertyCollection.stream().findFirst().get().value() : null;
-                    } catch(NoSuchMethodError blah) {
-                        return !propertyCollection.isEmpty()
-                                ? propertyCollection.stream().findFirst().get().getValue() : null;
+                    if (propertyMap.containsKey("textures")) {
+                        Collection<Property> propertyCollection = propertyMap.get("textures");
+                        try {
+                            return !propertyCollection.isEmpty()
+                                    ? propertyCollection.stream().findFirst().get().value() : null;
+                        } catch (NoSuchMethodError blah) {
+                            return !propertyCollection.isEmpty()
+                                    ? propertyCollection.stream().findFirst().get().getValue() : null;
+                        }
+                    }
+                } catch (NoSuchMethodError bleh) {
+                    PropertyMap propertyMap = gameProfile.getProperties();
+
+                    if (propertyMap.containsKey("textures")) {
+                        Collection<Property> propertyCollection = propertyMap.get("textures");
+                        try {
+                            return !propertyCollection.isEmpty()
+                                    ? propertyCollection.stream().findFirst().get().value() : null;
+                        } catch (NoSuchMethodError blah) {
+                            return !propertyCollection.isEmpty()
+                                    ? propertyCollection.stream().findFirst().get().getValue() : null;
+                        }
                     }
                 }
             }

@@ -2,6 +2,7 @@ package com.ranull.graves.compatibility;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
+import com.mojang.authlib.properties.PropertyMap;
 import com.ranull.graves.Graves;
 import com.ranull.graves.data.BlockData;
 import com.ranull.graves.type.Grave;
@@ -298,7 +299,6 @@ public final class CompatibilityMaterialData implements Compatibility {
      * @param itemStack The item stack representing the skull.
      * @return The texture of the skull as a string.
      */
-    @SuppressWarnings("deprecation")
     @Override
     public String getSkullTexture(ItemStack itemStack) {
         Material material = Material.matchMaterial("SKULL_ITEM");
@@ -313,14 +313,28 @@ public final class CompatibilityMaterialData implements Compatibility {
 
                 GameProfile gameProfile = (GameProfile) profileField.get(skullMeta);
 
-                if (gameProfile != null && gameProfile.getProperties().containsKey("textures")) {
-                    Collection<Property> propertyCollection = gameProfile.getProperties().get("textures");
+                if (gameProfile != null && getTexturesKey(gameProfile)) {
+                    try {
+                        Collection<Property> propertyCollection = gameProfile.properties().get("textures");
 
-                    if (!propertyCollection.isEmpty()) {
-                        try {
-                            return propertyCollection.stream().findFirst().get().value();
-                        } catch (NoSuchMethodError meh) {
-                            return propertyCollection.stream().findFirst().get().getValue();
+                        if (!propertyCollection.isEmpty()) {
+                            try {
+                                return propertyCollection.stream().findFirst().get().value();
+                            } catch (NoSuchMethodError blah) {
+                                return propertyCollection.stream().findFirst().get().getValue();
+                            }
+
+                        }
+                    } catch (NoSuchMethodError bleh) {
+                        Collection<Property> propertyCollection = gameProfile.getProperties().get("textures");
+
+                        if (!propertyCollection.isEmpty()) {
+                            try {
+                                return propertyCollection.stream().findFirst().get().value();
+                            } catch (NoSuchMethodError blah) {
+                                return propertyCollection.stream().findFirst().get().getValue();
+                            }
+
                         }
                     }
                 }
@@ -330,5 +344,26 @@ public final class CompatibilityMaterialData implements Compatibility {
         }
 
         return null;
+    }
+
+    /**
+     * Returns whether the profile has a "textures" property
+     * (works with both {@code properties()} and {@code getProperties()}).
+     *
+     * @param gameProfile profile to check
+     * @return true if "textures" exists; false otherwise. Returns error if both methods don't work.
+     */
+    private boolean getTexturesKey(GameProfile gameProfile) {
+        try {
+            return gameProfile.properties().containsKey("textures");
+        } catch (NoSuchMethodError blah) {
+            try {
+                return gameProfile.getProperties().containsKey("textures");
+            } catch (Exception ex) {
+                Bukkit.getLogger().severe("Failed to get textures key. Cause: " + ex.getCause());
+                ex.printStackTrace();
+                return false;
+            }
+        }
     }
 }

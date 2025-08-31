@@ -18,18 +18,35 @@ public final class SkinSignatureUtil {
             GameProfile gameProfile = getPlayerGameProfile((Player) entity);
 
             if (gameProfile != null) {
-                PropertyMap propertyMap = gameProfile.getProperties();
+                try {
+                    PropertyMap propertyMap = gameProfile.properties();
 
-                if (propertyMap.containsKey("textures")) {
-                    Collection<Property> propertyCollection = propertyMap.get("textures");
+                    if (propertyMap.containsKey("textures")) {
+                        Collection<Property> propertyCollection = propertyMap.get("textures");
 
-                    try {
-                        return !propertyCollection.isEmpty()
-                                ? propertyCollection.stream().findFirst().get().signature() : null;
+                        try {
+                            return !propertyCollection.isEmpty()
+                                    ? propertyCollection.stream().findFirst().get().signature() : null;
 
-                    } catch(NoSuchMethodError blah) {
-                        return !propertyCollection.isEmpty()
-                                ? propertyCollection.stream().findFirst().get().getSignature() : null;
+                        } catch (NoSuchMethodError blah) {
+                            return !propertyCollection.isEmpty()
+                                    ? propertyCollection.stream().findFirst().get().getSignature() : null;
+                        }
+                    }
+                } catch (NoSuchMethodError bleh) {
+                    PropertyMap propertyMap = gameProfile.getProperties();
+
+                    if (propertyMap.containsKey("textures")) {
+                        Collection<Property> propertyCollection = propertyMap.get("textures");
+
+                        try {
+                            return !propertyCollection.isEmpty()
+                                    ? propertyCollection.stream().findFirst().get().signature() : null;
+
+                        } catch (NoSuchMethodError blah) {
+                            return !propertyCollection.isEmpty()
+                                    ? propertyCollection.stream().findFirst().get().getSignature() : null;
+                        }
                     }
                 }
             }
