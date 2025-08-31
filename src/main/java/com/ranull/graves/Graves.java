@@ -3,9 +3,7 @@ package com.ranull.graves;
 import com.github.Anon8281.universalScheduler.UniversalScheduler;
 import com.github.Anon8281.universalScheduler.scheduling.schedulers.TaskScheduler;
 import com.ranull.graves.command.GravesCommand;
-import com.ranull.graves.compatibility.Compatibility;
-import com.ranull.graves.compatibility.CompatibilityBlockData;
-import com.ranull.graves.compatibility.CompatibilityMaterialData;
+import com.ranull.graves.compatibility.*;
 import com.ranull.graves.listener.*;
 import com.ranull.graves.manager.*;
 import com.ranull.graves.type.Grave;
@@ -238,26 +236,32 @@ public class Graves extends JavaPlugin {
 
         String storageType = Objects.requireNonNull(getConfig().getString("settings.storage.type")).toUpperCase();
 
-        if ("POSTGRESQL".equals(storageType)) {
-            libraryLoaderUtil.loadLibrary("org{}postgresql", "postgresql", "42.7.7", "org{}postgresql", "com{}ranull{}graves{}libraries{}postgresql", false);
-        } else if ("MARIADB".equals(storageType)) {
-            libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.4.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
-            libraryLoaderUtil.loadLibrary("org{}mariadb{}jdbc", "mariadb-java-client", "3.5.4", "org{}mariadb", "com{}ranull{}graves{}libraries{}mariadb", false);
-        } else if ("MYSQL".equals(storageType)) {
-            libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.4.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
-        } else if ("H2".equals(storageType)) {
-            libraryLoaderUtil.loadLibrary("com{}h2database", "h2", "2.3.232", "org{}h2", "com{}ranull{}graves{}libraries{}h2", false, "https://repo1.maven.org/maven2/");
-        } else if ("MSSQL".equals(storageType)) {
-            String jdbcVersion;
+        switch (storageType) {
+            case "POSTGRESQL":
+                libraryLoaderUtil.loadLibrary("org{}postgresql", "postgresql", "42.7.7", "org{}postgresql", "com{}ranull{}graves{}libraries{}postgresql", false);
+                break;
+            case "MARIADB":
+                libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.4.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
+                libraryLoaderUtil.loadLibrary("org{}mariadb{}jdbc", "mariadb-java-client", "3.5.4", "org{}mariadb", "com{}ranull{}graves{}libraries{}mariadb", false);
+                break;
+            case "MYSQL":
+                libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.4.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
+                break;
+            case "H2":
+                libraryLoaderUtil.loadLibrary("com{}h2database", "h2", "2.3.232", "org{}h2", "com{}ranull{}graves{}libraries{}h2", false, "https://repo1.maven.org/maven2/");
+                break;
+            case "MSSQL":
+                String jdbcVersion;
 
-            try {
-                Class.forName("java.nio.file.Files");
-                jdbcVersion = "13.1.1.jre11-preview";
-            } catch (ClassNotFoundException e) {
-                jdbcVersion = "13.1.1.jre8-preview";
-            }
+                try {
+                    Class.forName("java.nio.file.Files");
+                    jdbcVersion = "13.1.1.jre11-preview";
+                } catch (ClassNotFoundException e) {
+                    jdbcVersion = "13.1.1.jre8-preview";
+                }
 
-            libraryLoaderUtil.loadLibrary("com{}microsoft{}sqlserver", "mssql-jdbc", jdbcVersion, "com{}microsoft", "com{}ranull{}graves{}libraries{}microsoft", false);
+                libraryLoaderUtil.loadLibrary("com{}microsoft{}sqlserver", "mssql-jdbc", jdbcVersion, "com{}microsoft", "com{}ranull{}graves{}libraries{}microsoft", false);
+                break;
         }
         libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-api", "4.24.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
         libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-minimessage", "4.24.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
@@ -715,7 +719,7 @@ public class Graves extends JavaPlugin {
      */
     private void updateChecker() {
         if (getConfig().getBoolean("settings.update.check")) {
-            getGravesXScheduler().runTaskAsynchronously(this, () -> {
+            getGravesXScheduler().runTaskAsynchronously(() -> {
                 String latestVersion = getLatestVersion();
                 String installedVersion = getDescription().getVersion();
 
@@ -1314,7 +1318,7 @@ public class Graves extends JavaPlugin {
     public void logInvalidGraveSite(String grave_uuid, Location affectedGraveLocation, List<String> invalidationReason) {
         String graveWorld;
         try {
-            graveWorld = affectedGraveLocation.getWorld().getName();
+            graveWorld = Objects.requireNonNull(affectedGraveLocation.getWorld()).getName();
         } catch (Exception e) {
             graveWorld = "Unknown";
         }

@@ -327,6 +327,15 @@ public abstract class GraveEvent extends Event implements Cancellable, Addon {
     }
 
     /**
+     * Determines if entity in an event is Player or Entity
+     *
+     * @return true if player, false if entity
+     */
+    public boolean isEntityActuallyPlayer() {
+        return entity instanceof Player;
+    }
+
+    /**
      * Sets the location of the event.
      *
      * @param location The new location of the event.
