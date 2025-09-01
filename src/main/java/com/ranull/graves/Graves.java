@@ -10,6 +10,8 @@ import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.*;
 import com.tchristofferson.configupdater.ConfigUpdater;
 import dev.cwhead.GravesX.addon.GravesXAddon;
+import dev.cwhead.GravesX.debug.KeepInventoryDetector;
+import dev.cwhead.GravesX.debug.LateEnableHook;
 import dev.cwhead.GravesX.manager.ParticleManager;
 import dev.cwhead.GravesX.util.LibraryLoaderUtil;
 import dev.cwhead.GravesX.util.MclogsUtil;
@@ -122,7 +124,14 @@ public class Graves extends JavaPlugin {
             updateChecker();
             updateConfig();
             RegisterSoftCrashHandler();
+            KeepInventoryDetector.logWorldsWithGameruleKeepInventoryTrue(this);
         });
+
+        getGravesXScheduler().runTaskLater(() -> {
+            KeepInventoryDetector.install(this);
+        }, 1L);
+
+        getServer().getPluginManager().registerEvents(new LateEnableHook(), this);
 
         if (getConfig().getBoolean("settings.metrics.enabled", true)) {
             getLogger().info("Metrics has been enabled. All metrics will be sent to https://bstats.org/plugin/bukkit/Graves/12849 and https://bstats.org/plugin/bukkit/GravesX/23069.");
