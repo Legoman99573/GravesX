@@ -154,8 +154,8 @@ public final class KeepInventoryDetector {
             boolean after = safeGetKeep(pd, before);
 
             if (!before && after) {
-                plugin.getLogger().warning("[KeepInventoryDetector] keepInventory was set to true by: "
-                        + owner.getName() + " v." + owner.getDescription().getVersion() + " (priority " + priority + "). Graves will not spawn in this world without using a bypass permission or editing this plugins configuration.");
+                plugin.getLogger().warning("[KeepInventoryDetector] Keep Inventory was set to true by plugin "
+                        + owner.getName() + " v." + owner.getDescription().getVersion() + " (priority " + priority + "). Graves will not spawn in this world without using a bypass permission or editing this plugins configuration. If there is no way to disable keepInventory through configuration or permission, contact the plugin author.");
             }
         }
     }
