@@ -744,7 +744,7 @@
         <dependency>
             <groupId>com.nexomc</groupId>
             <artifactId>nexo</artifactId>
-            <version>1.10.0</version>
+            <version>1.11.0-dev</version>
             <exclusions>
                 <exclusion>
                     <groupId>net.byteflux</groupId>
