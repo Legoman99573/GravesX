@@ -82,7 +82,7 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
                     handlePurgeCommand(commandSender, args);
                     break;
                 case "import":
-                    handleImportCommand(commandSender);
+                    handleImportCommand(commandSender, args);
                     break;
                 case "addons":
                 case "addon":
@@ -173,6 +173,11 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
                 stringList.add("tp");
             }
 
+            if (commandSender instanceof Player
+                    && plugin.hasGrantedPermission("graves.import", ((Player) commandSender).getPlayer())) {
+                stringList.add("import");
+            }
+
             if (!(commandSender instanceof Player)
                     || plugin.hasGrantedPermission("graves.gui", ((Player) commandSender).getPlayer())) {
                 stringList.add("list");
@@ -228,7 +233,9 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
                 stringList.add("0");
                 stringList.add("1");
                 stringList.add("2");
-
+            } else if (args[0].equals("import") && (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.import", ((Player) commandSender).getPlayer()))) {
+                stringList.add("AngelChest");
+                stringList.add("angelchest");
             } else if ((args[0].equals("addon") || args[0].equals("addons")) && (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.download.addon", ((Player) commandSender).getPlayer()))) {
                 stringList.add("LandProtection");
             } else if (args[0].equals("purge") && (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.debug", ((Player) commandSender).getPlayer()))) {
@@ -451,7 +458,7 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
                             + "Player " + args[1] + " not found.");
                 }
             }
-        } else if (commandSender instanceof Player) {
+        } else {
             plugin.getEntityManager().sendMessage("message.permission-denied", (Player) commandSender);
         }
     }
@@ -465,7 +472,7 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
             plugin.reload();
             commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
                     + "Reloaded config file.");
-        } else if (commandSender instanceof Player) {
+        } else {
             plugin.getEntityManager().sendMessage("message.permission-denied", (Player) commandSender);
         }
     }
@@ -475,7 +482,7 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
             commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
                     + "Running dump functions...");
             plugin.dumpServerInfo(commandSender);
-        } else if (commandSender instanceof Player) {
+        } else {
             plugin.getEntityManager().sendMessage("message.permission-denied", (Player) commandSender);
         }
     }
@@ -507,7 +514,7 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
                 commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
                         + ChatColor.RESET + "/graves debug {level}");
             }
-        } else if (commandSender instanceof Player) {
+        } else {
             plugin.getEntityManager().sendMessage("message.permission-denied", (Player) commandSender);
         }
     }
@@ -522,7 +529,7 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
 
             commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » "
                     + ChatColor.RESET + graveList.size() + " graves cleaned up.");
-        } else if (commandSender instanceof Player) {
+        } else {
             plugin.getEntityManager().sendMessage("message.permission-denied", (Player) commandSender);
         }
     }
@@ -708,31 +715,44 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
                             + allGraves.size() + " graves purged.");
                     break;
             }
-        } else if (commandSender instanceof Player) {
+        } else {
             plugin.getEntityManager().sendMessage("message.permission-denied", (Player) commandSender);
         }
     }
 
-    private void handleImportCommand(CommandSender commandSender) {
-        if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.import", ((Player) commandSender).getPlayer())) {
-            // Disable for everyone except Ranull, not ready for production.
-            if (!commandSender.getName().equals("Ranull") && !commandSender.getName().equals("JaySmethers") && !commandSender.getName().equals("Legoman99573")) {
-                commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
-                        + "Import functionality not ready for production.");
+    private void handleImportCommand(CommandSender commandSender, String[] args) {
+        if (args == null || args.length == 0 || !args[0].equalsIgnoreCase("AngelChest") || !args[0].equalsIgnoreCase("angelchest")) {
+            commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
+                    + "Usage: /graves import AngelChest");
+            return;
+        }
+
+        boolean isConsole = !(commandSender instanceof Player);
+        if (!isConsole) {
+            Player player = (Player) commandSender;
+            if (!plugin.hasGrantedPermission("graves.import", player)) {
+                plugin.getEntityManager().sendMessage("message.permission-denied", player);
                 return;
             }
-
-            List<Grave> graveList = plugin.getImportManager().importExternalPluginGraves();
-
-            for (Grave grave : graveList) {
-                plugin.getDataManager().addGrave(grave);
-                plugin.getGraveManager().placeGrave(grave.getLocationDeath(), grave);
-            }
-
-            commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
-                    + " Imported " + graveList.size() + " graves.");
-        } else if (commandSender instanceof Player) {
-            plugin.getEntityManager().sendMessage("message.permission-denied", (Player) commandSender);
         }
+
+        List<Grave> graveList = plugin.getImportManager().importExternalPluginAngelChest();
+
+        int placed = 0;
+        for (Grave grave : graveList) {
+            plugin.getDataManager().addGrave(grave);
+            if (grave.getLocationDeath() != null) {
+                plugin.getGraveManager().placeGrave(grave.getLocationDeath(), grave);
+                placed++;
+            }
+        }
+
+        commandSender.sendMessage(
+                ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET +
+                        "Imported " + graveList.size() + " graves from AngelChest"
+                        + (placed != graveList.size() ? (" (" + placed + " placed, " + (graveList.size() - placed) + " skipped due to missing location)") : "")
+                        + "."
+        );
     }
+
 }
