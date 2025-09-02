@@ -203,6 +203,16 @@ public final class EntityManager extends EntityDataManager {
     }
 
     public void teleportEntity(Entity entity, Location location, Grave grave) {
+        GravePreTeleportEvent modernPre = new GravePreTeleportEvent(grave, entity);
+        plugin.getServer().getPluginManager().callEvent(modernPre);
+
+        com.ranull.graves.event.GravePreTeleportEvent legacyPre =
+                new com.ranull.graves.event.GravePreTeleportEvent(grave, entity);
+        plugin.getServer().getPluginManager().callEvent(legacyPre);
+
+        if (modernPre.isCancelled() || modernPre.isAddon() || legacyPre.isCancelled() || legacyPre.isAddon()) {
+            return;
+        }
         location = LocationUtil.roundLocation(location);
         BlockFace blockFace = BlockFaceUtil.getYawBlockFace(grave.getYaw());
         Location locationTeleport = location.clone().getBlock().getRelative(blockFace).getRelative(blockFace)
