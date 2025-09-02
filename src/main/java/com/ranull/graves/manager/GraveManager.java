@@ -145,16 +145,12 @@ public final class GraveManager {
             return;
         }
 
-        boolean dropOnTimeout = plugin.getConfig("drop.timeout", grave).getBoolean("drop.timeout", false);
+        boolean dropOnTimeout = plugin.getConfig("drop.timeout", grave).getBoolean("drop.timeout", true);
         boolean abandonEnabled = plugin.getConfig("drop.abandon", grave).getBoolean("drop.abandon", false);
 
         if (abandonEnabled && dropOnTimeout) {
             plugin.debugMessage("Config ‘drop.abandon’ ignored because ‘drop.timeout’ is enabled", 2);
             abandonEnabled = false;
-        }
-
-        if (!dropOnTimeout && !abandonEnabled) {
-            return;
         }
 
         GraveTimeoutEvent tevModern = new GraveTimeoutEvent(grave);
@@ -223,7 +219,7 @@ public final class GraveManager {
                 return;
             }
 
-            plugin.debugMessage("Fallback drop for " + grave.getUUID(), 2);
+            plugin.debugMessage("Fallback drop for " + grave.getUUID() + " as drop.timeout and drop.abandon are false", 2);
             sendPlayerMessage(grave, "message.timeout", loc);
             graveRemoveList.add(grave);
             removeGrave(grave);
