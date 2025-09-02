@@ -1,19 +1,22 @@
 package com.ranull.graves.event;
 
 import com.ranull.graves.type.Grave;
-import dev.cwhead.GravesX.event.GraveEvent;
+import dev.cwhead.GravesX.event.graveevent.GraveEntityEvent;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Represents an event that occurs when grave protection is created for an entity.
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveProtectionCreateEvent} instead.
+ * Represents an event that occurs when grave protection is created.
  * <p>
- * This event extends {@link GraveEvent} and is cancellable, allowing event listeners
- * to prevent the creation of the grave protection if necessary.
+ * This event extends {@link GraveEntityEvent} and is cancellable, allowing event listeners
+ * to prevent creation of grave protection if necessary.
  * </p>
  */
-public class GraveProtectionCreateEvent extends GraveEvent {
+@Deprecated (since = "4.9.9.1", forRemoval = true)
+public class GraveProtectionCreateEvent extends dev.cwhead.GravesX.event.GraveProtectionCreateEvent {
+
     /**
      * A static final instance of {@link HandlerList} used to manage event handlers.
      * <p>
@@ -24,23 +27,15 @@ public class GraveProtectionCreateEvent extends GraveEvent {
     private static final HandlerList HANDLERS = new HandlerList();
 
     /**
+     * @deprecated Use {@link dev.cwhead.GravesX.event.GraveProtectionCreateEvent} instead.
      * Constructs a new {@code GraveProtectionCreateEvent}.
      *
      * @param entity The entity for which the grave protection is being created.
      * @param grave  The grave being protected.
      */
-    public GraveProtectionCreateEvent(Entity entity, Grave grave) {
-        super(grave, entity, grave.getLocationDeath(), null, null, null, null, null, null);
-    }
-
-    /**
-     * Gets the list of handlers for this event.
-     *
-     * @return The handler list for this event.
-     */
-    @NotNull
-    public static HandlerList getHandlerList() {
-        return HANDLERS;
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    public GraveProtectionCreateEvent(@NotNull Entity entity, @NotNull Grave grave) {
+        super(entity, grave);
     }
 
     /**
@@ -50,6 +45,15 @@ public class GraveProtectionCreateEvent extends GraveEvent {
      */
     @Override
     public @NotNull HandlerList getHandlers() {
+        return HANDLERS;
+    }
+
+    /**
+     * Gets the static list of handlers for this event.
+     *
+     * @return The static handler list for this event.
+     */
+    public static @NotNull HandlerList getHandlerList() {
         return HANDLERS;
     }
 }

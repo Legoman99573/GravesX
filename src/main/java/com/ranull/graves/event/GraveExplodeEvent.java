@@ -1,7 +1,6 @@
 package com.ranull.graves.event;
 
 import com.ranull.graves.type.Grave;
-import dev.cwhead.GravesX.event.GraveEvent;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.HandlerList;
@@ -9,13 +8,16 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveExplodeEvent} instead.
  * Represents an event that occurs when a grave explodes.
  * <p>
- * This event extends {@link GraveEvent} and is cancellable, allowing event listeners
+ * This event extends {@link dev.cwhead.GravesX.event.graveevent.GraveEvent} and is cancellable, allowing event listeners
  * to prevent the explosion from occurring if necessary.
  * </p>
  */
-public class GraveExplodeEvent extends GraveEvent {
+@Deprecated (since = "4.9.9.1", forRemoval = true)
+public class GraveExplodeEvent extends dev.cwhead.GravesX.event.GraveExplodeEvent {
+
     /**
      * A static final instance of {@link HandlerList} used to manage event handlers.
      * <p>
@@ -26,6 +28,7 @@ public class GraveExplodeEvent extends GraveEvent {
     private static final HandlerList HANDLERS = new HandlerList();
 
     /**
+     * @deprecated Use {@link dev.cwhead.GravesX.event.GraveExplodeEvent} instead.
      * Constructs a new {@code GraveExplodeEvent}.
      *
      * @param location The location where the explosion occurs.
@@ -33,18 +36,9 @@ public class GraveExplodeEvent extends GraveEvent {
      *                 if no specific entity caused the explosion.
      * @param grave    The grave that is exploding.
      */
-    public GraveExplodeEvent(Location location, @Nullable Entity entity, Grave grave) {
-        super(grave, entity, location, null, null, null, null, null, null);
-    }
-
-    /**
-     * Gets the list of handlers for this event.
-     *
-     * @return The handler list for this event.
-     */
-    @NotNull
-    public static HandlerList getHandlerList() {
-        return HANDLERS;
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    public GraveExplodeEvent(@NotNull Location location, @Nullable Entity entity, @NotNull Grave grave) {
+        super(location, entity, grave);
     }
 
     /**
@@ -54,6 +48,15 @@ public class GraveExplodeEvent extends GraveEvent {
      */
     @Override
     public @NotNull HandlerList getHandlers() {
+        return HANDLERS;
+    }
+
+    /**
+     * Gets the static list of handlers for this event.
+     *
+     * @return The static handler list for this event.
+     */
+    public static @NotNull HandlerList getHandlerList() {
         return HANDLERS;
     }
 }

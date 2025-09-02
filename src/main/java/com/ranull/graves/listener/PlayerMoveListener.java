@@ -3,12 +3,11 @@ package com.ranull.graves.listener;
 import com.ranull.graves.Graves;
 import com.ranull.graves.data.BlockData;
 import com.ranull.graves.data.ChunkData;
-import com.ranull.graves.event.GraveAutoLootEvent;
-import com.ranull.graves.event.GraveWalkOverEvent;
 import com.ranull.graves.integration.MiniMessage;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.LocationUtil;
 import com.ranull.graves.util.StringUtil;
+import dev.cwhead.GravesX.event.GraveWalkOverEvent;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.Location;
@@ -70,7 +69,7 @@ public class PlayerMoveListener implements Listener {
                 }
 
                 if (isLocationContainingGrave(location)) {
-                    handleGraveAutoLoot(event, player, location);
+                    handleGraveAutoLootOnWalk(event, player, location);
                 }
 
                 // Remove the specific type of compass if within 10 blocks of a grave
@@ -130,33 +129,41 @@ public class PlayerMoveListener implements Listener {
      * @param player   The player moving over the grave.
      * @param location The location of the grave.
      */
-    private void handleGraveAutoLoot(PlayerMoveEvent event, Player player, Location location) {
+    private void handleGraveAutoLootOnWalk(PlayerMoveEvent event, Player player, Location location) {
         ChunkData chunkData = plugin.getDataManager().getChunkData(location);
         BlockData blockData = getBlockDataFromLocation(chunkData, location);
 
-        if (blockData != null) {
-            Grave grave = plugin.getCacheManager().getGraveMap().get(blockData.getGraveUUID());
+        if (blockData == null) return;
 
-            if (grave != null && plugin.getConfig("block.walk-over", grave).getBoolean("block.walk-over")
-                    && plugin.getEntityManager().canOpenGrave(player, grave)) {
-                plugin.getGraveManager().cleanupCompasses(player, grave);
-                GraveWalkOverEvent graveWalkOverEvent = new GraveWalkOverEvent(player, location, grave);
+        Grave grave = plugin.getCacheManager().getGraveMap().get(blockData.getGraveUUID());
+        if (grave == null) return;
 
-                plugin.getServer().getPluginManager().callEvent(graveWalkOverEvent);
-                if (!graveWalkOverEvent.isCancelled() && !graveWalkOverEvent.isAddon()) {
-                    plugin.getGraveManager().autoLootGrave(player, location, grave);
-                    if (plugin.getIntegrationManager().hasNoteBlockAPI()) {
-                        if (plugin.getIntegrationManager().getNoteBlockAPI().isSongPlayingForPlayer(player)) {
-                            plugin.getIntegrationManager().getNoteBlockAPI().stopSongForPlayer(player);
-                        }
-                        if (plugin.getIntegrationManager().getNoteBlockAPI().isSongPlayingForAllPlayers()) {
-                            plugin.getIntegrationManager().getNoteBlockAPI().stopSongForAllPlayers();
-                        }
+        if (plugin.getConfig("block.walk-over", grave).getBoolean("block.walk-over")
+                && plugin.getEntityManager().canOpenGrave(player, grave)) {
+
+            plugin.getGraveManager().cleanupCompasses(player, grave);
+
+            GraveWalkOverEvent modern = new GraveWalkOverEvent(player, location, grave);
+            plugin.getServer().getPluginManager().callEvent(modern);
+
+            com.ranull.graves.event.GraveWalkOverEvent legacy = new com.ranull.graves.event.GraveWalkOverEvent(player, location, grave);
+            plugin.getServer().getPluginManager().callEvent(legacy);
+
+            if (!(modern.isCancelled() || modern.isAddon() || legacy.isCancelled() || legacy.isAddon())) {
+                plugin.getGraveManager().autoLootGrave(player, location, grave);
+
+                if (plugin.getIntegrationManager().hasNoteBlockAPI()) {
+                    if (plugin.getIntegrationManager().getNoteBlockAPI().isSongPlayingForPlayer(player)) {
+                        plugin.getIntegrationManager().getNoteBlockAPI().stopSongForPlayer(player);
+                    }
+                    if (plugin.getIntegrationManager().getNoteBlockAPI().isSongPlayingForAllPlayers()) {
+                        plugin.getIntegrationManager().getNoteBlockAPI().stopSongForAllPlayers();
                     }
                 }
             }
         }
     }
+
 
     private void removeSpecificCompassNearGrave(Player player, Location location) {
         long now = System.currentTimeMillis();

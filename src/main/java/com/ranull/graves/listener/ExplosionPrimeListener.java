@@ -1,8 +1,8 @@
 package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
-import com.ranull.graves.event.GraveExplodeEvent;
 import com.ranull.graves.type.Grave;
+import dev.cwhead.GravesX.event.GraveExplodeEvent;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -108,19 +108,32 @@ public class ExplosionPrimeListener implements Listener {
      * @param graveLocation The location of the grave.
      */
     private void handleGraveExplosion(ExplosionPrimeEvent event, Grave grave, Location graveLocation) {
-        GraveExplodeEvent graveExplodeEvent = new GraveExplodeEvent(graveLocation, event.getEntity(), grave);
-        plugin.getServer().getPluginManager().callEvent(graveExplodeEvent);
+        GraveExplodeEvent modern = new GraveExplodeEvent(graveLocation, event.getEntity(), grave);
+        plugin.getServer().getPluginManager().callEvent(modern);
 
-        if (graveExplodeEvent.isCancelled()) {
+        com.ranull.graves.event.GraveExplodeEvent legacy = new com.ranull.graves.event.GraveExplodeEvent(graveLocation, event.getEntity(), grave);
+        plugin.getServer().getPluginManager().callEvent(legacy);
+
+        if (modern.isCancelled() || modern.isAddon() || legacy.isCancelled() || legacy.isAddon()) {
             event.setCancelled(true);
             return;
         }
 
+        Location effectiveLoc = graveLocation;
+        try {
+            if (modern.hasLocation()) {
+                effectiveLoc = modern.getLocation();
+            } else {
+                legacy.getLocation();
+                effectiveLoc = legacy.getLocation();
+            }
+        } catch (Throwable ignored) {
+            //ignored
+        }
 
         if (plugin.getConfig("drop.looted-explosion-effect", grave).getBoolean("drop.looted-explosion-effect", false)) {
             try {
                 Location location = grave.getLocationDeath();
-
                 Objects.requireNonNull(location.getWorld()).spawnParticle(Particle.valueOf("EXPLOSION_HUGE"), location, 1);
                 try {
                     location.getWorld().playSound(location, Sound.valueOf("ENTITY_GENERIC_EXPLODE"), 1.0f, 1.0f);
@@ -133,16 +146,16 @@ public class ExplosionPrimeListener implements Listener {
         }
 
         if (plugin.getConfig("drop.explode", grave).getBoolean("drop.explode", false)) {
-            plugin.getGraveManager().breakGrave(graveLocation, grave);
+            plugin.getGraveManager().breakGrave(effectiveLoc, grave);
         } else {
             plugin.getGraveManager().removeGrave(grave);
         }
 
-        plugin.getGraveManager().playEffect("effect.loot", graveLocation, grave);
-        plugin.getEntityManager().runCommands("event.command.explode", event.getEntity(), graveLocation, grave);
+        plugin.getGraveManager().playEffect("effect.loot", effectiveLoc, grave);
+        plugin.getEntityManager().runCommands("event.command.explode", event.getEntity(), effectiveLoc, grave);
 
         if (plugin.getConfig("zombie.explode", grave).getBoolean("zombie.explode", false)) {
-            plugin.getEntityManager().spawnZombie(graveLocation, grave);
+            plugin.getEntityManager().spawnZombie(effectiveLoc, grave);
         }
     }
 }

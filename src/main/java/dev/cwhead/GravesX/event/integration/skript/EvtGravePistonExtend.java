@@ -8,8 +8,8 @@ import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser;
 import ch.njol.skript.registrations.EventValues;
-import com.ranull.graves.event.GravePistonExtendEvent;
 import com.ranull.graves.type.Grave;
+import dev.cwhead.GravesX.event.GravePistonExtendEvent;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.function.Predicate;
 
 @Name("Grave Piston Move Event")
-@Description("Triggered when a player head is dropped at a grave site. Provides access to the entity, grave, and location.")
+@Description("Triggered when a player head is dropped at a grave site. Provides access to the grave and location.")
 @Examples({
         "on grave piston extend:",
         "\tbroadcast \"Grave %event-grave% at location %event-location% extended by %event-piston-block%\"",
@@ -31,8 +31,6 @@ public class EvtGravePistonExtend extends SkriptEvent {
 
     static {
         Skript.registerEvent("Grave Piston Move", EvtGravePistonExtend.class, GravePistonExtendEvent.class, "[grave] pisto(n|ns) ex(te|pa)n(d|ded|ding)");
-
-        EventValues.registerEventValue(GravePistonExtendEvent.class, Entity.class, GravePistonExtendEvent::getEntity, 0);
 
         EventValues.registerEventValue(GravePistonExtendEvent.class, Grave.class, GravePistonExtendEvent::getGrave, 0);
 
@@ -45,7 +43,6 @@ public class EvtGravePistonExtend extends SkriptEvent {
         EventValues.registerEventValue(GravePistonExtendEvent.class, List.class, GravePistonExtendEvent::getMovedBlocks, 0);
     }
 
-    private Literal<Entity> entity;
     private Literal<Grave> grave;
     private Literal<Location> location;
     private Literal<Block> pistonBlock;
@@ -55,7 +52,6 @@ public class EvtGravePistonExtend extends SkriptEvent {
     @SuppressWarnings("unchecked")
     @Override
     public boolean init(Literal<?> @NotNull[] args, int matchedPattern, @NotNull SkriptParser.ParseResult parseResult) {
-        //entity = (Literal<Entity>) args[0];
         //grave = (Literal<Grave>) args[0];
         //location = (Literal<Location>) args[0];
         //pistonBlock = (Literal<Block>) args[0];
@@ -69,14 +65,6 @@ public class EvtGravePistonExtend extends SkriptEvent {
         if (!(e instanceof GravePistonExtendEvent)) return false;
         GravePistonExtendEvent event = (GravePistonExtendEvent) e;
 
-        if (entity != null) {
-            entity.check(event, new Predicate<Entity>() {
-                @Override
-                public boolean test(Entity ent) {
-                    return ent.equals(event.getEntity());
-                }
-            });
-        }
         if (grave != null) {
             grave.check(event, new Predicate<Grave>() {
                 @Override
@@ -123,7 +111,6 @@ public class EvtGravePistonExtend extends SkriptEvent {
     @Override
     public String toString(@Nullable Event e, boolean debug) {
         return "Grave piston extend" +
-                (entity != null ? " with entity " + entity.toString(e, debug) : "") +
                 (grave != null ? " with grave " + grave.toString(e, debug) : "") +
                 (location != null ? " at location " + location.toString(e, debug) : "") +
                 (pistonBlock != null ? " with piston block " + pistonBlock.toString(e, debug) : "") +

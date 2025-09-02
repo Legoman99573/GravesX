@@ -4,7 +4,8 @@ import ch.njol.skript.lang.Expression;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.lang.util.SimpleExpression;
 import ch.njol.util.Kleenean;
-import dev.cwhead.GravesX.event.GraveEvent;
+import dev.cwhead.GravesX.event.graveevent.GraveEvent;
+import dev.cwhead.GravesX.event.graveevent.GravePlayerEvent;
 import org.bukkit.event.Event;
 import org.bukkit.inventory.InventoryView;
 import org.jetbrains.annotations.Nullable;
@@ -13,8 +14,8 @@ public class ExprEventInventoryView extends SimpleExpression<InventoryView> {
 
     @Override
     protected @Nullable InventoryView[] get(Event e) {
-        if (e instanceof GraveEvent) {
-            return new InventoryView[]{((GraveEvent) e).getInventoryView()};
+        if (e instanceof GravePlayerEvent) {
+            return new InventoryView[]{((GravePlayerEvent) e).getInventoryView()};
         }
         return null;
     }

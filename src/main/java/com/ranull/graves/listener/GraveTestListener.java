@@ -1,7 +1,7 @@
 package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
-import com.ranull.graves.event.*;
+import dev.cwhead.GravesX.event.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;

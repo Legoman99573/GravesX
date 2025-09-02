@@ -12,6 +12,7 @@ import org.bukkit.event.Listener;
  *
  * Listens for FurnitureInteractEvent and handles interactions with furniture that may be associated with a grave.
  */
+@Deprecated
 public class FurnitureInteractListener implements Listener {
     private final Graves plugin;
     private final FurnitureEngine furnitureEngine;
@@ -24,6 +25,7 @@ public class FurnitureInteractListener implements Listener {
      * @param plugin The Graves plugin instance.
      * @param furnitureEngine The FurnitureEngine instance to use.
      */
+    @Deprecated
     public FurnitureInteractListener(Graves plugin, FurnitureEngine furnitureEngine) {
         this.plugin = plugin;
         this.furnitureEngine = furnitureEngine;
@@ -37,6 +39,7 @@ public class FurnitureInteractListener implements Listener {
      *
      * @param event The FurnitureInteractEvent to handle.
      */
+    @Deprecated
     @EventHandler
     public void onFurnitureInteract(FurnitureInteractEvent event) {
         ItemFrame itemFrame = furnitureEngine.getItemFrame(event.getFurnitureLocation());
@@ -55,6 +58,7 @@ public class FurnitureInteractListener implements Listener {
      * @param event     The FurnitureInteractEvent.
      * @param itemFrame The ItemFrame being interacted with.
      */
+    @Deprecated
     private void handleFurnitureInteraction(FurnitureInteractEvent event, ItemFrame itemFrame) {
         Grave grave = furnitureEngine.getGrave(itemFrame.getLocation(), itemFrame.getUniqueId());
 

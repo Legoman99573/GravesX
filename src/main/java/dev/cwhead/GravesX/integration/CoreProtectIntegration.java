@@ -25,6 +25,7 @@ public class CoreProtectIntegration {
      *
      * @param plugin the {@link Graves} plugin instance
      */
+    @Deprecated
     public CoreProtectIntegration(Graves plugin) {
         this.plugin = plugin;
     }
@@ -40,6 +41,7 @@ public class CoreProtectIntegration {
      *
      * @return the {@link CoreProtectAPI} instance, or {@code null} if CoreProtect is unavailable or incompatible
      */
+    @Deprecated
     public CoreProtectAPI getCoreProtectAPI() {
         if (coreProtectAPI != null) {
             return coreProtectAPI;

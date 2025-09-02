@@ -82,6 +82,7 @@ public final class IntegrationManager {
      * This {@link FurnitureEngine} instance represents the integration with the FurnitureEngine plugin, used for managing furniture.
      * </p>
      */
+    @Deprecated
     private FurnitureEngine furnitureEngine;
 
     /**
@@ -389,6 +390,7 @@ public final class IntegrationManager {
      *
      * @return The {@code FurnitureEngine} integration instance, or null if not loaded.
      */
+    @Deprecated
     public FurnitureEngine getFurnitureEngine() {
         return furnitureEngine;
     }
@@ -604,6 +606,7 @@ public final class IntegrationManager {
      *
      * @return {@code true} if FurnitureEngine integration is loaded, {@code false} otherwise.
      */
+    @Deprecated
     public boolean hasFurnitureEngine() {
         return furnitureEngine != null;
     }
@@ -909,6 +912,7 @@ public final class IntegrationManager {
      *
      * Loads the FurnitureEngine integration if enabled in the configuration.
      */
+    @Deprecated
     private void loadFurnitureEngine() {
         if (plugin.getConfig().getBoolean("settings.integration.furnitureengine.enabled", true)) {
             Plugin furnitureEnginePlugin = plugin.getServer().getPluginManager().getPlugin("FurnitureEngine");

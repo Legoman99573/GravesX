@@ -1,7 +1,7 @@
 package com.ranull.graves.event;
 
 import com.ranull.graves.type.Grave;
-import dev.cwhead.GravesX.event.GraveEvent;
+import dev.cwhead.GravesX.exception.GravesXEventIllegalArgumentException;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
@@ -9,13 +9,16 @@ import org.bukkit.inventory.InventoryView;
 import org.jetbrains.annotations.NotNull;
 
 /**
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveLootedEvent} instead.
  * Represents an event that occurs when an inventory associated with a grave is completely looted.
  * <p>
- * This event extends {@link GraveEvent} and provides information about the grave
+ * This event extends {@link dev.cwhead.GravesX.event.graveevent.GravePlayerEvent} and provides information about the grave
  * and the player involved when the inventory is completely looted.
  * </p>
  */
-public class GraveLootedEvent extends GraveEvent {
+@Deprecated (since = "4.9.9.1", forRemoval = true)
+public class GraveLootedEvent extends dev.cwhead.GravesX.event.GraveLootedEvent {
+
     /**
      * A static final instance of {@link HandlerList} used to manage event handlers.
      * <p>
@@ -26,37 +29,36 @@ public class GraveLootedEvent extends GraveEvent {
     private static final HandlerList HANDLERS = new HandlerList();
 
     /**
+     * @deprecated Use {@link dev.cwhead.GravesX.event.GraveLootedEvent} instead.
      * Constructs a new {@code GraveLootedEvent}.
      *
      * @param inventoryView The inventory view that has been fully looted.
      * @param grave         The grave associated with the inventory view.
      * @param player        The player who is closing the inventory.
      */
-    public GraveLootedEvent(InventoryView inventoryView, Grave grave, Player player) {
-        super(grave, null, grave.getLocationDeath(), inventoryView, null, null, null, null, player);
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    public GraveLootedEvent(@NotNull InventoryView inventoryView,
+                            @NotNull Grave grave,
+                            @NotNull Player player) {
+        super(inventoryView, grave, player);
     }
 
     /**
-     * @deprecated Use {@link #GraveLootedEvent(InventoryView, Grave, Player)} instead.
+     * @deprecated Use {@link dev.cwhead.GravesX.event.GraveLootedEvent} instead.
      * Constructs a new {@code GraveLootedEvent}.
      *
      * @param inventoryView The inventory view that has been fully looted.
      * @param grave         The grave associated with the inventory view.
      * @param entity        The entity who is closing the inventory.
      */
-    @Deprecated
-    public GraveLootedEvent(Grave grave, InventoryView inventoryView, Entity entity) {
-        this(inventoryView, grave, entity instanceof Player ? (Player) entity : null);
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    public GraveLootedEvent(@NotNull Grave grave, @NotNull InventoryView inventoryView, @NotNull Entity entity) {
+        super(inventoryView, grave, requirePlayer(entity));
     }
 
-    /**
-     * Gets the list of handlers for this event.
-     *
-     * @return The handler list for this event.
-     */
-    @NotNull
-    public static HandlerList getHandlerList() {
-        return HANDLERS;
+    private static @NotNull Player requirePlayer(@NotNull Entity entity) {
+        if (entity instanceof Player) return (Player) entity;
+        throw new GravesXEventIllegalArgumentException("GraveLootedEvent requires a Player. Received " + entity.getType() + " instead.");
     }
 
     /**
@@ -66,6 +68,15 @@ public class GraveLootedEvent extends GraveEvent {
      */
     @Override
     public @NotNull HandlerList getHandlers() {
+        return HANDLERS;
+    }
+
+    /**
+     * Gets the static list of handlers for this event.
+     *
+     * @return The static handler list for this event.
+     */
+    public static @NotNull HandlerList getHandlerList() {
         return HANDLERS;
     }
 }

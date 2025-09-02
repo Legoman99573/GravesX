@@ -4,7 +4,7 @@ import ch.njol.skript.lang.Expression;
 import ch.njol.skript.lang.SkriptParser;
 import ch.njol.skript.lang.util.SimpleExpression;
 import ch.njol.util.Kleenean;
-import com.ranull.graves.event.GravePistonExtendEvent;
+import dev.cwhead.GravesX.event.GravePistonExtendEvent;
 import org.bukkit.block.Block;
 import org.bukkit.event.Event;
 import org.jetbrains.annotations.Nullable;

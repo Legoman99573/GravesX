@@ -1,7 +1,6 @@
 package com.ranull.graves.event;
 
 import com.ranull.graves.type.Grave;
-import dev.cwhead.GravesX.event.GraveEvent;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.HandlerList;
@@ -9,13 +8,16 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GravePlayerHeadDropEvent} instead.
  * Represents an event that occurs when a Players Head is added to a grave.
  * <p>
- * This event extends {@link GraveEvent} and is cancellable, allowing event listeners
+ * This event extends {@link dev.cwhead.GravesX.event.graveevent.GraveEvent} and is cancellable, allowing event listeners
  * to prevent Player Heads from being included in graves.
  * </p>
  */
-public class GravePlayerHeadDropEvent extends GraveEvent {
+@Deprecated (since = "4.9.9.1", forRemoval = true)
+public class GravePlayerHeadDropEvent extends dev.cwhead.GravesX.event.GravePlayerHeadDropEvent {
+
     /**
      * A static final instance of {@link HandlerList} used to manage event handlers.
      * <p>
@@ -26,24 +28,16 @@ public class GravePlayerHeadDropEvent extends GraveEvent {
     private static final HandlerList HANDLERS = new HandlerList();
 
     /**
+     * @deprecated Use {@link dev.cwhead.GravesX.event.GravePlayerHeadDropEvent} instead.
      * Constructs a new {@code GravePlayerHeadDropEvent}.
      *
      * @param grave    The grave associated with the event.
      * @param location The location where the player head will be dropped.
-     * @param entity   The entity for which the player head will be dropped.
+     * @param entity   The entity for which the player head will be dropped (nullable).
      */
-    public GravePlayerHeadDropEvent(Grave grave, Location location, @Nullable Entity entity) {
-        super(grave, entity, location, null, null, null, null, null, null);
-    }
-
-    /**
-     * Gets the list of handlers for this event.
-     *
-     * @return The handler list for this event.
-     */
-    @NotNull
-    public static HandlerList getHandlerList() {
-        return HANDLERS;
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    public GravePlayerHeadDropEvent(@NotNull Grave grave, @NotNull Location location, @Nullable Entity entity) {
+        super(grave, location, entity);
     }
 
     /**
@@ -53,6 +47,15 @@ public class GravePlayerHeadDropEvent extends GraveEvent {
      */
     @Override
     public @NotNull HandlerList getHandlers() {
+        return HANDLERS;
+    }
+
+    /**
+     * Gets the static list of handlers for this event.
+     *
+     * @return The static handler list for this event.
+     */
+    public static @NotNull HandlerList getHandlerList() {
         return HANDLERS;
     }
 }

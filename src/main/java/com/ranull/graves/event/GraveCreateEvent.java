@@ -1,19 +1,21 @@
 package com.ranull.graves.event;
 
 import com.ranull.graves.type.Grave;
-import dev.cwhead.GravesX.event.GraveEvent;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
 /**
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveCreateEvent} instead.
  * Represents an event that occurs when a grave is created for an entity.
  * <p>
- * This event extends {@link GraveEvent} and is cancellable, allowing event listeners
+ * This event extends {@link dev.cwhead.GravesX.event.graveevent.GraveEntityEvent} and is cancellable, allowing event listeners
  * to prevent the creation of the grave if necessary.
  * </p>
  */
-public class GraveCreateEvent extends GraveEvent {
+@Deprecated (since = "4.9.9.1", forRemoval = true)
+public class GraveCreateEvent extends dev.cwhead.GravesX.event.GraveCreateEvent {
+
     /**
      * A static final instance of {@link HandlerList} used to manage event handlers.
      * <p>
@@ -24,23 +26,15 @@ public class GraveCreateEvent extends GraveEvent {
     private static final HandlerList HANDLERS = new HandlerList();
 
     /**
+     * @deprecated Use {@link dev.cwhead.GravesX.event.GraveCreateEvent} instead.
      * Constructs a new {@code GraveCreateEvent}.
      *
      * @param entity The entity for which the grave is being created.
      * @param grave  The grave being created.
      */
-    public GraveCreateEvent(Entity entity, Grave grave) {
-        super(grave, entity, grave.getLocationDeath(), null, null, null, null, null, null);
-    }
-
-    /**
-     * Gets the list of handlers for this event.
-     *
-     * @return The handler list for this event.
-     */
-    @NotNull
-    public static HandlerList getHandlerList() {
-        return HANDLERS;
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    public GraveCreateEvent(@NotNull Entity entity, @NotNull Grave grave) {
+        super(entity, grave);
     }
 
     /**
@@ -50,6 +44,15 @@ public class GraveCreateEvent extends GraveEvent {
      */
     @Override
     public @NotNull HandlerList getHandlers() {
+        return HANDLERS;
+    }
+
+    /**
+     * Gets the static list of handlers for this event.
+     *
+     * @return The static handler list for this event.
+     */
+    public static @NotNull HandlerList getHandlerList() {
         return HANDLERS;
     }
 }

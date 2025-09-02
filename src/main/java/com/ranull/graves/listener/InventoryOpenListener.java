@@ -2,8 +2,8 @@ package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
 import com.ranull.graves.compatibility.CompatibilityInventoryView;
-import com.ranull.graves.event.GraveOpenEvent;
 import com.ranull.graves.type.Grave;
+import dev.cwhead.GravesX.event.GraveOpenEvent;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -60,16 +60,21 @@ public class InventoryOpenListener implements Listener {
         Inventory topInventory = CompatibilityInventoryView.getTopInventory(event);
         InventoryHolder inventoryHolder = topInventory.getHolder();
 
-        if (inventoryHolder instanceof Grave) {
+        if (inventoryHolder instanceof Grave && event.getPlayer() instanceof Player) {
             Grave grave = (Grave) inventoryHolder;
             Player player = (Player) event.getPlayer();
 
-            GraveOpenEvent graveOpenEvent = new GraveOpenEvent(event.getView(), grave, player);
+            GraveOpenEvent modern =
+                    new dev.cwhead.GravesX.event.GraveOpenEvent(event.getView(), grave, player);
+            plugin.getServer().getPluginManager().callEvent(modern);
 
-            // Call the custom GraveOpenEvent
-            plugin.getServer().getPluginManager().callEvent(graveOpenEvent);
+            com.ranull.graves.event.GraveOpenEvent legacy = new com.ranull.graves.event.GraveOpenEvent(event.getView(), grave, player);
+            plugin.getServer().getPluginManager().callEvent(legacy);
 
-            if (graveOpenEvent.isCancelled()) {
+            boolean cancelled = modern.isCancelled() || legacy.isCancelled();
+            boolean addon = modern.isAddon() || legacy.isAddon();
+
+            if (cancelled && !addon) {
                 event.setCancelled(true);
             }
         }

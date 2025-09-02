@@ -1,7 +1,7 @@
 package com.ranull.graves.event;
 
 import com.ranull.graves.type.Grave;
-import dev.cwhead.GravesX.event.GraveEvent;
+import dev.cwhead.GravesX.event.graveevent.GraveEvent;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.HandlerList;
@@ -9,13 +9,16 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveObituaryAddEvent} instead.
  * Represents an event that occurs when an Obituary is added to a grave.
  * <p>
  * This event extends {@link GraveEvent} and is cancellable, allowing event listeners
  * to prevent obituaries from being included in graves.
  * </p>
  */
-public class GraveObituaryAddEvent extends GraveEvent {
+@Deprecated (since = "4.9.9.1", forRemoval = true)
+public class GraveObituaryAddEvent extends dev.cwhead.GravesX.event.GraveObituaryAddEvent {
+
     /**
      * A static final instance of {@link HandlerList} used to manage event handlers.
      * <p>
@@ -26,23 +29,16 @@ public class GraveObituaryAddEvent extends GraveEvent {
     private static final HandlerList HANDLERS = new HandlerList();
 
     /**
+     * @deprecated Use {@link dev.cwhead.GravesX.event.GraveObituaryAddEvent} instead.
      * Constructs a new {@code GraveObituaryAddEvent}.
      *
-     * @param grave         The grave associated with the event.
-     * @param entity The entity for which the grave is being created.
+     * @param grave    The grave associated with the event.
+     * @param location The location associated with this obituary addition.
+     * @param entity   The entity for which the grave is being created (nullable).
      */
-    public GraveObituaryAddEvent(Grave grave, Location location, @Nullable Entity entity) {
-        super(grave, entity, location, null, null, null, null, null, null);
-    }
-
-    /**
-     * Gets the list of handlers for this event.
-     *
-     * @return The handler list for this event.
-     */
-    @NotNull
-    public static HandlerList getHandlerList() {
-        return HANDLERS;
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    public GraveObituaryAddEvent(@NotNull Grave grave, @NotNull Location location, @Nullable Entity entity) {
+        super(grave, location, entity);
     }
 
     /**
@@ -52,6 +48,15 @@ public class GraveObituaryAddEvent extends GraveEvent {
      */
     @Override
     public @NotNull HandlerList getHandlers() {
+        return HANDLERS;
+    }
+
+    /**
+     * Gets the static list of handlers for this event.
+     *
+     * @return The static handler list for this event.
+     */
+    public static @NotNull HandlerList getHandlerList() {
         return HANDLERS;
     }
 }

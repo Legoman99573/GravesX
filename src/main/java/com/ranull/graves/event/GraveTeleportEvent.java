@@ -1,19 +1,22 @@
 package com.ranull.graves.event;
 
 import com.ranull.graves.type.Grave;
-import dev.cwhead.GravesX.event.GraveEvent;
+import dev.cwhead.GravesX.event.graveevent.GraveEntityEvent;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
 /**
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveTeleportEvent} instead.
  * Represents an event that is triggered when a player teleports to a grave.
  * <p>
  * This event is fired when a player teleports to a specified location associated with a grave.
- * It extends from the {@link GraveEvent} class, inheriting the basic event properties.
+ * It extends from the {@link GraveEntityEvent} class, inheriting the basic event properties.
  * </p>
  */
-public class GraveTeleportEvent extends GraveEvent {
+@Deprecated (since = "4.9.9.1", forRemoval = true)
+public class GraveTeleportEvent extends dev.cwhead.GravesX.event.GraveTeleportEvent {
+
     /**
      * A static final instance of {@link HandlerList} used to manage event handlers.
      * <p>
@@ -24,23 +27,15 @@ public class GraveTeleportEvent extends GraveEvent {
     private static final HandlerList HANDLERS = new HandlerList();
 
     /**
+     * @deprecated Use {@link dev.cwhead.GravesX.event.GraveTeleportEvent} instead.
      * Constructs a new {@code GraveTeleportEvent}.
      *
-     * @param grave    The grave associated with the event.
-     * @param entity   The entity who is teleporting to the grave.
+     * @param grave  The grave associated with the event.
+     * @param entity The entity who is teleporting to the grave.
      */
-    public GraveTeleportEvent(Grave grave, Entity entity) {
-        super(grave, entity, grave.getLocationDeath(), null, null, null, null, null, null);
-    }
-
-    /**
-     * Gets the list of handlers for this event.
-     *
-     * @return The handler list for this event.
-     */
-    @NotNull
-    public static HandlerList getHandlerList() {
-        return HANDLERS;
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    public GraveTeleportEvent(@NotNull Grave grave, @NotNull Entity entity) {
+        super(grave, entity);
     }
 
     /**
@@ -50,6 +45,15 @@ public class GraveTeleportEvent extends GraveEvent {
      */
     @Override
     public @NotNull HandlerList getHandlers() {
+        return HANDLERS;
+    }
+
+    /**
+     * Gets the static list of handlers for this event.
+     *
+     * @return The static handler list for this event.
+     */
+    public static @NotNull HandlerList getHandlerList() {
         return HANDLERS;
     }
 }

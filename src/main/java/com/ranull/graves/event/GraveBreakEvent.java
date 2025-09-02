@@ -1,18 +1,22 @@
 package com.ranull.graves.event;
 
 import com.ranull.graves.type.Grave;
-import dev.cwhead.GravesX.event.GraveEvent;
+import com.ranull.graves.data.BlockData;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveBreakEvent} instead.
  * The GraveBreakEvent class represents an event where a grave block is broken
  * by a player. This event extends the GraveEvent and includes additional
  * information about the grave and whether items should drop upon breaking the grave block.
  */
-public class GraveBreakEvent extends GraveEvent {
+@Deprecated (since = "4.9.9.1", forRemoval = true)
+public class GraveBreakEvent extends dev.cwhead.GravesX.event.GraveBreakEvent {
+
     /**
      * A static final instance of {@link HandlerList} used to manage event handlers.
      * <p>
@@ -23,24 +27,29 @@ public class GraveBreakEvent extends GraveEvent {
     private static final HandlerList HANDLERS = new HandlerList();
 
     /**
+     * @deprecated Use {@link dev.cwhead.GravesX.event.GraveBreakEvent} instead.
      * Constructs a new GraveBreakEvent.
      *
-     * @param block  The block being broken.
-     * @param player The player breaking the block.
-     * @param grave  The grave associated with the block being broken.
+     * @param block   The block being broken.
+     * @param player  The player breaking the block.
+     * @param grave   The grave associated with the block being broken.
      */
-    public GraveBreakEvent(Block block, Player player, Grave grave) {
-        super(grave, null, grave.getLocationDeath(), null, null, null, block, null, player);
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    public GraveBreakEvent(@NotNull Block block, @NotNull Player player, @NotNull Grave grave) {
+        super(block, player, grave);
     }
 
     /**
-     * Gets the list of handlers for this event.
+     * @deprecated Use {@link dev.cwhead.GravesX.event.GraveBreakEvent} instead.
      *
-     * @return The handler list for this event.
+     * @param block     The block being broken.
+     * @param player    The player breaking the block.
+     * @param grave     The grave associated with the block being broken.
+     * @param blockType The block type if already known (nullable). If null, it will be resolved from the block.
      */
-    @NotNull
-    public static HandlerList getHandlerList() {
-        return HANDLERS;
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    public GraveBreakEvent(@NotNull Block block, @NotNull Player player, @NotNull Grave grave, @Nullable BlockData.BlockType blockType) {
+        super(block, player, grave, blockType);
     }
 
     /**
@@ -50,6 +59,15 @@ public class GraveBreakEvent extends GraveEvent {
      */
     @Override
     public @NotNull HandlerList getHandlers() {
+        return HANDLERS;
+    }
+
+    /**
+     * Gets the static list of handlers for this event.
+     *
+     * @return The static handler list for this event.
+     */
+    public static @NotNull HandlerList getHandlerList() {
         return HANDLERS;
     }
 }

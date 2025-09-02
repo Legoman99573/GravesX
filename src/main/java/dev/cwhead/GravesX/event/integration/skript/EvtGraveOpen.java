@@ -8,9 +8,8 @@ import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.registrations.EventValues;
-import com.ranull.graves.event.GraveOpenEvent;
 import com.ranull.graves.type.Grave;
-import dev.cwhead.GravesX.event.GraveEvent;
+import dev.cwhead.GravesX.event.GraveOpenEvent;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.inventory.InventoryView;
@@ -30,7 +29,7 @@ public class EvtGraveOpen extends SkriptEvent {
     static {
         Skript.registerEvent("Grave Open", EvtGraveOpen.class, GraveOpenEvent.class, "[grave] ope(n|ning|ned)");
 
-        EventValues.registerEventValue(GraveOpenEvent.class, Player.class, GraveEvent::getPlayer, 0);
+        EventValues.registerEventValue(GraveOpenEvent.class, Player.class, GraveOpenEvent::getPlayer, 0);
         
         EventValues.registerEventValue(GraveOpenEvent.class, Grave.class, GraveOpenEvent::getGrave, 0);
 

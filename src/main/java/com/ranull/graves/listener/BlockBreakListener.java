@@ -1,9 +1,9 @@
 package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
-import com.ranull.graves.event.GraveAutoLootEvent;
-import com.ranull.graves.event.GraveBreakEvent;
 import com.ranull.graves.type.Grave;
+import dev.cwhead.GravesX.event.GraveAutoLootEvent;
+import dev.cwhead.GravesX.event.GraveBreakEvent;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -83,14 +83,26 @@ public class BlockBreakListener implements Listener {
      * @param grave   The grave associated with the block.
      */
     private void handleGraveBreak(BlockBreakEvent event, Player player, Block block, Grave grave) {
-        GraveBreakEvent graveBreakEvent = new GraveBreakEvent(block, player, grave);
-        graveBreakEvent.setDropItems(plugin.getConfig("drop.break", grave).getBoolean("drop.break"));
-        plugin.getServer().getPluginManager().callEvent(graveBreakEvent);
+        boolean cfgDrop = plugin.getConfig("drop.break", grave).getBoolean("drop.break");
 
-        if (!graveBreakEvent.isCancelled() && !graveBreakEvent.isAddon()) {
+        GraveBreakEvent modern = new GraveBreakEvent(block, player, grave);
+        modern.setDropItems(cfgDrop);
+        plugin.getServer().getPluginManager().callEvent(modern);
+
+        com.ranull.graves.event.GraveBreakEvent legacy = new com.ranull.graves.event.GraveBreakEvent(block, player, grave);
+        legacy.setDropItems(cfgDrop);
+        plugin.getServer().getPluginManager().callEvent(legacy);
+
+        boolean cancelled = modern.isCancelled() || legacy.isCancelled();
+        boolean addon = modern.isAddon() || legacy.isAddon();
+
+        if (!cancelled && !addon) {
+            boolean dropItemsFinal = modern.isDropItems() && legacy.isDropItems();
+            modern.setDropItems(dropItemsFinal);
+
             if (plugin.getConfig("drop.auto-loot.enabled", grave).getBoolean("drop.auto-loot.enabled")) {
-                handleAutoLoot(event, player, block, grave, graveBreakEvent);
-            } else if (graveBreakEvent.isDropItems()) {
+                handleAutoLoot(event, player, block, grave, modern);
+            } else if (dropItemsFinal) {
                 explodeEffectGrave(grave);
                 plugin.getGraveManager().breakGrave(block.getLocation(), grave);
             } else {
@@ -98,12 +110,12 @@ public class BlockBreakListener implements Listener {
                 plugin.getGraveManager().removeGrave(grave);
             }
 
-            if (graveBreakEvent.getBlockExp() > 0) {
+            if (grave.getExperience() > 0) {
                 plugin.getGraveManager().dropGraveExperience(block.getLocation(), grave);
             }
 
             finalizeGraveBreak(player, block, grave);
-        } else if (graveBreakEvent.isCancelled() && !graveBreakEvent.isAddon()) {
+        } else if (cancelled && !addon) {
             event.setCancelled(true);
         }
     }
@@ -132,40 +144,104 @@ public class BlockBreakListener implements Listener {
      * @param grave           The grave associated with the block.
      * @param graveBreakEvent The GraveBreakEvent.
      */
-    private void handleAutoLoot(BlockBreakEvent event, Player player, Block block, Grave grave, GraveBreakEvent graveBreakEvent) {
-        GraveAutoLootEvent graveAutoLootEvent = new GraveAutoLootEvent(player, block.getLocation(), grave);
-        plugin.getServer().getPluginManager().callEvent(graveAutoLootEvent);
+    private void handleAutoLoot(BlockBreakEvent event, Player player, Block block, Grave grave, com.ranull.graves.event.GraveBreakEvent graveBreakEvent) {
+        Location hitLoc = block.getLocation();
 
-        if (!graveAutoLootEvent.isCancelled() && !graveAutoLootEvent.isAddon()) {
-            plugin.getGraveManager().autoLootGrave(player, block.getLocation(), grave);
+        GraveAutoLootEvent modern = new GraveAutoLootEvent(player, hitLoc, grave);
+        plugin.getServer().getPluginManager().callEvent(modern);
 
-            if (graveBreakEvent.isDropItems() && plugin.getConfig("drop.auto-loot.break", grave).getBoolean("drop.auto-loot.break")) {
+        com.ranull.graves.event.GraveAutoLootEvent legacy = new com.ranull.graves.event.GraveAutoLootEvent(player, hitLoc, grave);
+        plugin.getServer().getPluginManager().callEvent(legacy);
+
+        if (modern.isCancelled() || modern.isAddon() || legacy.isCancelled() || legacy.isAddon()) {
+            return;
+        }
+
+        plugin.getGraveManager().autoLootGrave(player, hitLoc, grave);
+
+        if (graveBreakEvent.isDropItems()
+                && plugin.getConfig("drop.auto-loot.break", grave).getBoolean("drop.auto-loot.break")) {
+            try {
+                Location loc = grave.getLocationDeath();
+                Objects.requireNonNull(loc.getWorld()).spawnParticle(Particle.valueOf("EXPLOSION_HUGE"), loc, 1);
                 try {
-                    Location loc = grave.getLocationDeath();
-
-                    Objects.requireNonNull(loc.getWorld()).spawnParticle(Particle.valueOf("EXPLOSION_HUGE"), loc, 1);
-                    try {
-                        loc.getWorld().playSound(loc, Sound.valueOf("ENTITY_GENERIC_EXPLODE"), 1.0f, 1.0f);
-                    } catch (Exception e) {
-                        loc.getWorld().playSound(loc, Sound.valueOf("EXPLODE"), 1.0f, 1.0f); // pre 1.9
-                    }
-                } catch (Exception ignored) {
-                    //ignored
+                    loc.getWorld().playSound(loc, Sound.valueOf("ENTITY_GENERIC_EXPLODE"), 1.0f, 1.0f);
+                } catch (Exception e) {
+                    loc.getWorld().playSound(loc, Sound.valueOf("EXPLODE"), 1.0f, 1.0f); // pre 1.9
                 }
-                plugin.getGraveManager().breakGrave(block.getLocation(), grave);
-                if (plugin.getIntegrationManager().hasNoteBlockAPI()) {
-                    if (plugin.getIntegrationManager().getNoteBlockAPI().isSongPlayingForPlayer(player)) {
-                        plugin.getIntegrationManager().getNoteBlockAPI().stopSongForPlayer(player);
-                    }
-                    if (plugin.getIntegrationManager().getNoteBlockAPI().isSongPlayingForAllPlayers()) {
-                        plugin.getIntegrationManager().getNoteBlockAPI().stopSongForAllPlayers();
-                    }
-                }
-            } else {
-                event.setCancelled(true);
+            } catch (Exception ignored) {
+                // ignored
             }
+
+            plugin.getGraveManager().breakGrave(hitLoc, grave);
+
+            if (plugin.getIntegrationManager().hasNoteBlockAPI()) {
+                if (plugin.getIntegrationManager().getNoteBlockAPI().isSongPlayingForPlayer(player)) {
+                    plugin.getIntegrationManager().getNoteBlockAPI().stopSongForPlayer(player);
+                }
+                if (plugin.getIntegrationManager().getNoteBlockAPI().isSongPlayingForAllPlayers()) {
+                    plugin.getIntegrationManager().getNoteBlockAPI().stopSongForAllPlayers();
+                }
+            }
+        } else {
+            event.setCancelled(true);
         }
     }
+
+
+    /**
+     * Handles the auto-loot process when breaking a grave.
+     *
+     * @param event           The BlockBreakEvent.
+     * @param player          The player breaking the block.
+     * @param block           The block being broken.
+     * @param grave           The grave associated with the block.
+     * @param graveBreakEvent The GraveBreakEvent.
+     */
+    private void handleAutoLoot(BlockBreakEvent event, Player player, Block block, Grave grave, GraveBreakEvent graveBreakEvent) {
+        Location hitLoc = block.getLocation();
+
+        GraveAutoLootEvent modern = new GraveAutoLootEvent(player, hitLoc, grave);
+        plugin.getServer().getPluginManager().callEvent(modern);
+
+        com.ranull.graves.event.GraveAutoLootEvent legacy = new com.ranull.graves.event.GraveAutoLootEvent(player, hitLoc, grave);
+        plugin.getServer().getPluginManager().callEvent(legacy);
+
+        if (modern.isCancelled() || modern.isAddon() || legacy.isCancelled() || legacy.isAddon()) {
+            return;
+        }
+
+        plugin.getGraveManager().autoLootGrave(player, hitLoc, grave);
+
+        if (graveBreakEvent.isDropItems()
+                && plugin.getConfig("drop.auto-loot.break", grave).getBoolean("drop.auto-loot.break")) {
+            try {
+                Location loc = grave.getLocationDeath();
+                Objects.requireNonNull(loc.getWorld()).spawnParticle(Particle.valueOf("EXPLOSION_HUGE"), loc, 1);
+                try {
+                    loc.getWorld().playSound(loc, Sound.valueOf("ENTITY_GENERIC_EXPLODE"), 1.0f, 1.0f);
+                } catch (Exception e) {
+                    loc.getWorld().playSound(loc, Sound.valueOf("EXPLODE"), 1.0f, 1.0f); // pre 1.9
+                }
+            } catch (Exception ignored) {
+                // ignored
+            }
+
+            plugin.getGraveManager().breakGrave(hitLoc, grave);
+
+            if (plugin.getIntegrationManager().hasNoteBlockAPI()) {
+                if (plugin.getIntegrationManager().getNoteBlockAPI().isSongPlayingForPlayer(player)) {
+                    plugin.getIntegrationManager().getNoteBlockAPI().stopSongForPlayer(player);
+                }
+                if (plugin.getIntegrationManager().getNoteBlockAPI().isSongPlayingForAllPlayers()) {
+                    plugin.getIntegrationManager().getNoteBlockAPI().stopSongForAllPlayers();
+                }
+            }
+        } else {
+            event.setCancelled(true);
+        }
+    }
+
 
     /**
      * Finalizes the process of breaking a grave by closing the grave, playing effects, and running commands.

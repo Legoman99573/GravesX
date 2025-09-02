@@ -4,7 +4,7 @@ import ch.njol.skript.lang.Expression;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.lang.util.SimpleExpression;
 import ch.njol.util.Kleenean;
-import dev.cwhead.GravesX.event.GraveEvent;
+import dev.cwhead.GravesX.event.graveevent.GravePlayerEvent;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.jetbrains.annotations.Nullable;
@@ -13,11 +13,9 @@ public class ExprEventPlayer extends SimpleExpression<Player> {
 
     @Override
     protected @Nullable Player[] get(Event e) {
-        if (e instanceof GraveEvent) {
-            Player player = ((GraveEvent) e).getPlayer();
-            if (player != null) {
-                return new Player[]{player};
-            }
+        if (e instanceof GravePlayerEvent) {
+            Player player = ((GravePlayerEvent) e).getPlayer();
+            return new Player[]{player};
         }
         return null;
     }

@@ -2,7 +2,6 @@ package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
 import com.ranull.graves.integration.MiniMessage;
-import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.StringUtil;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;

@@ -11,6 +11,7 @@ import org.bukkit.event.Listener;
  *
  * Listens for FurnitureBreakEvent and checks if the furniture being broken is associated with a grave.
  */
+@Deprecated
 public class FurnitureBreakListener implements Listener {
     private final FurnitureEngine furnitureEngine;
 
@@ -21,6 +22,7 @@ public class FurnitureBreakListener implements Listener {
      *
      * @param furnitureEngine The FurnitureEngine instance to use.
      */
+    @Deprecated
     public FurnitureBreakListener(FurnitureEngine furnitureEngine) {
         this.furnitureEngine = furnitureEngine;
     }
@@ -32,6 +34,7 @@ public class FurnitureBreakListener implements Listener {
      *
      * @param event The FurnitureBreakEvent to handle.
      */
+    @Deprecated
     @EventHandler
     public void onFurnitureBreak(FurnitureBreakEvent event) {
         ItemFrame itemFrame = furnitureEngine.getItemFrame(event.getFurnitureLocation());
@@ -50,6 +53,7 @@ public class FurnitureBreakListener implements Listener {
      * @param itemFrame The ItemFrame being broken.
      * @return True if the furniture is associated with a grave, false otherwise.
      */
+    @Deprecated
     private boolean isFurnitureAssociatedWithGrave(FurnitureBreakEvent event, ItemFrame itemFrame) {
         return furnitureEngine.getGrave(event.getFurnitureLocation(), itemFrame.getUniqueId()) != null;
     }

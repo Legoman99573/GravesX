@@ -3,9 +3,9 @@ package com.ranull.graves.listener;
 import com.ranull.graves.Graves;
 import com.ranull.graves.compatibility.CompatibilityInventoryView;
 import com.ranull.graves.data.BlockData;
-import com.ranull.graves.event.*;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.*;
+import dev.cwhead.GravesX.event.*;
 import me.jay.GravesX.util.SkinSignatureUtil;
 import me.jay.GravesX.util.SkinTextureUtil;
 import org.bukkit.GameRule;
@@ -480,12 +480,19 @@ public class EntityDeathListener implements Listener {
         setupGraveKiller(grave, livingEntity);
         setupGraveProtection(livingEntity, grave);
 
-        GraveCreateEvent graveCreateEvent = new GraveCreateEvent(livingEntity, grave);
-        plugin.getServer().getPluginManager().callEvent(graveCreateEvent);
+        GraveCreateEvent modern = new GraveCreateEvent(livingEntity, grave);
+        plugin.getServer().getPluginManager().callEvent(modern);
 
-        if (!graveCreateEvent.isCancelled() && !graveCreateEvent.isAddon()) {
-            placeGrave(event, grave, graveCreateEvent, graveItemStackList, removedItemStackList, location, livingEntity, permissionList, player);
-        } else if (graveCreateEvent.isCancelled() && !graveCreateEvent.isAddon()) {
+        com.ranull.graves.event.GraveCreateEvent legacy = new com.ranull.graves.event.GraveCreateEvent(livingEntity, grave);
+        plugin.getServer().getPluginManager().callEvent(legacy);
+
+        boolean cancelled = modern.isCancelled() || legacy.isCancelled();
+        boolean addon     = modern.isAddon()     || legacy.isAddon();
+
+        if (!cancelled && !addon) {
+            placeGrave(event, grave, graveItemStackList, removedItemStackList, location,
+                    livingEntity, permissionList, player);
+        } else if (cancelled && !addon) {
             if (player != null) player.getInventory().clear();
         }
     }
@@ -585,21 +592,25 @@ public class EntityDeathListener implements Listener {
      */
     private void setupGraveProtection(LivingEntity livingEntity, Grave grave) {
         if (plugin.getConfig("protection.enabled", grave).getBoolean("protection.enabled")) {
-            GraveProtectionCreateEvent ev = new GraveProtectionCreateEvent(livingEntity, grave);
-            plugin.getServer().getPluginManager().callEvent(ev);
-            if (!ev.isCancelled() && !ev.isAddon()) {
+            GraveProtectionCreateEvent modern = new GraveProtectionCreateEvent(livingEntity, grave);
+            plugin.getServer().getPluginManager().callEvent(modern);
+
+            com.ranull.graves.event.GraveProtectionCreateEvent legacy = new com.ranull.graves.event.GraveProtectionCreateEvent(livingEntity, grave);
+            plugin.getServer().getPluginManager().callEvent(legacy);
+
+            if (!(modern.isCancelled() || modern.isAddon() || legacy.isCancelled() || legacy.isAddon())) {
                 grave.setProtection(true);
                 grave.setTimeProtection(plugin.getConfig("protection.time", grave).getInt("protection.time") * 1000L);
             }
         }
     }
 
+
     /**
      * Places the grave at the specified location.
      *
      * @param event               The entity death event.
      * @param grave               The grave to place.
-     * @param graveCreateEvent    The grave create event.
      * @param graveItemStackList  The list of item stacks for the grave.
      * @param removedItemStackList The list of removed item stacks.
      * @param location            The location to place the grave.
@@ -608,7 +619,6 @@ public class EntityDeathListener implements Listener {
      */
     private void placeGrave(EntityDeathEvent event,
                             Grave grave,
-                            GraveCreateEvent graveCreateEvent,
                             List<ItemStack> graveItemStackList,
                             List<ItemStack> removedItemStackList,
                             Location location,
@@ -654,21 +664,36 @@ public class EntityDeathListener implements Listener {
             pct = Math.max(0d, Math.min(1d, pct));
 
             if (Math.random() <= pct) {
-                GraveObituaryAddEvent ev = new GraveObituaryAddEvent(grave, location, livingEntity);
-                plugin.getServer().getPluginManager().callEvent(ev);
-                if (!ev.isCancelled() && !ev.isAddon()) {
+                GraveObituaryAddEvent modern = new GraveObituaryAddEvent(grave, location, livingEntity);
+                plugin.getServer().getPluginManager().callEvent(modern);
+
+                com.ranull.graves.event.GraveObituaryAddEvent legacy = new com.ranull.graves.event.GraveObituaryAddEvent(grave, location, livingEntity);
+                plugin.getServer().getPluginManager().callEvent(legacy);
+
+                if (!(modern.isCancelled() || modern.isAddon() || legacy.isCancelled() || legacy.isAddon())) {
                     if (drop) {
                         if (location.getWorld() != null) {
                             location.getWorld().dropItemNaturally(location, plugin.getItemStackManager().getGraveObituary(grave));
-                            plugin.debugMessage("Obituary dropped at location x: " + location.getBlockX() + " y: " + location.getBlockY() + " z: " + location.getBlockZ() + ".", 2);
+                            plugin.debugMessage(
+                                    "Obituary dropped at location x: " + location.getBlockX()
+                                            + " y: " + location.getBlockY()
+                                            + " z: " + location.getBlockZ() + ".", 2);
                         } else {
                             Block b = location.getBlock();
-                            plugin.debugMessage("World not found. Obituary added to " + grave.getOwnerName() + "'s Grave at location x: " + b.getX() + " y: " + b.getY() + " z: " + b.getZ() + ".", 2);
+                            plugin.debugMessage(
+                                    "World not found. Obituary added to " + grave.getOwnerName()
+                                            + "'s Grave at location x: " + b.getX()
+                                            + " y: " + b.getY()
+                                            + " z: " + b.getZ() + ".", 2);
                             graveItemStackList.add(plugin.getItemStackManager().getGraveObituary(grave));
                         }
                     } else {
                         Block b = location.getBlock();
-                        plugin.debugMessage("Obituary added to " + grave.getOwnerName() + "'s Grave at location x: " + b.getX() + " y: " + b.getY() + " z: " + b.getZ() + ".", 2);
+                        plugin.debugMessage(
+                                "Obituary added to " + grave.getOwnerName()
+                                        + "'s Grave at location x: " + b.getX()
+                                        + " y: " + b.getY()
+                                        + " z: " + b.getZ() + ".", 2);
                         graveItemStackList.add(plugin.getItemStackManager().getGraveObituary(grave));
                     }
                 }
@@ -689,23 +714,35 @@ public class EntityDeathListener implements Listener {
                 && grave.getOwnerTextureSignature() != null) {
 
             boolean drop = plugin.getConfig("head.drop", grave).getBoolean("head.drop");
-            GravePlayerHeadDropEvent ev = new GravePlayerHeadDropEvent(grave, location, livingEntity);
-            plugin.getServer().getPluginManager().callEvent(ev);
 
-            if (!ev.isCancelled() && !ev.isAddon()) {
+            GravePlayerHeadDropEvent modern = new GravePlayerHeadDropEvent(grave, location, livingEntity);
+            plugin.getServer().getPluginManager().callEvent(modern);
+
+            com.ranull.graves.event.GravePlayerHeadDropEvent legacy = new com.ranull.graves.event.GravePlayerHeadDropEvent(grave, location, livingEntity);
+            plugin.getServer().getPluginManager().callEvent(legacy);
+
+            if (!(modern.isCancelled() || modern.isAddon() || legacy.isCancelled() || legacy.isAddon())) {
                 if (drop) {
                     if (location.getWorld() != null) {
                         ItemStack headItem = plugin.getItemStackManager().getGraveHead(grave);
                         location.getWorld().dropItemNaturally(location, headItem);
-                        plugin.debugMessage("Player Head dropped at location x: " + location.getBlockX() + ", y: " + location.getBlockY() + ", z: " + location.getBlockZ() + ".", 2);
+                        plugin.debugMessage("Player Head dropped at location x: " + location.getBlockX()
+                                + ", y: " + location.getBlockY()
+                                + ", z: " + location.getBlockZ() + ".", 2);
                     } else {
                         Location graveLoc = grave.getLocationDeath();
-                        plugin.debugMessage("World not found. Player Head added to " + livingEntity.getName() + "'s grave at location x: " + graveLoc.getBlockX() + ", y: " + graveLoc.getBlockY() + ", z: " + graveLoc.getBlockZ() + ".", 2);
+                        plugin.debugMessage("World not found. Player Head added to " + livingEntity.getName()
+                                + "'s grave at location x: " + graveLoc.getBlockX()
+                                + ", y: " + graveLoc.getBlockY()
+                                + ", z: " + graveLoc.getBlockZ() + ".", 2);
                         graveItemStackList.add(plugin.getItemStackManager().getGraveHead(grave));
                     }
                 } else {
                     Location graveLoc = grave.getLocationDeath();
-                    plugin.debugMessage("Player Head added to " + livingEntity.getName() + "'s grave at location x: " + graveLoc.getBlockX() + ", y: " + graveLoc.getBlockY() + ", z: " + graveLoc.getBlockZ() + ".", 2);
+                    plugin.debugMessage("Player Head added to " + livingEntity.getName()
+                            + "'s grave at location x: " + graveLoc.getBlockX()
+                            + ", y: " + graveLoc.getBlockY()
+                            + ", z: " + graveLoc.getBlockZ() + ".", 2);
                     graveItemStackList.add(plugin.getItemStackManager().getGraveHead(grave));
                 }
             }
@@ -727,7 +764,6 @@ public class EntityDeathListener implements Listener {
         plugin.getEntityManager().runCommands("event.command.create", livingEntity, grave.getLocationDeath(), grave);
         plugin.getDataManager().addGrave(grave);
 
-        // Smite / lightning (players only)
         if (player != null && plugin.getConfig("grave.smite-death-location", grave).getBoolean("grave.smite-death-location", true)) {
             World world = player.getWorld();
             if (world != null) {
@@ -788,35 +824,45 @@ public class EntityDeathListener implements Listener {
             plugin.getIntegrationManager().getMultiPaper().notifyGraveCreation(grave);
         }
 
-        placeGraveBlocks(event, grave, locationMap, livingEntity);
+        placeGraveBlocks(grave, locationMap, livingEntity);
     }
 
     /**
      * Places the grave blocks at the specified locations.
      *
-     * @param event              The entity death event.
      * @param grave              The grave to place.
      * @param locationMap        The map of locations for the grave.
      * @param livingEntity       The entity that died.
      */
-    private void placeGraveBlocks(EntityDeathEvent event, Grave grave, Map<Location, BlockData.BlockType> locationMap, LivingEntity livingEntity) {
+    private void placeGraveBlocks(Grave grave, Map<Location, BlockData.BlockType> locationMap, LivingEntity livingEntity) {
         for (Map.Entry<Location, BlockData.BlockType> entry : locationMap.entrySet()) {
-            Location loc = entry.getKey().clone();
+            Location base = entry.getKey().clone();
+
             int dx = 0, dy = 0, dz = 0;
             if (entry.getValue() == BlockData.BlockType.NORMAL) {
                 dx = plugin.getConfig("placement.offset.x", grave).getInt("placement.offset.x");
                 dy = plugin.getConfig("placement.offset.y", grave).getInt("placement.offset.y");
                 dz = plugin.getConfig("placement.offset.z", grave).getInt("placement.offset.z");
             }
-            loc.add(dx, dy, dz);
+            Location loc = base.add(dx, dy, dz);
 
-            GraveBlockPlaceEvent place = new GraveBlockPlaceEvent(grave, loc, entry.getValue(), entry.getKey().getBlock(), livingEntity);
-            plugin.getServer().getPluginManager().callEvent(place);
-            if (!place.isCancelled() && !place.isAddon()) {
-                plugin.getGraveManager().placeGrave(place.getLocation(), grave);
-                plugin.getEntityManager().sendMessage("message.block", livingEntity, loc, grave);
-                plugin.getEntityManager().runCommands("event.command.block", livingEntity, place.getLocation(), grave);
+            GraveBlockPlaceEvent modern = new GraveBlockPlaceEvent(grave, loc, entry.getValue(), entry.getKey().getBlock(), livingEntity);
+            plugin.getServer().getPluginManager().callEvent(modern);
+
+            com.ranull.graves.event.GraveBlockPlaceEvent legacy = new com.ranull.graves.event.GraveBlockPlaceEvent(grave, loc, entry.getValue(), entry.getKey().getBlock(), livingEntity);
+            plugin.getServer().getPluginManager().callEvent(legacy);
+
+            if (!modern.isCancelled() || !modern.isAddon() || !legacy.isCancelled() || !legacy.isAddon()) {
+                return;
             }
+
+            Location effectiveLoc = modern.hasLocation() ? modern.getLocation()
+                    : legacy.hasLocation() ? legacy.getLocation()
+                    : loc;
+
+            plugin.getGraveManager().placeGrave(effectiveLoc, grave);
+            plugin.getEntityManager().sendMessage("message.block", livingEntity, effectiveLoc, grave);
+            plugin.getEntityManager().runCommands("event.command.block", livingEntity, effectiveLoc, grave);
         }
     }
 

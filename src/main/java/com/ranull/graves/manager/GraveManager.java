@@ -6,7 +6,6 @@ import com.ranull.graves.data.BlockData;
 import com.ranull.graves.data.ChunkData;
 import com.ranull.graves.data.EntityData;
 import com.ranull.graves.data.HologramData;
-import com.ranull.graves.event.*;
 import com.ranull.graves.integration.MiniMessage;
 import com.ranull.graves.inventory.GraveList;
 import com.ranull.graves.inventory.GraveMenu;
@@ -14,6 +13,7 @@ import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.ColorUtil;
 import com.ranull.graves.util.InventoryUtil;
 import com.ranull.graves.util.MaterialUtil;
+import dev.cwhead.GravesX.event.*;
 import me.jay.GravesX.util.pluginsWithoutMavenReposOrUsefulApiDocsThatCauseBugs.ReflectSupportAE;
 import com.ranull.graves.util.StringUtil;
 import org.bukkit.*;
@@ -108,7 +108,6 @@ public final class GraveManager {
             long remainingTime = grave.getTimeAliveRemaining();
 
             if (remainingTime == -1) {
-                //plugin.debugMessage("Grave " + grave.getUUID() + " has infinite time remaining, skipping timeout handling.", 2);
                 continue;
             }
 
@@ -140,27 +139,17 @@ public final class GraveManager {
             return;
         }
 
-        plugin.debugMessage(
-                "GraveTimeout check for " + grave.getUUID(),
-                1
-        );
+        plugin.debugMessage("GraveTimeout check for " + grave.getUUID(), 1);
 
         if (remaining > 0) {
             return;
         }
 
-        boolean dropOnTimeout = plugin
-                .getConfig("drop.timeout", grave)
-                .getBoolean("drop.timeout", false);
-        boolean abandonEnabled = plugin
-                .getConfig("drop.abandon", grave)
-                .getBoolean("drop.abandon", false);
+        boolean dropOnTimeout = plugin.getConfig("drop.timeout", grave).getBoolean("drop.timeout", false);
+        boolean abandonEnabled = plugin.getConfig("drop.abandon", grave).getBoolean("drop.abandon", false);
 
         if (abandonEnabled && dropOnTimeout) {
-            plugin.debugMessage(
-                    "Config ‘drop.abandon’ ignored because ‘drop.timeout’ is enabled",
-                    2
-            );
+            plugin.debugMessage("Config ‘drop.abandon’ ignored because ‘drop.timeout’ is enabled", 2);
             abandonEnabled = false;
         }
 
@@ -168,19 +157,19 @@ public final class GraveManager {
             return;
         }
 
-        GraveTimeoutEvent tev = new GraveTimeoutEvent(grave);
-        plugin.getServer().getPluginManager().callEvent(tev);
+        GraveTimeoutEvent tevModern = new GraveTimeoutEvent(grave);
+        plugin.getServer().getPluginManager().callEvent(tevModern);
 
-        if (tev.isCancelled() || tev.isAddon()) {
-            plugin.debugMessage(
-                    "GraveTimeoutEvent cancelled → infinite life for " + grave.getUUID(),
-                    2
-            );
+        com.ranull.graves.event.GraveTimeoutEvent tevLegacy = new com.ranull.graves.event.GraveTimeoutEvent(grave);
+        plugin.getServer().getPluginManager().callEvent(tevLegacy);
+
+        if (tevModern.isCancelled() || tevModern.isAddon() || tevLegacy.isCancelled() || tevLegacy.isAddon()) {
+            plugin.debugMessage("GraveTimeoutEvent cancelled → infinite life for " + grave.getUUID(), 2);
             grave.setTimeAliveRemaining(-1);
             return;
         }
 
-        final Location loc = tev.getLocation();
+        final Location loc = (tevModern.hasLocation() ? tevModern.getLocation() : tevLegacy.getLocation());
         if (loc == null || loc.getWorld() == null) {
             plugin.debugMessage("Invalid timeout location for " + grave.getUUID(), 2);
             return;
@@ -188,13 +177,12 @@ public final class GraveManager {
 
         loc.getChunk().load(true);
 
-        boolean finalAbandonEnabled = abandonEnabled;
+        final boolean finalAbandonEnabled = abandonEnabled;
         plugin.getGravesXScheduler().runTask(() -> {
             Chunk chunk = loc.getChunk();
             if (!chunk.isLoaded()) {
                 plugin.debugMessage(
-                        "Chunk still not loaded at (" + chunk.getX() + "," + chunk.getZ() + ")",
-                        2
+                        "Chunk still not loaded at (" + chunk.getX() + "," + chunk.getZ() + ")", 2
                 );
                 return;
             }
@@ -211,10 +199,16 @@ public final class GraveManager {
 
             if (!dropOnTimeout && finalAbandonEnabled) {
                 plugin.debugMessage("Abandoning grave: " + grave.getUUID(), 2);
-                GraveAbandonedEvent aev = new GraveAbandonedEvent(grave);
-                plugin.getServer().getPluginManager().callEvent(aev);
 
-                if (aev.isCancelled() || aev.isAddon()) {
+                GraveAbandonedEvent aevModern =
+                        new dev.cwhead.GravesX.event.GraveAbandonedEvent(grave);
+                plugin.getServer().getPluginManager().callEvent(aevModern);
+
+                com.ranull.graves.event.GraveAbandonedEvent aevLegacy =
+                        new com.ranull.graves.event.GraveAbandonedEvent(grave);
+                plugin.getServer().getPluginManager().callEvent(aevLegacy);
+
+                if (aevModern.isCancelled() || aevModern.isAddon() || aevLegacy.isCancelled() || aevLegacy.isAddon()) {
                     plugin.debugMessage("Abandon event cancelled for " + grave.getUUID(), 2);
                     dropGraveItems(loc, grave);
                     dropGraveExperience(loc, grave);
@@ -222,7 +216,8 @@ public final class GraveManager {
                     graveRemoveList.add(grave);
                     removeGrave(grave);
                 } else {
-                    sendPlayerMessage(grave, "message.grave-abandoned", aev.getLocation());
+                    Location abandonLoc = (aevModern.hasLocation() ? aevModern.getLocation() : aevLegacy.getLocation());
+                    sendPlayerMessage(grave, "message.grave-abandoned", abandonLoc != null ? abandonLoc : loc);
                     abandonGrave(grave);
                 }
                 return;
@@ -234,7 +229,6 @@ public final class GraveManager {
             removeGrave(grave);
         });
     }
-
 
 
     /**
@@ -435,18 +429,21 @@ public final class GraveManager {
         }
 
         if (currentProtection) {
-            // Trigger GraveProtectionExpiredEvent when protection expires
-            GraveProtectionExpiredEvent event = new GraveProtectionExpiredEvent(grave);
-            plugin.getServer().getPluginManager().callEvent(event);
+            GraveProtectionExpiredEvent modern = new GraveProtectionExpiredEvent(grave);
+            plugin.getServer().getPluginManager().callEvent(modern);
 
-            // If the event is cancelled, revert the protection state
-            if (event.isCancelled() && !event.isAddon()) {
+            com.ranull.graves.event.GraveProtectionExpiredEvent legacy = new com.ranull.graves.event.GraveProtectionExpiredEvent(grave);
+            plugin.getServer().getPluginManager().callEvent(legacy);
+
+            boolean cancelled = modern.isCancelled() || legacy.isCancelled();
+            boolean addon = modern.isAddon() || legacy.isAddon();
+
+            if (cancelled && !addon) {
                 grave.setProtection(true);
                 plugin.debugMessage("GraveProtectionExpiredEvent called for grave: " + grave.getUUID(), 2);
                 plugin.getDataManager().updateGrave(grave, "protection", 1);
                 grave.setTimeProtection(-1);
-            } else if (!event.isCancelled() && !event.isAddon()) {
-                // Log the grave details
+            } else if (!cancelled && !addon) {
                 plugin.debugMessage("Grave protection expired for grave: " + grave.getUUID(), 1);
                 plugin.getDataManager().updateGrave(grave, "protection", grave.getProtection() ? 1 : 0);
             }
@@ -1224,10 +1221,13 @@ public final class GraveManager {
                 cleanupCompasses(player, grave);
 
                 if (player.isSneaking() && plugin.hasGrantedPermission("graves.autoloot", player.getPlayer())) {
-                    GraveAutoLootEvent graveAutoLootEvent = new GraveAutoLootEvent(player, location, grave);
+                    GraveAutoLootEvent modern = new GraveAutoLootEvent(player, location, grave);
+                    plugin.getServer().getPluginManager().callEvent(modern);
 
-                    plugin.getServer().getPluginManager().callEvent(graveAutoLootEvent);
-                    if (!graveAutoLootEvent.isCancelled()) {
+                    com.ranull.graves.event.GraveAutoLootEvent legacy = new com.ranull.graves.event.GraveAutoLootEvent(player, location, grave);
+                    plugin.getServer().getPluginManager().callEvent(legacy);
+
+                    if (!modern.isCancelled() || !modern.isAddon() || !legacy.isCancelled() || !legacy.isAddon()) {
                         autoLootGrave(player, location, grave);
                         if (plugin.getIntegrationManager().hasNoteBlockAPI()) {
                             if (plugin.getIntegrationManager().getNoteBlockAPI().isSongPlayingForPlayer(player)) {
@@ -1251,12 +1251,14 @@ public final class GraveManager {
 
                 return true;
             } else {
-                if (plugin.getConfig("protection.preview", grave).getBoolean("protection.preview", false)) {
-                    if (plugin.getConfig("grave.preview", grave).getBoolean("grave.preview", false)) {
-                        grave.setGravePreview(preview);
-                    } else {
-                        grave.setGravePreview(false);
-                    }
+                if (plugin.getConfig("protection.preview", grave).getBoolean("protection.preview", false)
+                        && plugin.getConfig("grave.preview", grave).getBoolean("grave.preview", false)) {
+                    grave.setGravePreview(preview);
+                    player.openInventory(grave.getInventory());
+                    plugin.getEntityManager().runCommands("event.command.open", player, location, grave);
+                    plugin.getEntityManager().playWorldSound("sound.open", location, grave);
+                } else if (plugin.getConfig("protection.preview", grave).getBoolean("protection.preview", false)) {
+                    grave.setGravePreview(false);
                     player.openInventory(grave.getInventory());
                     plugin.getEntityManager().runCommands("event.command.open", player, location, grave);
                     plugin.getEntityManager().playWorldSound("sound.open", location, grave);

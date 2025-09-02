@@ -1,10 +1,9 @@
 package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
-import com.ranull.graves.event.GraveOpenEvent;
-import com.ranull.graves.event.GraveParticleEvent;
-import com.ranull.graves.event.GraveCompassUseEvent;
 import com.ranull.graves.type.Grave;
+import dev.cwhead.GravesX.event.GraveCompassUseEvent;
+import dev.cwhead.GravesX.event.GraveParticleEvent;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -144,60 +143,95 @@ public class PlayerInteractListener implements Listener {
      */
     private void handleCompassInteraction(PlayerInteractEvent event, Player player) {
         ItemStack itemStack = event.getItem();
-
         if (itemStack == null) {
-            return; // Exit early if itemStack is null
+            return;
         }
 
         UUID uuid = plugin.getEntityManager().getGraveUUIDFromItemStack(itemStack);
-
-        if (uuid != null) {
-            if (plugin.getCacheManager().getGraveMap().containsKey(uuid)) {
-                Grave grave = plugin.getCacheManager().getGraveMap().get(uuid);
-                List<Location> locationList = plugin.getGraveManager().getGraveLocationList(player.getLocation(), grave);
-
-                if (!locationList.isEmpty()) {
-                    Location location = locationList.get(0);
-                    if (event.getClickedBlock() != null && plugin.getLocationManager().hasGrave(event.getClickedBlock().getLocation())
-                            && player.getInventory().getItemInMainHand().getType().toString().toLowerCase().contains("compass")) {
-                        player.getInventory().remove(itemStack);
-                        //player.closeInventory(); // Close the player's inventory
-                       // player.openInventory(player.getInventory()); // Reopen the player's inventory
-                    } else {
-                        ItemStack graveCompass = plugin.getEntityManager().createGraveCompass(player, location, grave);
-
-                        if (graveCompass != null && graveCompass.getItemMeta() != null && !graveCompass.getItemMeta().getDisplayName().contains("Abandoned")) {
-                            GraveCompassUseEvent graveCompassUseEvent = new GraveCompassUseEvent(player, grave);
-                            plugin.getServer().getPluginManager().callEvent(graveCompassUseEvent);
-
-                            if (!graveCompassUseEvent.isCancelled() && !graveCompassUseEvent.isAddon()) {
-                                player.getInventory().setItem(player.getInventory().getHeldItemSlot(),
-                                        graveCompass);
-                                plugin.getEntityManager().runFunction(player, plugin.getConfig("compass.function", grave).getString("compass.function"), grave);
-                                if (plugin.getConfig("compass.particles.enabled", grave).getBoolean("compass.particles.enabled")) {
-                                    GraveParticleEvent graveParticleEvent = new GraveParticleEvent(player, grave);
-                                    plugin.getServer().getPluginManager().callEvent(graveParticleEvent);
-                                    if (!graveParticleEvent.isCancelled() && !graveParticleEvent.isAddon()) {
-                                        plugin.getParticleManager().startParticleTrail(player.getLocation(), grave.getLocationDeath(), Particle.valueOf(Objects.requireNonNull(plugin.getConfig("compass.particles.particle", grave).getString("compass.particles.particle")).toUpperCase()), plugin.getConfig("compass.particles.count", grave).getInt("compass.particles.count", 5), plugin.getConfig("compass.particles.speed", grave).getDouble("compass.particles.speed", 0.3), plugin.getConfig("compass.particles.duration", grave).getInt("compass.particles.duration"), player.getUniqueId());
-                                    }
-                                }
-                            }
-                        } else {
-                            player.getInventory().remove(itemStack);
-                        }
-                    }
-                } else {
-                    player.getInventory().remove(itemStack);
-                    //player.closeInventory(); // Close the player's inventory
-                    //player.openInventory(player.getInventory()); // Reopen the player's inventory
-                }
-            } else {
-                player.getInventory().remove(itemStack);
-                //player.closeInventory(); // Close the player's inventory
-                //player.openInventory(player.getInventory()); // Reopen the player's inventory
-            }
-            event.setCancelled(true);
+        if (uuid == null) {
+            return;
         }
+
+        if (!plugin.getCacheManager().getGraveMap().containsKey(uuid)) {
+            player.getInventory().remove(itemStack);
+            event.setCancelled(true);
+            return;
+        }
+
+        Grave grave = plugin.getCacheManager().getGraveMap().get(uuid);
+        List<Location> locationList = plugin.getGraveManager().getGraveLocationList(player.getLocation(), grave);
+
+        if (locationList.isEmpty()) {
+            player.getInventory().remove(itemStack);
+            event.setCancelled(true);
+            return;
+        }
+
+        Location location = locationList.get(0);
+
+        if (event.getClickedBlock() != null
+                && plugin.getLocationManager().hasGrave(event.getClickedBlock().getLocation())
+                && player.getInventory().getItemInMainHand().getType().toString().toLowerCase().contains("compass")) {
+            player.getInventory().remove(itemStack);
+            event.setCancelled(true);
+            return;
+        }
+
+        ItemStack graveCompass = plugin.getEntityManager().createGraveCompass(player, location, grave);
+        if (graveCompass == null || graveCompass.getItemMeta() == null || graveCompass.getItemMeta().getDisplayName().contains("Abandoned")) {
+            player.getInventory().remove(itemStack);
+            event.setCancelled(true);
+            return;
+        }
+
+        GraveCompassUseEvent modernUse = new GraveCompassUseEvent(player, grave);
+        plugin.getServer().getPluginManager().callEvent(modernUse);
+
+        com.ranull.graves.event.GraveCompassUseEvent legacyUse = new com.ranull.graves.event.GraveCompassUseEvent(player, grave);
+        plugin.getServer().getPluginManager().callEvent(legacyUse);
+
+        boolean blockedUse = modernUse.isCancelled() || modernUse.isAddon() || legacyUse.isCancelled() || legacyUse.isAddon();
+
+        if (!blockedUse) {
+            player.getInventory().setItem(player.getInventory().getHeldItemSlot(), graveCompass);
+
+            plugin.getEntityManager().runFunction(
+                    player,
+                    Objects.requireNonNull(plugin.getConfig("compass.function", grave).getString("compass.function")),
+                    grave
+            );
+
+            if (plugin.getConfig("compass.particles.enabled", grave).getBoolean("compass.particles.enabled")) {
+                GraveParticleEvent modernParticle = new GraveParticleEvent(player, grave);
+                plugin.getServer().getPluginManager().callEvent(modernParticle);
+
+                com.ranull.graves.event.GraveParticleEvent legacyParticle = new com.ranull.graves.event.GraveParticleEvent(player, grave);
+                plugin.getServer().getPluginManager().callEvent(legacyParticle);
+
+                boolean blockedParticle = modernParticle.isCancelled() || modernParticle.isAddon()
+                        || legacyParticle.isCancelled() || legacyParticle.isAddon();
+
+                if (!blockedParticle) {
+                    plugin.getParticleManager().startParticleTrail(
+                            player.getLocation(),
+                            grave.getLocationDeath(),
+                            Particle.valueOf(Objects.requireNonNull(
+                                            plugin.getConfig("compass.particles.particle", grave)
+                                                    .getString("compass.particles.particle"))
+                                    .toUpperCase()),
+                            plugin.getConfig("compass.particles.count", grave)
+                                    .getInt("compass.particles.count", 5),
+                            plugin.getConfig("compass.particles.speed", grave)
+                                    .getDouble("compass.particles.speed", 0.3),
+                            plugin.getConfig("compass.particles.duration", grave)
+                                    .getInt("compass.particles.duration"),
+                            player.getUniqueId()
+                    );
+                }
+            }
+        }
+
+        event.setCancelled(true);
     }
 
 }

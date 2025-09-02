@@ -1,20 +1,22 @@
 package com.ranull.graves.event;
 
 import com.ranull.graves.type.Grave;
-import dev.cwhead.GravesX.event.GraveEvent;
 import org.bukkit.Location;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
 /**
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveZombieSpawnEvent} instead.
  * Represents an event that occurs when a zombie spawns at a grave.
  * <p>
- * This event extends {@link GraveEvent} and provides details about the location of the spawn
+ * This event extends {@link dev.cwhead.GravesX.event.graveevent.GraveEvent} and provides details about the location of the spawn
  * and the entity that the zombie is targeting.
  * </p>
  */
-public class GraveZombieSpawnEvent extends GraveEvent {
+@Deprecated (since = "4.9.9.1", forRemoval = true)
+public class GraveZombieSpawnEvent extends dev.cwhead.GravesX.event.GraveZombieSpawnEvent {
+
     /**
      * A static final instance of {@link HandlerList} used to manage event handlers.
      * <p>
@@ -25,24 +27,16 @@ public class GraveZombieSpawnEvent extends GraveEvent {
     private static final HandlerList HANDLERS = new HandlerList();
 
     /**
-     * Constructs a new {@code GraveZombieSpawnEvent}.
-     *
-     * @param location        The location where the zombie is spawning.
-     * @param targetEntity    The entity that the zombie is targeting.
-     * @param grave           The grave associated with the event.
+     * @deprecated Use {@link dev.cwhead.GravesX.event.GraveZombieSpawnEvent} instead.
+     * A static final instance of {@link HandlerList} used to manage event handlers.
+     * <p>
+     * This {@link HandlerList} is used to register and manage the handlers for events of this type.
+     * It provides the mechanism for adding, removing, and invoking event handlers.
+     * </p>
      */
-    public GraveZombieSpawnEvent(Location location, LivingEntity targetEntity, Grave grave) {
-        super(grave, null, location, null, targetEntity, null, null, targetEntity, null);
-    }
-
-    /**
-     * Gets the list of handlers for this event.
-     *
-     * @return The handler list for this event.
-     */
-    @NotNull
-    public static HandlerList getHandlerList() {
-        return HANDLERS;
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    public GraveZombieSpawnEvent(@NotNull Location location, @NotNull LivingEntity targetEntity, @NotNull Grave grave) {
+        super(location, targetEntity, grave);
     }
 
     /**
@@ -52,6 +46,15 @@ public class GraveZombieSpawnEvent extends GraveEvent {
      */
     @Override
     public @NotNull HandlerList getHandlers() {
+        return HANDLERS;
+    }
+
+    /**
+     * Gets the static list of handlers for this event.
+     *
+     * @return The static handler list for this event.
+     */
+    public static @NotNull HandlerList getHandlerList() {
         return HANDLERS;
     }
 }

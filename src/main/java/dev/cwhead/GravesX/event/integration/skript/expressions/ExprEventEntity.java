@@ -4,7 +4,7 @@ import ch.njol.skript.lang.Expression;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.lang.util.SimpleExpression;
 import ch.njol.util.Kleenean;
-import dev.cwhead.GravesX.event.GraveEvent;
+import dev.cwhead.GravesX.event.graveevent.GraveEntityEvent;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.Event;
 import org.jetbrains.annotations.Nullable;
@@ -13,8 +13,8 @@ public class ExprEventEntity extends SimpleExpression<Entity> {
 
     @Override
     protected @Nullable Entity[] get(Event e) {
-        if (e instanceof GraveEvent) {
-            return new Entity[]{((GraveEvent) e).getEntity()};
+        if (e instanceof GraveEntityEvent) {
+            return new Entity[]{((GraveEntityEvent) e).getEntity()};
         }
         return null;
     }

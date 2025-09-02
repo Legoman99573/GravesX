@@ -1,8 +1,8 @@
 package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
-import com.ranull.graves.event.GraveExplodeEvent;
 import com.ranull.graves.type.Grave;
+import dev.cwhead.GravesX.event.GraveExplodeEvent;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -111,40 +111,55 @@ public class EntityExplodeListener implements Listener {
      * @param location  The location of the grave.
      */
     private void handleGraveExplosion(EntityExplodeEvent event, Iterator<Block> iterator, Block block, Grave grave, Location location) {
-        GraveExplodeEvent graveExplodeEvent = new GraveExplodeEvent(location, event.getEntity(), grave);
-        plugin.getServer().getPluginManager().callEvent(graveExplodeEvent);
+        GraveExplodeEvent modern = new GraveExplodeEvent(location, event.getEntity(), grave);
+        plugin.getServer().getPluginManager().callEvent(modern);
 
-        if (!graveExplodeEvent.isCancelled() && !graveExplodeEvent.isAddon()) {
+        com.ranull.graves.event.GraveExplodeEvent legacy = new com.ranull.graves.event.GraveExplodeEvent(location, event.getEntity(), grave);
+        plugin.getServer().getPluginManager().callEvent(legacy);
 
-            if (plugin.getConfig("drop.looted-explosion-effect", grave).getBoolean("drop.looted-explosion-effect", false)) {
-                try {
-                    Location loc = grave.getLocationDeath();
-
-                    Objects.requireNonNull(loc.getWorld()).spawnParticle(Particle.valueOf("EXPLOSION_HUGE"), loc, 1);
-                    try {
-                        loc.getWorld().playSound(loc, Sound.valueOf("ENTITY_GENERIC_EXPLODE"), 1.0f, 1.0f);
-                    } catch (Exception e) {
-                        loc.getWorld().playSound(loc, Sound.valueOf("EXPLODE"), 1.0f, 1.0f); // pre 1.9
-                    }
-                } catch (Exception ignored) {
-                    //ignored
-                }
-            }
-            if (plugin.getConfig("drop.explode", grave).getBoolean("drop.explode")) {
-                plugin.getGraveManager().breakGrave(location, grave);
-            } else {
-                plugin.getGraveManager().removeGrave(grave);
-            }
-
-            plugin.getGraveManager().closeGrave(grave);
-            plugin.getGraveManager().playEffect("effect.loot", location, grave);
-            plugin.getEntityManager().runCommands("event.command.explode", event.getEntity(), location, grave);
-
-            if (plugin.getConfig("zombie.explode", grave).getBoolean("zombie.explode")) {
-                plugin.getEntityManager().spawnZombie(location, grave);
-            }
-        } else if (graveExplodeEvent.isCancelled() && !graveExplodeEvent.isAddon()) {
+        if (modern.isCancelled() || modern.isAddon() || legacy.isCancelled() || legacy.isAddon()) {
             iterator.remove();
+            return;
+        }
+
+        Location effectiveLoc = location;
+        try {
+            if (modern.hasLocation()) {
+                effectiveLoc = modern.getLocation();
+            } else {
+                legacy.getLocation();
+                effectiveLoc = legacy.getLocation();
+            }
+        } catch (Throwable ignored) {
+            //ignored
+        }
+
+        if (plugin.getConfig("drop.looted-explosion-effect", grave).getBoolean("drop.looted-explosion-effect", false)) {
+            try {
+                Location deathLoc = grave.getLocationDeath();
+                Objects.requireNonNull(deathLoc.getWorld()).spawnParticle(Particle.valueOf("EXPLOSION_HUGE"), deathLoc, 1);
+                try {
+                    deathLoc.getWorld().playSound(deathLoc, Sound.valueOf("ENTITY_GENERIC_EXPLODE"), 1.0f, 1.0f);
+                } catch (Exception e) {
+                    deathLoc.getWorld().playSound(deathLoc, Sound.valueOf("EXPLODE"), 1.0f, 1.0f); // pre 1.9
+                }
+            } catch (Exception ignored) {
+                // ignored
+            }
+        }
+
+        if (plugin.getConfig("drop.explode", grave).getBoolean("drop.explode")) {
+            plugin.getGraveManager().breakGrave(effectiveLoc, grave);
+        } else {
+            plugin.getGraveManager().removeGrave(grave);
+        }
+
+        plugin.getGraveManager().closeGrave(grave);
+        plugin.getGraveManager().playEffect("effect.loot", effectiveLoc, grave);
+        plugin.getEntityManager().runCommands("event.command.explode", event.getEntity(), effectiveLoc, grave);
+
+        if (plugin.getConfig("zombie.explode", grave).getBoolean("zombie.explode")) {
+            plugin.getEntityManager().spawnZombie(effectiveLoc, grave);
         }
     }
 }

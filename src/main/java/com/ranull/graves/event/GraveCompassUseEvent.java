@@ -1,20 +1,23 @@
 package com.ranull.graves.event;
 
 import com.ranull.graves.type.Grave;
-import dev.cwhead.GravesX.event.GraveEvent;
+import dev.cwhead.GravesX.exception.GravesXEventIllegalArgumentException;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
 /**
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveCompassUseEvent} instead.
  * Represents an event that occurs when a grave compass is used.
  * <p>
- * This event extends {@link GraveEvent} and is cancellable, allowing event listeners
+ * This event extends {@link dev.cwhead.GravesX.event.graveevent.GravePlayerEvent} and is cancellable, allowing event listeners
  * to prevent the creation of the grave if necessary.
  * </p>
  */
-public class GraveCompassUseEvent extends GraveEvent {
+@Deprecated (since = "4.9.9.1", forRemoval = true)
+public class GraveCompassUseEvent extends dev.cwhead.GravesX.event.GraveCompassUseEvent {
+
     /**
      * A static final instance of {@link HandlerList} used to manage event handlers.
      * <p>
@@ -25,35 +28,31 @@ public class GraveCompassUseEvent extends GraveEvent {
     private static final HandlerList HANDLERS = new HandlerList();
 
     /**
+     * @deprecated Use {@link dev.cwhead.GravesX.event.GraveCompassUseEvent} instead.
      * Constructs a new {@code GraveCompassUseEvent}.
      *
      * @param player The player for which is using the compass.
      * @param grave  The grave being created.
      */
-    public GraveCompassUseEvent(Player player, Grave grave) {
-        super(grave, null, grave.getLocationDeath(), null, null, null, null, null, player);
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    public GraveCompassUseEvent(@NotNull Player player, @NotNull Grave grave) {
+        super(player, grave);
     }
 
     /**
-     * @deprecated Use {@link #GraveCompassUseEvent(Player, Grave)} instead.
      * Constructs a new {@code GraveCompassUseEvent}.
      *
      * @param entity The entity for which is using the compass.
      * @param grave  The grave being created.
      */
-    @Deprecated
-    public GraveCompassUseEvent(Entity entity, Grave grave) {
-        this(entity instanceof Player ? (Player) entity : null, grave);
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    public GraveCompassUseEvent(@NotNull Entity entity, @NotNull Grave grave) {
+        super(requirePlayer(entity), grave);
     }
 
-    /**
-     * Gets the list of handlers for this event.
-     *
-     * @return The handler list for this event.
-     */
-    @NotNull
-    public static HandlerList getHandlerList() {
-        return HANDLERS;
+    private static @NotNull Player requirePlayer(@NotNull Entity entity) {
+        if (entity instanceof Player) return (Player) entity;
+        throw new GravesXEventIllegalArgumentException("GraveCompassUseEvent requires a Player. Received " + entity.getType() + " instead.");
     }
 
     /**
@@ -63,6 +62,15 @@ public class GraveCompassUseEvent extends GraveEvent {
      */
     @Override
     public @NotNull HandlerList getHandlers() {
+        return HANDLERS;
+    }
+
+    /**
+     * Gets the static list of handlers for this event.
+     *
+     * @return The static handler list for this event.
+     */
+    public static @NotNull HandlerList getHandlerList() {
         return HANDLERS;
     }
 }

@@ -4,7 +4,6 @@ import com.ranull.graves.Graves;
 import com.ranull.graves.integration.MiniMessage;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.StringUtil;
-import me.imdanix.text.MiniTranslator;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;

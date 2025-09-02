@@ -93,7 +93,7 @@ public class CoreProtectListener implements Listener {
     public void onGraveBlockPlace(GraveBlockPlaceEvent e) {
         if (!e.isCancelled()) {
             CoreProtectAPI coreProtect = plugin.getIntegrationManager().getCoreProtect().getCoreProtectAPI();
-            if (!plugin.getIntegrationManager().hasCoreProtect()) return; // incase CoreProtect API is unavailable
+            if (!plugin.getIntegrationManager().hasCoreProtect()) return;
 
             try {
                 coreProtect.logPlacement(e.getPlayer() != null ? e.getPlayer().getName() : null, e.getGrave().getLocationDeath(), e.getBlock() != null ? e.getBlock().getType() : null, e.getBlock().getBlockData());

@@ -1,20 +1,24 @@
 package com.ranull.graves.event;
 
 import com.ranull.graves.type.Grave;
-import dev.cwhead.GravesX.event.GraveEvent;
+import dev.cwhead.GravesX.event.graveevent.GravePlayerEvent;
+import dev.cwhead.GravesX.exception.GravesXEventIllegalArgumentException;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
 /**
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveParticleEvent} instead.
  * Represents an event that occurs when a particle is spawned to a grave location.
  * <p>
- * This event extends {@link GraveEvent} and is cancellable, allowing event listeners
+ * This event extends {@link GravePlayerEvent} and is cancellable, allowing event listeners
  * to prevent the creation of the grave if necessary.
  * </p>
  */
-public class GraveParticleEvent extends GraveEvent {
+@Deprecated (since = "4.9.9.1", forRemoval = true)
+public class GraveParticleEvent extends dev.cwhead.GravesX.event.GraveParticleEvent {
+
     /**
      * A static final instance of {@link HandlerList} used to manage event handlers.
      * <p>
@@ -25,35 +29,32 @@ public class GraveParticleEvent extends GraveEvent {
     private static final HandlerList HANDLERS = new HandlerList();
 
     /**
+     * @deprecated Use {@link dev.cwhead.GravesX.event.GraveParticleEvent} instead.
      * Constructs a new {@code GraveParticleEvent}.
      *
      * @param player The player for which is spawning the particles from a compass.
      * @param grave  The grave being created.
      */
-    public GraveParticleEvent(Player player, Grave grave) {
-        super(grave, null, grave.getLocationDeath(), null, null, null, null, null, player);
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    public GraveParticleEvent(@NotNull Player player, @NotNull Grave grave) {
+        super(player, grave);
     }
 
     /**
-     * @deprecated Use {@link #GraveParticleEvent(Player, Grave)} instead.
+     * @deprecated Use {@link dev.cwhead.GravesX.event.GraveParticleEvent} instead.
      * Constructs a new {@code GraveParticleEvent}.
      *
      * @param entity The entity for which is spawning the particles from a compass.
      * @param grave  The grave being created.
      */
-    @Deprecated
-    public GraveParticleEvent(Entity entity, Grave grave) {
-        this(entity instanceof Player ? (Player) entity : null, grave);
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    public GraveParticleEvent(@NotNull Entity entity, @NotNull Grave grave) {
+        super(requirePlayer(entity), grave);
     }
 
-    /**
-     * Gets the list of handlers for this event.
-     *
-     * @return The handler list for this event.
-     */
-    @NotNull
-    public static HandlerList getHandlerList() {
-        return HANDLERS;
+    private static @NotNull Player requirePlayer(@NotNull Entity entity) {
+        if (entity instanceof Player) return (Player) entity;
+        throw new GravesXEventIllegalArgumentException("GraveParticleEvent requires a Player. Received " + entity.getType() + " instead.");
     }
 
     /**
@@ -63,6 +64,15 @@ public class GraveParticleEvent extends GraveEvent {
      */
     @Override
     public @NotNull HandlerList getHandlers() {
+        return HANDLERS;
+    }
+
+    /**
+     * Gets the static list of handlers for this event.
+     *
+     * @return The static handler list for this event.
+     */
+    public static @NotNull HandlerList getHandlerList() {
         return HANDLERS;
     }
 }

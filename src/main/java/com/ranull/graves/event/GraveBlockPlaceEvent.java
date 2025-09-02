@@ -2,7 +2,6 @@ package com.ranull.graves.event;
 
 import com.ranull.graves.data.BlockData;
 import com.ranull.graves.type.Grave;
-import dev.cwhead.GravesX.event.GraveEvent;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.LivingEntity;
@@ -10,11 +9,16 @@ import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * The GraveBlockPlaceEvent class represents an event where a block associated
- * with a grave is placed in the world. This event is cancellable, meaning it
- * can be prevented from occurring by event listeners.
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveBlockPlaceEvent} instead.
+ * Represents an event that occurs when a grave is placed by a {@link org.bukkit.entity.LivingEntity} whether that be a {@link org.bukkit.entity.Player} or {@link org.bukkit.entity.Entity}.
+ * <p>
+ * This event extends {@link dev.cwhead.GravesX.event.graveevent.GraveEvent} and provides information about the grave
+ * and the {@link org.bukkit.entity.LivingEntity} ({@link org.bukkit.entity.Player} or {@link org.bukkit.entity.Entity}) involved when the grave is placed.
+ * </p>
  */
-public class GraveBlockPlaceEvent extends GraveEvent {
+@Deprecated (since = "4.9.9.1", forRemoval = true)
+public class GraveBlockPlaceEvent extends dev.cwhead.GravesX.event.GraveBlockPlaceEvent {
+
     /**
      * A static final instance of {@link HandlerList} used to manage event handlers.
      * <p>
@@ -25,39 +29,31 @@ public class GraveBlockPlaceEvent extends GraveEvent {
     private static final HandlerList HANDLERS = new HandlerList();
 
     /**
+     * @deprecated Use {@link dev.cwhead.GravesX.event.GraveBlockPlaceEvent} instead.
      * Constructs a new GraveBlockPlaceEvent.
      *
-     * @param grave     The grave associated with the event.
-     * @param location  The location where the block is being placed.
-     * @param blockType The type of the block being placed.
-     * @param block     The block being placed.
+     * @param grave        The grave associated with the event.
+     * @param location     The location where the block is being placed.
+     * @param blockType    The type of the block being placed.
+     * @param block        The block being placed.
      * @param livingEntity The Killer
      */
-    public GraveBlockPlaceEvent(Grave grave, Location location, BlockData.BlockType blockType, Block block, LivingEntity livingEntity) {
-        super(grave, null, location, null, livingEntity, blockType, block, null, null);
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    public GraveBlockPlaceEvent(@NotNull Grave grave, @NotNull Location location, @NotNull BlockData.BlockType blockType, Block block, LivingEntity livingEntity) {
+        super(grave, location, blockType, block, livingEntity);
     }
 
     /**
-     * @deprecated Use {@link GraveBlockPlaceEvent#GraveBlockPlaceEvent(Grave, Location, BlockData.BlockType, Block, LivingEntity)} instead.
+     * @deprecated Use {@link GraveBlockPlaceEvent(Grave, Location, BlockData.BlockType, Block, LivingEntity)} instead.
      * Constructs a new GraveBlockPlaceEvent.
      *
      * @param grave     The grave associated with the event.
      * @param location  The location where the block is being placed.
      * @param blockType The type of the block being placed.
      */
-    @Deprecated
-    public GraveBlockPlaceEvent(Grave grave, Location location, BlockData.BlockType blockType) {
-        this(grave, location, blockType, null, null); // Delegate to the new constructor with nulls for the missing parameters
-    }
-
-    /**
-     * Gets the list of handlers for this event.
-     *
-     * @return The handler list for this event.
-     */
-    @NotNull
-    public static HandlerList getHandlerList() {
-        return HANDLERS;
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    public GraveBlockPlaceEvent(@NotNull Grave grave, @NotNull Location location, @NotNull BlockData.BlockType blockType) {
+        super(grave, location, blockType, null, null);
     }
 
     /**
@@ -67,6 +63,15 @@ public class GraveBlockPlaceEvent extends GraveEvent {
      */
     @Override
     public @NotNull HandlerList getHandlers() {
+        return HANDLERS;
+    }
+
+    /**
+     * Gets the static list of handlers for this event.
+     *
+     * @return The static handler list for this event.
+     */
+    public static @NotNull HandlerList getHandlerList() {
         return HANDLERS;
     }
 }
