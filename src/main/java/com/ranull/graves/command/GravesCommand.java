@@ -103,7 +103,7 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
      * @param sender The command sender.
      */
     public void sendHelpMenu(CommandSender sender) {
-        sender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + "Graves "
+        sender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + plugin.getName() + " "
                 + ChatColor.DARK_GRAY + "v" + plugin.getVersion());
 
         if (sender instanceof Player) {
