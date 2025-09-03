@@ -18,7 +18,17 @@ public final class ColorUtil {
      * @return The {@link Color} corresponding to the given name, or {@code null} if no match is found.
      */
     public static Color getColor(String colorName) {
-        switch (colorName.toUpperCase()) {
+        String s = colorName;
+
+        if (s.startsWith("#")) {
+            try {
+                return getColorFromHex(s);
+            } catch (IllegalArgumentException ex) {
+                s = "RED";
+            }
+        }
+
+        switch (s.toUpperCase()) {
             case "AQUA":
                 return Color.AQUA;
             case "BLACK":

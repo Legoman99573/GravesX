@@ -257,12 +257,6 @@ settings:
         type: "ENCHANTMENT_TABLE"
         # Amount of particles.
         count: 4
-        # Options Below Only applies to REDSTONE or DUST.
-        dust-size: 4
-        # Legacy Colors: https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Color.html
-        # To use hex colors, just set to #rrggbb. This only works on 1.16 or newer where hex colors are supported.
-        dust-color: "RED"
-        # dust-color: "#FF0000"
         offset:
           # Particle offset X.
           x: 0
@@ -270,6 +264,59 @@ settings:
           y: 0
           # Particle offset Z.
           z: 0
+
+        ############
+        # Redstone #
+        ############
+        dust-size: 4
+        # Legacy Colors: https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Color.html
+        # To use hex colors, just set to #rrggbb. This only works on 1.16 or newer where hex colors are supported.
+        dust-color: "RED"
+        # dust-color: "#FF0000"
+
+        ##############
+        # Block Data #
+        ##############
+        # Only Works on Block based data
+        block-material: "STONE"
+        block-data: ""
+
+        ##############
+        # Color Tint #
+        ##############
+        color: "WHITE"
+
+        ##############
+        # Item Based #
+        ##############
+        item: "STONE"
+
+        #######################
+        # Skulk Based (float) #
+        #######################
+        sculk-charge: 1.0
+
+        ######################
+        # Shriek Based (int) #
+        ######################
+        shriek-delay: 1
+
+        #########
+        # Trail #
+        #########
+        trail:
+          duration-ticks: 20
+          spread: 0.02
+
+        vibration:
+          # "single" -> player -> grave (or player -> random entity if destination=entity)
+          # "bounce" -> player -> grave, then grave -> player (one round-trip, efficient)
+          mode: "bounce"
+
+          # Destination of the vibration path:
+          #   "block"  -> player -> grave block center  (vanilla-like)
+          #   "entity" -> player -> a RANDOM nearby online player (UUID randomized each time)
+          destination: "block"
 
       ###########
       # Compass #

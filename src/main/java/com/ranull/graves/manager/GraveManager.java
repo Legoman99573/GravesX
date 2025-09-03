@@ -477,59 +477,179 @@ public final class GraveManager {
      * @param grave    the grave to spawn particles for.
      */
     public void graveParticle(Location location, Grave grave) {
-        if (plugin.getVersionManager().hasParticle()
-                && location.getWorld() != null
-                && plugin.getConfig("particle.enabled", grave).getBoolean("particle.enabled")) {
-            Particle particle = CompatibilityParticleEnum.valueOf(plugin.getVersionManager().getParticleForVersion("REDSTONE").toString());
-            String particleType = plugin.getConfig("particle.type", grave).getString("particle.type");
+        if (!plugin.getVersionManager().hasParticle()
+                || location.getWorld() == null
+                || !plugin.getConfig("particle.enabled", grave).getBoolean("particle.enabled")) {
+            return;
+        }
 
-            if (particleType != null && !particleType.equals("")) {
-                try {
-                    particle = CompatibilityParticleEnum.valueOf(plugin.getConfig("particle.type", grave)
-                            .getString("particle.type"));
-                } catch (IllegalArgumentException ignored) {
-                    plugin.debugMessage(particleType + " is not a Particle ENUM", 1);
-                }
+        Particle particle = CompatibilityParticleEnum.valueOf(
+                plugin.getVersionManager().getParticleForVersion("REDSTONE").toString()
+        );
+
+        final String configuredType = plugin.getConfig("particle.type", grave).getString("particle.type");
+        if (configuredType != null && !configuredType.isEmpty()) {
+            try {
+                particle = CompatibilityParticleEnum.valueOf(configuredType);
+            } catch (IllegalArgumentException ignored) {
+                plugin.debugMessage(configuredType + " is not a Particle ENUM", 1);
+                plugin.getLogger().severe("The Particle ENUM/INSTANCE " + configuredType + " is not valid. Update \"particle.type\" in grave.yml");
+                return;
             }
+        }
 
-            int count = plugin.getConfig("particle.count", grave).getInt("particle.count");
-            double offsetX = plugin.getConfig("particle.offset.x", grave).getDouble("particle.offset.x");
-            double offsetY = plugin.getConfig("particle.offset.y", grave).getDouble("particle.offset.y");
-            double offsetZ = plugin.getConfig("particle.offset.z", grave).getDouble("particle.offset.z");
-            location = location.clone().add(offsetX + 0.5, offsetY + 0.5, offsetZ + 0.5);
+        final int count = plugin.getConfig("particle.count", grave).getInt("particle.count");
+        final double offX = plugin.getConfig("particle.offset.x", grave).getDouble("particle.offset.x");
+        final double offY = plugin.getConfig("particle.offset.y", grave).getDouble("particle.offset.y");
+        final double offZ = plugin.getConfig("particle.offset.z", grave).getDouble("particle.offset.z");
+        location = location.clone().add(offX + 0.5, offY + 0.5, offZ + 0.5);
 
-            if (location.getWorld() != null) {
-                switch (particle.name()) {
-                    case "DUST":
-                    case "REDSTONE":
-                        int sizeInt = plugin.getConfig("particle.dust-size", grave).getInt("particle.dust-size");
-                        float size = (float) sizeInt; // Convert to float
-                        Color color = ColorUtil.getColor(plugin.getConfig("particle.dust-color", grave)
-                                .getString("particle.dust-color", "RED"));
+        if (location.getWorld() == null) return;
 
-                        if (color == null) {
-                            color = Color.RED;
-                        }
-                        try {
-                            location.getWorld().spawnParticle(particle, location, count,
-                                    new Particle.DustOptions(color, size));
-                        } catch (IllegalArgumentException e) {
-                            location.getWorld().spawnParticle(particle, location, count, 1);
-                        }
+        try {
+            switch (particle.name()) {
+                case "BLOCK":
+                case "BLOCK_CRUMBLE":
+                case "BLOCK_MARKER":
+                case "DUST_PILLAR":
+                case "FALLING_DUST": {
+                    BlockData gravesBD =
+                            plugin.getParticleManager().getGravesBlockData(grave, location);
+                    try {
+                        location.getWorld().spawnParticle(particle, location, count, gravesBD);
                         break;
-                    case "SHRIEK":
-                        location.getWorld().spawnParticle(particle, location, count, 1);
-                        break;
-                    default:
-                        try {
+                    } catch (IllegalArgumentException badType) {
+                        org.bukkit.block.data.BlockData bukkitBD =
+                                plugin.getParticleManager().toBukkitBlockData(gravesBD);
+                        if (bukkitBD != null) {
+                            location.getWorld().spawnParticle(particle, location, count, bukkitBD);
+                        } else {
                             location.getWorld().spawnParticle(particle, location, count);
-                        } catch (IllegalArgumentException e) {
-                            // May not work for all forks and versions, but will try again
-                            location.getWorld().spawnParticle(particle, location, count, 0, 0, 0, 0);
                         }
-                        break;
+                    }
+                    break;
+                }
+
+                case "DUST":
+                case "REDSTONE": {
+                    int sizeInt = plugin.getConfig("particle.dust-size", grave).getInt("particle.dust-size");
+                    float size = (float) sizeInt;
+                    Color color = plugin.getParticleManager().safeColor(
+                            plugin.getConfig("particle.dust-color", grave).getString("particle.dust-color", "RED"),
+                            org.bukkit.Color.RED
+                    );
+                    try {
+                        location.getWorld().spawnParticle(particle, location, count,
+                                new Particle.DustOptions(color, size));
+                    } catch (IllegalArgumentException e) {
+                        location.getWorld().spawnParticle(particle, location, count, 1);
+                    }
+                    break;
+                }
+
+                case "DUST_COLOR_TRANSITION": {
+                    float size = (float) plugin.getConfig("particle.dust-size", grave)
+                            .getDouble("particle.dust-size", 1.0);
+                    Color from = plugin.getParticleManager().safeColor(
+                            plugin.getConfig("particle.dust.from-color", grave)
+                                    .getString("particle.dust.from-color", "WHITE"),
+                            Color.WHITE
+                    );
+                    Color to = plugin.getParticleManager().safeColor(
+                            plugin.getConfig("particle.dust.to-color", grave)
+                                    .getString("particle.dust.to-color", "RED"),
+                            Color.RED
+                    );
+                    Particle.DustTransition transition = new Particle.DustTransition(from, to, size);
+                    location.getWorld().spawnParticle(particle, location, count, transition);
+                    break;
+                }
+
+                case "ENTITY_EFFECT":
+                case "TINTED_LEAVES": {
+                    Color tint = plugin.getParticleManager().safeColor(
+                            plugin.getConfig("particle.color", grave).getString("particle.color", "WHITE"),
+                            Color.WHITE
+                    );
+                    try {
+                        location.getWorld().spawnParticle(particle, location, count, tint);
+                    } catch (IllegalArgumentException ex) {
+                        location.getWorld().spawnParticle(particle, location, count);
+                    }
+                    break;
+                }
+
+                case "ITEM": {
+                    ItemStack stack = plugin.getParticleManager().parseItemStack(grave);
+                    if (stack != null) location.getWorld().spawnParticle(particle, location, count, stack);
+                    else               location.getWorld().spawnParticle(particle, location, count);
+                    break;
+                }
+
+                case "SCULK_CHARGE": {
+                    float charge = (float) plugin.getConfig("particle.sculk-charge", grave)
+                            .getDouble("particle.sculk-charge", 1.0D);
+                    try {
+                        location.getWorld().spawnParticle(particle, location, count, charge);
+                    } catch (IllegalArgumentException ex) {
+                        location.getWorld().spawnParticle(particle, location, count);
+                    }
+                    break;
+                }
+
+                case "SHRIEK": {
+                    int delay = plugin.getConfig("particle.shriek-delay", grave)
+                            .getInt("particle.shriek-delay", 1);
+                    try {
+                        location.getWorld().spawnParticle(particle, location, count, delay);
+                    } catch (IllegalArgumentException ex) {
+                        location.getWorld().spawnParticle(particle, location, count, 1);
+                    }
+                    break;
+                }
+
+                case "TRAIL": {
+                    Object trail = plugin.getParticleManager().parseTrailData(plugin, grave);
+                    if (trail != null) {
+                        try {
+                            location.getWorld().spawnParticle(particle, location, count, trail);
+                            break;
+                        } catch (IllegalArgumentException ex) {
+                            plugin.debugMessage("TRAIL data not supported: " + ex.getMessage(), 2);
+                        }
+                    }
+                    location.getWorld().spawnParticle(particle, location, count);
+                    break;
+                }
+
+                case "VIBRATION": {
+                    String mode = plugin.getConfig("particle.vibration.mode", grave)
+                            .getString("particle.vibration.mode", "single")
+                            .toLowerCase(java.util.Locale.ROOT);
+
+                    if ("bounce".equals(mode)) {
+                        plugin.getParticleManager().spawnVibrationBounce(
+                                plugin, location, grave, particle, count
+                        );
+                    } else {
+                        Vibration vib = plugin.getParticleManager().buildVibrationSingle(plugin, location, grave);
+                        if (vib != null) location.getWorld().spawnParticle(particle, location, count, vib);
+                        else             location.getWorld().spawnParticle(particle, location, count);
+                    }
+                    break;
+                }
+
+                default: {
+                    try {
+                        location.getWorld().spawnParticle(particle, location, count);
+                    } catch (IllegalArgumentException e) {
+                        location.getWorld().spawnParticle(particle, location, count, 0, 0, 0, 0);
+                    }
+                    break;
                 }
             }
+        } catch (Throwable t) {
+            plugin.debugMessage("Particle spawn failed for " + particle + ": " + t.getMessage(), 2);
         }
     }
 

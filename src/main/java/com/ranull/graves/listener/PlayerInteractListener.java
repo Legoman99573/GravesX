@@ -213,7 +213,7 @@ public class PlayerInteractListener implements Listener {
                         || legacyParticle.isCancelled() || legacyParticle.isAddon();
 
                 if (!blockedParticle) {
-                    plugin.getParticleManager().startParticleTrail(
+                    plugin.getParticleManager().startCompassParticleTrail(
                             player.getLocation(),
                             grave.getLocationDeath(),
                             CompatibilityParticleEnum.valueOf(Objects.requireNonNull(

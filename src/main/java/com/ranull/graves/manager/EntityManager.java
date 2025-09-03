@@ -846,7 +846,7 @@ public final class EntityManager extends EntityDataManager {
                         Location location = plugin.getGraveManager().getGraveLocation(entity.getLocation(), grave);
 
                         if (location != null && entity.getLocation().getWorld() == grave.getLocationDeath().getWorld()) {
-                            plugin.getParticleManager().startParticleTrail(
+                            plugin.getParticleManager().startCompassParticleTrail(
                                     entity.getLocation(),
                                     grave.getLocationDeath(),
                                     CompatibilityParticleEnum.valueOf(Objects.requireNonNull(
