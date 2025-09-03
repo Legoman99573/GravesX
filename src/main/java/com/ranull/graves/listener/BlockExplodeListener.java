@@ -2,6 +2,7 @@ package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
+import dev.cwhead.GravesX.compatibility.CompatibilitySoundEnum;
 import dev.cwhead.GravesX.event.GraveExplodeEvent;
 import org.bukkit.Location;
 import org.bukkit.Particle;
@@ -140,9 +141,9 @@ public class BlockExplodeListener implements Listener {
             Location deathLoc = grave.getLocationDeath();
             Objects.requireNonNull(deathLoc.getWorld()).spawnParticle(Particle.valueOf("EXPLOSION_HUGE"), deathLoc, 1);
             try {
-                deathLoc.getWorld().playSound(deathLoc, Sound.valueOf("ENTITY_GENERIC_EXPLODE"), 1.0f, 1.0f);
+                deathLoc.getWorld().playSound(deathLoc, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("ENTITY_GENERIC_EXPLODE")), 1.0f, 1.0f);
             } catch (Exception e) {
-                deathLoc.getWorld().playSound(deathLoc, Sound.valueOf("EXPLODE"), 1.0f, 1.0f); // pre 1.9
+                deathLoc.getWorld().playSound(deathLoc, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("EXPLODE")), 1.0f, 1.0f); // pre 1.9
             }
         } catch (Exception ignored) {
             // ignored

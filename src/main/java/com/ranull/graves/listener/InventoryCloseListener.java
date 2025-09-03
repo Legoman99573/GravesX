@@ -3,6 +3,7 @@ package com.ranull.graves.listener;
 import com.ranull.graves.Graves;
 import com.ranull.graves.compatibility.CompatibilityInventoryView;
 import com.ranull.graves.type.Grave;
+import dev.cwhead.GravesX.compatibility.CompatibilitySoundEnum;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -162,9 +163,9 @@ public class InventoryCloseListener implements Listener {
                     Location location = grave.getLocationDeath();
                     Objects.requireNonNull(location.getWorld()).spawnParticle(Particle.valueOf("EXPLOSION_HUGE"), location, 1);
                     try {
-                        location.getWorld().playSound(location, Sound.valueOf("ENTITY_GENERIC_EXPLODE"), 1.0f, 1.0f);
+                        location.getWorld().playSound(location, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("ENTITY_GENERIC_EXPLODE")), 1.0f, 1.0f);
                     } catch (Exception e) {
-                        location.getWorld().playSound(location, Sound.valueOf("EXPLODE"), 1.0f, 1.0f); // pre 1.9
+                        location.getWorld().playSound(location, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("EXPLODE")), 1.0f, 1.0f); // pre 1.9
                     }
                 } catch (Exception ignored) {
                     // ignored
