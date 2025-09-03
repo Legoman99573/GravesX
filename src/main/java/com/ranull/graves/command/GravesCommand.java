@@ -780,9 +780,9 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
             plugin.debugMessage(plugin.getImportManager().listAngelChestMissingWorldText(), 2);
 
             commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET +
-                    "This will import " + plugin.getImportManager().countAngelChestImportableOnly() + " graves from AngelChest. This may create many graves and cannot be undone.\n" +
-                    "You bear in mind that hex color codes may not convert over." +
-                    ChatColor.YELLOW + "Type /graves import confirm to proceed.");
+                    "This will import " + ChatColor.RED + plugin.getImportManager().countAngelChestImportableOnly() + ChatColor.RESET +" graves from AngelChest. This may create many graves and cannot be undone.\n" +
+                    "You bear in mind that hex color codes may not convert over.\n" +
+                    ChatColor.YELLOW + "Type " + ChatColor.RED + "/graves import confirm"  + ChatColor.YELLOW + " to proceed.");
             return;
         }
 
