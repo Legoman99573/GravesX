@@ -286,19 +286,19 @@ settings:
         ##############
         color: "WHITE"
 
-        ##############
-        # Item Based #
-        ##############
+        ########
+        # Item #
+        ########
         item: "STONE"
 
-        #######################
-        # Skulk Based (float) #
-        #######################
+        #########
+        # Skulk #
+        #########
         sculk-charge: 1.0
 
-        ######################
-        # Shriek Based (int) #
-        ######################
+        ##########
+        # Shriek #
+        ##########
         shriek-delay: 1
 
         #########
@@ -308,6 +308,9 @@ settings:
           duration-ticks: 20
           spread: 0.02
 
+        #############
+        # Vibration #
+        #############
         vibration:
           # "single" -> player -> grave (or player -> random entity if destination=entity)
           # "bounce" -> player -> grave, then grave -> player (one round-trip, efficient)
