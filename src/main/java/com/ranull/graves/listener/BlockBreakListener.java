@@ -2,6 +2,7 @@ package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
+import dev.cwhead.GravesX.compatibility.CompatibilityParticleEnum;
 import dev.cwhead.GravesX.compatibility.CompatibilitySoundEnum;
 import dev.cwhead.GravesX.event.GraveAutoLootEvent;
 import dev.cwhead.GravesX.event.GraveBreakEvent;
@@ -124,7 +125,7 @@ public class BlockBreakListener implements Listener {
         try {
             Location loc = grave.getLocationDeath();
 
-            Objects.requireNonNull(loc.getWorld()).spawnParticle(Particle.valueOf("EXPLOSION_HUGE"), loc, 1);
+            Objects.requireNonNull(loc.getWorld()).spawnParticle(CompatibilityParticleEnum.valueOf("EXPLOSION"), loc, 1);
             try {
                 loc.getWorld().playSound(loc, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("ENTITY_GENERIC_EXPLODE")), 1.0f, 1.0f);
             } catch (Exception e) {
@@ -163,7 +164,7 @@ public class BlockBreakListener implements Listener {
                 && plugin.getConfig("drop.auto-loot.break", grave).getBoolean("drop.auto-loot.break")) {
             try {
                 Location loc = grave.getLocationDeath();
-                Objects.requireNonNull(loc.getWorld()).spawnParticle(Particle.valueOf("EXPLOSION_HUGE"), loc, 1);
+                Objects.requireNonNull(loc.getWorld()).spawnParticle(CompatibilityParticleEnum.valueOf("EXPLOSION"), loc, 1);
                 try {
                     loc.getWorld().playSound(loc, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("ENTITY_GENERIC_EXPLODE")), 1.0f, 1.0f);
                 } catch (Exception e) {
@@ -217,7 +218,7 @@ public class BlockBreakListener implements Listener {
                 && plugin.getConfig("drop.auto-loot.break", grave).getBoolean("drop.auto-loot.break")) {
             try {
                 Location loc = grave.getLocationDeath();
-                Objects.requireNonNull(loc.getWorld()).spawnParticle(Particle.valueOf("EXPLOSION_HUGE"), loc, 1);
+                Objects.requireNonNull(loc.getWorld()).spawnParticle(CompatibilityParticleEnum.valueOf("EXPLOSION"), loc, 1);
                 try {
                     loc.getWorld().playSound(loc, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("ENTITY_GENERIC_EXPLODE")), 1.0f, 1.0f);
                 } catch (Exception e) {

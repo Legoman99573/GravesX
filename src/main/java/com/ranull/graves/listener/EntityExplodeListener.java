@@ -2,6 +2,7 @@ package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
+import dev.cwhead.GravesX.compatibility.CompatibilityParticleEnum;
 import dev.cwhead.GravesX.compatibility.CompatibilitySoundEnum;
 import dev.cwhead.GravesX.event.GraveExplodeEvent;
 import org.bukkit.Location;
@@ -138,7 +139,7 @@ public class EntityExplodeListener implements Listener {
         if (plugin.getConfig("drop.looted-explosion-effect", grave).getBoolean("drop.looted-explosion-effect", false)) {
             try {
                 Location deathLoc = grave.getLocationDeath();
-                Objects.requireNonNull(deathLoc.getWorld()).spawnParticle(Particle.valueOf("EXPLOSION_HUGE"), deathLoc, 1);
+                Objects.requireNonNull(deathLoc.getWorld()).spawnParticle(CompatibilityParticleEnum.valueOf("EXPLOSION"), deathLoc, 1);
                 try {
                     deathLoc.getWorld().playSound(deathLoc, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("ENTITY_GENERIC_EXPLODE")), 1.0f, 1.0f);
                 } catch (Exception e) {

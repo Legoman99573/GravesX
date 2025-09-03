@@ -1,5 +1,6 @@
 package com.ranull.graves.manager;
 
+import dev.cwhead.GravesX.compatibility.CompatibilityParticleEnum;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -540,15 +541,14 @@ public final class VersionManager {
         switch (particle) {
             case "REDSTONE":
                 try {
-                    toReturn = Particle.valueOf("REDSTONE");
+                    toReturn = CompatibilityParticleEnum.valueOf("REDSTONE");
                     if (toReturn == null) {
-                        toReturn = Particle.valueOf("DUST"); // Assume server is running on 1.20.5 or newer
+                        toReturn = CompatibilityParticleEnum.valueOf("DUST"); // Assume server is running on 1.20.5 or newer
                     }
                 } catch (NullPointerException | IllegalArgumentException e) {
-                    toReturn = Particle.valueOf("DUST"); // Assume server is running on 1.20.5 or newer
+                    toReturn = CompatibilityParticleEnum.valueOf("DUST"); // Assume server is running on 1.20.5 or newer
                 }
                 break;
-            // Add additional cases for other particles if needed
             default:
                 throw new IllegalArgumentException("Unsupported particle type: " + particle);
         }

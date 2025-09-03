@@ -13,6 +13,7 @@ import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.ColorUtil;
 import com.ranull.graves.util.InventoryUtil;
 import com.ranull.graves.util.MaterialUtil;
+import dev.cwhead.GravesX.compatibility.CompatibilityParticleEnum;
 import dev.cwhead.GravesX.event.*;
 import me.jay.GravesX.util.pluginsWithoutMavenReposOrUsefulApiDocsThatCauseBugs.ReflectSupportAE;
 import com.ranull.graves.util.StringUtil;
@@ -479,12 +480,12 @@ public final class GraveManager {
         if (plugin.getVersionManager().hasParticle()
                 && location.getWorld() != null
                 && plugin.getConfig("particle.enabled", grave).getBoolean("particle.enabled")) {
-            Particle particle = Particle.valueOf(plugin.getVersionManager().getParticleForVersion("REDSTONE").toString());
+            Particle particle = CompatibilityParticleEnum.valueOf(plugin.getVersionManager().getParticleForVersion("REDSTONE").toString());
             String particleType = plugin.getConfig("particle.type", grave).getString("particle.type");
 
             if (particleType != null && !particleType.equals("")) {
                 try {
-                    particle = Particle.valueOf(plugin.getConfig("particle.type", grave)
+                    particle = CompatibilityParticleEnum.valueOf(plugin.getConfig("particle.type", grave)
                             .getString("particle.type"));
                 } catch (IllegalArgumentException ignored) {
                     plugin.debugMessage(particleType + " is not a Particle ENUM", 1);

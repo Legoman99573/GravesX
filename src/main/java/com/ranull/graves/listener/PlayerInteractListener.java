@@ -2,6 +2,7 @@ package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
+import dev.cwhead.GravesX.compatibility.CompatibilityParticleEnum;
 import dev.cwhead.GravesX.event.GraveCompassUseEvent;
 import dev.cwhead.GravesX.event.GraveParticleEvent;
 import org.bukkit.*;
@@ -215,7 +216,7 @@ public class PlayerInteractListener implements Listener {
                     plugin.getParticleManager().startParticleTrail(
                             player.getLocation(),
                             grave.getLocationDeath(),
-                            Particle.valueOf(Objects.requireNonNull(
+                            CompatibilityParticleEnum.valueOf(Objects.requireNonNull(
                                             plugin.getConfig("compass.particles.particle", grave)
                                                     .getString("compass.particles.particle"))
                                     .toUpperCase()),

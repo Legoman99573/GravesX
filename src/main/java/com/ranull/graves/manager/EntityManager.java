@@ -2,6 +2,7 @@ package com.ranull.graves.manager;
 
 import com.github.Anon8281.universalScheduler.scheduling.tasks.MyScheduledTask;
 import com.ranull.graves.Graves;
+import dev.cwhead.GravesX.compatibility.CompatibilityParticleEnum;
 import dev.cwhead.GravesX.compatibility.CompatibilitySoundEnum;
 import com.ranull.graves.data.EntityData;
 import com.ranull.graves.integration.MiniMessage;
@@ -848,7 +849,7 @@ public final class EntityManager extends EntityDataManager {
                             plugin.getParticleManager().startParticleTrail(
                                     entity.getLocation(),
                                     grave.getLocationDeath(),
-                                    Particle.valueOf(Objects.requireNonNull(
+                                    CompatibilityParticleEnum.valueOf(Objects.requireNonNull(
                                                     plugin.getConfig("compass.particles.particle", grave)
                                                             .getString("compass.particles.particle"))
                                             .toUpperCase()),
