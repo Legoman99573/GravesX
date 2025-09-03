@@ -143,20 +143,51 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage(ChatColor.RED + "/graves debug {level} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET
                         + " Change debug level");
             }
+
+            if (plugin.hasGrantedPermission("graves.import", player.getPlayer())) {
+                sender.sendMessage(ChatColor.RED + "/graves import {plugin} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET
+                        + " Imports grave data from another grave plugin");
+            }
+
+            if (plugin.hasGrantedPermission("graves.purge", player.getPlayer())) {
+                sender.sendMessage(ChatColor.RED + "/graves purge {type} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET
+                        + " Purges based on type");
+            }
+
+            if (plugin.hasGrantedPermission("graves.download.addons", player.getPlayer())) {
+                sender.sendMessage(ChatColor.RED + "/graves addon {addon} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET
+                        + " Downloads addon (Restart Required)");
+            }
+
+            if (plugin.hasGrantedPermission("graves.cleanup", player.getPlayer())) {
+                sender.sendMessage(ChatColor.RED + "/graves cleanup " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET
+                        + " Purges all graves");
+            }
         } else {
             sender.sendMessage(ChatColor.RED + "/graves list {player} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET +
                     " View player graves");
-            sender.sendMessage(ChatColor.RED + "/graves givetoken {player} {amount} " + ChatColor.DARK_GRAY + "-"
-                    + ChatColor.RESET + " Give grave token");
+            if (plugin.getConfig().getBoolean("settings.token")) {
+                sender.sendMessage(ChatColor.RED + "/graves givetoken {player} {amount} " + ChatColor.DARK_GRAY + "-"
+                        + ChatColor.RESET + " Give grave token");
+            }
             sender.sendMessage(ChatColor.RED + "/graves reload " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET
                     + " Reload plugin");
             sender.sendMessage(ChatColor.RED + "/graves dump " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET
                     + " Dump server information");
             sender.sendMessage(ChatColor.RED + "/graves debug {level} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET
                     + " Change debug level");
+            sender.sendMessage(ChatColor.RED + "/graves import {plugin} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET
+                    + " Imports grave data from another grave plugin");
+            sender.sendMessage(ChatColor.RED + "/graves purge {type} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET
+                    + " Purges based on type");
+            sender.sendMessage(ChatColor.RED + "/graves addon {addon} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET
+                    + " Downloads addon (Restart Required)");
+            sender.sendMessage(ChatColor.RED + "/graves cleanup " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET
+                    + " Purges all graves");
         }
 
         sender.sendMessage(ChatColor.DARK_GRAY + "Author: " + ChatColor.RED + "Ranull");
+        sender.sendMessage(ChatColor.DARK_GRAY + "Maintenance: " + ChatColor.RED + "JaySmethers, Legoman99573");
     }
 
     @Override
@@ -392,7 +423,7 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
     }
 
     private void handleGiveTokenCommand(CommandSender commandSender, String[] args) {
-        if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.gui", ((Player) commandSender).getPlayer())) {
+        if (!(commandSender instanceof Player) || plugin.hasGrantedPermission("graves.givetoken", ((Player) commandSender).getPlayer())) {
             if (args.length == 1) {
                 commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
                         + ChatColor.RESET + "/graves givetoken {player} {token}");
@@ -721,9 +752,9 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
     }
 
     private void handleImportCommand(CommandSender commandSender, String[] args) {
-        if (args == null || args.length == 0 || !args[0].equalsIgnoreCase("AngelChest") || !args[0].equalsIgnoreCase("angelchest")) {
+        if (args == null || args.length == 0 || !args[1].equalsIgnoreCase("AngelChest") || !args[1].equalsIgnoreCase("angelchest")) {
             commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
-                    + "Usage: /graves import AngelChest");
+                    + "Usage: /graves import {plugin}");
             return;
         }
 
@@ -754,5 +785,4 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
                         + "."
         );
     }
-
 }
