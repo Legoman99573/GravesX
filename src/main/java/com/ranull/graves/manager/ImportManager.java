@@ -33,7 +33,7 @@ public final class ImportManager {
     private final Graves plugin;
 
     /**
-     * Filename pattern: <player>_<world>_<x>_<y>_<z>.yml (supports negative coords).
+     * Filename pattern: player_world_x_y_z.yml (supports negative coords).
      */
     private static final Pattern FILENAME_PATTERN = Pattern.compile(
             "^(.+?)_(.+?)_(-?\\d+)_(-?\\d+)_(-?\\d+)\\.ya?ml$", Pattern.CASE_INSENSITIVE);
