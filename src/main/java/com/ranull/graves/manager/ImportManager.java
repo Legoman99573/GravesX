@@ -27,12 +27,57 @@ import java.util.regex.Pattern;
  */
 public final class ImportManager {
 
-    /** Main plugin instance. */
+    /**
+     * Main plugin instance.
+     */
     private final Graves plugin;
 
-    /** Filename pattern: &lt;player&gt;_&lt;world&gt;_&lt;x&gt;_&lt;y&gt;_&lt;z&gt;.yml (supports negative coords). */
+    /**
+     * Filename pattern: <player>_<world>_<x>_<y>_<z>.yml (supports negative coords).
+     */
     private static final Pattern FILENAME_PATTERN = Pattern.compile(
             "^(.+?)_(.+?)_(-?\\d+)_(-?\\d+)_(-?\\d+)\\.ya?ml$", Pattern.CASE_INSENSITIVE);
+
+    /**
+     * Counts AngelChest graves that will import successfully
+     *
+     * @return the number of graves that can be imported from AngelChest
+     */
+    public long countAngelChestImportableOnly() {
+        File[] files = listAngelChestFiles();
+        if (files == null || files.length == 0) return 0;
+
+        long ok = 0;
+        for (File f : files) {
+            FileConfiguration ac = loadFile(f);
+            if (ac == null) continue;
+
+            World world = resolveWorldForScan(ac, f.getName());
+            if (world == null) continue;
+
+            Integer x = ac.isInt("x") ? ac.getInt("x") : null;
+            Integer y = ac.isInt("y") ? ac.getInt("y") : null;
+            Integer z = ac.isInt("z") ? ac.getInt("z") : null;
+
+            if (x == null && ac.isInt("customblock.location.x")) x = ac.getInt("customblock.location.x");
+            if (y == null && ac.isInt("customblock.location.y")) y = ac.getInt("customblock.location.y");
+            if (z == null && ac.isInt("customblock.location.z")) z = ac.getInt("customblock.location.z");
+
+            if (x == null || y == null || z == null) {
+                int[] coords = parseCoordsFromFilename(f.getName());
+                if (coords != null) {
+                    if (x == null) x = coords[0];
+                    if (y == null) y = coords[1];
+                    if (z == null) z = coords[2];
+                }
+            }
+
+            if (x == null || y == null || z == null) continue;
+
+            ok++;
+        }
+        return ok;
+    }
 
     /**
      * Creates a new importer bound to the given plugin instance.
@@ -51,6 +96,116 @@ public final class ImportManager {
     public List<Grave> importExternalPluginAngelChest() {
         return new ArrayList<>(importAngelChest());
     }
+
+    /**
+     * Dry-run scan (text): counts total/importable/missing-world/invalid-YAML AngelChest files.
+     * Does NOT create graves or inventories.
+     *
+     * @return multiline human-readable summary
+     */
+    public String countAngelChestStatusText() {
+        File[] files = listAngelChestFiles();
+        if (files == null || files.length == 0) {
+            return "No files found in plugins/AngelChest/angelchests. Returning as none.";
+        }
+
+        int total = files.length;
+        int valid = 0;
+        int importable = 0;
+        int missingWorld = 0;
+        int invalid = 0;
+
+        for (File f : files) {
+            FileConfiguration ac = loadFile(f);
+            if (ac == null) { invalid++; continue; }
+            valid++;
+
+            World world = resolveWorldForScan(ac, f.getName());
+            if (world != null) importable++; else missingWorld++;
+        }
+
+        StringBuilder sb = new StringBuilder(256);
+        sb.append("AngelChest Import Scan\n");
+        sb.append("  Total files: ").append(total).append('\n');
+        sb.append("  Valid YAML: ").append(valid).append('\n');
+        sb.append("  Importable: ").append(importable).append('\n');
+        sb.append("  Missing world: ").append(missingWorld).append('\n');
+        sb.append("  Invalid YAML: ").append(invalid);
+        return sb.toString();
+    }
+
+    /**
+     * Dry-run scan (text): list files whose world cannot be resolved on this server,
+     * including helpful hints (UUIDs/names/coords) to aid manual fixes or world restores.
+     *
+     * @return multiline human-readable list of missing-world entries
+     */
+    public String listAngelChestMissingWorldText() {
+        File[] files = listAngelChestFiles();
+        if (files == null || files.length == 0) {
+            return "No files found in plugins/AngelChest/angelchests. Returning as none.";
+        }
+
+        StringBuilder sb = new StringBuilder(512);
+        int rows = 0;
+
+        for (File f : files) {
+            FileConfiguration ac = loadFile(f);
+            if (ac == null) continue;
+
+            World resolved = resolveWorldForScan(ac, f.getName());
+            if (resolved != null) continue; // only list unresolved worlds
+
+            String ownerName = parseOwnerFromFilename(f.getName());
+            if (ownerName == null || ownerName.isEmpty()) {
+                String logfile = ac.getString("logfile", "");
+                String[] split = logfile != null ? logfile.split("_") : new String[0];
+                if (split.length > 0 && split[0] != null && !split[0].isEmpty()) ownerName = split[0];
+            }
+            UUID ownerUUID = UUIDUtil.getUUID(ac.getString("owner", null));
+
+            UUID worldUUID1 = UUIDUtil.getUUID(ac.getString("worldid", null));
+            UUID worldUUID2 = UUIDUtil.getUUID(ac.getString("customblock.location.worldid", null));
+            String worldFromFile = parseWorldFromFilename(f.getName());
+            String worldFromLogfile = null;
+            String logfile = ac.getString("logfile", "");
+            String[] split = logfile != null ? logfile.split("_") : new String[0];
+            if (split.length > 1) worldFromLogfile = split[1];
+
+            Integer x = ac.isInt("x") ? ac.getInt("x") : null;
+            Integer y = ac.isInt("y") ? ac.getInt("y") : null;
+            Integer z = ac.isInt("z") ? ac.getInt("z") : null;
+            if (x == null && ac.isInt("customblock.location.x")) x = ac.getInt("customblock.location.x");
+            if (y == null && ac.isInt("customblock.location.y")) y = ac.getInt("customblock.location.y");
+            if (z == null && ac.isInt("customblock.location.z")) z = ac.getInt("customblock.location.z");
+            if (x == null || y == null || z == null) {
+                int[] coords = parseCoordsFromFilename(f.getName());
+                if (coords != null) { if (x == null) x = coords[0]; if (y == null) y = coords[1]; if (z == null) z = coords[2]; }
+            }
+
+            if (rows == 0) {
+                sb.append("AngelChest Missing-World Report\n");
+                sb.append("  (These graves cannot import until the referenced world exists)\n");
+            }
+            rows++;
+
+            sb.append("• File: ").append(f.getName()).append('\n');
+            sb.append("    Owner: ").append(nullOr(ownerName))
+                    .append("  UUID: ").append(nullOr(ownerUUID)).append('\n');
+            sb.append("    World UUIDs: primary=").append(nullOr(worldUUID1))
+                    .append(" secondary=").append(nullOr(worldUUID2)).append('\n');
+            sb.append("    World names: file=").append(nullOr(worldFromFile))
+                    .append(" logfile=").append(nullOr(worldFromLogfile)).append('\n');
+            sb.append("    Coords: ").append(nullOr(x)).append(',').append(nullOr(y)).append(',').append(nullOr(z)).append('\n');
+        }
+
+        if (rows == 0) {
+            return "AngelChest Missing-World Report\n  None — all referenced worlds are present.";
+        }
+        return sb.toString();
+    }
+
+    private static String nullOr(Object o) { return o == null ? "-" : String.valueOf(o); }
 
     /**
      * Scans the AngelChest data directory and converts each file into a {@link Grave}.
@@ -114,24 +269,7 @@ public final class ImportManager {
             }
         }
 
-        World world = null;
-        UUID worldUUID = UUIDUtil.getUUID(ac.getString("worldid", null));
-        if (worldUUID != null) world = plugin.getServer().getWorld(worldUUID);
-
-        if (world == null) {
-            UUID worldUUID2 = UUIDUtil.getUUID(ac.getString("customblock.location.worldid", null));
-            if (worldUUID2 != null) world = plugin.getServer().getWorld(worldUUID2);
-        }
-        if (world == null) {
-            String worldName = parseWorldFromFilename(file.getName());
-            if (worldName != null) world = plugin.getServer().getWorld(worldName);
-        }
-        if (world == null) {
-            String logfile = ac.getString("logfile", "");
-            String[] split = logfile != null ? logfile.split("_") : new String[0];
-            if (split.length > 1) world = plugin.getServer().getWorld(split[1]);
-        }
-
+        World world = resolveWorldForScan(ac, file.getName()); // reuse logic
         Integer x = ac.isInt("x") ? ac.getInt("x") : null;
         Integer y = ac.isInt("y") ? ac.getInt("y") : null;
         Integer z = ac.isInt("z") ? ac.getInt("z") : null;
@@ -153,15 +291,21 @@ public final class ImportManager {
             grave.setLocationDeath(new Location(world, x, y, z));
         }
 
-        grave.setTimeCreation(System.currentTimeMillis());
+        grave.setTimeCreation(ac.getLong("created", System.currentTimeMillis()));
         if (ac.getBoolean("infinite", false)) {
-            grave.setTimeAlive(-1L);
+            grave.setTimeAlive(-1);
         } else {
-            long timeAliveMs = plugin.getConfig("grave.time", grave).getInt("grave.time", 0) * 1000L;
-            grave.setTimeAlive(timeAliveMs);
+            grave.setTimeAlive(resolveTimeAliveMillis(ac, grave));
+            grave.setTimeAliveRemaining(resolveTimeAliveMillis(ac, grave));
         }
 
         grave.setProtection(ac.getBoolean("isProtected", false));
+        long protectionTimeRemaining = ac.getLong("unlockIn", 0);
+        if (protectionTimeRemaining == -1) {
+            grave.setTimeProtection(-1);
+        } else {
+            grave.setTimeProtection(resolveProtectionMillis(ac, grave));
+        }
         grave.setExperience(ac.getInt("experience", 0));
 
         if (ac.isConfigurationSection("deathCause")) {
@@ -229,11 +373,6 @@ public final class ImportManager {
 
     /**
      * Reads an item list at the given path, skipping nulls and deserializing map entries.
-     *
-     * @param cfg the configuration to read from
-     * @param path the YAML path to read
-     * @param reverseIfList whether to reverse order when the list already contains {@link ItemStack}s
-     * @return a list of {@link ItemStack}s (possibly empty)
      */
     private List<ItemStack> readItemList(FileConfiguration cfg, String path, boolean reverseIfList) {
         if (cfg == null || path == null || !cfg.contains(path)) return Collections.emptyList();
@@ -275,10 +414,33 @@ public final class ImportManager {
     }
 
     /**
+     * Resolve world for scanning/import decisions (tries UUIDs, filename world, logfile world).
+     * Returns null if the world is not present on this server.
+     */
+    private World resolveWorldForScan(FileConfiguration ac, String fileName) {
+        World world = null;
+
+        UUID worldUUID = UUIDUtil.getUUID(ac.getString("worldid", null));
+        if (worldUUID != null) world = plugin.getServer().getWorld(worldUUID);
+
+        if (world == null) {
+            UUID worldUUID2 = UUIDUtil.getUUID(ac.getString("customblock.location.worldid", null));
+            if (worldUUID2 != null) world = plugin.getServer().getWorld(worldUUID2);
+        }
+        if (world == null) {
+            String worldNameFromFile = parseWorldFromFilename(fileName);
+            if (worldNameFromFile != null) world = plugin.getServer().getWorld(worldNameFromFile);
+        }
+        if (world == null) {
+            String logfile = ac.getString("logfile", "");
+            String[] split = logfile != null ? logfile.split("_") : new String[0];
+            if (split.length > 1) world = plugin.getServer().getWorld(split[1]);
+        }
+        return world;
+    }
+
+    /**
      * Extracts the player name from an AngelChest filename.
-     *
-     * @param name the filename (e.g., {@code Player_world_x_y_z.yml})
-     * @return the player name, or {@code null} if not matched
      */
     private String parseOwnerFromFilename(String name) {
         Matcher m = FILENAME_PATTERN.matcher(name);
@@ -288,9 +450,6 @@ public final class ImportManager {
 
     /**
      * Extracts the world name from an AngelChest filename.
-     *
-     * @param name the filename (e.g., {@code Player_world_x_y_z.yml})
-     * @return the world name, or {@code null} if not matched
      */
     private String parseWorldFromFilename(String name) {
         Matcher m = FILENAME_PATTERN.matcher(name);
@@ -301,8 +460,7 @@ public final class ImportManager {
     /**
      * Extracts integer coordinates from an AngelChest filename.
      *
-     * @param name the filename (e.g., {@code Player_world_x_y_z.yml})
-     * @return an array {@code [x, y, z]}, or {@code null} if not matched
+     * @return [x,y,z] or null if not matched
      */
     private int[] parseCoordsFromFilename(String name) {
         Matcher m = FILENAME_PATTERN.matcher(name);
@@ -315,5 +473,38 @@ public final class ImportManager {
         } catch (Exception ignored) {
             return null;
         }
+    }
+
+    private File[] listAngelChestFiles() {
+        File base = new File(plugin.getPluginsFolder(), "AngelChest");
+        if (!base.exists()) return null;
+        File dir = new File(base, "angelchests");
+        if (!dir.exists()) return null;
+        return dir.listFiles((d, name) -> {
+            String lower = name.toLowerCase(Locale.ROOT);
+            return (lower.endsWith(".yml") || lower.endsWith(".yaml")) && !name.startsWith(".");
+        });
+    }
+
+    private long resolveTimeAliveMillis(FileConfiguration ac, Grave grave) {
+        if (ac.getBoolean("infinite", false)) {
+            return -1L;
+        }
+
+        long secondsLeft = ac.getLong("secondsLeft", -1L);
+        if (secondsLeft >= 0L) {
+            return secondsLeft * 1000L;
+        }
+
+        return plugin.getConfig("grave.time", grave).getInt("grave.time", 0) * 1000L;
+    }
+
+    private long resolveProtectionMillis(FileConfiguration ac, Grave grave) {
+        long secondsLeft = ac.getLong("unlockIn", -1L);
+        if (secondsLeft >= 0L) {
+            return secondsLeft * 1000L;
+        }
+
+        return plugin.getConfig("grave.time", grave).getInt("grave.time", 0) * 1000L;
     }
 }

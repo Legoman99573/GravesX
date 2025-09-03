@@ -17,10 +17,7 @@ import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -29,6 +26,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public final class GravesCommand implements CommandExecutor, TabCompleter {
     private final Graves plugin;
+    private final Set<UUID> pendingImports = new HashSet<>();
+    private boolean consolePendingImport = false;
 
     /**
      * Constructor to initialize the GravesCommand with the Graves plugin.
@@ -752,37 +751,74 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
     }
 
     private void handleImportCommand(CommandSender commandSender, String[] args) {
-        if (args == null || args.length == 0 || !args[1].equalsIgnoreCase("AngelChest") || !args[1].equalsIgnoreCase("angelchest")) {
+        if (args == null || args.length == 0) {
             commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
                     + "Usage: /graves import {plugin}");
             return;
         }
 
+        String sub = args[1].toLowerCase(Locale.ROOT);
+
         boolean isConsole = !(commandSender instanceof Player);
+        Player player = isConsole ? null : (Player) commandSender;
+
         if (!isConsole) {
-            Player player = (Player) commandSender;
             if (!plugin.hasGrantedPermission("graves.import", player)) {
                 plugin.getEntityManager().sendMessage("message.permission-denied", player);
                 return;
             }
         }
 
-        List<Grave> graveList = plugin.getImportManager().importExternalPluginAngelChest();
-
-        int placed = 0;
-        for (Grave grave : graveList) {
-            plugin.getDataManager().addGrave(grave);
-            if (grave.getLocationDeath() != null) {
-                plugin.getGraveManager().placeGrave(grave.getLocationDeath(), grave);
-                placed++;
+        if (sub.equals("angelchest")) {
+            if (isConsole) {
+                consolePendingImport = true;
+            } else {
+                pendingImports.add(player.getUniqueId());
             }
+
+            plugin.debugMessage(plugin.getImportManager().countAngelChestStatusText(), 1);
+            plugin.debugMessage(plugin.getImportManager().listAngelChestMissingWorldText(), 2);
+
+            commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET +
+                    "This will import " + plugin.getImportManager().countAngelChestImportableOnly() + " graves from AngelChest. This may create many graves and cannot be undone.\n" +
+                    "You bear in mind that hex color codes may not convert over." +
+                    ChatColor.YELLOW + "Type /graves import confirm to proceed.");
+            return;
         }
 
-        commandSender.sendMessage(
-                ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET +
-                        "Imported " + graveList.size() + " graves from AngelChest"
-                        + (placed != graveList.size() ? (" (" + placed + " placed, " + (graveList.size() - placed) + " skipped due to missing location)") : "")
-                        + "."
-        );
+        if (sub.equals("confirm")) {
+            boolean allowed = isConsole ? consolePendingImport :
+                    pendingImports.remove(player.getUniqueId());
+
+            if (!allowed) {
+                commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET +
+                        "No pending import request. Run /graves import {plugin} first.");
+                return;
+            }
+
+            if (isConsole) consolePendingImport = false;
+
+            List<Grave> graveList = plugin.getImportManager().importExternalPluginAngelChest();
+
+            int placed = 0;
+            for (Grave grave : graveList) {
+                plugin.getDataManager().addGrave(grave);
+                if (grave.getLocationDeath() != null) {
+                    plugin.getGraveManager().placeGrave(grave.getLocationDeath(), grave);
+                    placed++;
+                }
+            }
+
+            commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET +
+                    "Imported " + graveList.size() + " graves from AngelChest"
+                    + (placed != graveList.size()
+                    ? (" (" + placed + " placed, " + (graveList.size() - placed) + " skipped due to missing location)")
+                    : "")
+                    + ".");
+            return;
+        }
+
+        commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
+                + "Usage: /graves import {plugin}");
     }
 }
