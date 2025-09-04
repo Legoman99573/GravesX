@@ -29,12 +29,12 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String label, String[] args) {
         if (sender instanceof Player && !plugin.hasGrantedPermission("graves.command.modules", ((Player) sender).getPlayer())) {
-            sender.sendMessage(ChatColor.RED + "☠" + ChatColor.RESET + "You don't have permission.");
+            sender.sendMessage(ChatColor.RED + "☠ " + ChatColor.RESET + "You don't have permission.");
             return true;
         }
 
         if (args.length == 0 || "help".equalsIgnoreCase(args[0])) {
-            sender.sendMessage(ChatColor.RED + "☠" + ChatColor.GOLD + "GravesX Modules:");
+            sender.sendMessage(ChatColor.RED + "☠ " + ChatColor.GOLD + "GravesX Modules:");
             sender.sendMessage(ChatColor.YELLOW + "/" + label + " list" + ChatColor.GRAY + " - show modules + state");
             sender.sendMessage(ChatColor.YELLOW + "/" + label + " info <name>" + ChatColor.GRAY + " - details");
             sender.sendMessage(ChatColor.YELLOW + "/" + label + " reload" + ChatColor.GRAY + " - reloads all modules (Development Use Only)");
@@ -46,7 +46,7 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
         Set<String> pend = manager.pending();
         switch (sub) {
             case "list":
-                sender.sendMessage(ChatColor.RED + "☠" + ChatColor.GOLD + "Modules (" + order.size() + "):");
+                sender.sendMessage(ChatColor.RED + "☠ " + ChatColor.GOLD + "Modules (" + order.size() + "):");
                 for (String name : order) {
                     ModuleManager.LoadedModule lm = manager.get(name).orElse(null);
                     if (lm == null) continue;
@@ -63,14 +63,14 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
                 return true;
             case "info":
                 if (args.length < 2) {
-                    sender.sendMessage(ChatColor.RED + "☠" + ChatColor.RED + "Usage: /" + label + " info <name>");
+                    sender.sendMessage(ChatColor.RED + "☠ " + ChatColor.RED + "Usage: /" + label + " info <name>");
                     return true;
                 }
 
                 String query = args[1];
                 ModuleManager.LoadedModule lm = manager.get(query).orElse(null);
                 if (lm == null) {
-                    sender.sendMessage(ChatColor.RED + "☠" + ChatColor.RED + "Unknown module: " + query);
+                    sender.sendMessage(ChatColor.RED + "☠ " + ChatColor.RED + "Unknown module: " + query);
                     return true;
                 }
 
@@ -114,10 +114,23 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
                 List<String> moduleSoftDependsLines = new ArrayList<>();
                 for (String dep : lm.info.moduleSoftDepends()) moduleSoftDependsLines.add(fmtModuleReq.apply(dep));
 
-                sender.sendMessage(ChatColor.RED + "☠" + ChatColor.GOLD + "Module: " + ChatColor.AQUA + lm.info.name());
+                // Pretty-print authors with per-name color
+                List<String> authorsPretty = new ArrayList<>();
+                for (String a : lm.info.authors()) {
+                    if (a != null && !a.isBlank()) authorsPretty.add(ChatColor.AQUA + a + ChatColor.GRAY);
+                }
+                String authorsLine = authorsPretty.isEmpty() ? "-" : String.join(", ", authorsPretty);
+
+                // Website (optional)
+                String site = lm.info.website();
+                String websiteLine = (site == null || site.isBlank()) ? "-" : ChatColor.BLUE + site;
+
+                sender.sendMessage(ChatColor.RED + "☠ " + ChatColor.GOLD + "Module: " + ChatColor.AQUA + lm.info.name());
                 sender.sendMessage(ChatColor.GRAY + "Version: " + lm.info.version());
                 sender.sendMessage(ChatColor.GRAY + "State: " + state);
                 sender.sendMessage(ChatColor.GRAY + "Data folder: " + lm.context.getDataFolder().getPath());
+                sender.sendMessage(ChatColor.GRAY + "Authors: " + authorsLine);
+                sender.sendMessage(ChatColor.GRAY + "Website: " + websiteLine);
 
                 sender.sendMessage(ChatColor.GRAY + "pluginDepends: " +
                         (pluginDependsLines.isEmpty() ? "-" : String.join(ChatColor.GRAY + ", ", pluginDependsLines)));
@@ -142,7 +155,7 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
                 manager.disableAll();
                 manager.loadAll();
                 manager.enableAll();
-                sender.sendMessage(ChatColor.RED + "☠" + ChatColor.GREEN + "Modules reloaded.");
+                sender.sendMessage(ChatColor.RED + "☠ " + ChatColor.GREEN + "Modules reloaded.");
                 return true;
         }
 

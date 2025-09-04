@@ -138,20 +138,20 @@ public final class ModuleManager {
                 ModuleInfo info;
                 try (InputStream in = jf.getInputStream(entry)) { info = ModuleInfo.fromYaml(in); }
                 if (info.name() == null || info.mainClass() == null) {
-                    warn("Skipping " + jar.getName() + " (missing name/main)");
+                    warn(info, "Skipping " + jar.getName() + " (missing name/main)");
                     continue;
                 }
                 if (loaded.containsKey(info.name())) {
-                    warn("Duplicate module name " + info.name() + "; skipping " + jar.getName());
+                    warn(info, "Duplicate module name " + info.name() + "; skipping " + jar.getName());
                     continue;
                 }
-                info("Loading " + info.name() + " version " + info.version());
+                info(info, "Loading " + info.name() + " version " + info.version());
 
                 URL url = jar.toURI().toURL();
                 ModuleClassLoader cl = new ModuleClassLoader(url, plugin.getClass().getClassLoader());
                 Class<?> main = Class.forName(info.mainClass(), true, cl);
                 if (!GravesXModule.class.isAssignableFrom(main)) {
-                    cl.close(); warn(info.name() + " main does not implement Module"); continue;
+                    cl.close(); warn(info, info.name() + " main does not implement Module"); continue;
                 }
 
                 GravesXModule instance = (GravesXModule) main.getDeclaredConstructor().newInstance();
@@ -246,12 +246,12 @@ public final class ModuleManager {
      * @return True if disabled, false if not found.
      */
     public boolean disable(String name) {
-        info("Disabling Module " + name);
         ModuleManager.LoadedModule lm = loaded.get(name);
         if (lm == null) return false;
+        info(lm.info, "Disabling Module " + name);
 
         try { lm.context._internalPreDisable(); } catch (Throwable ignored) {}
-        try { lm.instance.onModuleDisable(lm.context); } catch (Throwable t) { severe("Error in onModuleDisable for " + name, t); }
+        try { lm.instance.onModuleDisable(lm.context); } catch (Throwable t) { severe(lm.info, "Error in onModuleDisable for " + name, t); }
         try { commandRegistrar.unregisterFor(lm); } catch (Throwable ignored) {}
         try { lm.context._internalCleanup(); } catch (Throwable ignored) {}
         try { lm.cl.close(); } catch (Throwable ignored) {}
@@ -281,7 +281,7 @@ public final class ModuleManager {
     private boolean attemptEnable(LoadedModule lm) {
         List<String> missingPlugins = missingRequiredPlugins(lm.info);
         if (!missingPlugins.isEmpty()) {
-            warn(lm.info.name() + ": required plugin(s) not installed: " + String.join(", ", missingPlugins));
+            warn(lm.info, lm.info.name() + ": required plugin(s) not installed: " + String.join(", ", missingPlugins));
             disable(lm.info.name());
             return false;
         }
@@ -289,7 +289,7 @@ public final class ModuleManager {
         List<String> inactivePlugins = inactiveRequiredPlugins(lm.info);
         if (!inactivePlugins.isEmpty()) {
             pending.add(lm.info.name());
-            info("Pending " + lm.info.name() + " (waiting for required plugins to enable: "
+            info(lm.info, "Pending " + lm.info.name() + " (waiting for required plugins to enable: "
                     + String.join(", ", inactivePlugins) + ")");
             return false;
         }
@@ -302,7 +302,7 @@ public final class ModuleManager {
 
         if (!missingMods.isEmpty()) {
             pending.add(lm.info.name());
-            info("Pending " + lm.info.name() + " (waiting for modules: " + String.join(", ", missingMods) + ")");
+            info(lm.info, "Pending " + lm.info.name() + " (waiting for modules: " + String.join(", ", missingMods) + ")");
             return false;
         }
 
@@ -313,14 +313,14 @@ public final class ModuleManager {
             try {
                 commandRegistrar.registerFor(lm);
             } catch (Throwable t) {
-                severe("Command registration failed for " + lm.info.name(), t);
+                severe(lm.info, "Command registration failed for " + lm.info.name(), t);
                 disable(lm.info.name());
             }
-            info("Enabled Module " + lm.info.name());
+            info(lm.info, "Enabled Module " + lm.info.name());
             tryEnablePending();
             return true;
         } catch (Throwable t) {
-            severe("Failed enabling " + lm.info.name() + ". Disabling Module.", t);
+            severe(lm.info, "Failed enabling " + lm.info.name() + ". Disabling Module.", t);
             disable(lm.info.name());
             return false;
         }
@@ -364,11 +364,26 @@ public final class ModuleManager {
     private void info(String m) { plugin.getLogger().info("[Modules] " + m); }
 
     /**
+     * Logs an info-level message with the modules name as the prefix.
+     *
+     * @param m Message to log.
+     */
+    private void info(ModuleInfo mi, String m) { plugin.getLogger().info("[" + mi.name() + "] " + m); }
+
+
+    /**
      * Logs a warning-level message with a modules prefix.
      *
      * @param m Message to log.
      */
     private void warn(String m) { plugin.getLogger().warning("[Modules] " + m); }
+
+    /**
+     * Logs a warning-level message with the modules name as the prefix.
+     *
+     * @param m Message to log.
+     */
+    private void warn(ModuleInfo mi, String m) { plugin.getLogger().warning("[" + mi.name() + "] " + m); }
 
     /**
      * Logs a severe-level message with a modules prefix and a throwable.
@@ -377,4 +392,13 @@ public final class ModuleManager {
      * @param t Throwable to include.
      */
     private void severe(String m, Throwable t) { plugin.getLogger().log(Level.SEVERE, "[Modules] " + m, t); }
+
+    /**
+     * Logs a severe-level message with the modules name as the prefix and a throwable.
+     *
+     * @param m Message to log.
+     * @param t Throwable to include.
+     */
+    private void severe(ModuleInfo mi, String m, Throwable t) { plugin.getLogger().log(Level.SEVERE, "[" + mi.name() + "] " + m, t); }
+
 }

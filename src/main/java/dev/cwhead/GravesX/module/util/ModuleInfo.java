@@ -12,21 +12,24 @@ import java.util.regex.Pattern;
 
 /**
  * Immutable descriptor of a module parsed from {@code module.yml}.
- * Holds IDs, main class, version, and plugin/module dependency lists.
+ * Holds IDs, main class, version, authors, website, and plugin/module dependency lists.
  */
 public final class ModuleInfo {
-    private final String name, mainClass, version;
+    private final String name, mainClass, version, website;
+    private final List<String> authors;
     private final List<String> pluginDepends, pluginSoftDepends, pluginLoadBefore;
     private final List<String> moduleDepends, moduleSoftDepends, moduleLoadBefore;
 
     private ModuleInfo(
-            String name, String mainClass, String version,
+            String name, String mainClass, String version, String website, List<String> authors,
             List<String> pDep, List<String> pSoft, List<String> pBefore,
             List<String> mDep, List<String> mSoft, List<String> mBefore
     ) {
         this.name = name;
         this.mainClass = mainClass;
         this.version = (version == null || version.isBlank()) ? "0.0.0" : version;
+        this.website = nv(website);
+        this.authors = List.copyOf(authors == null ? List.of() : authors);
         this.pluginDepends = List.copyOf(pDep);
         this.pluginSoftDepends = List.copyOf(pSoft);
         this.pluginLoadBefore = List.copyOf(pBefore);
@@ -55,6 +58,20 @@ public final class ModuleInfo {
      * @return Version string (defaults to {@code "0.0.0"} if missing).
      */
     public String version() { return version; }
+
+    /**
+     * Gets the website URL for this module.
+     *
+     * @return Website URL or {@code null} if not provided.
+     */
+    public String website() { return website; }
+
+    /**
+     * Gets the authors of this module.
+     *
+     * @return Unmodifiable list of author names (may be empty).
+     */
+    public List<String> authors() { return authors; }
 
     /**
      * Gets required Bukkit plugin dependencies.
@@ -100,10 +117,12 @@ public final class ModuleInfo {
 
     /**
      * Parses a minimal YAML-like stream into a {@link ModuleInfo}.
-     * Supports keys: {@code name}, {@code main}, {@code version},
+     * Supports keys: {@code name}, {@code main}, {@code version}, {@code website},
+     * {@code author} (single) or {@code authors} (list),
      * {@code pluginDepends}, {@code pluginSoftDepends}, {@code pluginLoadBefore},
      * {@code moduleDepends}, {@code moduleSoftDepends}, {@code moduleLoadBefore}.
-     * Lists may be comma-separated or {@code - item} lines; comments (#) and blanks are ignored.
+     * <p>List values may be comma-separated on the same line or via {@code - item} lines.
+     * Comments (#) and blank lines are ignored.</p>
      *
      * @param in Input stream of {@code module.yml}. Must not be {@code null}.
      * @return Parsed module info.
@@ -117,6 +136,7 @@ public final class ModuleInfo {
         Pattern keyLine = Pattern.compile("^[A-Za-z][A-Za-z0-9_-]*\\s*:");
 
         Set<String> listKeys = new HashSet<String>();
+        listKeys.add("authors");
         listKeys.add("plugindepends");
         listKeys.add("pluginsoftdepends");
         listKeys.add("pluginloadbefore");
@@ -172,9 +192,21 @@ public final class ModuleInfo {
         String name  = nv(scalars.get("name"));
         String main  = nv(scalars.get("main"));
         String ver   = scalars.getOrDefault("version", "0.0.0");
+        String site  = nv(scalars.get("website"));
+
+        List<String> authors = new ArrayList<>(lists.getOrDefault("authors", List.of()));
+        String singleAuthor = nv(scalars.get("author"));
+        if (singleAuthor != null && !singleAuthor.isEmpty()) {
+            authors.add(singleAuthor);
+        }
+        List<String> cleanAuthors = new ArrayList<>();
+        for (String a : authors) {
+            String t = a == null ? null : a.trim();
+            if (t != null && !t.isEmpty()) cleanAuthors.add(t);
+        }
 
         return new ModuleInfo(
-                name, main, ver,
+                name, main, ver, site, cleanAuthors,
                 lists.getOrDefault("plugindepends", List.of()),
                 lists.getOrDefault("pluginsoftdepends", List.of()),
                 lists.getOrDefault("pluginloadbefore", List.of()),
