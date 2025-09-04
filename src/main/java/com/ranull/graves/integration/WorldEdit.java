@@ -94,6 +94,7 @@ public final class WorldEdit {
                             stringClipboardMap.put(name, clipboardReader.read());
                             plugin.debugMessage("Loading schematic " + name, 1);
                         } catch (IOException exception) {
+                            plugin.warningMessage("Failed to load schematic " + name);
                             plugin.logStackTrace(exception);
                         }
                     } else {
@@ -283,7 +284,7 @@ public final class WorldEdit {
 
                     return clipboardHolder.getClipboard();
                 } catch (InterruptedException | WorldEditException exception) {
-                    plugin.getLogger().severe("Error pasting schematic: " + exception.getMessage());
+                    plugin.getLogger().severe("Error pasting schematic " + name);
                     plugin.logStackTrace(exception);
                 }
             } else {
@@ -367,7 +368,7 @@ public final class WorldEdit {
 
             return clipboardHolder.getClipboard();
         } catch (WorldEditException e) {
-            plugin.getLogger().severe("Error setting up Clipboard: " + e.getMessage());
+            plugin.getLogger().severe("Error setting up Clipboard");
             plugin.logStackTrace(e);
         }
 
@@ -416,6 +417,7 @@ public final class WorldEdit {
         try {
             Operations.complete(pasteBuilder.build());
         } catch (WorldEditException exception) {
+            plugin.getLogger().severe("Failed to paste " + pasteBuilder);
             plugin.logStackTrace(exception);
         }
     }

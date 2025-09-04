@@ -136,7 +136,7 @@ public class ExplosionPrimeListener implements Listener {
         if (plugin.getConfig("drop.looted-explosion-effect", grave).getBoolean("drop.looted-explosion-effect", false)) {
             try {
                 Location location = grave.getLocationDeath();
-                Objects.requireNonNull(location.getWorld()).spawnParticle(CompatibilityParticleEnum.valueOf("EXPLOSION"), location, 1);
+                Objects.requireNonNull(location.getWorld()).spawnParticle(plugin.getVersionManager().getParticleForVersion("EXPLOSION"), location, 1);
                 try {
                     location.getWorld().playSound(location, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("ENTITY_GENERIC_EXPLODE")), 1.0f, 1.0f);
                 } catch (Exception e) {

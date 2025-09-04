@@ -1,6 +1,7 @@
 package com.ranull.graves.util;
 
 import com.ranull.graves.Graves;
+import dev.cwhead.GravesX.module.ModuleManager;
 import org.bukkit.Bukkit;
 import org.bukkit.GameRule;
 import org.bukkit.World;
@@ -242,6 +243,27 @@ public final class ServerUtil {
             stringList.add(plugin.getDescription().getName() + " Permissions Provider: Bukkit");
         }
         stringList.add(plugin.getDescription().getName() + " Plugin Release: " + plugin.getPluginReleaseType());
+        try {
+            ModuleManager mm = plugin.getModuleManager();
+            if (mm != null) {
+                List<String> enabledMods = new ArrayList<>();
+                List<String> disabledMods = new ArrayList<>();
+                for (ModuleManager.LoadedModule lm : mm.modules()) {
+                    String n = lm.info.name() + " v" + lm.info.version();
+                    if (lm.enabled) {
+                        enabledMods.add(n);
+                    } else {
+                        disabledMods.add(n);
+                    }
+                }
+                stringList.add(plugin.getDescription().getName() + " Modules Enabled: " + (enabledMods.isEmpty() ? "None" : String.join(", ", enabledMods)));
+                stringList.add(plugin.getDescription().getName() + " Modules Disabled: " + (disabledMods.isEmpty() ? "None" : String.join(", ", disabledMods)));
+            } else {
+                stringList.add(plugin.getDescription().getName() + " Modules: Not available");
+            }
+        } catch (Throwable t) {
+            stringList.add(plugin.getDescription().getName() + " Modules: Not available");
+        }
         stringList.add(plugin.getDescription().getName() + " Config Version: " + plugin.getConfig().getInt("config-version"));
 
         File configDir = new File("plugins/GravesX/config");

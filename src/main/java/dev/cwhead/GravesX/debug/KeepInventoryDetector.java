@@ -32,7 +32,7 @@ public final class KeepInventoryDetector {
             wrapAllExcept(plugin);
         } catch (Throwable t) {
             installed = false;
-            plugin.getLogger().warning("[KeepInventoryDetector] Install failed: " + t.getClass().getSimpleName() + ": " + t.getMessage());
+            plugin.getLogger().warning("[KeepInventoryDetector] Install failed: " + t.getClass().getSimpleName());
             try { plugin.logStackTrace(t instanceof Exception ? (Exception) t : new Exception(t)); } catch (Throwable ignored) {}
         }
     }

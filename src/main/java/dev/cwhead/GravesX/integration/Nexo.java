@@ -79,6 +79,7 @@ public class Nexo extends EntityDataManager {
                         new File(graveModelDir, "grave.json")
                 );
             } catch (Exception e) {
+                plugin.getLogger().severe("Failed to save " + nexoPlugin.getName() + " data.");
                 plugin.logStackTrace(e);
             }
 

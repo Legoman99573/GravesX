@@ -173,7 +173,7 @@ public class ProjectileHitListener implements Listener {
 
         try {
             Location loc = grave.getLocationDeath();
-            Objects.requireNonNull(loc.getWorld()).spawnParticle(CompatibilityParticleEnum.valueOf("EXPLOSION"), loc, 1);
+            Objects.requireNonNull(loc.getWorld()).spawnParticle(plugin.getVersionManager().getParticleForVersion("EXPLOSION"), loc, 1);
             try {
                 loc.getWorld().playSound(loc, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("ENTITY_GENERIC_EXPLODE")), 1.0f, 1.0f);
             } catch (Exception e) {

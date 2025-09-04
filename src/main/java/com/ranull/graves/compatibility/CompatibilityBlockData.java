@@ -308,7 +308,7 @@ public final class CompatibilityBlockData implements Compatibility {
                 }
             }
         } catch (Exception exception) {
-            Bukkit.getLogger().severe("Failed to extract Skull Texture. Cause: " + exception.getCause());
+            Bukkit.getLogger().severe("Failed to extract Skull Texture. Cause: ");
             exception.printStackTrace();
         }
 

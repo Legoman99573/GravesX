@@ -31,7 +31,7 @@ public class CompatibilitySoundEnum {
             Bukkit.getServer().getLogger().severe(soundName + " does not exist in sound enum.");
             e.printStackTrace();
         } catch (Exception e) {
-            Bukkit.getServer().getLogger().severe("An issue occurred while retrieving sound enum " + soundName + ". Cause: " + e.getMessage());
+            Bukkit.getServer().getLogger().severe("An issue occurred while retrieving sound enum " + soundName + ".");
             e.printStackTrace();
         }
 

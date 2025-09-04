@@ -62,6 +62,20 @@ commands:
       - dc
       - d
 
+  gravesmodule:
+    description: Graves Module command
+    default: true
+    usage: /gravesmodule
+    aliases:
+      - gravemodule
+      - gmodule
+      - gravemod
+      - gm
+      - gravesxmodule
+      - gravesxmod
+      - gxmod
+      - gxm
+
 permissions:
   graves.place:
     default: true
@@ -178,3 +192,7 @@ permissions:
   graves.deduct-bypass:
     default: op
     description: Bypasses on death money deduction.
+
+  graves.command.modules:
+    description: Access to GravesX module management commands
+    default: op

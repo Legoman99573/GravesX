@@ -197,7 +197,7 @@ public final class CitizensNPC extends EntityDataManager {
                     createEntityData(location, uuid, grave.getUUID(), EntityData.Type.CITIZENSNPC);
                 }
             } catch (ReflectiveOperationException e) {
-                plugin.getLogger().severe("Error spawning Citizens NPC: " + e.getMessage());
+                plugin.getLogger().severe("Error spawning Citizens NPC");
                 plugin.logStackTrace(e);
             }
         });

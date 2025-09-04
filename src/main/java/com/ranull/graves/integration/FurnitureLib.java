@@ -125,7 +125,8 @@ public final class FurnitureLib extends EntityDataManager {
                             EntityData.Type.FURNITURELIB);
                 } catch (IllegalArgumentException IAE) {
                     if (!IAE.getMessage().contains("SADDLE")) {
-                        plugin.getLogger().warning("Failed to create furniture because: " + IAE.getCause());
+                        plugin.getLogger().warning("Failed to create furniture " + name + ".");
+                        plugin.logStackTrace(IAE);
                     }
                 }
             } else {

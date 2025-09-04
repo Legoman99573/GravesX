@@ -363,8 +363,7 @@ public final class GraveCreationAPI {
             plugin.debugMessage("Creating grave " + grave.getUUID() + " for entity " + victim + " via GravesX API", 1);
 
         } catch (Exception e) {
-            plugin.getLogger().severe("An error occurred while creating grave " + grave.getUUID() + " for entity " + victim + ". Cause: " + e.getCause());
-            plugin.getLogger().severe("Exception Message: " + e.getMessage());
+            plugin.getLogger().severe("An error occurred while creating grave " + grave.getUUID() + " for entity " + victim + ".");
             plugin.logStackTrace(e);
         }
     }

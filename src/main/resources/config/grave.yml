@@ -284,6 +284,9 @@ settings:
         ##############
         # Color Tint #
         ##############
+        # Works with tinted leaves
+        # Legacy Colors: https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Color.html
+        # To use hex colors, just set to #rrggbb. This only works on 1.16 or newer where hex colors are supported.
         color: "WHITE"
 
         ########

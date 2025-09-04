@@ -130,7 +130,7 @@ public class PlayerInteractListener implements Listener {
                     plugin.getGraveManager().openGrave(player, block.getLocation(), finalGrave);
                 }, 1L);
             } catch (Exception e) {
-                plugin.getLogger().severe("Failed to open grave: " + e.getMessage());
+                plugin.getLogger().severe("Failed to open grave at x:" + block.getLocation().getBlockX() + " y:" + block.getLocation().getBlockY() + " z:" + block.getLocation().getBlockZ());
                 plugin.logStackTrace(e);
             }
         }
@@ -216,7 +216,7 @@ public class PlayerInteractListener implements Listener {
                     plugin.getParticleManager().startCompassParticleTrail(
                             player.getLocation(),
                             grave.getLocationDeath(),
-                            CompatibilityParticleEnum.valueOf(Objects.requireNonNull(
+                            plugin.getVersionManager().getParticleForVersion(Objects.requireNonNull(
                                             plugin.getConfig("compass.particles.particle", grave)
                                                     .getString("compass.particles.particle"))
                                     .toUpperCase()),

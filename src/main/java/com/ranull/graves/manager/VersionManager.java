@@ -537,20 +537,435 @@ public final class VersionManager {
      * @return The Particle enum corresponding to the given particle name.
      */
     public Particle getParticleForVersion(String particle) {
-        Particle toReturn = null;
+        Particle toReturn;
         switch (particle) {
             case "REDSTONE":
+            case "REDDUST":
                 try {
                     toReturn = CompatibilityParticleEnum.valueOf("REDSTONE");
-                    if (toReturn == null) {
-                        toReturn = CompatibilityParticleEnum.valueOf("DUST"); // Assume server is running on 1.20.5 or newer
-                    }
-                } catch (NullPointerException | IllegalArgumentException e) {
-                    toReturn = CompatibilityParticleEnum.valueOf("DUST"); // Assume server is running on 1.20.5 or newer
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("DUST");
+                }
+                break;
+            case "DUST":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("DUST");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("REDSTONE");
+                }
+                break;
+            case "ENCHANTMENT_TABLE":
+            case "ENCHANTMENTTABLE":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("ENCHANTMENT_TABLE");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("ENCHANT");
+                }
+                break;
+            case "ENCHANT":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("ENCHANT");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("ENCHANTMENT_TABLE");
+                }
+                break;
+            case "EXPLOSION_NORMAL":
+            case "EXPLODE":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("EXPLOSION_NORMAL");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("POOF");
+                }
+                break;
+            case "POOF":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("POOF");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("EXPLOSION_NORMAL");
+                }
+                break;
+            case "EXPLOSION_LARGE":
+            case "LARGE_EXPLOSION":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("EXPLOSION_LARGE");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("EXPLOSION");
+                }
+                break;
+            case "EXPLOSION":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("EXPLOSION");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("EXPLOSION_LARGE");
+                }
+                break;
+            case "EXPLOSION_HUGE":
+            case "HUGE_EXPLOSION":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("EXPLOSION_HUGE");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("EXPLOSION_EMITTER");
+                }
+                break;
+            case "EXPLOSION_EMITTER":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("EXPLOSION_EMITTER");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("EXPLOSION_HUGE");
+                }
+                break;
+            case "SMOKE_NORMAL":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("SMOKE_NORMAL");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("SMOKE");
+                }
+                break;
+            case "SMOKE":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("SMOKE");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("SMOKE_NORMAL");
+                }
+                break;
+            case "SMOKE_LARGE":
+            case "LARGESMOKE":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("SMOKE_LARGE");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("LARGE_SMOKE");
+                }
+                break;
+            case "LARGE_SMOKE":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("LARGE_SMOKE");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("SMOKE_LARGE");
+                }
+                break;
+            case "WATER_BUBBLE":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("WATER_BUBBLE");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("BUBBLE");
+                }
+                break;
+            case "BUBBLE":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("BUBBLE");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("WATER_BUBBLE");
+                }
+                break;
+            case "WATER_SPLASH":
+            case "SPLASH":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("WATER_SPLASH");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("SPLASH");
+                }
+                break;
+            case "WATER_WAKE":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("WATER_WAKE");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("FISHING");
+                }
+                break;
+            case "FISHING":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("FISHING");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("WATER_WAKE");
+                }
+                break;
+            case "WATER_DROP":
+            case "DROPLET":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("WATER_DROP");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("RAIN");
+                }
+                break;
+            case "RAIN":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("RAIN");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("WATER_DROP");
+                }
+                break;
+            case "DRIP_WATER":
+            case "DRIPWATER":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("DRIP_WATER");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("DRIPPING_WATER");
+                }
+                break;
+            case "DRIPPING_WATER":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("DRIPPING_WATER");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("DRIP_WATER");
+                }
+                break;
+            case "DRIP_LAVA":
+            case "DRIPLAVA":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("DRIP_LAVA");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("DRIPPING_LAVA");
+                }
+                break;
+            case "DRIPPING_LAVA":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("DRIPPING_LAVA");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("DRIP_LAVA");
+                }
+                break;
+            case "SUSPENDED":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("SUSPENDED");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("UNDERWATER");
+                }
+                break;
+            case "UNDERWATER":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("UNDERWATER");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("SUSPENDED");
+                }
+                break;
+            case "SUSPENDED_DEPTH":
+            case "DEPTHSUSPEND":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("SUSPENDED_DEPTH");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("UNDERWATER");
+                }
+                break;
+            case "TOWN_AURA":
+            case "TOWNAURA":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("TOWN_AURA");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("MYCELIUM");
+                }
+                break;
+            case "MYCELIUM":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("MYCELIUM");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("TOWN_AURA");
+                }
+                break;
+            case "VILLAGER_ANGRY":
+            case "ANGRYVILLAGER":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("VILLAGER_ANGRY");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("ANGRY_VILLAGER");
+                }
+                break;
+            case "ANGRY_VILLAGER":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("ANGRY_VILLAGER");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("VILLAGER_ANGRY");
+                }
+                break;
+            case "VILLAGER_HAPPY":
+            case "HAPPYVILLAGER":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("VILLAGER_HAPPY");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("HAPPY_VILLAGER");
+                }
+                break;
+            case "HAPPY_VILLAGER":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("HAPPY_VILLAGER");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("VILLAGER_HAPPY");
+                }
+                break;
+            case "SPELL":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("SPELL");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("EFFECT");
+                }
+                break;
+            case "EFFECT":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("EFFECT");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("SPELL");
+                }
+                break;
+            case "SPELL_INSTANT":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("SPELL_INSTANT");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("INSTANT_EFFECT");
+                }
+                break;
+            case "INSTANT_EFFECT":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("INSTANT_EFFECT");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("SPELL_INSTANT");
+                }
+                break;
+            case "SPELL_MOB":
+            case "SPELL_MOB_AMBIENT":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("SPELL_MOB");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("ENTITY_EFFECT");
+                }
+                break;
+            case "ENTITY_EFFECT":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("ENTITY_EFFECT");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("SPELL_MOB");
+                }
+                break;
+            case "SPELL_WITCH":
+            case "WITCHMAGIC":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("SPELL_WITCH");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("WITCH");
+                }
+                break;
+            case "WITCH":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("WITCH");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("SPELL_WITCH");
+                }
+                break;
+            case "CRIT_MAGIC":
+            case "MAGICCRIT":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("CRIT_MAGIC");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("ENCHANTED_HIT");
+                }
+                break;
+            case "ENCHANTED_HIT":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("ENCHANTED_HIT");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("CRIT_MAGIC");
+                }
+                break;
+            case "ICONCRACK":
+            case "ITEM_CRACK":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("ITEM_CRACK");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("ITEM");
+                }
+                break;
+            case "ITEM":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("ITEM");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("ITEM_CRACK");
+                }
+                break;
+            case "BLOCK_CRACK":
+            case "BLOCK_DUST":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("BLOCK_CRACK");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("BLOCK");
+                }
+                break;
+            case "BLOCK":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("BLOCK");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("BLOCK_CRACK");
+                }
+                break;
+            case "SNOWBALL":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("SNOWBALL");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("ITEM_SNOWBALL");
+                }
+                break;
+            case "ITEM_SNOWBALL":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("ITEM_SNOWBALL");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("SNOWBALL");
+                }
+                break;
+            case "SLIME":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("SLIME");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("ITEM_SLIME");
+                }
+                break;
+            case "ITEM_SLIME":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("ITEM_SLIME");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("SLIME");
+                }
+                break;
+            case "FIREWORKS_SPARK":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("FIREWORKS_SPARK");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("FIREWORK");
+                }
+                break;
+            case "FIREWORK":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("FIREWORK");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("FIREWORKS_SPARK");
+                }
+                break;
+            case "PORTAL":
+            case "NOTE":
+            case "FLAME":
+            case "HEART":
+            case "DRAGON_BREATH":
+            case "CLOUD":
+            case "CRIT":
+            case "LAVA":
+            case "ASH":
+            case "ELECTRIC_SPARK":
+                toReturn = CompatibilityParticleEnum.valueOf(particle);
+                break;
+            case "BARRIER":
+            case "LIGHT":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf(particle);
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("BLOCK_MARKER");
+                }
+                break;
+            case "BLOCK_MARKER":
+                try {
+                    toReturn = CompatibilityParticleEnum.valueOf("BLOCK_MARKER");
+                } catch (Exception e) {
+                    toReturn = CompatibilityParticleEnum.valueOf("BARRIER");
                 }
                 break;
             default:
-                throw new IllegalArgumentException("Unsupported particle type: " + particle);
+                toReturn = CompatibilityParticleEnum.valueOf(particle);
+                break;
         }
         return toReturn;
     }

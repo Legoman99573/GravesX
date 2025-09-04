@@ -10,9 +10,14 @@ import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.*;
 import com.tchristofferson.configupdater.ConfigUpdater;
 import dev.cwhead.GravesX.addon.GravesXAddon;
+import dev.cwhead.GravesX.command.GxModulesCommand;
 import dev.cwhead.GravesX.debug.KeepInventoryDetector;
 import dev.cwhead.GravesX.debug.LateEnableHook;
 import dev.cwhead.GravesX.manager.ParticleManager;
+import dev.cwhead.GravesX.module.listener.DependencyEnableListener;
+import dev.cwhead.GravesX.module.util.LibbyImporter;
+import dev.cwhead.GravesX.module.ModuleManager;
+import dev.cwhead.GravesX.module.listener.StartupListener;
 import dev.cwhead.GravesX.util.LibraryLoaderUtil;
 import dev.cwhead.GravesX.util.MclogsUtil;
 import dev.cwhead.GravesX.util.PastebinUtil;
@@ -70,6 +75,8 @@ public class Graves extends JavaPlugin {
     private boolean isOutdatedBuild = false;
     private boolean isUnknownBuild = false;
     private static TaskScheduler graveScheduler;
+    private ModuleManager moduleManager;
+
 
     @Override
     public void onLoad() {
@@ -114,6 +121,12 @@ public class Graves extends JavaPlugin {
         graveManager = new GraveManager(this);
         particleManager = new ParticleManager(this);
 
+        saveDefaultConfig();
+        this.moduleManager = new ModuleManager(this);
+        this.moduleManager.setLibraryImporter(new LibbyImporter(this));
+        getServer().getPluginManager().registerEvents(new StartupListener(this, moduleManager), this);
+        getServer().getPluginManager().registerEvents(new DependencyEnableListener(moduleManager), this);
+
         registerCommands();
         registerListeners();
         registerRecipes();
@@ -144,6 +157,7 @@ public class Graves extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (moduleManager != null) moduleManager.disableAll();
         runShutdownTasks();
     }
 
@@ -180,7 +194,7 @@ public class Graves extends JavaPlugin {
         try {
             dataManager.closeConnection();
         } catch (Exception e) {
-            getLogger().severe("Failed to close Database Connection. Cause:" + e.getCause());
+            getLogger().severe("Failed to close Database Connection.");
         }
 
         getLogger().info("Unloading GraveManager...");
@@ -188,7 +202,7 @@ public class Graves extends JavaPlugin {
             graveManager.unload();
             getLogger().info("Unloaded GraveManager Successfully.");
         } catch (Exception e) {
-            getLogger().severe("Failed to unload GraveManager. Cause: " + e.getCause());
+            getLogger().severe("Failed to unload GraveManager.");
         }
 
         getLogger().info("Unloading IntegrationManager...");
@@ -207,7 +221,7 @@ public class Graves extends JavaPlugin {
                 recipeManager.unload();
                 getLogger().info("Unloaded RecipeManager Successfully.");
             } catch (Exception e) {
-                getLogger().severe("Failed to unload RecipeManager. Cause: " + e.getCause());
+                getLogger().severe("Failed to unload RecipeManager.");
             }
         }
         getLogger().info("Shutdown Completed :)");
@@ -505,6 +519,13 @@ public class Graves extends JavaPlugin {
 
             gravesPluginCommand.setExecutor(gravesCommand);
             gravesPluginCommand.setTabCompleter(gravesCommand);
+        }
+
+        PluginCommand cmd = getCommand("gravesmodule");
+        if (cmd != null) {
+            GxModulesCommand handler = new GxModulesCommand(moduleManager, this);
+            cmd.setExecutor(handler);
+            cmd.setTabCompleter(handler);
         }
     }
 
@@ -1312,9 +1333,40 @@ public class Graves extends JavaPlugin {
      * @param e the exception to log.
      */
     public void logStackTrace(Exception e) {
-        for (StackTraceElement element : e.getStackTrace()) {
-            getLogger().severe(element.toString());
+        logStackTrace((Throwable) e);
+    }
+
+    /**
+     * Logs the full stack trace of a throwable to the plugin logger.
+     *
+     * @param t the throwable to log.
+     */
+    public void logStackTrace(Throwable t) {
+        java.util.Set<Throwable> seen = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+        printThrowable(t, "", seen);
+    }
+
+    private void printThrowable(Throwable t, String prefix, java.util.Set<Throwable> seen) {
+        if (t == null || seen.contains(t)) return;
+        seen.add(t);
+        getLogger().severe(prefix + t);
+        for (StackTraceElement e : t.getStackTrace()) {
+            getLogger().severe("  at " + e.toString());
         }
+        Throwable[] suppressed = t.getSuppressed();
+        if (suppressed != null) {
+            for (Throwable s : suppressed) {
+                printThrowable(s, "Suppressed: ", seen);
+            }
+        }
+        Throwable cause = t.getCause();
+        if (cause != null) {
+            printThrowable(cause, "Caused by: ", seen);
+        }
+    }
+
+    public ModuleManager getModuleManager() {
+        return moduleManager;
     }
 
     /**

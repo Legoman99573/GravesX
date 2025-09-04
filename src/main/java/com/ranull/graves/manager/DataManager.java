@@ -772,7 +772,7 @@ public final class DataManager {
                 }
             }
         } catch (SQLException exception) {
-            plugin.getLogger().severe("Error occurred while getting Column List: " + exception.getMessage());
+            plugin.getLogger().severe("Error occurred while getting Column List");
             plugin.getLogger().severe("Query: " + query);
             plugin.logStackTrace(exception);
         }
@@ -831,7 +831,7 @@ public final class DataManager {
                 }
             }
         } catch (NullPointerException | SQLException exception) {
-            plugin.getLogger().severe("Error occurred while checking if table exists: " + exception.getMessage());
+            plugin.getLogger().severe("Error occurred while checking if table exists");
             plugin.getLogger().severe("Query: " + query);
             plugin.logStackTrace(exception);
         } finally {
@@ -839,7 +839,7 @@ public final class DataManager {
                 try {
                     resultSet.close();
                 } catch (SQLException exception) {
-                    plugin.getLogger().severe("Error occurred while closing resultSet: " + exception.getMessage());
+                    plugin.getLogger().severe("Error occurred while closing resultSet");
                     plugin.getLogger().severe("Result Set: " + resultSet);
                     plugin.logStackTrace(exception);
                 }
@@ -1368,11 +1368,11 @@ public final class DataManager {
                     || (message.contains("duplicate column name") && "SQLITE_ERROR".equals(sqlState))) {
                 plugin.getLogger().info("Found 0 grave maps to load into cache.");
             } else {
-                plugin.getLogger().severe("Error occurred while loading Grave Map: " + exception.getMessage());
+                plugin.getLogger().severe("Error occurred while loading Grave Map");
                 plugin.logStackTrace(exception);
             }
         } catch (NullPointerException exception) {
-            plugin.getLogger().severe("A null pointer exception occurred while loading Grave Map: " + exception.getMessage());
+            plugin.getLogger().severe("A null pointer exception occurred while loading Grave Map");
             plugin.logStackTrace(exception);
         }
     }
@@ -1412,7 +1412,7 @@ public final class DataManager {
                         blockCount++;
                     } catch (Exception e) {
                         String uuidGraveStr = resultSet.getString("uuid_grave");
-                        plugin.getLogger().warning("Failed to process a block entry for Grave " + uuidGraveStr + ": " + e.getMessage());
+                        plugin.getLogger().warning("Failed to process a block entry for Grave " + uuidGraveStr);
                         plugin.logStackTrace(e);
                     }
                 }
@@ -1434,7 +1434,7 @@ public final class DataManager {
                         || (message.contains("duplicate column name") && "SQLITE_ERROR".equals(sqlState))) {
                     plugin.getLogger().info("Loaded 0 Blocks into Block Map Cache.");
                 } else {
-                    plugin.getLogger().severe("Error occurred while loading Block Map: " + exception.getMessage());
+                    plugin.getLogger().severe("Error occurred while loading Block Map");
                     plugin.logStackTrace(exception);
                 }
             }
@@ -1493,7 +1493,7 @@ public final class DataManager {
                     plugin.getLogger().info("Loaded " + entityCount + " entities into Entity Map Cache for " + getStoragePrefix() + table + ".");
                 }
             } catch (SQLException exception) {
-                plugin.getLogger().severe("Error occurred while loading Entity Map: " + exception.getMessage());
+                plugin.getLogger().severe("Error occurred while loading Entity Map");
                 plugin.logStackTrace(exception);
             }
         });
@@ -1549,7 +1549,7 @@ public final class DataManager {
                 }
 
             } catch (SQLException exception) {
-                plugin.getLogger().severe("Error occurred while loading Hologram Map: " + exception.getMessage());
+                plugin.getLogger().severe("Error occurred while loading Hologram Map");
                 plugin.logStackTrace(exception);
             }
         });
@@ -1599,7 +1599,7 @@ public final class DataManager {
         try {
             executeUpdate(createTableQuery, new Object[0]);
         } catch (SQLException e) {
-            plugin.getLogger().severe("Failed to create entity data map table: " + e.getMessage());
+            plugin.getLogger().severe("Failed to create entity data map table");
             plugin.logStackTrace(e);
         }
 
@@ -1665,7 +1665,7 @@ public final class DataManager {
                     plugin.getLogger().info("Loaded " + entityCount + " entities into Entity Data Map Cache for " + getStoragePrefix() + table + ".");
                 }
             } catch (SQLException exception) {
-                plugin.getLogger().severe("Error occurred while loading Entity Data Map: " + exception.getMessage());
+                plugin.getLogger().severe("Error occurred while loading Entity Data Map");
                 plugin.logStackTrace(exception);
             }
         });
@@ -1698,7 +1698,7 @@ public final class DataManager {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException exception) {
-                plugin.getLogger().severe("Failed to add block data: " + exception.getMessage());
+                plugin.getLogger().severe("Failed to add block data");
                 plugin.logStackTrace(exception);
             }
         });
@@ -1719,7 +1719,7 @@ public final class DataManager {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException exception) {
-                plugin.getLogger().severe("Failed to remove block data: " + exception.getMessage());
+                plugin.getLogger().severe("Failed to remove block data");
                 plugin.logStackTrace(exception);
             }
         });
@@ -1745,7 +1745,7 @@ public final class DataManager {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException exception) {
-                plugin.getLogger().severe("Failed to add hologram data: " + exception.getMessage());
+                plugin.getLogger().severe("Failed to add hologram data");
                 plugin.logStackTrace(exception);
             }
         });
@@ -1795,7 +1795,7 @@ public final class DataManager {
                     plugin.debugMessage("Deleted " + entityDataList.size() + " holograms from DB for grave UUID: " + grave.getUUID(), 2);
 
                 } catch (SQLException e) {
-                    plugin.getLogger().severe("Error deleting holograms for grave " + grave.getUUID() + ": " + e.getMessage());
+                    plugin.getLogger().severe("Error deleting holograms for grave " + grave.getUUID());
                     plugin.logStackTrace(e);
                 }
             });
@@ -1823,7 +1823,7 @@ public final class DataManager {
                     executeBatch(statement);
                 }
             } catch (SQLException exception) {
-                plugin.getLogger().severe("Error occurred while removing hologram data: " + exception.getMessage());
+                plugin.getLogger().severe("Error occurred while removing hologram data");
                 plugin.logStackTrace(exception);
             }
         });
@@ -1851,7 +1851,7 @@ public final class DataManager {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException e) {
-                plugin.getLogger().severe("Failed to add entity data: " + e.getMessage());
+                plugin.getLogger().severe("Failed to add entity data");
                 plugin.logStackTrace(e);
             }
         });
@@ -1886,7 +1886,7 @@ public final class DataManager {
                     }
                 }
             } catch (SQLException e) {
-                plugin.getLogger().severe("Failed to remove entity data: " + e.getMessage());
+                plugin.getLogger().severe("Failed to remove entity data");
                 plugin.logStackTrace(e);
             }
         });
@@ -1984,7 +1984,7 @@ public final class DataManager {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException e) {
-                plugin.getLogger().severe("Failed to add grave: " + e.getMessage());
+                plugin.getLogger().severe("Failed to add grave");
                 plugin.logStackTrace(e);
             }
         });
@@ -2017,7 +2017,7 @@ public final class DataManager {
                 executeUpdate(deleteQuery, deleteParams);
                 plugin.debugMessage("Grave successfully removed for UUID: " + uuid, 1);
             } catch (SQLException e) {
-                plugin.getLogger().severe("Failed to remove grave: " + e.getMessage());
+                plugin.getLogger().severe("Failed to remove grave");
                 plugin.logStackTrace(e);
             }
         });
@@ -2038,7 +2038,7 @@ public final class DataManager {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException e) {
-                plugin.getLogger().severe("Failed to update grave: " + e.getMessage());
+                plugin.getLogger().severe("Failed to update grave");
                 plugin.logStackTrace(e);
             }
         });
@@ -2059,7 +2059,7 @@ public final class DataManager {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException e) {
-                plugin.getLogger().severe("Failed to update grave: " + e.getMessage());
+                plugin.getLogger().severe("Failed to update grave");
                 plugin.logStackTrace(e);
             }
         });
@@ -2080,7 +2080,7 @@ public final class DataManager {
         try {
             executeUpdateMainThread(query, parameters);
         } catch (SQLException e) {
-            plugin.getLogger().severe("Failed to update grave over main thread: " + e.getMessage());
+            plugin.getLogger().severe("Failed to update grave over main thread");
             plugin.logStackTrace(e);
         }
     }
@@ -2183,7 +2183,7 @@ public final class DataManager {
 
             return grave;
         } catch (SQLException exception) {
-            plugin.getLogger().severe("Error occurred while converting a ResultSet to a Grave object: " + exception.getMessage());
+            plugin.getLogger().severe("Error occurred while converting a ResultSet to a Grave object");
             plugin.logStackTrace(exception);
         }
         return null;
@@ -2207,7 +2207,7 @@ public final class DataManager {
         try {
             return dataSource.getConnection();
         } catch (SQLException exception) {
-            plugin.getLogger().severe("Error obtaining database connection: " + exception.getMessage());
+            plugin.getLogger().severe("Error obtaining database connection");
             plugin.logStackTrace(exception);
             return null;
         }
@@ -2301,7 +2301,7 @@ public final class DataManager {
             statement.executeBatch();
         } catch (SQLException exception) {
             // Log the error message and the state of the batch statement
-            plugin.getLogger().severe("Error occurred while executing batch: " + exception.getMessage());
+            plugin.getLogger().severe("Error occurred while executing batch");
             plugin.getLogger().severe("Failed batch statement: " + statement);
             plugin.logStackTrace(exception);
         }
@@ -2376,7 +2376,7 @@ public final class DataManager {
                         || (message.contains("duplicate column name") && "SQLITE_ERROR".equals(sqlState))) {
                     // ignore
                 } else {
-                    plugin.getLogger().severe("Error executing SQL update: " + exception.getMessage());
+                    plugin.getLogger().severe("Error executing SQL update");
                     plugin.getLogger().severe("Failed SQL statement: " + sql);
                     plugin.logStackTrace(exception);
                 }
@@ -2453,7 +2453,7 @@ public final class DataManager {
                     || (message.contains("duplicate column name") && "SQLITE_ERROR".equals(sqlState))) {
                 // ignore
             } else {
-                plugin.getLogger().severe("Error executing SQL update: " + exception.getMessage());
+                plugin.getLogger().severe("Error executing SQL update");
                 plugin.getLogger().severe("Failed SQL statement: " + sql);
                 plugin.logStackTrace(exception);
             }
@@ -2475,12 +2475,14 @@ public final class DataManager {
                 resultSet = statement.executeQuery(sql);
             }
         } catch (SQLException exception) {
+            plugin.getLogger().severe("Failed to execute query due to failed connection.");
             plugin.logStackTrace(exception);
         } finally {
             if (resultSet != null) {
                 try {
                     resultSet.close();
                 } catch (SQLException exception) {
+                    plugin.getLogger().severe("Failed to close resultSet.");
                     plugin.logStackTrace(exception);
                 }
             }
@@ -2488,6 +2490,7 @@ public final class DataManager {
                 try {
                     statement.close();
                 } catch (SQLException exception) {
+                    plugin.getLogger().severe("Failed to close statement.");
                     plugin.logStackTrace(exception);
                 }
             }
@@ -2519,12 +2522,14 @@ public final class DataManager {
                     resultSet.set(preparedStatement.get().executeQuery());
                 }
             } catch (SQLException exception) {
+                plugin.getLogger().severe("Failed to execute query.");
                 plugin.logStackTrace(exception);
             } finally {
                 if (resultSet.get() != null) {
                     try {
                         resultSet.get().close();
                     } catch (SQLException exception) {
+                        plugin.getLogger().severe("Failed to close resultSet.");
                         plugin.logStackTrace(exception);
                     }
                 }
@@ -2532,6 +2537,7 @@ public final class DataManager {
                     try {
                         preparedStatement.get().close();
                     } catch (SQLException exception) {
+                        plugin.getLogger().severe("Failed to close preparedStatement.");
                         plugin.logStackTrace(exception);
                     }
                 }
@@ -2550,6 +2556,7 @@ public final class DataManager {
             try {
                 connection.close();
             } catch (SQLException e) {
+                plugin.getLogger().severe("Failed to close connection.");
                 plugin.logStackTrace(e);
             }
         }
@@ -2565,6 +2572,7 @@ public final class DataManager {
             try {
                 statement.close();
             } catch (SQLException e) {
+                plugin.getLogger().severe("Failed to close statement.");
                 plugin.logStackTrace(e);
             }
         }
@@ -2580,6 +2588,7 @@ public final class DataManager {
             try {
                 resultSet.close();
             } catch (SQLException exception) {
+                plugin.getLogger().severe("Failed to close resultSet.");
                 plugin.logStackTrace(exception);
             }
         }
@@ -2690,7 +2699,7 @@ public final class DataManager {
                             insert.executeUpdate();
                         }
                     } catch (SQLException e) {
-                        plugin.getLogger().severe("Error inserting into " + targetTable + ": " + e.getMessage());
+                        plugin.getLogger().severe("Error inserting into " + targetTable);
                         plugin.logStackTrace(e);
                         allSuccess = false;
                     }
@@ -2706,7 +2715,7 @@ public final class DataManager {
                 }
             }
         } catch (SQLException e) {
-            plugin.getLogger().severe("Migration failed: " + e.getMessage());
+            plugin.getLogger().severe("Migration failed");
             plugin.logStackTrace(e);
         }
     }
@@ -2999,6 +3008,7 @@ public final class DataManager {
                         statement.executeQuery();
                     }
                 } catch (NullPointerException | SQLException exception) {
+                    plugin.getLogger().severe("Failed to keep connection alive.");
                     plugin.logStackTrace(exception);
                 }
             }

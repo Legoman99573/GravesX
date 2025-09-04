@@ -1,6 +1,6 @@
 package dev.cwhead.GravesX.compatibility;
 
-import org.bukkit.Bukkit;
+import dev.cwhead.GravesX.exception.GravesXEventIllegalArgumentException;
 import org.bukkit.Particle;
 
 import java.lang.reflect.Method;
@@ -29,12 +29,9 @@ public final class CompatibilityParticleEnum {
             Method method = Particle.class.getMethod("valueOf", String.class);
             return (Particle) method.invoke(null, normalized);
         } catch (IllegalArgumentException | NoSuchMethodException e) {
-            Bukkit.getServer().getLogger().severe("Particle \"" + normalized + "\" does not exist on this server version.");
+            throw new GravesXEventIllegalArgumentException("Particle " + normalized + " does not exist on this server version.");
         } catch (Exception e) {
-            Bukkit.getServer().getLogger().severe("An issue occurred while retrieving particle enum \"" + normalized + "\": " + e.getMessage());
-            e.printStackTrace();
+            throw new GravesXEventIllegalArgumentException("An issue occurred while retrieving particle enum " + normalized);
         }
-
-        return null;
     }
 }

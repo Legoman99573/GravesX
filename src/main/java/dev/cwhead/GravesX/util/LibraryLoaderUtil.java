@@ -226,7 +226,7 @@ public class LibraryLoaderUtil {
                     plugin.debugMessage("Verified shaded library " + libLabel + ".", 1);
                 } catch (Exception e) {
                     Bukkit.getLogger().severe("Shaded verification failed for " + libLabel + ": " +
-                            e.getClass().getSimpleName() + " - " + e.getMessage());
+                            e.getClass().getSimpleName());
                     plugin.logStackTrace(e);
                     plugin.getServer().getPluginManager().disablePlugin(plugin);
                 }
@@ -236,7 +236,7 @@ public class LibraryLoaderUtil {
 
         } catch (Exception e) {
             plugin.getLogger().severe("Failed to load " + libLabel + ": " +
-                    e.getClass().getSimpleName() + " - " + e.getMessage());
+                    e.getClass().getSimpleName());
             plugin.logStackTrace(e);
             plugin.getServer().getPluginManager().disablePlugin(plugin);
         }

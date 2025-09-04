@@ -10,10 +10,8 @@ import com.ranull.graves.integration.MiniMessage;
 import com.ranull.graves.inventory.GraveList;
 import com.ranull.graves.inventory.GraveMenu;
 import com.ranull.graves.type.Grave;
-import com.ranull.graves.util.ColorUtil;
 import com.ranull.graves.util.InventoryUtil;
 import com.ranull.graves.util.MaterialUtil;
-import dev.cwhead.GravesX.compatibility.CompatibilityParticleEnum;
 import dev.cwhead.GravesX.event.*;
 import me.jay.GravesX.util.pluginsWithoutMavenReposOrUsefulApiDocsThatCauseBugs.ReflectSupportAE;
 import com.ranull.graves.util.StringUtil;
@@ -483,14 +481,12 @@ public final class GraveManager {
             return;
         }
 
-        Particle particle = CompatibilityParticleEnum.valueOf(
-                plugin.getVersionManager().getParticleForVersion("REDSTONE").toString()
-        );
+        Particle particle = plugin.getVersionManager().getParticleForVersion("REDSTONE");
 
         final String configuredType = plugin.getConfig("particle.type", grave).getString("particle.type");
         if (configuredType != null && !configuredType.isEmpty()) {
             try {
-                particle = CompatibilityParticleEnum.valueOf(configuredType);
+                particle = plugin.getVersionManager().getParticleForVersion(configuredType);
             } catch (IllegalArgumentException ignored) {
                 plugin.debugMessage(configuredType + " is not a Particle ENUM", 1);
                 plugin.getLogger().severe("The Particle ENUM/INSTANCE " + configuredType + " is not valid. Update \"particle.type\" in grave.yml");

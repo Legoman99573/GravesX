@@ -360,7 +360,7 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
                             PluginDownloadUtil.downloadAndReplacePlugin(120633, "GravesXAddon-LandProtection", "plugins", commandSender);
                         } catch (IOException e) {
                             commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET + "An error occurred while running command. Check console.");
-                            plugin.getLogger().warning("An issue occurred while running this command. Cause: " + e.getMessage());
+                            plugin.getLogger().warning("An issue occurred while running this command.");
                             plugin.logStackTrace(e);
                         }
                         break;

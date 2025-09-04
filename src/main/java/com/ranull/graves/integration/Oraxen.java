@@ -92,6 +92,7 @@ public final class Oraxen extends EntityDataManager {
                         new File(modelDir, "grave.json")
                 );
             } catch (Exception e) {
+                plugin.getLogger().severe("Failed to save " + oraxenPlugin.getName() + " data.");
                 plugin.logStackTrace(e);
             }
 

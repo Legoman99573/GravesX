@@ -6,8 +6,6 @@ import dev.cwhead.GravesX.compatibility.CompatibilityParticleEnum;
 import dev.cwhead.GravesX.compatibility.CompatibilitySoundEnum;
 import dev.cwhead.GravesX.event.GraveExplodeEvent;
 import org.bukkit.Location;
-import org.bukkit.Particle;
-import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -139,7 +137,7 @@ public class EntityExplodeListener implements Listener {
         if (plugin.getConfig("drop.looted-explosion-effect", grave).getBoolean("drop.looted-explosion-effect", false)) {
             try {
                 Location deathLoc = grave.getLocationDeath();
-                Objects.requireNonNull(deathLoc.getWorld()).spawnParticle(CompatibilityParticleEnum.valueOf("EXPLOSION"), deathLoc, 1);
+                Objects.requireNonNull(deathLoc.getWorld()).spawnParticle(plugin.getVersionManager().getParticleForVersion("EXPLOSION"), deathLoc, 1);
                 try {
                     deathLoc.getWorld().playSound(deathLoc, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("ENTITY_GENERIC_EXPLODE")), 1.0f, 1.0f);
                 } catch (Exception e) {

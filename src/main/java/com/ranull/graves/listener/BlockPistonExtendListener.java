@@ -6,8 +6,6 @@ import dev.cwhead.GravesX.compatibility.CompatibilityParticleEnum;
 import dev.cwhead.GravesX.compatibility.CompatibilitySoundEnum;
 import dev.cwhead.GravesX.event.GravePistonExtendEvent;
 import org.bukkit.Location;
-import org.bukkit.Particle;
-import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.event.EventHandler;
@@ -80,7 +78,7 @@ public class BlockPistonExtendListener implements Listener {
 
             try {
                 Location loc = grave.getLocationDeath();
-                Objects.requireNonNull(loc.getWorld()).spawnParticle(CompatibilityParticleEnum.valueOf("EXPLOSION"), loc, 1);
+                Objects.requireNonNull(loc.getWorld()).spawnParticle(plugin.getVersionManager().getParticleForVersion("EXPLOSION"), loc, 1);
                 try {
                     loc.getWorld().playSound(loc, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("ENTITY_GENERIC_EXPLODE")), 1.0f, 1.0f);
                 } catch (Exception e) {
