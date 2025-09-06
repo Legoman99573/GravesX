@@ -181,6 +181,7 @@ public final class GraveManager {
                 );
                 return;
             }
+            chunk.setForceLoaded(true);
 
             if (dropOnTimeout && !finalAbandonEnabled) {
                 plugin.debugMessage("Dropping on timeout: " + grave.getUUID(), 2);
@@ -189,6 +190,7 @@ public final class GraveManager {
                 sendPlayerMessage(grave, "message.timeout", loc);
                 graveRemoveList.add(grave);
                 removeGrave(grave);
+                chunk.setForceLoaded(false);
                 return;
             }
 
@@ -215,13 +217,22 @@ public final class GraveManager {
                     sendPlayerMessage(grave, "message.grave-abandoned", abandonLoc != null ? abandonLoc : loc);
                     abandonGrave(grave);
                 }
+                chunk.setForceLoaded(false);
                 return;
             }
+            GraveExpiredEvent graveExpiredEvent = new GraveExpiredEvent(grave);
+            plugin.getServer().getPluginManager().callEvent(graveExpiredEvent);
 
-            plugin.debugMessage("Fallback drop for " + grave.getUUID() + " as drop.timeout and drop.abandon are false", 2);
-            sendPlayerMessage(grave, "message.timeout", loc);
-            graveRemoveList.add(grave);
-            removeGrave(grave);
+            if (!graveExpiredEvent.isCancelled() || !graveExpiredEvent.isAddon()) {
+                plugin.debugMessage("Fallback drop for " + grave.getUUID() + " as drop.timeout and drop.abandon are false", 2);
+                sendPlayerMessage(grave, "message.timeout", loc);
+                graveRemoveList.add(grave);
+                removeGrave(grave);
+                chunk.setForceLoaded(false);
+                return;
+            }
+            plugin.debugMessage("Fallback drop for " + grave.getUUID() + " was cancelled. Grave will now last forever.", 2);
+            chunk.setForceLoaded(false);
         });
     }
 
