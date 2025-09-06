@@ -144,6 +144,11 @@ public class EntityData implements Serializable {
         /**
          * Represents an entity from CitizensNPC plugin.
          */
-        CITIZENSNPC
+        CITIZENSNPC,
+
+        /**
+         * Represents a custom entry, whether that be an addon or module.
+         */
+        CUSTOM
     }
 }

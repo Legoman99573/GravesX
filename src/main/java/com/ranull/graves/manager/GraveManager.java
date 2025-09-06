@@ -12,6 +12,8 @@ import com.ranull.graves.inventory.GraveMenu;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.InventoryUtil;
 import com.ranull.graves.util.MaterialUtil;
+import dev.cwhead.GravesX.api.provider.GraveProvider;
+import dev.cwhead.GravesX.api.provider.RegisterGraveProviders;
 import dev.cwhead.GravesX.event.*;
 import me.jay.GravesX.util.pluginsWithoutMavenReposOrUsefulApiDocsThatCauseBugs.ReflectSupportAE;
 import com.ranull.graves.util.StringUtil;
@@ -687,48 +689,48 @@ public final class GraveManager {
         if (plugin.getIntegrationManager().hasWorldEdit()) {
             plugin.getIntegrationManager().getWorldEdit().clearSchematic(grave);
         }
-
         if (plugin.getIntegrationManager().hasMultiPaper()) {
             plugin.getIntegrationManager().getMultiPaper().notifyGraveRemoval(grave);
         }
-
         if (plugin.getIntegrationManager().hasFurnitureLib()) {
             plugin.getIntegrationManager().getFurnitureLib().removeFurniture(grave);
         }
-
         if (plugin.getIntegrationManager().hasFurnitureEngine()) {
             plugin.getLogger().warning("You have FurnitureEngine enabled. ");
             plugin.getIntegrationManager().getFurnitureEngine().removeFurniture(grave);
         }
-
         if (plugin.getIntegrationManager().hasItemsAdder()) {
             plugin.getIntegrationManager().getItemsAdder().removeFurniture(grave);
         }
-
         if (plugin.getIntegrationManager().hasOraxen()) {
             plugin.getIntegrationManager().getOraxen().removeFurniture(grave);
         }
-
         if (plugin.getIntegrationManager().hasNexo()) {
             plugin.getIntegrationManager().getNexo().removeFurniture(grave);
         }
-
         if (plugin.getIntegrationManager().hasPlayerNPC()) {
             plugin.getIntegrationManager().getPlayerNPC().removeCorpse(grave);
         }
         if (plugin.getIntegrationManager().hasFancyNpcs()) {
             plugin.getIntegrationManager().getFancyNpcs().removeCorpse(grave);
         }
-
         if (plugin.getIntegrationManager().hasCitizensNPC()) {
             plugin.getIntegrationManager().getCitizensNPC().removeCorpse(grave);
         }
 
-        // Remove the grave from the cache
-        plugin.getCacheManager().getGraveMap().remove(grave.getUUID());
+        for (GraveProvider p : RegisterGraveProviders.getAll()) {
+            try {
+                p.remove(grave);
+            } catch (Throwable t) {
+                plugin.getLogger().warning("[CustomGraveProvider " + p.id() + "] remove() failed: " + t.getMessage());
+            }
+        }
 
+        // Remove from cache
+        plugin.getCacheManager().getGraveMap().remove(grave.getUUID());
         plugin.debugMessage("Grave " + grave.getUUID() + " removed from cache", 1);
     }
+
 
     /**
      * Removes entity data associated with a grave.
@@ -771,6 +773,18 @@ public final class GraveManager {
             }
             case CITIZENSNPC: {
                 plugin.getIntegrationManager().getCitizensNPC().removeEntityData(entityData);
+                break;
+            }
+            case CUSTOM: {
+                for (GraveProvider p : RegisterGraveProviders.getAll()) {
+                    try {
+                        if (p.supports(entityData) && p.removeEntityData(entityData)) {
+                            return;
+                        }
+                    } catch (Throwable t) {
+                        plugin.getLogger().warning("[CustomGraveProvider " + p.id() + "] removeEntityData() failed: " + t.getMessage());
+                    }
+                }
                 break;
             }
         }
@@ -920,6 +934,14 @@ public final class GraveManager {
 
         if (plugin.getIntegrationManager().hasNexo() && plugin.getConfig("nexo.furniture.enabled", grave).getBoolean("nexo.furniture.enabled") || plugin.getIntegrationManager().hasNexo() && plugin.getConfig("nexo.block.enabled", grave).getBoolean("nexo.block.enabled")) return true;
 
+        for (GraveProvider p : RegisterGraveProviders.getAll()) {
+            try {
+                if (p.isPlaced(grave)) return true;
+            } catch (Throwable t) {
+                plugin.getLogger().warning("[CustomGraveProvider " + p.id() + "] isPlaced() failed: " + t.getMessage());
+            }
+        }
+
         return false;
     }
 
@@ -995,6 +1017,14 @@ public final class GraveManager {
                 plugin.getIntegrationManager().getFancyNpcs().createBedrockcompatCorpse(grave.getUUID(),grave.getLocationDeath(),grave);
             } else {
                 plugin.getIntegrationManager().getFancyNpcs().createCorpse(grave.getUUID(),grave.getLocationDeath(),grave);
+            }
+        }
+
+        for (GraveProvider p : RegisterGraveProviders.getAll()) {
+            try {
+                p.place(location, grave);
+            } catch (Throwable t) {
+                plugin.getLogger().warning("[CustomGraveProvider " + p.id() + "] place() failed: " + t.getMessage());
             }
         }
     }

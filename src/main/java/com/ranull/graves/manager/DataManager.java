@@ -6,6 +6,8 @@ import com.ranull.graves.Graves;
 import com.ranull.graves.data.*;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.*;
+import dev.cwhead.GravesX.api.provider.GraveProvider;
+import dev.cwhead.GravesX.api.provider.RegisterGraveProviders;
 import org.apache.commons.lang3.StringUtils;
 import org.bukkit.Location;
 import org.bukkit.entity.EntityType;
@@ -230,6 +232,13 @@ public final class DataManager {
                     }
                 }
             }
+
+            for (GraveProvider p : RegisterGraveProviders.getAll()) {
+                if (RegisterGraveProviders.getAll().isEmpty()) return;
+                String key = "custom_" + sanitizeKey(p.id());
+                createEntityDataMapTable(key);
+                loadEntityDataMap(key, EntityData.Type.CUSTOM);
+            }
         });
     }
 
@@ -255,6 +264,13 @@ public final class DataManager {
             case "citizensnpc":
                 return plugin.getIntegrationManager().hasCitizensNPC();
             default:
+                if (integration.startsWith("custom_")) {
+                    String expected = integration.substring("custom_".length());
+                    for (GraveProvider p : RegisterGraveProviders.getAll()) {
+                        if (RegisterGraveProviders.getAll().isEmpty()) continue;
+                        if (sanitizeKey(p.id()).equals(expected)) return true;
+                    }
+                }
                 return false;
         }
     }
@@ -293,6 +309,19 @@ public final class DataManager {
                 setupEntityTable(entry.getKey());
             }
         }
+
+        for (GraveProvider p : RegisterGraveProviders.getAll()) {
+            if (RegisterGraveProviders.getAll().isEmpty()) return;
+            String key = "custom_" + sanitizeKey(p.id());
+            setupEntityTable(key);
+        }
+    }
+
+    /**
+     * Sanitizes custom grave providers.
+     */
+    private static String sanitizeKey(String s) {
+        return s == null ? "unknown" : s.toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9_]", "_");
     }
 
     /**
