@@ -9,7 +9,9 @@ import com.ranull.graves.integration.MiniMessage;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.*;
 import dev.cwhead.GravesX.event.*;
+
 import org.bukkit.*;
+import org.bukkit.Note.Tone;
 import org.bukkit.block.BlockFace;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
@@ -38,7 +40,8 @@ public final class EntityManager extends EntityDataManager {
     /**
      * The main plugin instance associated with Graves.
      * <p>
-     * This {@link Graves} instance represents the core plugin that this Graves is part of. It provides access
+     * This {@link Graves} instance represents the core plugin that this Graves is
+     * part of. It provides access
      * to the plugin's functionality, configuration, and other services.
      * </p>
      */
@@ -76,12 +79,11 @@ public final class EntityManager extends EntityDataManager {
      * @return the created compass item stack.
      */
     public ItemStack createGraveCompass(Player player, Location location, Grave grave) {
-        GraveCompassAddEvent modern =
-                new GraveCompassAddEvent(player, grave);
+        GraveCompassAddEvent modern = new GraveCompassAddEvent(player, grave);
         plugin.getServer().getPluginManager().callEvent(modern);
 
-        com.ranull.graves.event.GraveCompassAddEvent legacy =
-                new com.ranull.graves.event.GraveCompassAddEvent(player, grave);
+        com.ranull.graves.event.GraveCompassAddEvent legacy = new com.ranull.graves.event.GraveCompassAddEvent(player,
+                grave);
         plugin.getServer().getPluginManager().callEvent(legacy);
 
         if (!modern.isCancelled() || !modern.isAddon() || !legacy.isCancelled() || !legacy.isAddon()) {
@@ -145,7 +147,8 @@ public final class EntityManager extends EntityDataManager {
                     }
                 } else {
                     itemMeta.setDisplayName(ChatColor.WHITE +
-                            StringUtil.parseString(plugin.getConfig("compass.name", grave).getString("compass.name"), grave, plugin));
+                            StringUtil.parseString(plugin.getConfig("compass.name", grave).getString("compass.name"),
+                                    grave, plugin));
                     itemMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "graveUUID"),
                             PersistentDataType.STRING, grave.getUUID().toString());
 
@@ -164,7 +167,8 @@ public final class EntityManager extends EntityDataManager {
     }
 
     /**
-     * Retrieves a map of compasses and their associated UUIDs from a player's inventory.
+     * Retrieves a map of compasses and their associated UUIDs from a player's
+     * inventory.
      *
      * @param player the player whose inventory to check.
      * @return a map of compasses and their associated UUIDs.
@@ -205,10 +209,45 @@ public final class EntityManager extends EntityDataManager {
 
     public void teleportEntity(Entity entity, Location location, Grave grave) {
         GravePreTeleportEvent modernPre = new GravePreTeleportEvent(grave, entity);
+
+        // found a place to put in my little hack
+
+        // add the config thing if it doesnt exist
+        if (plugin.getConfig("teleport.costs-exp", grave).get("teleport.costs-exp") == null) {
+            plugin.getConfig("teleport.costs-exp", grave).set("teleport.costs-exp", false);
+        }
+
+        // add the other config thing if it doesnt exist
+        if (plugin.getConfig("teleport.exp-level-cost", grave).get("teleport.exp-level-cost") == null) {
+            plugin.getConfig("teleport.exp-level-cost", grave).set("teleport.exp-level-cost", 5);
+        }
+
+        // check if the config is true, if it is, detect xp from player
+        if (plugin.getConfig("teleport.costs-exp", grave).getBoolean("teleport.costs-exp")) {
+            if (entity instanceof Player) {
+                if (((Player) entity).getLevel() >= plugin.getConfig("teleport.exp-level-cost", grave)
+                        .getInt("teleport.exp-level-cost")) {
+                            //they have the levels, NOW TAKE THEM AWAY!!!!
+                    ((Player) entity)
+                            .setLevel(((Player) entity).getLevel() - plugin.getConfig("teleport.exp-level-cost", grave)
+                                    .getInt("teleport.exp-level-cost"));
+                } else {
+                    //you suck
+                    //no teleport for you
+                    ((Player) entity).playNote(entity.getLocation(), Instrument.BASS_GUITAR, Note.flat(0, Tone.C));
+                    sendMessage("You cannot teleport to your grave. Required levels: "
+                            + plugin.getConfig("teleport.exp-level-cost", grave)
+                                    .getInt("teleport.exp-level-cost"),
+                            entity);
+                    return;
+                }
+            }
+        }
+
         plugin.getServer().getPluginManager().callEvent(modernPre);
 
-        com.ranull.graves.event.GravePreTeleportEvent legacyPre =
-                new com.ranull.graves.event.GravePreTeleportEvent(grave, entity);
+        com.ranull.graves.event.GravePreTeleportEvent legacyPre = new com.ranull.graves.event.GravePreTeleportEvent(
+                grave, entity);
         plugin.getServer().getPluginManager().callEvent(legacyPre);
 
         if (modernPre.isCancelled() || modernPre.isAddon() || legacyPre.isCancelled() || legacyPre.isAddon()) {
@@ -243,28 +282,30 @@ public final class EntityManager extends EntityDataManager {
                 GraveTeleportEvent modern = new GraveTeleportEvent(grave, entity);
                 plugin.getServer().getPluginManager().callEvent(modern);
 
-                com.ranull.graves.event.GraveTeleportEvent legacy = new com.ranull.graves.event.GraveTeleportEvent(grave, entity);
+                com.ranull.graves.event.GraveTeleportEvent legacy = new com.ranull.graves.event.GraveTeleportEvent(
+                        grave, entity);
                 plugin.getServer().getPluginManager().callEvent(legacy);
 
                 if (!modern.isCancelled() || !modern.isAddon() || !legacy.isCancelled() || !legacy.isAddon()) {
-                    if (!plugin.hasGrantedPermission("graves.teleport.delay-bypass", player.getPlayer()) && delaySeconds > 0) {
+                    if (!plugin.hasGrantedPermission("graves.teleport.delay-bypass", player.getPlayer())
+                            && delaySeconds > 0) {
                         final Location finalLocationTeleport = locationTeleport;
 
                         final BossBar bossBar;
                         if (plugin.getIntegrationManager().hasMiniMessage()) {
                             String legacyBossBar = StringUtil.parseString(
-                                    plugin.getConfig("message.teleport-waiting", grave).getString("message.teleport-waiting"),
-                                    location, grave, plugin
-                            );
-                            bossBar = plugin.getServer().createBossBar(MiniMessage.parseString(legacyBossBar), BarColor.RED, BarStyle.SOLID);
+                                    plugin.getConfig("message.teleport-waiting", grave)
+                                            .getString("message.teleport-waiting"),
+                                    location, grave, plugin);
+                            bossBar = plugin.getServer().createBossBar(MiniMessage.parseString(legacyBossBar),
+                                    BarColor.RED, BarStyle.SOLID);
                         } else {
                             bossBar = plugin.getServer().createBossBar(
                                     StringUtil.parseString(
-                                            plugin.getConfig("message.teleport-waiting", grave).getString("message.teleport-waiting"),
-                                            location, grave, plugin
-                                    ),
-                                    BarColor.RED, BarStyle.SOLID
-                            );
+                                            plugin.getConfig("message.teleport-waiting", grave)
+                                                    .getString("message.teleport-waiting"),
+                                            location, grave, plugin),
+                                    BarColor.RED, BarStyle.SOLID);
                         }
                         bossBar.addPlayer(player);
 
@@ -274,8 +315,10 @@ public final class EntityManager extends EntityDataManager {
                         Runnable tick = () -> {
                             if (!player.isOnline()) {
                                 bossBar.removeAll();
-                                plugin.getEntityManager().sendMessage("message.teleport-cancelled", player, player.getLocation(), grave);
-                                if (taskRef[0] != null) ((Runnable) taskRef[0]).run();
+                                plugin.getEntityManager().sendMessage("message.teleport-cancelled", player,
+                                        player.getLocation(), grave);
+                                if (taskRef[0] != null)
+                                    ((Runnable) taskRef[0]).run();
                                 return;
                             }
 
@@ -286,8 +329,10 @@ public final class EntityManager extends EntityDataManager {
 
                             if (hasMoved) {
                                 bossBar.removeAll();
-                                plugin.getEntityManager().sendMessage("message.teleport-cancelled", player, player.getLocation(), grave);
-                                if (taskRef[0] != null) ((Runnable) taskRef[0]).run();
+                                plugin.getEntityManager().sendMessage("message.teleport-cancelled", player,
+                                        player.getLocation(), grave);
+                                if (taskRef[0] != null)
+                                    ((Runnable) taskRef[0]).run();
                                 return;
                             }
 
@@ -297,10 +342,13 @@ public final class EntityManager extends EntityDataManager {
                                 ticksRemaining[0]--;
                             } else {
                                 player.teleport(finalLocationTeleport);
-                                plugin.getEntityManager().sendMessage("message.teleport", player, finalLocationTeleport, grave);
-                                plugin.getEntityManager().playPlayerSound("sound.teleport", player, finalLocationTeleport, grave);
+                                plugin.getEntityManager().sendMessage("message.teleport", player, finalLocationTeleport,
+                                        grave);
+                                plugin.getEntityManager().playPlayerSound("sound.teleport", player,
+                                        finalLocationTeleport, grave);
                                 bossBar.removeAll();
-                                if (taskRef[0] != null) ((Runnable) taskRef[0]).run();
+                                if (taskRef[0] != null)
+                                    ((Runnable) taskRef[0]).run();
                             }
                         };
 
@@ -311,9 +359,11 @@ public final class EntityManager extends EntityDataManager {
                         if (player.isOnline() && player.getLocation().equals(initialLocation)) {
                             player.teleport(locationTeleport);
                             plugin.getEntityManager().sendMessage("message.teleport", player, locationTeleport, grave);
-                            plugin.getEntityManager().playPlayerSound("sound.teleport", player, locationTeleport, grave);
+                            plugin.getEntityManager().playPlayerSound("sound.teleport", player, locationTeleport,
+                                    grave);
                         } else {
-                            plugin.getEntityManager().sendMessage("message.teleport-cancelled", player, player.getLocation(), grave);
+                            plugin.getEntityManager().sendMessage("message.teleport-cancelled", player,
+                                    player.getLocation(), grave);
                         }
                     }
                 }
@@ -321,7 +371,8 @@ public final class EntityManager extends EntityDataManager {
                 GraveTeleportEvent modern = new GraveTeleportEvent(grave, entity);
                 plugin.getServer().getPluginManager().callEvent(modern);
 
-                com.ranull.graves.event.GraveTeleportEvent legacy = new com.ranull.graves.event.GraveTeleportEvent(grave, entity);
+                com.ranull.graves.event.GraveTeleportEvent legacy = new com.ranull.graves.event.GraveTeleportEvent(
+                        grave, entity);
                 plugin.getServer().getPluginManager().callEvent(legacy);
 
                 if (!modern.isCancelled() || !modern.isAddon() || !legacy.isCancelled() || !legacy.isAddon()) {
@@ -330,13 +381,15 @@ public final class EntityManager extends EntityDataManager {
                         plugin.getGravesXScheduler().runTaskLater(() -> {
                             if (entity.isValid()) {
                                 entity.teleport(finalLocationTeleport2);
-                                plugin.getEntityManager().sendMessage("message.teleport", entity, entity.getLocation(), grave);
+                                plugin.getEntityManager().sendMessage("message.teleport", entity, entity.getLocation(),
+                                        grave);
                             }
                         }, delaySeconds * 20L);
                     } else {
                         if (entity.isValid()) {
                             entity.teleport(locationTeleport);
-                            plugin.getEntityManager().sendMessage("message.teleport", entity, entity.getLocation(), grave);
+                            plugin.getEntityManager().sendMessage("message.teleport", entity, entity.getLocation(),
+                                    grave);
                         }
                     }
                 }
@@ -376,7 +429,8 @@ public final class EntityManager extends EntityDataManager {
      */
     public void playWorldSound(String string, Location location, Grave grave) {
         playWorldSound(string, location, grave != null ? grave.getOwnerType() : null, grave != null
-                ? grave.getPermissionList() : null, 1, 1);
+                ? grave.getPermissionList()
+                : null, 1, 1);
     }
 
     /**
@@ -390,13 +444,15 @@ public final class EntityManager extends EntityDataManager {
      * @param pitch          the pitch of the sound.
      */
     public void playWorldSound(String string, Location location, EntityType entityType, List<String> permissionList,
-                               float volume, float pitch) {
+            float volume, float pitch) {
         if (location.getWorld() != null) {
             string = plugin.getConfig(string, entityType, permissionList).getString(string);
 
             if (string != null && !string.equals("")) {
                 try {
-                    location.getWorld().playSound(location, Objects.requireNonNull(CompatibilitySoundEnum.valueOf(string.toUpperCase())), volume, pitch);
+                    location.getWorld().playSound(location,
+                            Objects.requireNonNull(CompatibilitySoundEnum.valueOf(string.toUpperCase())), volume,
+                            pitch);
                 } catch (IllegalArgumentException exception) {
                     plugin.debugMessage(string.toUpperCase() + " is not a Sound ENUM", 1);
                 }
@@ -428,7 +484,8 @@ public final class EntityManager extends EntityDataManager {
     }
 
     /**
-     * Plays a player-specific sound at the entity's location with a permission list.
+     * Plays a player-specific sound at the entity's location with a permission
+     * list.
      *
      * @param string         the sound identifier.
      * @param entity         the entity to play the sound for.
@@ -451,7 +508,8 @@ public final class EntityManager extends EntityDataManager {
     }
 
     /**
-     * Plays a player-specific sound at a specified location with additional parameters.
+     * Plays a player-specific sound at a specified location with additional
+     * parameters.
      *
      * @param string         the sound identifier.
      * @param entity         the entity to play the sound for.
@@ -461,14 +519,16 @@ public final class EntityManager extends EntityDataManager {
      * @param pitch          the pitch of the sound.
      */
     public void playPlayerSound(String string, Entity entity, Location location, List<String> permissionList,
-                                float volume, float pitch) {
+            float volume, float pitch) {
         if (entity instanceof Player) {
             Player player = (Player) entity;
             string = plugin.getConfig(string, entity, permissionList).getString(string);
 
             if (string != null && !string.equals("")) {
                 try {
-                    player.playSound(location, Objects.requireNonNull(CompatibilitySoundEnum.valueOf(string.toUpperCase())), volume, pitch);
+                    player.playSound(location,
+                            Objects.requireNonNull(CompatibilitySoundEnum.valueOf(string.toUpperCase())), volume,
+                            pitch);
                 } catch (IllegalArgumentException exception) {
                     plugin.debugMessage(string.toUpperCase() + " is not a Sound ENUM", 1);
                 }
@@ -547,11 +607,13 @@ public final class EntityManager extends EntityDataManager {
         sendMessage(string, entity, name, location, null, permissionList);
     }
 
-    private void sendMessage(String string, Entity entity, Location location, Grave grave, List<String> permissionList) {
+    private void sendMessage(String string, Entity entity, Location location, Grave grave,
+            List<String> permissionList) {
         sendMessage(string, entity, getEntityName(entity), location, grave, permissionList);
     }
 
-    private void sendMessage(String string, Entity entity, String name, Location location, Grave grave, List<String> permissionList) {
+    private void sendMessage(String string, Entity entity, String name, Location location, Grave grave,
+            List<String> permissionList) {
         if (entity instanceof Player) {
             Player player = (Player) entity;
 
@@ -582,11 +644,14 @@ public final class EntityManager extends EntityDataManager {
                 }
 
                 String message = StringUtil.parseString(string, entity, name, location, grave, plugin);
-                plugin.debugMessage("Message found for " + string + " in grave.yml. Sending message to " + entity.getName() + ".", 2);
+                plugin.debugMessage(
+                        "Message found for " + string + " in grave.yml. Sending message to " + entity.getName() + ".",
+                        2);
                 if (plugin.getIntegrationManager().hasMiniMessage()) {
                     MiniMessage.sendMessage(player, message);
                 } else {
-                    player.sendMessage(message); // assuming the server doesn't support MiniMessage or integration is disabled.
+                    player.sendMessage(message); // assuming the server doesn't support MiniMessage or integration is
+                                                 // disabled.
                 }
             } else {
                 plugin.debugMessage("Original string " + originalConfigString + " is empty, no message sent.", 2);
@@ -628,7 +693,8 @@ public final class EntityManager extends EntityDataManager {
 
     private void runConsoleCommand(String string) {
         if (string != null && !string.equals("")) {
-            ServerCommandEvent serverCommandEvent = new ServerCommandEvent(plugin.getServer().getConsoleSender(), string);
+            ServerCommandEvent serverCommandEvent = new ServerCommandEvent(plugin.getServer().getConsoleSender(),
+                    string);
 
             plugin.getServer().getPluginManager().callEvent(serverCommandEvent);
 
@@ -653,7 +719,8 @@ public final class EntityManager extends EntityDataManager {
     }
 
     /**
-     * Runs a function associated with an entity, a specified function name, and a grave.
+     * Runs a function associated with an entity, a specified function name, and a
+     * grave.
      *
      * @param entity   the entity to run the function for.
      * @param function the name of the function to run.
@@ -680,23 +747,24 @@ public final class EntityManager extends EntityDataManager {
             case "teleportation": {
                 if (plugin.getConfig("teleport.enabled", grave).getBoolean("teleport.enabled")
                         && (plugin.hasGrantedPermission("graves.teleport", ((Player) entity).getPlayer())
-                        || plugin.getConfig("teleport.enabled", grave).getBoolean("teleport.enabled")
-                        && plugin.hasGrantedPermission("graves.teleport.world." + grave.getLocationDeath().getWorld().getName(), ((Player) entity).getPlayer())
-                        || plugin.hasGrantedPermission("graves.bypass", ((Player) entity).getPlayer()))
+                                || plugin.getConfig("teleport.enabled", grave).getBoolean("teleport.enabled")
+                                        && plugin.hasGrantedPermission(
+                                                "graves.teleport.world."
+                                                        + grave.getLocationDeath().getWorld().getName(),
+                                                ((Player) entity).getPlayer())
+                                || plugin.hasGrantedPermission("graves.bypass", ((Player) entity).getPlayer()))
                         || plugin.hasGrantedPermission("graves.teleport.bypass", ((Player) entity).getPlayer())) {
 
-                    boolean isBypassOther =
-                            (plugin.hasGrantedPermission("graves.bypass", ((Player) entity).getPlayer())
-                                    && !grave.getOwnerUUID().equals(entity.getUniqueId()))
-                                    || (plugin.hasGrantedPermission("graves.teleport.bypass", ((Player) entity).getPlayer())
+                    boolean isBypassOther = (plugin.hasGrantedPermission("graves.bypass", ((Player) entity).getPlayer())
+                            && !grave.getOwnerUUID().equals(entity.getUniqueId()))
+                            || (plugin.hasGrantedPermission("graves.teleport.bypass", ((Player) entity).getPlayer())
                                     && !grave.getOwnerUUID().equals(entity.getUniqueId()));
 
-                    GraveTeleportEvent modern =
-                            new GraveTeleportEvent(grave, entity);
+                    GraveTeleportEvent modern = new GraveTeleportEvent(grave, entity);
                     plugin.getServer().getPluginManager().callEvent(modern);
 
-                    com.ranull.graves.event.GraveTeleportEvent legacy =
-                            new com.ranull.graves.event.GraveTeleportEvent(grave, entity);
+                    com.ranull.graves.event.GraveTeleportEvent legacy = new com.ranull.graves.event.GraveTeleportEvent(
+                            grave, entity);
                     plugin.getServer().getPluginManager().callEvent(legacy);
 
                     if (!modern.isCancelled() || !modern.isAddon() || !legacy.isCancelled() || !legacy.isAddon()) {
@@ -707,8 +775,7 @@ public final class EntityManager extends EntityDataManager {
                             plugin.getEntityManager().teleportEntity(
                                     entity,
                                     plugin.getGraveManager().getGraveLocationList(entity.getLocation(), grave).get(0),
-                                    grave
-                            );
+                                    grave);
                         }
                     }
                 } else {
@@ -722,7 +789,8 @@ public final class EntityManager extends EntityDataManager {
                 GraveProtectionCreateEvent modern = new GraveProtectionCreateEvent(entity, grave);
                 plugin.getServer().getPluginManager().callEvent(modern);
 
-                com.ranull.graves.event.GraveProtectionCreateEvent legacy = new com.ranull.graves.event.GraveProtectionCreateEvent(entity, grave);
+                com.ranull.graves.event.GraveProtectionCreateEvent legacy = new com.ranull.graves.event.GraveProtectionCreateEvent(
+                        entity, grave);
                 plugin.getServer().getPluginManager().callEvent(legacy);
 
                 if (!modern.isCancelled() || !modern.isAddon() || !legacy.isCancelled() || !legacy.isAddon()) {
@@ -739,7 +807,8 @@ public final class EntityManager extends EntityDataManager {
                 GraveAbandonedEvent modern = new GraveAbandonedEvent(grave);
                 plugin.getServer().getPluginManager().callEvent(modern);
 
-                com.ranull.graves.event.GraveAbandonedEvent legacy = new com.ranull.graves.event.GraveAbandonedEvent(grave);
+                com.ranull.graves.event.GraveAbandonedEvent legacy = new com.ranull.graves.event.GraveAbandonedEvent(
+                        grave);
                 plugin.getServer().getPluginManager().callEvent(legacy);
 
                 if (!modern.isCancelled() || !modern.isAddon() || !legacy.isCancelled() || !legacy.isAddon()) {
@@ -762,8 +831,8 @@ public final class EntityManager extends EntityDataManager {
                 GraveCompassUseEvent modern = new GraveCompassUseEvent(player, grave);
                 plugin.getServer().getPluginManager().callEvent(modern);
 
-                com.ranull.graves.event.GraveCompassUseEvent legacy =
-                        new com.ranull.graves.event.GraveCompassUseEvent(player, grave);
+                com.ranull.graves.event.GraveCompassUseEvent legacy = new com.ranull.graves.event.GraveCompassUseEvent(
+                        player, grave);
                 plugin.getServer().getPluginManager().callEvent(legacy);
 
                 if (!modern.isCancelled() || !modern.isAddon() || !legacy.isCancelled() || !legacy.isAddon()) {
@@ -787,28 +856,30 @@ public final class EntityManager extends EntityDataManager {
                         plugin.getGraveManager().openGrave(entity, entity.getLocation(), grave);
                     } else {
                         Location location = plugin.getGraveManager().getGraveLocation(entity.getLocation(), grave);
-                        if (location != null && entity.getLocation().getWorld() == grave.getLocationDeath().getWorld()) {
+                        if (location != null
+                                && entity.getLocation().getWorld() == grave.getLocationDeath().getWorld()) {
                             if (entity.getLocation().distance(location) <= distance) {
                                 plugin.getGraveManager().openGrave(entity, entity.getLocation(), grave);
                             } else {
-                                plugin.getEntityManager().sendMessage("message.distance-virtual", entity, location, grave);
+                                plugin.getEntityManager().sendMessage("message.distance-virtual", entity, location,
+                                        grave);
                             }
                         }
                     }
                 } else {
-                    plugin.getEntityManager().sendMessage("message.distance-virtual", entity, entity.getLocation(), grave);
+                    plugin.getEntityManager().sendMessage("message.distance-virtual", entity, entity.getLocation(),
+                            grave);
                 }
                 return true;
             }
             case "autoloot": {
                 Location loc = entity.getLocation();
 
-                GraveAutoLootEvent modern =
-                        new GraveAutoLootEvent(entity, loc, grave);
+                GraveAutoLootEvent modern = new GraveAutoLootEvent(entity, loc, grave);
                 plugin.getServer().getPluginManager().callEvent(modern);
 
-                com.ranull.graves.event.GraveAutoLootEvent legacy =
-                        new com.ranull.graves.event.GraveAutoLootEvent(entity, loc, grave);
+                com.ranull.graves.event.GraveAutoLootEvent legacy = new com.ranull.graves.event.GraveAutoLootEvent(
+                        entity, loc, grave);
                 plugin.getServer().getPluginManager().callEvent(legacy);
 
                 if (!modern.isCancelled() || !modern.isAddon() || !legacy.isCancelled() || !legacy.isAddon()) {
@@ -836,22 +907,23 @@ public final class EntityManager extends EntityDataManager {
                         return false;
 
                     GraveParticleEvent modern = new GraveParticleEvent(player, grave);
-                        plugin.getServer().getPluginManager().callEvent(modern);
+                    plugin.getServer().getPluginManager().callEvent(modern);
 
-                    com.ranull.graves.event.GraveParticleEvent legacy =
-                            new com.ranull.graves.event.GraveParticleEvent(player, grave);
+                    com.ranull.graves.event.GraveParticleEvent legacy = new com.ranull.graves.event.GraveParticleEvent(
+                            player, grave);
                     plugin.getServer().getPluginManager().callEvent(legacy);
 
                     if (!modern.isCancelled() || !modern.isAddon() || !legacy.isCancelled() || !legacy.isAddon()) {
                         Location location = plugin.getGraveManager().getGraveLocation(entity.getLocation(), grave);
 
-                        if (location != null && entity.getLocation().getWorld() == grave.getLocationDeath().getWorld()) {
+                        if (location != null
+                                && entity.getLocation().getWorld() == grave.getLocationDeath().getWorld()) {
                             plugin.getParticleManager().startCompassParticleTrail(
                                     entity.getLocation(),
                                     grave.getLocationDeath(),
                                     CompatibilityParticleEnum.valueOf(Objects.requireNonNull(
-                                                    plugin.getConfig("compass.particles.particle", grave)
-                                                            .getString("compass.particles.particle"))
+                                            plugin.getConfig("compass.particles.particle", grave)
+                                                    .getString("compass.particles.particle"))
                                             .toUpperCase()),
                                     plugin.getConfig("compass.particles.count", grave)
                                             .getInt("compass.particles.count", 5),
@@ -859,8 +931,7 @@ public final class EntityManager extends EntityDataManager {
                                             .getDouble("compass.particles.speed", 0.3),
                                     plugin.getConfig("compass.particles.duration", grave)
                                             .getInt("compass.particles.duration"),
-                                    entity.getUniqueId()
-                            );
+                                    entity.getUniqueId());
                         }
                     }
                 }
@@ -931,15 +1002,17 @@ public final class EntityManager extends EntityDataManager {
             }
         } else {
             return (ownerId.equals(playerId)
-                    && plugin.getConfig("protection.open.missing.owner", grave).getBoolean("protection.open.missing.owner"))
+                    && plugin.getConfig("protection.open.missing.owner", grave)
+                            .getBoolean("protection.open.missing.owner"))
                     || (!ownerId.equals(playerId)
-                    && plugin.getConfig("protection.open.missing.other", grave).getBoolean("protection.open.missing.other"));
+                            && plugin.getConfig("protection.open.missing.other", grave)
+                                    .getBoolean("protection.open.missing.other"));
         }
     }
 
-
     /**
-     * Spawns a zombie at a specified location, targeting a specified entity, and associated with a grave.
+     * Spawns a zombie at a specified location, targeting a specified entity, and
+     * associated with a grave.
      *
      * @param location     the location to spawn the zombie.
      * @param entity       the entity associated with the zombie spawn.
@@ -950,7 +1023,7 @@ public final class EntityManager extends EntityDataManager {
         if ((plugin.getConfig("zombie.spawn-owner", grave).getBoolean("zombie.spawn-owner")
                 && grave.getOwnerUUID().equals(entity.getUniqueId())
                 || plugin.getConfig("zombie.spawn-other", grave).getBoolean("zombie.spawn-other")
-                && !grave.getOwnerUUID().equals(entity.getUniqueId()))) {
+                        && !grave.getOwnerUUID().equals(entity.getUniqueId()))) {
             spawnZombie(location, targetEntity, grave);
         }
     }
@@ -967,14 +1040,14 @@ public final class EntityManager extends EntityDataManager {
 
     @SuppressWarnings("deprecation")
     private void spawnZombie(Location location, LivingEntity targetEntity, Grave grave) {
-        if (location == null || location.getWorld() == null || grave.getOwnerType() != EntityType.PLAYER) return;
+        if (location == null || location.getWorld() == null || grave.getOwnerType() != EntityType.PLAYER)
+            return;
 
-        GraveZombieSpawnEvent modern =
-                new GraveZombieSpawnEvent(location, targetEntity, grave);
+        GraveZombieSpawnEvent modern = new GraveZombieSpawnEvent(location, targetEntity, grave);
         plugin.getServer().getPluginManager().callEvent(modern);
 
-        com.ranull.graves.event.GraveZombieSpawnEvent legacy =
-                new com.ranull.graves.event.GraveZombieSpawnEvent(location, targetEntity, grave);
+        com.ranull.graves.event.GraveZombieSpawnEvent legacy = new com.ranull.graves.event.GraveZombieSpawnEvent(
+                location, targetEntity, grave);
         plugin.getServer().getPluginManager().callEvent(legacy);
 
         if (!modern.isCancelled() || !modern.isAddon() || !legacy.isCancelled() || !legacy.isAddon()) {
@@ -1002,7 +1075,8 @@ public final class EntityManager extends EntityDataManager {
 
                 if (livingEntity.getEquipment() != null) {
                     if (plugin.getConfig("zombie.owner-head", grave).getBoolean("zombie.owner-head")) {
-                        livingEntity.getEquipment().setHelmet(plugin.getCompatibility().getSkullItemStack(grave, plugin));
+                        livingEntity.getEquipment()
+                                .setHelmet(plugin.getCompatibility().getSkullItemStack(grave, plugin));
                     }
                     livingEntity.getEquipment().setChestplate(null);
                     livingEntity.getEquipment().setLeggings(null);
@@ -1023,8 +1097,7 @@ public final class EntityManager extends EntityDataManager {
 
                 String zombieName = StringUtil.parseString(
                         plugin.getConfig("zombie.name", grave).getString("zombie.name"),
-                        location, grave, plugin
-                );
+                        location, grave, plugin);
 
                 if (!zombieName.isEmpty()) {
                     if (plugin.getIntegrationManager().hasMiniMessage()) {
@@ -1046,14 +1119,16 @@ public final class EntityManager extends EntityDataManager {
                 if (livingEntity instanceof Mob) {
                     Mob mob = (Mob) livingEntity;
                     if (targetEntity != null && !targetEntity.isInvulnerable()
-                            && (!(targetEntity instanceof Player) || ((Player) targetEntity).getGameMode() != GameMode.CREATIVE)) {
+                            && (!(targetEntity instanceof Player)
+                                    || ((Player) targetEntity).getGameMode() != GameMode.CREATIVE)) {
                         mob.setTarget(targetEntity);
                     }
                 }
 
                 if (livingEntity instanceof Zombie) {
                     Zombie zombie = (Zombie) livingEntity;
-                    if (zombie.isBaby()) zombie.setBaby(false);
+                    if (zombie.isBaby())
+                        zombie.setBaby(false);
                 }
             }
 
@@ -1249,7 +1324,8 @@ public final class EntityManager extends EntityDataManager {
     }
 
     /**
-     * Retrieves a map of equipment slots and their corresponding item stacks for a living entity and grave.
+     * Retrieves a map of equipment slots and their corresponding item stacks for a
+     * living entity and grave.
      *
      * @param livingEntity the living entity to retrieve the equipment for.
      * @param grave        the grave associated with the equipment.
@@ -1305,7 +1381,8 @@ public final class EntityManager extends EntityDataManager {
     /**
      * Returns the name of the specified entity.
      * <p>
-     * This method handles different types of entities, including players and other entities, with legacy support for older versions of Minecraft.
+     * This method handles different types of entities, including players and other
+     * entities, with legacy support for older versions of Minecraft.
      * </p>
      *
      * @param entity the {@link Entity} whose name is to be retrieved
@@ -1327,14 +1404,17 @@ public final class EntityManager extends EntityDataManager {
     }
 
     /**
-     * Checks if the specified entity has a persistent data string with the given key.
+     * Checks if the specified entity has a persistent data string with the given
+     * key.
      * <p>
-     * The method checks for persistent data if supported; otherwise, it checks for metadata.
+     * The method checks for persistent data if supported; otherwise, it checks for
+     * metadata.
      * </p>
      *
      * @param entity the {@link Entity} to check
      * @param string the key of the persistent data or metadata
-     * @return {@code true} if the entity has the specified data string; {@code false} otherwise
+     * @return {@code true} if the entity has the specified data string;
+     *         {@code false} otherwise
      */
     public boolean hasDataString(Entity entity, String string) {
         return plugin.getVersionManager().hasPersistentData() ? entity.getPersistentDataContainer()
@@ -1344,12 +1424,14 @@ public final class EntityManager extends EntityDataManager {
     /**
      * Checks if the specified entity has a persistent data byte with the given key.
      * <p>
-     * The method checks for persistent data if supported; otherwise, it checks for metadata.
+     * The method checks for persistent data if supported; otherwise, it checks for
+     * metadata.
      * </p>
      *
      * @param entity the {@link Entity} to check
      * @param string the key of the persistent data or metadata
-     * @return {@code true} if the entity has the specified data byte; {@code false} otherwise
+     * @return {@code true} if the entity has the specified data byte; {@code false}
+     *         otherwise
      */
     public boolean hasDataByte(Entity entity, String string) {
         return plugin.getVersionManager().hasPersistentData() ? entity.getPersistentDataContainer()
@@ -1357,13 +1439,15 @@ public final class EntityManager extends EntityDataManager {
     }
 
     /**
-     * Retrieves the persistent data string associated with the given key from the specified entity.
+     * Retrieves the persistent data string associated with the given key from the
+     * specified entity.
      * <p>
-     * If persistent data is supported, it retrieves the string from the persistent data container; otherwise, it retrieves it from metadata.
+     * If persistent data is supported, it retrieves the string from the persistent
+     * data container; otherwise, it retrieves it from metadata.
      * </p>
      *
      * @param entity the {@link Entity} to retrieve data from
-     * @param key the key of the persistent data or metadata
+     * @param key    the key of the persistent data or metadata
      * @return the data string associated with the key, or {@code null} if not found
      */
     public String getDataString(Entity entity, String key) {
@@ -1378,11 +1462,12 @@ public final class EntityManager extends EntityDataManager {
     /**
      * Sets a persistent data string for the specified entity with the given key.
      * <p>
-     * If persistent data is supported, it sets the string in the persistent data container; otherwise, it sets it in metadata.
+     * If persistent data is supported, it sets the string in the persistent data
+     * container; otherwise, it sets it in metadata.
      * </p>
      *
      * @param entity the {@link Entity} to set data for
-     * @param key the key of the persistent data or metadata
+     * @param key    the key of the persistent data or metadata
      * @param string the data string to set
      */
     public void setDataString(Entity entity, String key, String string) {
@@ -1396,11 +1481,12 @@ public final class EntityManager extends EntityDataManager {
     /**
      * Sets a persistent data byte for the specified entity with the given key.
      * <p>
-     * If persistent data is supported, it sets the byte in the persistent data container; otherwise, it sets it in metadata.
+     * If persistent data is supported, it sets the byte in the persistent data
+     * container; otherwise, it sets it in metadata.
      * </p>
      *
      * @param entity the {@link Entity} to set data for
-     * @param key the key of the persistent data or metadata
+     * @param key    the key of the persistent data or metadata
      */
     public void setDataByte(Entity entity, String key) {
         if (plugin.getVersionManager().hasPersistentData()) {
@@ -1411,13 +1497,16 @@ public final class EntityManager extends EntityDataManager {
     }
 
     /**
-     * Retrieves a {@link Grave} object from the persistent data or metadata of the specified entity.
+     * Retrieves a {@link Grave} object from the persistent data or metadata of the
+     * specified entity.
      * <p>
-     * The method checks if persistent data is supported and looks for a "graveUUID" key. If not found, it checks for metadata.
+     * The method checks if persistent data is supported and looks for a "graveUUID"
+     * key. If not found, it checks for metadata.
      * </p>
      *
      * @param entity the {@link Entity} from which to retrieve the grave
-     * @return the {@link Grave} associated with the entity, or {@code null} if not found
+     * @return the {@link Grave} associated with the entity, or {@code null} if not
+     *         found
      */
     public Grave getGraveFromEntityData(Entity entity) {
         if (plugin.getVersionManager().hasPersistentData() && entity.getPersistentDataContainer()
