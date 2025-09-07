@@ -686,9 +686,6 @@ public final class GraveManager {
         plugin.getEntityManager().removeEntity(grave);
         plugin.getDataManager().removeGrave(grave);
 
-        if (plugin.getIntegrationManager().hasWorldEdit()) {
-            plugin.getIntegrationManager().getWorldEdit().clearSchematic(grave);
-        }
         if (plugin.getIntegrationManager().hasMultiPaper()) {
             plugin.getIntegrationManager().getMultiPaper().notifyGraveRemoval(grave);
         }
@@ -977,10 +974,6 @@ public final class GraveManager {
         plugin.getHologramManager().createHologram(location, grave);
         plugin.getEntityManager().createArmorStand(location, grave);
         plugin.getEntityManager().createItemFrame(location, grave);
-
-        if (plugin.getIntegrationManager().hasWorldEdit()) {
-            plugin.getIntegrationManager().getWorldEdit().createSchematic(location, grave);
-        }
 
         if (plugin.getIntegrationManager().hasFurnitureLib()) {
             plugin.getIntegrationManager().getFurnitureLib().createFurniture(location, grave);
