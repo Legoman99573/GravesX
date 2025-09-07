@@ -246,16 +246,6 @@ settings:
       # Should ProtocolLib integration be enabled.
       enabled: true
 
-    #############
-    # WorldEdit #
-    #############
-    # Source: https://dev.bukkit.org/projects/worldedit/
-    worldedit:
-      # Should WorldEdit integration be enabled.
-      enabled: true
-      # Should Graves write its schematics into its own folder.
-      write: true
-
     ################
     # FurnitureLib #
     ################

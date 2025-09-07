@@ -660,27 +660,6 @@ settings:
             # Should corpses glow?
             enabled: false
 
-      #############
-      # Schematic #
-      #############
-      # Schematic options, this feature is in beta. Schematics don't get cleaned up when the grave is removed.
-      schematic:
-        # Should schematics be enabled.
-        enabled: false
-        # Schematic file name.
-        name: "grave_default"
-        # Radius to rollback
-        radius: 10
-        # Schematic offset X.
-        offset:
-          x: 0
-          # Schematic offset Y.
-          y: 0
-          # Schematic offset Z.
-          z: 0
-        # Should we ignore air blocks? Most cases, this should be true, but with some schematics, you may need to set this to false.
-        ignore-air: true
-
       ################
       # NoteBlockAPI #
       ################

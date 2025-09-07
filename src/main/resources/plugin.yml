@@ -18,7 +18,6 @@ softdepend:
   - AdvancedEnchantments
   - Vault
   - ProtocolLib
-  - WorldEdit
   - PlaceholderAPI
   - FurnitureLib
   - FurnitureEngine

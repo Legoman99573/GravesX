@@ -59,14 +59,6 @@ public final class IntegrationManager {
     private ProtocolLib protocolLib;
 
     /**
-     * Integration with WorldEdit, a tool for editing worlds.
-     * <p>
-     * This {@link WorldEdit} instance represents the integration with the WorldEdit plugin, used for large-scale world editing.
-     * </p>
-     */
-    private WorldEdit worldEdit;
-
-    /**
      * Integration with FurnitureLib, a plugin for furniture management.
      * <p>
      * This {@link FurnitureLib} instance represents the integration with the FurnitureLib plugin, used for managing furniture.
@@ -254,7 +246,6 @@ public final class IntegrationManager {
         loadMultiPaper();
         loadVault();
         loadProtocolLib();
-        loadWorldEdit();
         loadFurnitureLib();
         loadFurnitureEngine();
         loadProtectionLib();
@@ -351,15 +342,6 @@ public final class IntegrationManager {
      */
     public ProtocolLib getProtocolLib() {
         return protocolLib;
-    }
-
-    /**
-     * Returns the instance of the WorldEdit integration, if it is loaded.
-     *
-     * @return The {@code WorldEdit} integration instance, or null if not loaded.
-     */
-    public WorldEdit getWorldEdit() {
-        return worldEdit;
     }
 
     /**
@@ -579,15 +561,6 @@ public final class IntegrationManager {
     @Deprecated
     public boolean hasCoreProtect() {
         return coreProtectIntegration != null;
-    }
-
-    /**
-     * Checks if WorldEdit integration is loaded.
-     *
-     * @return {@code true} if WorldEdit integration is loaded, {@code false} otherwise.
-     */
-    public boolean hasWorldEdit() {
-        return worldEdit != null;
     }
 
     /**
@@ -841,28 +814,6 @@ public final class IntegrationManager {
         }
     }
 
-    /**
-     * Loads the WorldEdit integration if enabled in the configuration.
-     */
-    private void loadWorldEdit() {
-        if (plugin.getConfig().getBoolean("settings.integration.worldedit.enabled", true)) {
-            Plugin worldEditPlugin = plugin.getServer().getPluginManager().getPlugin("WorldEdit");
-
-            if (worldEditPlugin != null && worldEditPlugin.isEnabled()) {
-                try {
-                    Class.forName("com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats", false, getClass().getClassLoader());
-
-                    worldEdit = new WorldEdit(plugin, worldEditPlugin);
-
-                    plugin.integrationMessage("Hooked into " + worldEditPlugin.getName() + " " + worldEditPlugin.getDescription().getVersion() + ".");
-                } catch (ClassNotFoundException ignored) {
-                    plugin.integrationMessage(worldEditPlugin.getName() + " " + worldEditPlugin.getDescription().getVersion() + " detected, Only WorldEdit 7+ is supported. Disabling WorldEdit support.", "severe");
-                }
-            }
-        } else {
-            worldEdit = null;
-        }
-    }
 
     /**
      * @deprecated Unmaintained greedware plugin.
