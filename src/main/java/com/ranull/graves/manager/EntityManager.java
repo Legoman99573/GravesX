@@ -210,7 +210,7 @@ public final class EntityManager extends EntityDataManager {
     public void teleportEntity(Entity entity, Location location, Grave grave) {
         GravePreTeleportEvent modernPre = new GravePreTeleportEvent(grave, entity);
 
-        // found a place to put in my little hack
+        // found a place to put in my little hack (anyone can move this if you want)
 
         // add the config thing if it doesnt exist
         if (plugin.getConfig("teleport.costs-exp", grave).get("teleport.costs-exp") == null) {
@@ -227,15 +227,15 @@ public final class EntityManager extends EntityDataManager {
             if (entity instanceof Player) {
                 if (((Player) entity).getLevel() >= plugin.getConfig("teleport.exp-level-cost", grave)
                         .getInt("teleport.exp-level-cost")) {
-                            //they have the levels, NOW TAKE THEM AWAY!!!!
+                    // they have the levels, NOW TAKE THEM AWAY!!!!
                     ((Player) entity)
                             .setLevel(((Player) entity).getLevel() - plugin.getConfig("teleport.exp-level-cost", grave)
                                     .getInt("teleport.exp-level-cost"));
                 } else {
-                    //you suck
-                    //no teleport for you
+                    // you suck
+                    // no teleport for you
                     ((Player) entity).playNote(entity.getLocation(), Instrument.BASS_GUITAR, Note.flat(0, Tone.C));
-                    sendMessage("You cannot teleport to your grave. Required levels: "
+                    plugin.getEntityManager().sendMessage("message.xp-req"
                             + plugin.getConfig("teleport.exp-level-cost", grave)
                                     .getInt("teleport.exp-level-cost"),
                             entity);

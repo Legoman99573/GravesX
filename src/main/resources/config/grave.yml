@@ -210,6 +210,10 @@ settings:
         unsafe: false
         # If the grave is in an unsafe location, should the entity be teleported to the top.
         top: true
+        # Should you need a certain amount of levels to teleport?
+        costs-exp: false
+        # The amount of levels.
+        exp-level-cost: 5 
 
       ###########
       # Storage #
@@ -890,6 +894,9 @@ settings:
         # Prefix for messages.
         prefix: "&c☠ &r"
         # Messages for different interactions.
+
+        # since im lazy, remeber that the required levels is appended to the end
+        xp-req: "You cannot teleport to your grave. Required levels: "
         looted: "You looted &c%owner_name%&r's grave at &c%x%&rx, &c%y%&ry, &c%z%&rz in &c%world_formatted%&r."
         experience: "Looted &c%level% &rlevels from grave."
         empty: "You don't have any graves."
