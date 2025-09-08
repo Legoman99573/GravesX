@@ -182,6 +182,7 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <classifier>api-javadoc</classifier>
                     <show>private</show>
                     <nohelp>true</nohelp>
                 </configuration>
@@ -202,6 +203,9 @@
                         <goals>
                             <goal>jar-no-fork</goal>
                         </goals>
+                        <configuration>
+                            <classifier>api-sources</classifier>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
