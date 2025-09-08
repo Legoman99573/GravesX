@@ -17,7 +17,6 @@ import dev.cwhead.GravesX.manager.ParticleManager;
 import dev.cwhead.GravesX.module.listener.DependencyEnableListener;
 import dev.cwhead.GravesX.module.util.LibbyImporter;
 import dev.cwhead.GravesX.module.ModuleManager;
-import dev.cwhead.GravesX.module.listener.StartupListener;
 import dev.cwhead.GravesX.util.LibraryLoaderUtil;
 import dev.cwhead.GravesX.util.MclogsUtil;
 import dev.cwhead.GravesX.util.PastebinUtil;
@@ -144,7 +143,6 @@ public class Graves extends JavaPlugin {
         }
         moduleManager.enableAll();
         depListener = new DependencyEnableListener(moduleManager);
-        //getServer().getPluginManager().registerEvents(new StartupListener(this, moduleManager), this);
         getServer().getPluginManager().registerEvents(depListener, this);
         getGravesXScheduler().runTask(moduleManager::tryEnablePending);
 
