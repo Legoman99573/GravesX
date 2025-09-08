@@ -1936,6 +1936,7 @@ public final class DataManager {
                         String query = "DELETE FROM " + getStoragePrefix() + table + " WHERE uuid_entity = ?";
                         Object[] parameters = { entityData.getUUIDEntity() };
                         executeUpdate(query, parameters);
+                        plugin.getHologramManager().removeHologram(entityData);
                         plugin.debugMessage("Removing " + getStoragePrefix() + table + " for grave " + entityData.getUUIDGrave(), 1);
                     }
                 }
