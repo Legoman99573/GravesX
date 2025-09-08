@@ -773,13 +773,27 @@ public final class GraveManager {
                 break;
             }
             case CUSTOM: {
-                for (GraveProvider p : RegisterGraveProviders.getAll()) {
+                List<GraveProvider> providers = RegisterGraveProviders.getAll();
+                if (providers.isEmpty()) break;
+
+                for (GraveProvider p : providers) {
+                    if (p == null) continue;
                     try {
                         if (p.supports(entityData) && p.removeEntityData(entityData)) {
+                            plugin.getHologramManager().removeHologram(entityData);
                             return;
                         }
                     } catch (Throwable t) {
-                        plugin.getLogger().warning("[CustomGraveProvider " + p.id() + "] removeEntityData() failed: " + t.getMessage());
+                        String pid;
+                        try {
+                            pid = String.valueOf(p.id());
+                        }
+                        catch (Throwable ignored) {
+                            pid = p.getClass().getName();
+                        }
+
+                        plugin.getLogger().warning("[CustomGraveProvider " + pid + "] removeEntityData() failed: " + t.getMessage());
+                        plugin.logStackTrace(t);
                     }
                 }
                 break;
