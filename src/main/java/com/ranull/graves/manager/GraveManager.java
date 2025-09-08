@@ -94,6 +94,9 @@ public final class GraveManager {
 
         // Remove any elements that have expired or completed their lifecycle
         removeExpiredElements(graveRemoveList, entityDataRemoveList, blockDataRemoveList);
+
+        // Remove lingering holograms
+        plugin.getHologramManager().purgeLingeringHolograms();
     }
 
     /**
