@@ -55,10 +55,10 @@ public final class CompatibilityMaterialData implements Compatibility {
                 updateSkullBlock(block, grave, plugin);
             }
 
-            return new BlockData(location, grave.getUUID(), replaceMaterial, null);
+            return BlockData.fromBlock(location.getBlock(), grave.getUUID(), replaceMaterial, null);
         }
 
-        return new BlockData(location, grave.getUUID(), null, null);
+        return BlockData.fromBlock(location.getBlock(), grave.getUUID(), null, null);
     }
 
     /**

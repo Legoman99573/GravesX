@@ -143,9 +143,6 @@ public final class MaterialUtil {
     }
 
     /**
-     * @deprecated
-     * <p>
-     * This method is deprecated and will be removed in a future version.
      * Use {@link #isPlayerHead(String)} instead.
      * </p>
      *
@@ -154,7 +151,6 @@ public final class MaterialUtil {
      * @param material The material to check.
      * @return True if the material is a player head, false otherwise.
      */
-    @Deprecated
     public static boolean isPlayerHead(Material material) {
         return isPlayerHead(material.name());
     }

@@ -2,13 +2,13 @@ package dev.cwhead.GravesX.api.grave;
 
 import com.ranull.graves.Graves;
 import com.ranull.graves.data.BlockData;
-import com.ranull.graves.event.GraveBlockPlaceEvent;
-import com.ranull.graves.event.GraveCreateEvent;
-import com.ranull.graves.event.GraveProtectionCreateEvent;
 import com.ranull.graves.manager.*;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.api.util.UtilAPI;
 import dev.cwhead.GravesX.api.world.LocationAPI;
+import dev.cwhead.GravesX.event.GraveBlockPlaceEvent;
+import dev.cwhead.GravesX.event.GraveCreateEvent;
+import dev.cwhead.GravesX.event.GraveProtectionCreateEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.*;
@@ -307,14 +307,23 @@ public final class GraveCreationAPI {
         if (graveProtection && plugin.getConfig("protection.enabled", grave).getBoolean("protection.enabled")) {
             GraveProtectionCreateEvent gp = new GraveProtectionCreateEvent(victim, grave);
             plugin.getServer().getPluginManager().callEvent(gp);
+
+            com.ranull.graves.event.GraveProtectionCreateEvent gpl = new com.ranull.graves.event.GraveProtectionCreateEvent(victim, grave);
+
+            plugin.getServer().getPluginManager().callEvent(gpl);
+            if (gpl.isCancelled() || gpl.isAddon() || gp.isCancelled() || gp.isAddon()) return;
+
             grave.setProtection(true);
-            grave.setTimeProtection(graveProtectionTime > 0 ? graveProtectionTime : plugin.getConfig("protection.time", grave).getInt("protection.time") * 1000L);
+            grave.setTimeProtection(gp.getGrave().getTimeProtection() > 0 ? gp.getGrave().getTimeProtection() : plugin.getConfig("protection.time", grave).getInt("protection.time") * 1000L);
         }
 
         try {
-            GraveCreateEvent createGrave = new GraveCreateEvent(victim, grave);
+            com.ranull.graves.event.GraveCreateEvent createGrave = new com.ranull.graves.event.GraveCreateEvent(victim, grave);
             Bukkit.getPluginManager().callEvent(createGrave);
-            if (createGrave.isCancelled()) return;
+
+            GraveCreateEvent createGraveNew = new GraveCreateEvent(victim, grave);
+            Bukkit.getPluginManager().callEvent(createGraveNew);
+            if (createGrave.isCancelled() || createGraveNew.isCancelled() || createGrave.isAddon() || createGraveNew.isAddon()) return;
 
             locationMap.put(finalLocationDeath, BlockData.BlockType.DEATH);
 
@@ -399,7 +408,11 @@ public final class GraveCreationAPI {
             GraveBlockPlaceEvent evt = new GraveBlockPlaceEvent(grave, loc, entry.getValue(),
                     entry.getKey().getBlock(), livingEntity);
             plugin.getServer().getPluginManager().callEvent(evt);
-            if (evt.isCancelled()) continue;
+
+            com.ranull.graves.event.GraveBlockPlaceEvent evtleg = new com.ranull.graves.event.GraveBlockPlaceEvent(grave, loc, entry.getValue(),
+                    entry.getKey().getBlock(), livingEntity);
+            plugin.getServer().getPluginManager().callEvent(evtleg);
+            if (evt.isCancelled() || evt.isAddon() || evtleg.isCancelled() || evtleg.isAddon()) continue;
 
             plugin.getGraveManager().placeGrave(evt.getLocation(), grave);
             plugin.getEntityManager().sendMessage("message.block", livingEntity, loc, grave);
