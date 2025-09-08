@@ -7,15 +7,15 @@ import com.ranull.graves.integration.MiniMessage;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.LocationUtil;
 import com.ranull.graves.util.StringUtil;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.util.BoundingBox;
 
-import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /**
  * The HologramManager class is responsible for managing holograms associated with graves.
@@ -117,54 +117,16 @@ public final class HologramManager extends EntityDataManager {
      * @param grave The grave whose holograms should be removed.
      */
     public void removeHologram(Grave grave) {
-        Map<EntityData, Entity> entityDataMap = getEntityDataMap(getLoadedEntityDataList(grave));
-        removeHologram(entityDataMap);
-
-        sweepAndRemoveByTags(grave);
-
-        try {
-            plugin.getDataManager().removeHologramData(grave);
-        } catch (Throwable ignored) {
-        }
+        removeHologram(getEntityDataMap(getLoadedEntityDataList(grave)));
     }
+
     /**
      * Removes a specific hologram associated with an entity data.
      *
      * @param entityData The entity data of the hologram to remove.
      */
     public void removeHologram(EntityData entityData) {
-        if (entityData == null) return;
-
-        Map<EntityData, Entity> map = getEntityDataMap(Collections.singletonList(entityData));
-        Entity mapped = map.get(entityData);
-        Location center = (mapped != null ? mapped.getLocation() : tryGetLocation(entityData));
-
-        removeHologram(map);
-
-        java.util.UUID graveId = extractGraveUUID(entityData);
-        if (graveId != null && center != null) {
-            sweepAndRemoveByTags(graveId, center);
-        }
-    }
-
-    private java.util.UUID extractGraveUUID(EntityData data) {
-        if (data == null) return null;
-        try {
-            Method m = data.getClass().getMethod("getUUIDGrave");
-            Object o = m.invoke(data);
-            if (o instanceof UUID) return (UUID) o;
-        } catch (Throwable ignored) {}
-        return null;
-    }
-
-    private Location tryGetLocation(EntityData data) {
-        if (data == null) return null;
-        try {
-            Method m = data.getClass().getMethod("getLocationDeath");
-            Object o = m.invoke(data);
-            return (o instanceof Location) ? (Location) o : null;
-        } catch (Throwable ignored) {}
-        return null;
+        removeHologram(getEntityDataMap(Collections.singletonList(entityData)));
     }
 
     /**
@@ -173,99 +135,32 @@ public final class HologramManager extends EntityDataManager {
      * @param entityDataMap The map of entity data to entities.
      */
     public void removeHologram(Map<EntityData, Entity> entityDataMap) {
-        if (entityDataMap == null || entityDataMap.isEmpty()) return;
+        List<EntityData> entityDataList = new ArrayList<>();
 
-        Runnable task = () -> {
-            List<EntityData> removed = new ArrayList<>();
+        for (Map.Entry<EntityData, Entity> entry : entityDataMap.entrySet()) {
+            Entity entity = entry.getValue();
+            if (entity instanceof ArmorStand) {
+                ArmorStand armorStand = (ArmorStand) entity;
 
-            for (Map.Entry<EntityData, Entity> entry : entityDataMap.entrySet()) {
-                Entity entity = entry.getValue();
-                if (entity instanceof ArmorStand) {
-                    ArmorStand as = (ArmorStand) entity;
-
-                    if (as.isValid()) as.remove();
-
-                    new BukkitRunnable() {
-                        @Override public void run() {
-                            if (as.isValid()) as.remove();
-                        }
-                    }.runTaskLater(plugin, 1L);
-                } else if (entity != null && entity.isValid()) {
-                    entity.remove();
+                if (armorStand.isValid()) {
+                    armorStand.remove();
                 }
 
-                removed.add(entry.getKey());
-            }
-
-            plugin.getDataManager().removeEntityData(removed);
-        };
-
-        if (Bukkit.isPrimaryThread()) task.run();
-        else Bukkit.getScheduler().runTask(plugin, task);
-    }
-
-    /**
-     * Sweeps for stray ArmorStands that look like our holograms (by scoreboard tags)
-     * around the grave location and removes them. Main-thread safe to call.
-     */
-    private void sweepAndRemoveByTags(Grave grave) {
-        Location base = grave.getLocationDeath();
-        if (base == null || base.getWorld() == null) return;
-
-        Runnable task = () -> {
-            double r = 16.0;
-            BoundingBox box = BoundingBox.of(base, r, r, r);
-            String graveTag = tagFor(grave.getUUID());
-
-            for (ArmorStand as : base.getWorld().getEntitiesByClass(ArmorStand.class)) {
-                if (!as.isValid()) continue;
-                if (!box.contains(as.getLocation().toVector())) continue;
-
-                Set<String> tags = as.getScoreboardTags();
-                if (tags.contains("graveHologram") && tags.contains(graveTag)) {
-                    as.remove();
-                    new BukkitRunnable() {
-                        @Override public void run() {
-                            if (as.isValid()) as.remove();
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        if (armorStand.isValid()) {
+                            armorStand.remove();
                         }
-                    }.runTaskLater(plugin, 1L);
-                }
+                    }
+                }.runTaskLater(plugin, 1L); // Run a tick later to ensure removal
+            } else {
+                entity.remove();
             }
-        };
 
-        if (Bukkit.isPrimaryThread()) task.run();
-        else Bukkit.getScheduler().runTask(plugin, task);
-    }
+            entityDataList.add(entry.getKey());
+        }
 
-    private void sweepAndRemoveByTags(java.util.UUID graveId, Location center) {
-        if (graveId == null || center == null || center.getWorld() == null) return;
-
-        Runnable task = () -> {
-            double r = 16.0;
-            BoundingBox box = BoundingBox.of(center, r, r, r);
-            String graveTag = tagFor(graveId);
-
-            for (org.bukkit.entity.ArmorStand as : center.getWorld().getEntitiesByClass(org.bukkit.entity.ArmorStand.class)) {
-                if (!as.isValid()) continue;
-                if (!box.contains(as.getLocation().toVector())) continue;
-
-                java.util.Set<String> tags = as.getScoreboardTags();
-                if (tags.contains("graveHologram") && tags.contains(graveTag)) {
-                    as.remove();
-                    new org.bukkit.scheduler.BukkitRunnable() {
-                        @Override public void run() {
-                            if (as.isValid()) as.remove();
-                        }
-                    }.runTaskLater(plugin, 1L);
-                }
-            }
-        };
-
-        if (Bukkit.isPrimaryThread()) task.run();
-        else Bukkit.getScheduler().runTask(plugin, task);
-    }
-
-    private static String tagFor(UUID id) {
-        return "graveHologramGraveUUID:" + id;
+        plugin.getDataManager().removeEntityData(entityDataList);
     }
 }
