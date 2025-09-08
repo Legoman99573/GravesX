@@ -76,6 +76,8 @@ public class Graves extends JavaPlugin {
     private boolean isUnknownBuild = false;
     private static TaskScheduler graveScheduler;
     private ModuleManager moduleManager;
+    private boolean deferModuleLoad;
+    private DependencyEnableListener depListener;
 
 
     @Override
@@ -96,6 +98,18 @@ public class Graves extends JavaPlugin {
         GravesXAddon.ensureAddonRoot(this);
 
         integrationManager = new IntegrationManager(this);
+        moduleManager = new ModuleManager(this);
+        moduleManager.setLibraryImporter(new LibbyImporter(this));
+        // Decide whether to defer module load
+        deferModuleLoad = moduleManager.shouldDeferLoadOnExternalPlugins();
+
+        if (!deferModuleLoad) {
+            // Safe: no external plugins referenced (or none present). Load descriptors now.
+            moduleManager.loadAll();  // calls onModuleLoad(ctx)
+            getLogger().info("[Modules] Loaded descriptors during onLoad.");
+        } else {
+            getLogger().info("[Modules] Deferring module load to onEnable (external plugins detected).");
+        }
     }
 
     @Override
@@ -122,10 +136,17 @@ public class Graves extends JavaPlugin {
         particleManager = new ParticleManager(this);
 
         saveDefaultConfig();
+
         this.moduleManager = new ModuleManager(this);
         this.moduleManager.setLibraryImporter(new LibbyImporter(this));
-        getServer().getPluginManager().registerEvents(new StartupListener(this, moduleManager), this);
-        getServer().getPluginManager().registerEvents(new DependencyEnableListener(moduleManager), this);
+        if (deferModuleLoad) {
+            moduleManager.loadAll();
+        }
+        moduleManager.enableAll();
+        depListener = new DependencyEnableListener(moduleManager);
+        //getServer().getPluginManager().registerEvents(new StartupListener(this, moduleManager), this);
+        getServer().getPluginManager().registerEvents(depListener, this);
+        getGravesXScheduler().runTask(moduleManager::tryEnablePending);
 
         registerCommands();
         registerListeners();

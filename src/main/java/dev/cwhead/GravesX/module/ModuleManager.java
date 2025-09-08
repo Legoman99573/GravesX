@@ -327,6 +327,46 @@ public final class ModuleManager {
     }
 
     /**
+     * Scan module jars and collect all external Bukkit plugin names that modules
+     * declare via pluginDepends and pluginSoftDepends, without loading classes.
+     */
+    public Set<String> discoverExternalPluginHints() {
+        Set<String> names = new LinkedHashSet<>();
+        File[] jars = modulesDir.listFiles((d, n) -> n.toLowerCase(Locale.ROOT).endsWith(".jar"));
+        if (jars == null) return names;
+
+        Arrays.sort(jars);
+        for (File jar : jars) {
+            try (JarFile jf = new JarFile(jar)) {
+                JarEntry entry = jf.getJarEntry("module.yml");
+                if (entry == null) continue;
+
+                try (InputStream in = jf.getInputStream(entry)) {
+                    ModuleInfo mi = ModuleInfo.fromYaml(in);
+                    if (mi == null) continue;
+                    names.addAll(mi.pluginDepends());
+                    names.addAll(mi.pluginSoftDepends());
+                }
+            } catch (Throwable ignored) {}
+        }
+        return names;
+    }
+
+    /**
+     * True if any plugin referenced by any module is present on the server.
+     * If true, we defer module load to onEnable so those plugins are fully initialized.
+     */
+    public boolean shouldDeferLoadOnExternalPlugins() {
+        Set<String> hints = discoverExternalPluginHints();
+        if (hints.isEmpty()) return false;
+        for (String name : hints) {
+            Plugin p = Bukkit.getPluginManager().getPlugin(name);
+            if (p != null) return true; // we "see" it: defer
+        }
+        return false;
+    }
+
+    /**
      * Collects required Bukkit plugins that are not installed (null from PluginManager).
      *
      * @param info Module metadata.
