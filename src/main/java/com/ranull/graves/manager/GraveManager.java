@@ -29,8 +29,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.geysermc.floodgate.api.FloodgateApi;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Manages the operations and lifecycle of graves within the Graves plugin.
@@ -44,12 +42,6 @@ public final class GraveManager {
      * </p>
      */
     private final Graves plugin;
-
-    private final Map<UUID, Integer> missingStreak = new ConcurrentHashMap<>();
-    private final Map<UUID, Long> nextAllowedAt = new ConcurrentHashMap<>();
-    private final Set<UUID> regenInFlight = ConcurrentHashMap.newKeySet();
-    private final Map<UUID, Integer> regenFailures = new ConcurrentHashMap<>();
-    private final AtomicBoolean timerBusy = new AtomicBoolean(false);
 
     /**
      * Initializes the GraveManager with the specified plugin instance.
@@ -65,14 +57,7 @@ public final class GraveManager {
      * Starts the grave timer task that periodically checks and updates graves.
      */
     private void startGraveTimer() {
-        plugin.getGravesXScheduler().runTaskTimer(() -> {
-            if (!timerBusy.compareAndSet(false, true)) return;
-            try {
-                checkAndUpdateGraves();
-            } finally {
-                timerBusy.set(false);
-            }
-        }, 40L, 20L);
+        plugin.getGravesXScheduler().runTaskTimer(this::checkAndUpdateGraves, 20L, 20L); // 10 ticks = 0.5 seconds
     }
 
     /**
@@ -906,72 +891,13 @@ public final class GraveManager {
      * Restores graves that are in cache but missing from the world.
      */
     private void restoreMissingGraves() {
-        final long now = System.currentTimeMillis();
-
-        Collection<Grave> graves = new ArrayList<>(plugin.getCacheManager().getGraveMap().values());
-
-        for (Grave grave : graves) {
-            if (grave == null) continue;
-
-            final UUID id = grave.getUUID();
-            final Location loc = grave.getLocationDeath();
-            if (loc == null || loc.getWorld() == null) {
-                missingStreak.remove(id);
-                continue;
+        for (Grave grave : plugin.getCacheManager().getGraveMap().values()) {
+            if (!isGravePlaced(grave)) {
+                plugin.debugMessage("Grave " + grave.getUUID() + " missing from world. Regenerating at saved location.", 1);
+                plugin.getGraveManager().placeGrave(grave.getLocationDeath(), grave);
             }
-
-            if (isGravePlaced(grave)) {
-                missingStreak.remove(id);
-                regenFailures.remove(id);
-                continue;
-            }
-
-            int streak = missingStreak.merge(id, 1, Integer::sum);
-
-            long gate = nextAllowedAt.getOrDefault(id, 0L);
-            if (streak < 3 || now < gate) {
-                continue;
-            }
-
-            if (!regenInFlight.add(id)) continue;
-
-            plugin.getGravesXScheduler().runTask(() -> {
-                try {
-                    if (isGravePlaced(grave)) {
-                        missingStreak.remove(id);
-                        regenFailures.remove(id);
-                        return;
-                    }
-
-                    try {
-                        Chunk chunk = loc.getChunk();
-                        if (!chunk.isLoaded())
-                            chunk.load(true);
-                    } catch (Throwable ignored) {}
-
-                    plugin.debugMessage("Grave " + id + " missing from world. Regenerating at saved location.", 1);
-                    plugin.getGraveManager().placeGrave(loc, grave);
-
-                    missingStreak.remove(id);
-                    regenFailures.remove(id);
-                    nextAllowedAt.put(id, System.currentTimeMillis() + withJitter(20_000L));
-
-                } catch (Throwable t) {
-                    plugin.getLogger().warning("Failed to regenerate grave " + id + ": " + t.getMessage());
-                    plugin.logStackTrace(t);
-
-                    int fails = regenFailures.merge(id, 1, Integer::sum);
-                    long backoff = (long) Math.min(120_000L,
-                            20_000L * Math.pow(1.8, Math.max(0, fails - 1)));
-                    nextAllowedAt.put(id, System.currentTimeMillis() + withJitter(backoff));
-
-                } finally {
-                    regenInFlight.remove(id);
-                }
-            });
         }
     }
-
 
     /**
      * Determines if the grave is placed in the world by checking for any physical
