@@ -233,11 +233,29 @@ public final class DataManager {
                 }
             }
 
-            for (GraveProvider p : RegisterGraveProviders.getAll()) {
-                if (RegisterGraveProviders.getAll().isEmpty()) return;
-                String key = "custom_" + sanitizeKey(p.id());
-                createEntityDataMapTable(key);
-                loadEntityDataMap(key, EntityData.Type.CUSTOM);
+            List<GraveProvider> providers = RegisterGraveProviders.getAll();
+            if (providers.isEmpty()) return;
+
+            Set<String> seen = new LinkedHashSet<>();
+            for (GraveProvider p : providers) {
+                if (p == null) continue;
+
+                String id = p.id();
+                if (id == null || id.isBlank()) {
+                    plugin.getLogger().warning("Skipping GraveProvider with empty id: " + p.getClass().getName());
+                    continue;
+                }
+
+                String key = "custom_" + sanitizeKey(id);
+                if (!seen.add(key)) continue;
+
+                try {
+                    createEntityDataMapTable(key);
+                    loadEntityDataMap(key, EntityData.Type.CUSTOM);
+                } catch (Exception e) {
+                    plugin.getLogger().severe("Failed initializing custom provider for key: " + key);
+                    plugin.logStackTrace(e);
+                }
             }
         });
     }
@@ -248,7 +266,8 @@ public final class DataManager {
      * @return true if enabled, false otherwise.
      */
     private boolean isIntegrationEnabled(String integration) {
-        switch (integration) {
+        final String key = sanitizeKey(integration);
+        switch (key) {
             case "furniturelib":
                 return plugin.getIntegrationManager().hasFurnitureLib();
             case "furnitureengine":
@@ -264,11 +283,15 @@ public final class DataManager {
             case "citizensnpc":
                 return plugin.getIntegrationManager().hasCitizensNPC();
             default:
-                if (integration.startsWith("custom_")) {
-                    String expected = integration.substring("custom_".length());
-                    for (GraveProvider p : RegisterGraveProviders.getAll()) {
-                        if (RegisterGraveProviders.getAll().isEmpty()) continue;
-                        if (sanitizeKey(p.id()).equals(expected)) return true;
+                if (key.startsWith("custom_")) {
+                    String expected = key.substring("custom_".length());
+                    List<GraveProvider> providers = RegisterGraveProviders.getAll();
+                    if (providers.isEmpty()) return false;
+                    for (GraveProvider p : providers) {
+                        if (p == null) continue;
+                        String id = p.id();
+                        if (id == null || id.isBlank()) continue;
+                        if (sanitizeKey(id).equals(expected)) return true;
                     }
                 }
                 return false;
@@ -310,10 +333,19 @@ public final class DataManager {
             }
         }
 
-        for (GraveProvider p : RegisterGraveProviders.getAll()) {
-            if (RegisterGraveProviders.getAll().isEmpty()) return;
-            String key = "custom_" + sanitizeKey(p.id());
-            setupEntityTable(key);
+        List<GraveProvider> providers = RegisterGraveProviders.getAll();
+        if (providers.isEmpty()) return;
+
+        Set<String> seen = new LinkedHashSet<>();
+        for (GraveProvider p : providers) {
+            if (p == null) continue;
+            String id = p.id();
+            if (id == null || id.isBlank()) continue;
+
+            String key = "custom_" + sanitizeKey(id);
+            if (seen.add(key)) {
+                setupEntityTable(key);
+            }
         }
     }
 
@@ -1590,35 +1622,40 @@ public final class DataManager {
      * @param name the name of the table.
      */
     private void createEntityDataMapTable(String name) {
+        final String physicalTable = getStoragePrefix() + name;
         String createTableQuery;
 
         switch (type) {
             case MYSQL:
             case MARIADB:
-                createTableQuery = "CREATE TABLE IF NOT EXISTS " + getStoragePrefix() + name + " (" +
+                createTableQuery = "CREATE TABLE IF NOT EXISTS " + physicalTable + " (" +
                         "location VARCHAR(255), " +
                         "uuid_entity VARCHAR(255), " +
-                        "uuid_grave VARCHAR(255));";
+                        "uuid_grave VARCHAR(255)" +
+                        ");";
                 break;
             case SQLITE:
-                createTableQuery = "CREATE TABLE IF NOT EXISTS " + getStoragePrefix() + name + " (" +
+                createTableQuery = "CREATE TABLE IF NOT EXISTS " + physicalTable + " (" +
                         "location TEXT, " +
                         "uuid_entity TEXT, " +
-                        "uuid_grave TEXT);";
+                        "uuid_grave TEXT" +
+                        ");";
                 break;
             case POSTGRESQL:
             case H2:
-                createTableQuery = "CREATE TABLE IF NOT EXISTS " + getStoragePrefix() + name + " (" +
+                createTableQuery = "CREATE TABLE IF NOT EXISTS " + physicalTable + " (" +
                         "location VARCHAR(255), " +
                         "uuid_entity VARCHAR(255), " +
-                        "uuid_grave VARCHAR(255));";
+                        "uuid_grave VARCHAR(255)" +
+                        ");";
                 break;
             case MSSQL:
-                createTableQuery = "IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='" + getStoragePrefix() + name + "' AND xtype='U') " +
-                        "CREATE TABLE " + getStoragePrefix() + name + " (" +
+                createTableQuery = "IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='" + physicalTable + "' AND xtype='U') " +
+                        "CREATE TABLE " + physicalTable + " (" +
                         "location VARCHAR(255), " +
                         "uuid_entity VARCHAR(255), " +
-                        "uuid_grave VARCHAR(255));";
+                        "uuid_grave VARCHAR(255)" +
+                        ");";
                 break;
             default:
                 plugin.getLogger().severe("Unsupported database type: " + type);
@@ -1628,15 +1665,14 @@ public final class DataManager {
         try {
             executeUpdate(createTableQuery, new Object[0]);
         } catch (SQLException e) {
-            plugin.getLogger().severe("Failed to create entity data map table");
+            plugin.getLogger().severe("Failed to create entity data map table: " + physicalTable);
             plugin.logStackTrace(e);
         }
 
         try {
-            // Ensure all necessary columns exist
-            addColumnIfNotExists(name, "location", "VARCHAR(255)");
-            addColumnIfNotExists(name, "uuid_entity", "VARCHAR(255)");
-            addColumnIfNotExists(name, "uuid_grave", "VARCHAR(255)");
+            addColumnIfNotExists(physicalTable, "location", "VARCHAR(255)");
+            addColumnIfNotExists(physicalTable, "uuid_entity", "VARCHAR(255)");
+            addColumnIfNotExists(physicalTable, "uuid_grave", "VARCHAR(255)");
         } catch (Exception ignored) {
             // ignored
         }
@@ -1649,52 +1685,41 @@ public final class DataManager {
      * @param type  the type of entity data.
      */
     private void loadEntityDataMap(String table, EntityData.Type type) {
-        String query = "SELECT * FROM " + getStoragePrefix() + table + ";";
+        final String physicalTable = getStoragePrefix() + table;
+        final String query = "SELECT location, uuid_entity, uuid_grave FROM " + physicalTable + ";";
 
         plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
-            plugin.getLogger().info("Loading Entity Data Map Cache for " + getStoragePrefix() + table + "...");
+            plugin.getLogger().info("Loading Entity Data Map Cache for " + physicalTable + "...");
             int entityCount = 0;
-
             try (Connection connection = getConnection();
                  PreparedStatement statement = connection.prepareStatement(query);
                  ResultSet resultSet = statement.executeQuery()) {
 
                 while (resultSet.next()) {
                     Location location = null;
-
-                    // Retrieve and convert location or chunk data
                     String locationString = resultSet.getString("location");
-
                     if (locationString != null) {
                         location = LocationUtil.stringToLocation(locationString);
                     } else {
                         plugin.getLogger().warning("Invalid location for result set entry");
-                        continue; // Continue processing remaining entries
+                        continue;
                     }
 
-                    // Retrieve and validate UUIDs
                     String uuidEntityString = resultSet.getString("uuid_entity");
-                    String uuidGraveString = resultSet.getString("uuid_grave");
-
+                    String uuidGraveString  = resultSet.getString("uuid_grave");
                     if (uuidEntityString != null && uuidGraveString != null) {
                         UUID uuidEntity = UUID.fromString(uuidEntityString);
-                        UUID uuidGrave = UUID.fromString(uuidGraveString);
-
-                        // Add entity data to the chunk data map
+                        UUID uuidGrave  = UUID.fromString(uuidGraveString);
                         getChunkData(location).addEntityData(new EntityData(location, uuidEntity, uuidGrave, type));
-                        entityCount++;  // Increment entity count
+                        entityCount++;
                     } else {
                         plugin.getLogger().warning("Missing UUIDs for location: " + location);
                     }
                 }
 
-                if (entityCount == 0) {
-                    plugin.getLogger().info("Loaded 0 entities into Entity Data Map Cache for " + getStoragePrefix() + table + ".");
-                } else {
-                    plugin.getLogger().info("Loaded " + entityCount + " entities into Entity Data Map Cache for " + getStoragePrefix() + table + ".");
-                }
-            } catch (SQLException exception) {
-                plugin.getLogger().severe("Error occurred while loading Entity Data Map");
+                plugin.getLogger().info("Loaded " + entityCount + " entities into Entity Data Map Cache for " + physicalTable + ".");
+            } catch (SQLException | NullPointerException exception) {
+                plugin.getLogger().severe("Error occurred while loading Entity Data Map for " + physicalTable);
                 plugin.logStackTrace(exception);
             }
         });
