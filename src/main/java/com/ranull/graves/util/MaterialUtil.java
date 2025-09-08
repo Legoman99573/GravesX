@@ -143,9 +143,6 @@ public final class MaterialUtil {
     }
 
     /**
-     * Use {@link #isPlayerHead(String)} instead.
-     * </p>
-     *
      * Checks if the given material is a player head.
      *
      * @param material The material to check.
