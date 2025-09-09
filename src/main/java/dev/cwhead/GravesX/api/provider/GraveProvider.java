@@ -11,13 +11,19 @@ import org.bukkit.Location;
 public interface GraveProvider {
     /**
      * Stable, namespaced ID (e.g. "myaddon:furniture"). Used in logs/configs.
+     *
+     * @return the Grave Provider Namespace ID
      */
     String id();
 
     /**
      * Lower runs earlier. Use to order multiple providers (default 0).
+     *
+     * @return the order the grave spawns (lowest has higher priority)
      */
-    default int order() { return 0; }
+    default int order() {
+        return 0;
+    }
 
     /**
      * Create/place any custom objects for this grave at the given location.
@@ -38,7 +44,6 @@ public interface GraveProvider {
      * Return true if this provider detects something placed for the grave.
      *
      * @param grave the grave to check
-     *
      * @return true if the grave is placed. False otherwise.
      */
     boolean isPlaced(Grave grave);
@@ -48,6 +53,7 @@ public interface GraveProvider {
      * (E.g. check a metadata field or namespaced tag your module wrote.)
      *
      * @param data the Custom Entity Data
+     * @return if it recognizes the given Custom entity data.
      */
     boolean supports(EntityData data);
 
@@ -55,7 +61,6 @@ public interface GraveProvider {
      * Remove a specific CUSTOM entity data record, if supported.
      *
      * @param data the entity data record
-     *
      * @return true if handled/removed, false to let others try.
      */
     boolean removeEntityData(EntityData data) throws Exception;
