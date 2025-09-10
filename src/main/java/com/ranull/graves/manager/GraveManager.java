@@ -913,7 +913,7 @@ public final class GraveManager {
         if (location == null || location.getWorld() == null) return false;
 
         Block block = location.getBlock();
-        if (!block.isPassable()) {
+        if (isHeadBlock(block)) {
             return true;
         }
 
@@ -941,6 +941,14 @@ public final class GraveManager {
         }
 
         return false;
+    }
+
+    private boolean isHeadBlock(Block block) {
+        final String n = block.getType().name();
+        return "PLAYER_HEAD".equals(n)
+                || "PLAYER_WALL_HEAD".equals(n)
+                || "SKULL".equals(n)
+                || "LEGACY_SKULL".equals(n);
     }
 
     /**
