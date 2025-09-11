@@ -223,17 +223,84 @@ public final class BlockManager {
         if (location.getWorld() != null) {
             if (blockData.getReplaceMaterial() != null) {
                 Material material = Material.matchMaterial(blockData.getReplaceMaterial());
-
                 if (material != null) {
-                    blockData.getLocation().getBlock().setType(material);
+                    location.getBlock().setType(material);
                 }
             } else {
-                blockData.getLocation().getBlock().setType(Material.AIR);
+                location.getBlock().setType(Material.AIR);
             }
 
-            if (blockData.getReplaceData() != null) {
-                blockData.getLocation().getBlock().setBlockData(plugin.getServer()
-                        .createBlockData(blockData.getReplaceData()));
+            String raw = blockData.getReplaceData();
+            String bd = raw;
+            String gx = null;
+            final String MARKER = "||GXHEAD||";
+
+            if (raw != null) {
+                int idx = raw.lastIndexOf(MARKER);
+                if (idx >= 0) {
+                    bd = raw.substring(0, idx);
+                    gx = raw.substring(idx + MARKER.length()).trim();
+                }
+            }
+
+            if (bd != null && !bd.isEmpty()) {
+                try {
+                    location.getBlock().setBlockData(plugin.getServer().createBlockData(bd));
+                } catch (Throwable ignored) {
+                    // If parsing fails, we already restored material above; continue.
+                }
+            }
+
+            if (gx != null && !gx.isEmpty() && location.getBlock().getState() instanceof org.bukkit.block.Skull) {
+                org.bukkit.block.Skull skull = (org.bukkit.block.Skull) location.getBlock().getState();
+
+                String tx = null, on = null, ou = null, nm = null;
+                try {
+                    java.util.regex.Pattern p = java.util.regex.Pattern.compile("\\\"(tx|on|ou|nm)\\\"\\s*:\\s*\\\"(.*?)\\\"");
+                    java.util.regex.Matcher m = p.matcher(gx);
+                    java.util.Map<String,String> map = new java.util.HashMap<>();
+                    while (m.find()) map.put(m.group(1), m.group(2).replace("\\\"", "\"").replace("\\\\", "\\"));
+                    tx = map.get("tx");
+                    on = map.get("on");
+                    ou = map.get("ou");
+                    nm = map.get("nm");
+                } catch (Throwable ignored) {}
+
+                try {
+                    if (tx != null && !tx.isEmpty()) {
+                        me.jay.GravesX.util.SkinTextureUtil.setSkullBlockTexture(skull, (on != null && !on.isEmpty()) ? on : "gravesx", tx);
+                    } else if (ou != null && !ou.isEmpty()) {
+                        try { skull.setOwningPlayer(plugin.getServer().getOfflinePlayer(java.util.UUID.fromString(ou))); } catch (Throwable ignored) {}
+                    } else if (on != null && !on.isEmpty()) {
+                        try { skull.setOwningPlayer(plugin.getServer().getOfflinePlayer(on)); } catch (Throwable ignored) {}
+                    }
+                } catch (Throwable ignored) {}
+
+                if (nm != null && !nm.isEmpty()) {
+                    try {
+                        Class<?> compClass = Class.forName("net.kyori.adventure.text.Component");
+                        Class<?> gsonSer   = Class.forName("net.kyori.adventure.text.serializer.gson.GsonComponentSerializer");
+                        Object serializer  = gsonSer.getMethod("gson").invoke(null);
+                        Object component   = serializer.getClass().getMethod("deserialize", String.class).invoke(serializer, nm);
+                        skull.getClass().getMethod("customName", compClass).invoke(skull, component);
+                    } catch (Throwable adventureMissing) {
+                        try {
+                            String rawName = nm;
+                            if (rawName.startsWith("{") && rawName.contains("\"text\"")) {
+                                int i = rawName.indexOf("\"text\"");
+                                if (i >= 0) {
+                                    int c = rawName.indexOf(':', i);
+                                    int q1 = rawName.indexOf('"', c + 1);
+                                    int q2 = (q1 >= 0) ? rawName.indexOf('"', q1 + 1) : -1;
+                                    if (q1 >= 0 && q2 > q1) rawName = rawName.substring(q1 + 1, q2);
+                                }
+                            }
+                            if (!rawName.isEmpty()) skull.setOwner(rawName);
+                        } catch (Throwable ignored) {}
+                    }
+                }
+
+                try { skull.update(true, false); } catch (Throwable ignored) {}
             }
 
             plugin.getDataManager().removeBlockData(location);

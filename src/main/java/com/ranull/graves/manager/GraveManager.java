@@ -19,6 +19,7 @@ import me.jay.GravesX.util.pluginsWithoutMavenReposOrUsefulApiDocsThatCauseBugs.
 import com.ranull.graves.util.StringUtil;
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.block.Skull;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.*;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -28,6 +29,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.geysermc.floodgate.api.FloodgateApi;
 
+import java.lang.reflect.Field;
 import java.util.*;
 
 /**
@@ -914,7 +916,85 @@ public final class GraveManager {
 
         Block block = location.getBlock();
         if (isHeadBlock(block)) {
-            return true;
+            try {
+                if (block.getState() instanceof Skull) {
+                    Skull skull = (Skull) block.getState();
+
+                    int headType = plugin.getConfig("block.head.type", grave).getInt("block.head.type");
+                    String headBase64 = plugin.getConfig("block.head.base64", grave).getString("block.head.base64");
+                    String headName   = plugin.getConfig("block.head.name", grave).getString("block.head.name");
+
+                    UUID expectedUUID = null;
+                    String expectedName = null;
+                    String expectedTex  = null;
+
+                    if (headType == 0) {
+                        if (grave.getOwnerType() == EntityType.PLAYER) {
+                            expectedUUID = grave.getOwnerUUID();
+                            if (expectedUUID == null) expectedName = grave.getOwnerName();
+                        } else if (grave.getOwnerTexture() != null && !grave.getOwnerTexture().isEmpty()) {
+                            expectedTex = grave.getOwnerTexture();
+                        } else if (headBase64 != null && !headBase64.isEmpty()) {
+                            expectedTex = headBase64;
+                        }
+                    } else if (headType == 1 && headBase64 != null && !headBase64.isEmpty()) {
+                        expectedTex = headBase64;
+                    } else if (headType == 2 && headName != null && headName.length() <= 16) {
+                        expectedName = headName;
+                    }
+
+                    boolean match = false;
+
+                    if (expectedTex != null && !expectedTex.isEmpty()) {
+                        try {
+                            Field profileField = skull.getClass().getDeclaredField("profile");
+                            profileField.setAccessible(true);
+                            Object gp = profileField.get(skull);
+                            if (gp != null) {
+                                Collection<?> props;
+                                try {
+                                    Object map = gp.getClass().getMethod("properties").invoke(gp);
+                                    props = (Collection<?>) map.getClass().getMethod("get", Object.class).invoke(map, "textures");
+                                } catch (NoSuchMethodException e) {
+                                    Object map = gp.getClass().getMethod("getProperties").invoke(gp);
+                                    props = (Collection<?>) map.getClass().getMethod("get", Object.class).invoke(map, "textures");
+                                }
+                                if (props != null && !props.isEmpty()) {
+                                    Object prop = props.iterator().next();
+                                    String value;
+                                    try { value = (String) prop.getClass().getMethod("value").invoke(prop); }
+                                    catch (NoSuchMethodException nsme) { value = (String) prop.getClass().getMethod("getValue").invoke(prop); }
+                                    if (expectedTex.equals(value)) match = true;
+                                }
+                            }
+                        } catch (Throwable ignored) {}
+                    }
+
+                    if (!match && (expectedUUID != null || (expectedName != null && !expectedName.isEmpty()))) {
+                        try {
+                            Object owning = Skull.class.getMethod("getOwningPlayer").invoke(skull);
+                            if (owning != null) {
+                                if (expectedUUID != null) {
+                                    UUID id = (UUID) owning.getClass().getMethod("getUniqueId").invoke(owning);
+                                    if (expectedUUID.equals(id)) match = true;
+                                }
+                                if (!match && expectedName != null) {
+                                    String n = (String) owning.getClass().getMethod("getName").invoke(owning);
+                                    if (n != null && n.equalsIgnoreCase(expectedName)) match = true;
+                                }
+                            } else if (expectedName != null) {
+                                try {
+                                    String legacy = (String) Skull.class.getMethod("getOwner").invoke(skull);
+                                    if (legacy != null && legacy.equalsIgnoreCase(expectedName)) match = true;
+                                } catch (Throwable ignored) {}
+                            }
+                        } catch (Throwable ignored) {}
+                    }
+
+                    if (match) return true;
+                }
+            } catch (Throwable ignored) {
+            }
         }
 
         Collection<Entity> nearbyEntities = location.getWorld().getNearbyEntities(location, 0.49, 0.49, 0.49);

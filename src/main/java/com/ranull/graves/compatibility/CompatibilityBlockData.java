@@ -8,6 +8,7 @@ import com.ranull.graves.data.BlockData;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.BlockFaceUtil;
 import com.ranull.graves.util.MaterialUtil;
+import dev.cwhead.GravesX.util.PlayerHeadUtil;
 import me.jay.GravesX.util.SkinTextureUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -86,6 +87,7 @@ public final class CompatibilityBlockData implements Compatibility {
         }
 
         if (material == Material.PLAYER_HEAD && block.getState() instanceof Skull) {
+            replaceData = PlayerHeadUtil.appendFromBlock(block, replaceData);
             updateSkullBlock(block, grave, plugin);
         }
 
