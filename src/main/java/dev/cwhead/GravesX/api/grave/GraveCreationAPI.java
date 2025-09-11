@@ -307,23 +307,14 @@ public final class GraveCreationAPI {
         if (graveProtection && plugin.getConfig("protection.enabled", grave).getBoolean("protection.enabled")) {
             GraveProtectionCreateEvent gp = new GraveProtectionCreateEvent(victim, grave);
             plugin.getServer().getPluginManager().callEvent(gp);
-
-            com.ranull.graves.event.GraveProtectionCreateEvent gpl = new com.ranull.graves.event.GraveProtectionCreateEvent(victim, grave);
-
-            plugin.getServer().getPluginManager().callEvent(gpl);
-            if (gpl.isCancelled() || gpl.isAddon() || gp.isCancelled() || gp.isAddon()) return;
-
             grave.setProtection(true);
-            grave.setTimeProtection(gp.getGrave().getTimeProtection() > 0 ? gp.getGrave().getTimeProtection() : plugin.getConfig("protection.time", grave).getInt("protection.time") * 1000L);
+            grave.setTimeProtection(graveProtectionTime > 0 ? graveProtectionTime : plugin.getConfig("protection.time", grave).getInt("protection.time") * 1000L);
         }
 
         try {
-            com.ranull.graves.event.GraveCreateEvent createGrave = new com.ranull.graves.event.GraveCreateEvent(victim, grave);
+            GraveCreateEvent createGrave = new GraveCreateEvent(victim, grave);
             Bukkit.getPluginManager().callEvent(createGrave);
-
-            GraveCreateEvent createGraveNew = new GraveCreateEvent(victim, grave);
-            Bukkit.getPluginManager().callEvent(createGraveNew);
-            if (createGrave.isCancelled() || createGraveNew.isCancelled() || createGrave.isAddon() || createGraveNew.isAddon()) return;
+            if (createGrave.isCancelled()) return;
 
             locationMap.put(finalLocationDeath, BlockData.BlockType.DEATH);
 
@@ -408,11 +399,7 @@ public final class GraveCreationAPI {
             GraveBlockPlaceEvent evt = new GraveBlockPlaceEvent(grave, loc, entry.getValue(),
                     entry.getKey().getBlock(), livingEntity);
             plugin.getServer().getPluginManager().callEvent(evt);
-
-            com.ranull.graves.event.GraveBlockPlaceEvent evtleg = new com.ranull.graves.event.GraveBlockPlaceEvent(grave, loc, entry.getValue(),
-                    entry.getKey().getBlock(), livingEntity);
-            plugin.getServer().getPluginManager().callEvent(evtleg);
-            if (evt.isCancelled() || evt.isAddon() || evtleg.isCancelled() || evtleg.isAddon()) continue;
+            if (evt.isCancelled()) continue;
 
             plugin.getGraveManager().placeGrave(evt.getLocation(), grave);
             plugin.getEntityManager().sendMessage("message.block", livingEntity, loc, grave);

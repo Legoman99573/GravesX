@@ -51,7 +51,7 @@ public final class CompatibilityBlockData implements Compatibility {
             return handleBlockPlacement(location, material, grave, plugin);
         }
 
-        return BlockData.fromBlock(grave.getUUID(), location.getBlock(), null, null);
+        return new BlockData(location, grave.getUUID(), null, null);
     }
 
     /**
@@ -89,7 +89,7 @@ public final class CompatibilityBlockData implements Compatibility {
             updateSkullBlock(block, grave, plugin);
         }
 
-        return BlockData.fromBlock(grave.getUUID(), block, replaceMaterial, replaceData);
+        return new BlockData(location, grave.getUUID(), replaceMaterial, replaceData);
     }
 
     /**
