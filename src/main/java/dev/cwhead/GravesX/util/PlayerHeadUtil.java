@@ -9,15 +9,25 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
 
+/**
+ * Compact utilities for snapshotting player head (skull) blocks across versions.
+ */
 public class PlayerHeadUtil {
 
-    /** Marker separating your existing replace_data and our head snapshot payload. */
+    /** Delimiter used to append a GXHEAD JSON payload to replace_data. */
     public static final String MARKER = "||GXHEAD||";
 
-    /** Append head snapshot JSON for the given skull block to the existing replace_data string. */
+    /**
+     * Appends a head snapshot (if block is a head) to {@code existingReplaceData}.
+     *
+     * @param block the block to read
+     * @param existingReplaceData prior replace_data (nullable)
+     * @return replace_data with {@link #MARKER}+JSON appended when applicable
+     */
     public static String appendFromBlock(Block block, String existingReplaceData) {
         HeadPayload p = extract(block);
-        if (p == null) return existingReplaceData; // not a head
+        if (p == null) return existingReplaceData;
+
         String json = toJson(p);
         if (json.isEmpty()) return existingReplaceData;
 
@@ -27,7 +37,12 @@ public class PlayerHeadUtil {
         return existingReplaceData + MARKER + json;
     }
 
-    /** Try to parse the last GXHEAD payload from replace_data (optional helper). */
+    /**
+     * Parses the last GXHEAD payload from {@code replaceData}.
+     *
+     * @param replaceData string containing zero or more payloads
+     * @return last {@link HeadPayload}, if present
+     */
     public static Optional<HeadPayload> parseFromReplaceData(String replaceData) {
         if (replaceData == null) return Optional.empty();
         int idx = replaceData.lastIndexOf(MARKER);
@@ -41,80 +56,75 @@ public class PlayerHeadUtil {
         }
     }
 
-    // =====================================================================================
-    // Extraction (1.7 -> 1.21.x)
-    // =====================================================================================
-
-    /** Data we’ll serialize into the GXHEAD JSON payload. */
+    /**
+     * Minimal serialized data for a skull block.
+     */
     public static final class HeadPayload {
-        // schema
-        int v = 1;
-        // block identity
-        String m;   // material name (PLAYER_HEAD / PLAYER_WALL_HEAD / SKULL / LEGACY_SKULL)
-        String bd;  // blockdata as string (1.13+), e.g. "minecraft:player_head[rotation=0]"
-        // placement
-        String mount; // FLOOR | WALL | UNKNOWN
-        String rf;    // rotation face for floor (BlockFace name), optional
-        String wf;    // wall facing (NORTH/EAST/SOUTH/WEST), optional
-        // owner/profile
-        String ou;    // owner uuid string
-        String on;    // owner name
-        String tx;    // textures base64
-        String sg;    // textures signature (optional)
-        // custom name (JSON component; may be stringified JSON)
-        String nm;
+        int v = 1;   // schema
+        String m;    // material
+        String bd;   // blockdata (1.13+)
+        String mount, rf, wf; // placement/orientation
+        String ou, on;        // owner uuid/name
+        String tx, sg;        // textures value/signature
+        String nm;            // custom name (JSON)
     }
 
-    /** Extract head payload from a placed skull block. Returns null if block is not a head. */
+    /**
+     * Extracts snapshot data from a skull block.
+     *
+     * @param block block to inspect
+     * @return payload or {@code null} if not a head
+     */
     public static HeadPayload extract(Block block) {
         if (block == null || !isHead(block)) return null;
 
         HeadPayload p = new HeadPayload();
         p.m = safeMatName(block);
-        p.bd = getBlockDataString(block); // null on 1.7-1.12
+        p.bd = getBlockDataString(block);
 
-        // Mount + orientation
         MountFace mf = readMountAndFaces(block);
         p.mount = mf.mount;
-        p.rf = mf.rotationFace; // optional
-        p.wf = mf.wallFacing;   // optional
+        p.rf = mf.rotationFace;
+        p.wf = mf.wallFacing;
 
-        // Owner / texture / name via Skull state
         try {
             Object state = block.getClass().getMethod("getState").invoke(block);
             if (state instanceof Skull) {
                 Skull skull = (Skull) state;
 
-                // Owner modern
+                // Owner (modern / legacy)
                 try {
                     Object owning = Skull.class.getMethod("getOwningPlayer").invoke(skull);
                     if (owning != null) {
                         try { p.ou = String.valueOf(owning.getClass().getMethod("getUniqueId").invoke(owning)); } catch (Throwable ignored) {}
-                        try { p.on = String.valueOf(owning.getClass().getMethod("getName").invoke(owning)); }     catch (Throwable ignored) {}
+                        try { p.on = String.valueOf(owning.getClass().getMethod("getName").invoke(owning)); } catch (Throwable ignored) {}
                     }
                 } catch (NoSuchMethodException nsme) {
-                    // Legacy
                     try {
                         Object legacy = Skull.class.getMethod("getOwner").invoke(skull);
                         if (legacy != null) p.on = String.valueOf(legacy);
                     } catch (Throwable ignored) {}
                 }
 
-                // Texture via internal GameProfile "profile"
+                // GameProfile -> textures
                 try {
                     Field profileField = skull.getClass().getDeclaredField("profile");
                     profileField.setAccessible(true);
                     Object gp = profileField.get(skull);
                     if (gp != null) {
                         if (p.ou == null) {
-                            try { Object id = gp.getClass().getMethod("getId").invoke(gp);
-                                if (id != null) p.ou = String.valueOf(id); } catch (Throwable ignored) {}
+                            try {
+                                Object id = gp.getClass().getMethod("getId").invoke(gp);
+                                if (id != null) p.ou = String.valueOf(id);
+                            } catch (Throwable ignored) {}
                         }
                         if (p.on == null) {
-                            try { Object nm = gp.getClass().getMethod("getName").invoke(gp);
-                                if (nm != null) p.on = String.valueOf(nm); } catch (Throwable ignored) {}
+                            try {
+                                Object nm = gp.getClass().getMethod("getName").invoke(gp);
+                                if (nm != null) p.on = String.valueOf(nm);
+                            } catch (Throwable ignored) {}
                         }
-                        Collection<?> props = null;
+                        Collection<?> props;
                         try {
                             Object map = gp.getClass().getMethod("properties").invoke(gp);
                             props = getTextures(map);
@@ -122,7 +132,7 @@ public class PlayerHeadUtil {
                             Object map = gp.getClass().getMethod("getProperties").invoke(gp);
                             props = getTextures(map);
                         }
-                        if (props != null && !props.isEmpty()) {
+                        if (!props.isEmpty()) {
                             Object prop = props.iterator().next();
                             p.tx = callString(prop, "value", "getValue");
                             p.sg = callString(prop, "signature", "getSignature");
@@ -130,14 +140,13 @@ public class PlayerHeadUtil {
                     }
                 } catch (Throwable ignored) {}
 
-                // Custom name (best effort)
+                // Custom name as JSON
                 p.nm = tryReadCustomNameJson(skull);
             }
         } catch (Throwable t) {
             Bukkit.getLogger().warning("[GravesX] Skull read error: " + t.getMessage());
         }
 
-        // Normalize empty strings to null to keep JSON small
         if (empty(p.bd)) p.bd = null;
         if (empty(p.mount)) p.mount = null;
         if (empty(p.rf)) p.rf = null;
@@ -151,19 +160,35 @@ public class PlayerHeadUtil {
         return p;
     }
 
-    // =====================================================================================
-    // Internals
-    // =====================================================================================
-
+    /**
+     * @return true if block is any supported head material.
+     */
     private static boolean isHead(Block b) {
         String n = safeMatName(b);
         return "PLAYER_HEAD".equals(n) || "PLAYER_WALL_HEAD".equals(n) || "SKULL".equals(n) || "LEGACY_SKULL".equals(n);
     }
-    private static String safeMatName(Block b) { try { Material m = b.getType(); return m != null ? m.name() : null; } catch (Throwable t) { return null; } }
+
+    /**
+     * Returns material name or {@code null}.
+     */
+    private static String safeMatName(Block b) {
+        try {
+            Material m = b.getType();
+            return m.name();
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    /**
+     * @return true if {@code s} is null/empty.
+     */
     private static boolean empty(String s) { return s == null || s.isEmpty(); }
 
+    /**
+     * Gets {@code BlockData#getAsString(true)} on 1.13+, else {@code null}.
+     */
     private static String getBlockDataString(Block block) {
-        // 1.13+ only
         try {
             Object bd = block.getClass().getMethod("getBlockData").invoke(block);
             if (bd != null) {
@@ -174,17 +199,21 @@ public class PlayerHeadUtil {
         return null;
     }
 
-    /** Mount + faces across eras. */
+    /**
+     * Holder for mount/orientation.
+     */
     private static final class MountFace {
-        String mount;       // FLOOR | WALL | UNKNOWN
-        String rotationFace;
-        String wallFacing;
+        String mount;        // FLOOR/WALL/UNKNOWN
+        String rotationFace; // floor rotation
+        String wallFacing;   // wall cardinal
     }
 
+    /**
+     * Reads mount and facing via 1.13+ APIs or legacy material data.
+     */
     private static MountFace readMountAndFaces(Block block) {
         MountFace mf = null;
 
-        // 1) 1.13+ Rotatable/Directional
         try {
             Object bd = block.getClass().getMethod("getBlockData").invoke(block);
             if (bd != null) {
@@ -207,7 +236,6 @@ public class PlayerHeadUtil {
             }
         } catch (Throwable ignored) {}
 
-        // 2) Legacy 1.7-1.12 org.bukkit.material.Skull
         if (mf == null) {
             try {
                 Object state = block.getClass().getMethod("getState").invoke(block);
@@ -243,6 +271,9 @@ public class PlayerHeadUtil {
         return mf;
     }
 
+    /**
+     * Keeps only cardinal directions.
+     */
     private static String cardinal(String face) {
         if (face == null) return null;
         switch (face.toUpperCase(Locale.ROOT)) {
@@ -254,8 +285,17 @@ public class PlayerHeadUtil {
         }
     }
 
-    private static Class<?> tryLoad(String name) { try { return Class.forName(name); } catch (Throwable ignored) {} return null; }
+    /**
+     * Loads a class or returns {@code null}.
+     */
+    private static Class<?> tryLoad(String name) {
+        try { return Class.forName(name); } catch (Throwable ignored) {}
+        return null;
+    }
 
+    /**
+     * Returns {@code PropertyMap["textures"]} as a collection when present.
+     */
     private static Collection<?> getTextures(Object propertyMap) {
         if (propertyMap == null) return Collections.emptyList();
         try {
@@ -272,6 +312,9 @@ public class PlayerHeadUtil {
         return Collections.emptyList();
     }
 
+    /**
+     * Invokes {@code modern} or fallback {@code legacy} string accessor.
+     */
     private static String callString(Object target, String modern, String legacy) {
         if (target == null) return null;
         try { return String.valueOf(target.getClass().getMethod(modern).invoke(target)); }
@@ -281,8 +324,10 @@ public class PlayerHeadUtil {
         return null;
     }
 
+    /**
+     * Reads custom name as JSON (Adventure if available; otherwise wraps legacy name).
+     */
     private static String tryReadCustomNameJson(Skull skull) {
-        // Adventure Component (Paper): skull.customName()
         try {
             Method m = skull.getClass().getMethod("customName");
             Object comp = m.invoke(skull);
@@ -296,7 +341,6 @@ public class PlayerHeadUtil {
             }
         } catch (Throwable ignored) {}
 
-        // Legacy: getCustomName()
         try {
             Method m = skull.getClass().getMethod("getCustomName");
             Object s = m.invoke(skull);
@@ -308,10 +352,9 @@ public class PlayerHeadUtil {
         return null;
     }
 
-    // =====================================================================================
-    // JSON (tiny, dependency-free)
-    // =====================================================================================
-
+    /**
+     * Serializes a payload to compact JSON.
+     */
     private static String toJson(HeadPayload p) {
         StringBuilder sb = new StringBuilder(256);
         sb.append('{');
@@ -326,43 +369,50 @@ public class PlayerHeadUtil {
         writeStr(sb, "tx", p.tx);
         writeStr(sb, "sg", p.sg);
         writeStr(sb, "nm", p.nm);
-        // remove trailing comma if present
-        if (sb.charAt(sb.length()-1) == ',') sb.setLength(sb.length()-1);
+        if (sb.charAt(sb.length() - 1) == ',') sb.setLength(sb.length() - 1);
         sb.append('}');
         return sb.toString();
     }
 
+    /**
+     * Writes an int field.
+     */
     private static void writeInt(StringBuilder sb, String k, int v, boolean always) {
         if (!always) return;
         sb.append('"').append(k).append('"').append(':').append(v).append(',');
     }
 
+    /**
+     * Writes a string field if non-null.
+     */
     private static void writeStr(StringBuilder sb, String k, String v) {
         if (v == null) return;
         sb.append('"').append(k).append('"').append(':').append('"').append(escape(v)).append('"').append(',');
     }
 
+    /**
+     * Escapes backslashes and quotes for JSON.
+     */
     private static String escape(String s) {
         return s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
-    // Minimal parser back into HeadPayload (optional; only used by parseFromReplaceData)
+    /**
+     * Parses the compact JSON back into {@link HeadPayload}.
+     */
     private static HeadPayload parseJson(String json) {
         HeadPayload p = new HeadPayload();
-        // super light "parser": split top-level by ,"key":
-        // (Safe here because values we write are plain strings/ints with no nested objects except nm which is a JSON string)
-        Map<String,String> map = new HashMap<>();
+        Map<String, String> map = new HashMap<>();
         String body = json.trim();
         if (body.startsWith("{")) body = body.substring(1);
-        if (body.endsWith("}")) body = body.substring(0, body.length()-1);
+        if (body.endsWith("}")) body = body.substring(0, body.length() - 1);
 
-        // Split respecting quotes (simple state machine)
         List<String> pairs = new ArrayList<>();
         StringBuilder cur = new StringBuilder();
         boolean inStr = false;
         for (int i = 0; i < body.length(); i++) {
             char c = body.charAt(i);
-            if (c == '"' && (i == 0 || body.charAt(i-1) != '\\')) inStr = !inStr;
+            if (c == '"' && (i == 0 || body.charAt(i - 1) != '\\')) inStr = !inStr;
             if (!inStr && c == ',') {
                 pairs.add(cur.toString());
                 cur.setLength(0);
@@ -394,12 +444,14 @@ public class PlayerHeadUtil {
         return p;
     }
 
+    /**
+     * Removes surrounding quotes and unescapes JSON string.
+     */
     private static String unquote(String s) {
         s = s.trim();
         if (s.startsWith("\"") && s.endsWith("\"") && s.length() >= 2) {
-            s = s.substring(1, s.length()-1).replace("\\\"", "\"").replace("\\\\", "\\");
+            s = s.substring(1, s.length() - 1).replace("\\\"", "\"").replace("\\\\", "\\");
         }
         return s;
     }
-
 }

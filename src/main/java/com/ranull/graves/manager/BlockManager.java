@@ -3,15 +3,21 @@ package com.ranull.graves.manager;
 import com.ranull.graves.Graves;
 import com.ranull.graves.data.BlockData;
 import com.ranull.graves.data.ChunkData;
+import com.ranull.graves.integration.MiniMessage;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.LocationUtil;
+import me.jay.GravesX.util.SkinTextureUtil;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.Skull;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * The BlockManager class is responsible for managing block data and operations related to graves.
@@ -251,14 +257,14 @@ public final class BlockManager {
                 }
             }
 
-            if (gx != null && !gx.isEmpty() && location.getBlock().getState() instanceof org.bukkit.block.Skull) {
-                org.bukkit.block.Skull skull = (org.bukkit.block.Skull) location.getBlock().getState();
+            if (gx != null && !gx.isEmpty() && location.getBlock().getState() instanceof Skull) {
+                Skull skull = (Skull) location.getBlock().getState();
 
                 String tx = null, on = null, ou = null, nm = null;
                 try {
-                    java.util.regex.Pattern p = java.util.regex.Pattern.compile("\\\"(tx|on|ou|nm)\\\"\\s*:\\s*\\\"(.*?)\\\"");
-                    java.util.regex.Matcher m = p.matcher(gx);
-                    java.util.Map<String,String> map = new java.util.HashMap<>();
+                    Pattern p = Pattern.compile("\\\"(tx|on|ou|nm)\\\"\\s*:\\s*\\\"(.*?)\\\"");
+                    Matcher m = p.matcher(gx);
+                    Map<String,String> map = new HashMap<>();
                     while (m.find()) map.put(m.group(1), m.group(2).replace("\\\"", "\"").replace("\\\\", "\\"));
                     tx = map.get("tx");
                     on = map.get("on");
@@ -268,39 +274,34 @@ public final class BlockManager {
 
                 try {
                     if (tx != null && !tx.isEmpty()) {
-                        me.jay.GravesX.util.SkinTextureUtil.setSkullBlockTexture(skull, (on != null && !on.isEmpty()) ? on : "gravesx", tx);
+                        SkinTextureUtil.setSkullBlockTexture(skull, (on != null && !on.isEmpty()) ? on : "gravesx", tx);
                     } else if (ou != null && !ou.isEmpty()) {
-                        try { skull.setOwningPlayer(plugin.getServer().getOfflinePlayer(java.util.UUID.fromString(ou))); } catch (Throwable ignored) {}
+                        try { skull.setOwningPlayer(plugin.getServer().getOfflinePlayer(UUID.fromString(ou))); } catch (Throwable ignored) {}
                     } else if (on != null && !on.isEmpty()) {
                         try { skull.setOwningPlayer(plugin.getServer().getOfflinePlayer(on)); } catch (Throwable ignored) {}
                     }
                 } catch (Throwable ignored) {}
 
                 if (nm != null && !nm.isEmpty()) {
+                    String rawName = getRawName(nm);
                     try {
-                        Class<?> compClass = Class.forName("net.kyori.adventure.text.Component");
-                        Class<?> gsonSer   = Class.forName("net.kyori.adventure.text.serializer.gson.GsonComponentSerializer");
-                        Object serializer  = gsonSer.getMethod("gson").invoke(null);
-                        Object component   = serializer.getClass().getMethod("deserialize", String.class).invoke(serializer, nm);
-                        skull.getClass().getMethod("customName", compClass).invoke(skull, component);
+                        if (plugin.getIntegrationManager().hasMiniMessage()) {
+                            if (!rawName.isEmpty()) skull.setOwner(MiniMessage.parseString(rawName));
+                        } else {
+
+                        }
                     } catch (Throwable adventureMissing) {
                         try {
-                            String rawName = nm;
-                            if (rawName.startsWith("{") && rawName.contains("\"text\"")) {
-                                int i = rawName.indexOf("\"text\"");
-                                if (i >= 0) {
-                                    int c = rawName.indexOf(':', i);
-                                    int q1 = rawName.indexOf('"', c + 1);
-                                    int q2 = (q1 >= 0) ? rawName.indexOf('"', q1 + 1) : -1;
-                                    if (q1 >= 0 && q2 > q1) rawName = rawName.substring(q1 + 1, q2);
-                                }
-                            }
                             if (!rawName.isEmpty()) skull.setOwner(rawName);
                         } catch (Throwable ignored) {}
                     }
                 }
 
-                try { skull.update(true, false); } catch (Throwable ignored) {}
+                try {
+                    skull.update(true, false);
+                } catch (Throwable ignored) {
+
+                }
             }
 
             plugin.getDataManager().removeBlockData(location);
@@ -308,5 +309,19 @@ public final class BlockManager {
                     + location.getWorld().getName() + ", " + (location.getBlockX() + 0.5) + "x, "
                     + (location.getBlockY() + 0.5) + "y, " + (location.getBlockZ() + 0.5) + "z", 1);
         }
+    }
+
+    private static @NotNull String getRawName(String nm) {
+        String rawName = nm;
+        if (rawName.startsWith("{") && rawName.contains("\"text\"")) {
+            int i = rawName.indexOf("\"text\"");
+            if (i >= 0) {
+                int c = rawName.indexOf(':', i);
+                int q1 = rawName.indexOf('"', c + 1);
+                int q2 = (q1 >= 0) ? rawName.indexOf('"', q1 + 1) : -1;
+                if (q1 >= 0 && q2 > q1) rawName = rawName.substring(q1 + 1, q2);
+            }
+        }
+        return rawName;
     }
 }

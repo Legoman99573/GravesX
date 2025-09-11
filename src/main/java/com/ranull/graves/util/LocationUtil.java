@@ -3,6 +3,7 @@ package com.ranull.graves.util;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -17,17 +18,17 @@ public final class LocationUtil {
      * @param location The location to be rounded. May be null.
      * @return A new location with rounded coordinates, or null if the input is null.
      */
-    public static Location roundLocation(Location location) {
-        if (location == null || location.getWorld() == null) {
-            return null;
-        }
+    @Nullable
+    public static Location roundLocation(@Nullable Location location) {
+        if (location == null) return null;
+        World w = location.getWorld();
+        if (w == null) return null;
 
-        return new Location(
-                location.getWorld(),
-                Math.round(location.getX()),
-                Math.round(location.getY()),
-                Math.round(location.getZ())
-        );
+        double x = location.getBlockX() + 0.5D;
+        double y = Math.max(0, Math.min(w.getMaxHeight() - 1, location.getBlockY()));
+        double z = location.getBlockZ() + 0.5D;
+
+        return new Location(w, x, y, z, location.getYaw(), location.getPitch());
     }
 
     /**
