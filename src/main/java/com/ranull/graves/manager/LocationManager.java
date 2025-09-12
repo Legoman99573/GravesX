@@ -172,26 +172,32 @@ public final class LocationManager {
      * @return The location on solid ground, or the original location if no ground is found within the search limit.
      */
     private Location findGround(Location location) {
-        if (location.getWorld() == null) {
-            return location;
-        }
+        if (location == null) return null;
+        final World world = location.getWorld();
+        if (world == null) return location;
 
-        Location groundLocation = location.clone();
-        int maxSearchDistance = groundLocation.getWorld().getMaxHeight() - 1;
+        final int minY = world.getMinHeight();
+        final int maxY = world.getMaxHeight();
 
-        for (int counter = 0; counter < maxSearchDistance; counter++) {
-            Block blockBelow = groundLocation.getBlock().getRelative(BlockFace.DOWN);
+        int y = Math.min(location.getBlockY(), maxY - 1);
+        if (y <= minY) y = minY + 1;
 
-            if (MaterialUtil.isSafeSolid(blockBelow.getType())) {
-                return groundLocation;
+        final int x = location.getBlockX();
+        final int z = location.getBlockZ();
+
+        while (y > minY) {
+            final Block current = world.getBlockAt(x, y, z);
+            final Block below = world.getBlockAt(x, y - 1, z);
+
+            if (MaterialUtil.isSafeSolid(below.getType())
+                    && (current.isPassable() || MaterialUtil.isAir(current.getType()))) {
+                return new Location(world, location.getX(), y, location.getZ());
             }
-
-            groundLocation.subtract(0, 1, 0);
+            y--;
         }
 
         return location;
     }
-
 
     /**
      * Finds the top location for placement, searching downward from the given location's Y-coordinate.
@@ -206,7 +212,11 @@ public final class LocationManager {
             return null;
         }
 
-        int startY = location.getWorld().getMaxHeight();
+        final int maxY = location.getWorld().getMaxHeight();
+        int startY = location.getBlockY();
+
+        if (startY >= maxY)
+            startY = maxY - 1;
 
         return findLocationDownFromY(location, entity, startY, grave);
     }
