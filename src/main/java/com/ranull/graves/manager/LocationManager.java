@@ -529,7 +529,6 @@ public final class LocationManager {
      */
     public boolean isLocationSafeGrave(Location location) {
         location = LocationUtil.roundLocation(location);
-        if (location == null) return false;
         Block block = location.getBlock();
 
         return isInsideBorder(location) && MaterialUtil.isSafeNotSolid(block.getType())
