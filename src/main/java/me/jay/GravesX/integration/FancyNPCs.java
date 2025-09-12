@@ -187,4 +187,3 @@ public final class FancyNPCs extends EntityDataManager {
         return npc != null;
     }
 }
-

@@ -216,4 +216,46 @@ public final class FurnitureEngine extends EntityDataManager {
                     + ", x" + location.getBlockX() + ", y" + location.getBlockY() + ", z" + location.getBlockZ());
         }
     }
+
+    /**
+     * @deprecated Plugin no longer exists externally
+     *
+     * True if FurnitureEngine furniture exists at the grave's location.
+     *
+     * @param grave The grave to check.
+     * @return True if furniture is present at or near the grave location.
+     */
+    @Deprecated
+    public boolean hasFurniture(Grave grave) {
+        if (grave == null) return false;
+
+        Location loc = grave.getLocationDeath();
+        if (loc == null || loc.getWorld() == null) loc = grave.getLocationDeath();
+        if (loc == null || loc.getWorld() == null) return false;
+
+        try {
+            if (FurnitureManager.getInstance().isFurniture(loc) != null) return true;
+
+            Location up = loc.clone().add(0.0D, 1.0D, 0.0D);
+            if (FurnitureManager.getInstance().isFurniture(up) != null) return true;
+
+            Map<EntityData, Entity> map = getEntityDataMap(getLoadedEntityDataList(grave));
+            for (Map.Entry<EntityData, Entity> e : map.entrySet()) {
+                EntityData data = e.getKey();
+                Entity ent = e.getValue();
+                if (data == null || ent == null) continue;
+                if (data.getType() != EntityData.Type.FURNITUREENGINE) continue;
+                if (!ent.isValid() || ent.isDead()) continue;
+
+                Location el = ent.getLocation();
+                if (el.getWorld() != null && el.getWorld().equals(loc.getWorld())
+                        && el.distanceSquared(up) <= 0.25D) {
+                    return true;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+
+        return false;
+    }
 }

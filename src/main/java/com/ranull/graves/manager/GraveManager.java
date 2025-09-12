@@ -914,6 +914,47 @@ public final class GraveManager {
 
         if (location == null || location.getWorld() == null) return false;
 
+        Collection<Entity> nearbyEntities = location.getWorld().getNearbyEntities(location, 0.49, 0.49, 0.49);
+        if (!nearbyEntities.isEmpty()) {
+            return true;
+        }
+
+        if (plugin.getIntegrationManager().hasFurnitureLib() && plugin.getConfig("furniurelib.enabled", grave).getBoolean("furniturelib.enabled", false)) {
+            if (plugin.getIntegrationManager().getFurnitureLib().hasFurniture(grave)) return true;
+        }
+
+        if (plugin.getIntegrationManager().hasFurnitureEngine() && plugin.getConfig("furnitureengine.enabled", grave).getBoolean("furnitureengine.enabled", false)) {
+            if (plugin.getIntegrationManager().getFurnitureEngine().hasFurniture(grave)) return true;
+        }
+
+        if (plugin.getIntegrationManager().hasFancyNpcs() && plugin.getConfig("fancynpcs.corpse.enabled", grave).getBoolean("fancynpcs.corpse.enabled", false)) {
+            if (plugin.getIntegrationManager().getFancyNpcs().hasCorpse(grave)) return true;
+        }
+
+        if (plugin.getIntegrationManager().hasCitizensNPC() && plugin.getConfig("citizens.corpse.enabled", grave).getBoolean("citizens.corpse.enabled", false)) {
+            if (plugin.getIntegrationManager().getCitizensNPC().hasNPCCorpse(grave)) return true;
+        }
+
+        if (plugin.getIntegrationManager().hasItemsAdder() && plugin.getConfig("itemsadder.furniture.enabled", grave).getBoolean("itemsadder.furniture.enabled") || plugin.getIntegrationManager().hasItemsAdder() && plugin.getConfig("itemsadder.block.enabled", grave).getBoolean("itemsadder.block.enabled")) {
+            if (plugin.getIntegrationManager().getItemsAdder().hasFurniture(grave) || plugin.getIntegrationManager().getItemsAdder().hasBlock(grave)) return true;
+        }
+
+        if (plugin.getIntegrationManager().hasOraxen() && plugin.getConfig("oraxen.furniture.enabled", grave).getBoolean("oraxen.furniture.enabled") || plugin.getIntegrationManager().hasOraxen() && plugin.getConfig("oraxen.block.enabled", grave).getBoolean("oraxen.block.enabled")) {
+            if (plugin.getIntegrationManager().getOraxen().hasBlock(grave) || plugin.getIntegrationManager().getOraxen().hasFurniture(grave)) return true;
+        }
+
+        if (plugin.getIntegrationManager().hasNexo() && plugin.getConfig("nexo.furniture.enabled", grave).getBoolean("nexo.furniture.enabled") || plugin.getIntegrationManager().hasNexo() && plugin.getConfig("nexo.block.enabled", grave).getBoolean("nexo.block.enabled")) {
+            if (plugin.getIntegrationManager().getNexo().hasBlock(grave) || plugin.getIntegrationManager().getNexo().hasFurniture(grave)) return true;
+        }
+
+        for (GraveProvider p : RegisterGraveProviders.getAll()) {
+            try {
+                if (p.isPlaced(grave)) return true;
+            } catch (Throwable t) {
+                plugin.getLogger().warning("[CustomGraveProvider " + p.id() + "] isPlaced() failed: " + t.getMessage());
+            }
+        }
+
         Block block = location.getBlock();
         if (isHeadBlock(block)) {
             try {
@@ -922,25 +963,18 @@ public final class GraveManager {
 
                     int headType = plugin.getConfig("block.head.type", grave).getInt("block.head.type");
                     String headBase64 = plugin.getConfig("block.head.base64", grave).getString("block.head.base64");
-                    String headName   = plugin.getConfig("block.head.name", grave).getString("block.head.name");
+                    String headName = plugin.getConfig("block.head.name", grave).getString("block.head.name");
 
-                    UUID expectedUUID = null;
                     String expectedName = null;
                     String expectedTex  = null;
 
                     if (headType == 0) {
-                        if (grave.getOwnerType() == EntityType.PLAYER) {
-                            expectedUUID = grave.getOwnerUUID();
-                            if (expectedUUID == null) expectedName = grave.getOwnerName();
-                        } else if (grave.getOwnerTexture() != null && !grave.getOwnerTexture().isEmpty()) {
-                            expectedTex = grave.getOwnerTexture();
-                        } else if (headBase64 != null && !headBase64.isEmpty()) {
-                            expectedTex = headBase64;
-                        }
+                        expectedTex = grave.getOwnerTexture();
                     } else if (headType == 1 && headBase64 != null && !headBase64.isEmpty()) {
                         expectedTex = headBase64;
                     } else if (headType == 2 && headName != null && headName.length() <= 16) {
                         expectedName = headName;
+                        expectedTex = grave.getOwnerTexture();
                     }
 
                     boolean match = false;
@@ -970,19 +1004,13 @@ public final class GraveManager {
                         } catch (Throwable ignored) {}
                     }
 
-                    if (!match && (expectedUUID != null || (expectedName != null && !expectedName.isEmpty()))) {
+                    if (!match && (expectedName != null && !expectedName.isEmpty())) {
                         try {
                             Object owning = Skull.class.getMethod("getOwningPlayer").invoke(skull);
                             if (owning != null) {
-                                if (expectedUUID != null) {
-                                    UUID id = (UUID) owning.getClass().getMethod("getUniqueId").invoke(owning);
-                                    if (expectedUUID.equals(id)) match = true;
-                                }
-                                if (!match && expectedName != null) {
-                                    String n = (String) owning.getClass().getMethod("getName").invoke(owning);
-                                    if (n != null && n.equalsIgnoreCase(expectedName)) match = true;
-                                }
-                            } else if (expectedName != null) {
+                                String n = (String) owning.getClass().getMethod("getName").invoke(owning);
+                                if (n != null && n.equalsIgnoreCase(expectedName)) match = true;
+                            } else {
                                 try {
                                     String legacy = (String) Skull.class.getMethod("getOwner").invoke(skull);
                                     if (legacy != null && legacy.equalsIgnoreCase(expectedName)) match = true;
@@ -994,29 +1022,6 @@ public final class GraveManager {
                     if (match) return true;
                 }
             } catch (Throwable ignored) {
-            }
-        }
-
-        Collection<Entity> nearbyEntities = location.getWorld().getNearbyEntities(location, 0.49, 0.49, 0.49);
-        if (!nearbyEntities.isEmpty()) {
-            return true;
-        }
-
-        if (plugin.getIntegrationManager().hasFancyNpcs() && plugin.getConfig("fancynpcs.corpse.enabled", grave).getBoolean("fancynpcs.corpse.enabled", false)) return true;
-
-        if (plugin.getIntegrationManager().hasCitizensNPC() && plugin.getConfig("citizens.corpse.enabled", grave).getBoolean("citizens.corpse.enabled", false)) return true;
-
-        if (plugin.getIntegrationManager().hasItemsAdder() && plugin.getConfig("itemsadder.furniture.enabled", grave).getBoolean("itemsadder.furniture.enabled") || plugin.getIntegrationManager().hasItemsAdder() && plugin.getConfig("itemsadder.block.enabled", grave).getBoolean("itemsadder.block.enabled")) return true;
-
-        if (plugin.getIntegrationManager().hasOraxen() && plugin.getConfig("oraxen.furniture.enabled", grave).getBoolean("oraxen.furniture.enabled") || plugin.getIntegrationManager().hasOraxen() && plugin.getConfig("oraxen.block.enabled", grave).getBoolean("oraxen.block.enabled")) return true;
-
-        if (plugin.getIntegrationManager().hasNexo() && plugin.getConfig("nexo.furniture.enabled", grave).getBoolean("nexo.furniture.enabled") || plugin.getIntegrationManager().hasNexo() && plugin.getConfig("nexo.block.enabled", grave).getBoolean("nexo.block.enabled")) return true;
-
-        for (GraveProvider p : RegisterGraveProviders.getAll()) {
-            try {
-                if (p.isPlaced(grave)) return true;
-            } catch (Throwable t) {
-                plugin.getLogger().warning("[CustomGraveProvider " + p.id() + "] isPlaced() failed: " + t.getMessage());
             }
         }
 

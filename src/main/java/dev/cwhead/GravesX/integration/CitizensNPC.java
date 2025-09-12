@@ -305,7 +305,7 @@ public final class CitizensNPC extends EntityDataManager {
     /**
      * Checks if a corpse exists for the grave.
      */
-    public boolean getNPCCorpse(Grave grave) {
+    public boolean hasNPCCorpse(Grave grave) {
         Location loc = grave.getLocationDeath();
         if (loc != null) {
             return getNPCByName(getNPCNameFromLocation(loc)) != null;

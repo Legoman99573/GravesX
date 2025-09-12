@@ -171,6 +171,53 @@ public final class FurnitureLib extends EntityDataManager {
         plugin.getDataManager().removeEntityData(removeEntityDataList);
     }
 
+    /**
+     * True if FurnitureLib furniture occupies the grave's location.
+     *
+     * @param grave The grave to check.
+     * @return True if any FurnitureLib ObjectID covers the grave's block position.
+     */
+    public boolean hasFurniture(Grave grave) {
+        if (grave == null) return false;
+
+        Location loc = grave.getLocationDeath();
+        if (loc == null || loc.getWorld() == null) loc = grave.getLocationDeath();
+        if (loc == null || loc.getWorld() == null) return false;
+
+        final int gx = loc.getBlockX();
+        final int gy = loc.getBlockY();
+        final int gz = loc.getBlockZ();
+        final String worldName = loc.getWorld().getName();
+
+        try {
+            for (ObjectID objectID : furnitureLib.getFurnitureManager().getObjectList()) {
+                Location start = objectID.getStartLocation();
+                if (start != null
+                        && start.getWorld() != null
+                        && worldName.equals(start.getWorld().getName())
+                        && start.getBlockX() == gx
+                        && start.getBlockY() == gy
+                        && start.getBlockZ() == gz) {
+                    return true;
+                }
+
+                for (Location part : objectID.getBlockList()) {
+                    if (part != null
+                            && part.getWorld() != null
+                            && worldName.equals(part.getWorld().getName())
+                            && part.getBlockX() == gx
+                            && part.getBlockY() == gy
+                            && part.getBlockZ() == gz) {
+                        return true;
+                    }
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+
+        return false;
+    }
+
     private void setSign(Block block, List<String> stringList, Grave grave) {
         if (block.getState() instanceof Sign) {
             Sign sign = (Sign) block.getState();

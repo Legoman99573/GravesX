@@ -304,4 +304,51 @@ public final class Oraxen extends EntityDataManager {
 
         return mechanicFactory != null ? (NoteBlockMechanic) mechanicFactory.getMechanic(string) : null;
     }
+
+    /**
+     * @deprecated Recommend Nexo as a replacement.
+     * True if an Oraxen furniture entity for this grave is currently spawned.
+     *
+     * @param grave The grave to check.
+     * @return True if at least one valid Oraxen furniture entity mapped to this grave exists.
+     */
+    @Deprecated
+    public boolean hasFurniture(Grave grave) {
+        if (grave == null) return false;
+
+        Map<EntityData, Entity> map = getEntityDataMap(getLoadedEntityDataList(grave));
+        if (map.isEmpty()) return false;
+
+        for (Map.Entry<EntityData, Entity> e : map.entrySet()) {
+            EntityData data = e.getKey();
+            Entity ent = e.getValue();
+            if (data == null || ent == null) continue;
+
+            // Ensure it’s our Oraxen-tracked furniture and still alive.
+            if (data.getType() == EntityData.Type.ORAXEN && ent.isValid() && !ent.isDead()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @deprecated Recommend Nexo as a replacement.
+     * True if an Oraxen custom block exists at the grave location.
+     *
+     * @param grave The grave to check.
+     * @return True if a custom Oraxen block is present where the grave is placed.
+     */
+    @Deprecated
+    public boolean hasBlock(Grave grave) {
+        if (grave == null) return false;
+
+        Location loc = grave.getLocationDeath();
+        if (loc == null || loc.getWorld() == null) {
+            loc = grave.getLocationDeath();
+        }
+        if (loc == null || loc.getWorld() == null) return false;
+
+        return isCustomBlock(loc);
+    }
 }

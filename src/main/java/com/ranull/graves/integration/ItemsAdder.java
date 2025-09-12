@@ -227,6 +227,50 @@ public final class ItemsAdder extends EntityDataManager {
     }
 
     /**
+     * True if an ItemsAdder furniture entity for this grave is currently spawned.
+     *
+     * @param grave The grave to check.
+     * @return True if at least one valid IA furniture entity mapped to this grave exists.
+     */
+    public boolean hasFurniture(Grave grave) {
+        if (grave == null) return false;
+
+        Map<EntityData, Entity> map = getEntityDataMap(getLoadedEntityDataList(grave));
+        if (map.isEmpty()) return false;
+
+        for (Entity e : map.values()) {
+            if (e == null) continue;
+            if (!e.isValid() || e.isDead()) continue;
+            try {
+                if (CustomFurniture.byAlreadySpawned(e) != null) {
+                    return true;
+                }
+            } catch (Throwable ignored) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * True if an ItemsAdder custom block exists at the grave location.
+     *
+     * @param grave The grave to check.
+     * @return True if a custom block is present where the grave is placed.
+     */
+    public boolean hasBlock(Grave grave) {
+        if (grave == null) return false;
+
+        Location loc = grave.getLocationDeath();
+        if (loc == null || loc.getWorld() == null) {
+            loc = grave.getLocationDeath();
+        }
+        if (loc == null || loc.getWorld() == null) return false;
+
+        return isCustomBlock(loc);
+    }
+
+    /**
      * Creates a custom furniture instance with a specified name and location.
      *
      * @param name      The name of the custom furniture.

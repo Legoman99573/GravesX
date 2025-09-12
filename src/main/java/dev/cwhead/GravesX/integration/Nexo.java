@@ -270,14 +270,44 @@ public class Nexo extends EntityDataManager {
     }
 
     /**
-     * Retrieves a NoteBlockMechanic by name from the Nexo plugin.
+     * True if a Nexo furniture entity for this grave is currently spawned.
      *
-     * @param string The name of the note block mechanic.
-     * @return The NoteBlockMechanic if found, otherwise null.
+     * @param grave The grave to check.
+     * @return True if at least one valid Nexo furniture entity mapped to this grave exists.
      */
-    public NoteBlockMechanic getNoteBlockMechanic(String string) {
-        MechanicFactory mechanicFactory = MechanicsManager.INSTANCE.getMechanicFactory("noteblock");
+    public boolean hasFurniture(Grave grave) {
+        if (grave == null) return false;
 
-        return mechanicFactory != null ? (NoteBlockMechanic) mechanicFactory.getMechanic(string) : null;
+        Map<EntityData, Entity> map = getEntityDataMap(getLoadedEntityDataList(grave));
+        if (map.isEmpty()) return false;
+
+        for (Map.Entry<EntityData, Entity> e : map.entrySet()) {
+            EntityData data = e.getKey();
+            Entity ent = e.getValue();
+            if (data == null || ent == null) continue;
+
+            if (data.getType() == EntityData.Type.NEXO && ent.isValid() && !ent.isDead()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * True if a Nexo custom block exists at the grave location.
+     *
+     * @param grave The grave to check.
+     * @return True if a custom Nexo block is present where the grave is placed.
+     */
+    public boolean hasBlock(Grave grave) {
+        if (grave == null) return false;
+
+        Location loc = grave.getLocationDeath();
+        if (loc == null || loc.getWorld() == null) {
+            loc = grave.getLocationDeath();
+        }
+        if (loc == null || loc.getWorld() == null) return false;
+
+        return isCustomBlock(loc);
     }
 }
