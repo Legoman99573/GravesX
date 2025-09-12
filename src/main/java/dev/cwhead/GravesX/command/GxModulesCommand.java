@@ -37,7 +37,6 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(ChatColor.RED + "☠ " + ChatColor.GOLD + "GravesX Modules:");
             sender.sendMessage(ChatColor.YELLOW + "/" + label + " list" + ChatColor.GRAY + " - show modules + state");
             sender.sendMessage(ChatColor.YELLOW + "/" + label + " info <name>" + ChatColor.GRAY + " - details");
-            sender.sendMessage(ChatColor.YELLOW + "/" + label + " reload" + ChatColor.GRAY + " - reloads all modules (Development Use Only)");
             return true;
         }
 
@@ -151,12 +150,6 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
                         (lm.info.moduleLoadBefore().isEmpty() ? "-" : String.join(ChatColor.GRAY + ", ", lm.info.moduleLoadBefore())));
 
                 return true;
-            case "reload":
-                manager.disableAll();
-                manager.loadAll();
-                manager.enableAll();
-                sender.sendMessage(ChatColor.RED + "☠ " + ChatColor.GREEN + "Modules reloaded.");
-                return true;
         }
 
         return false;
@@ -166,7 +159,7 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String alias, String[] args) {
         if (!(sender instanceof Player) || !sender.hasPermission("gravesx.modules")) return List.of();
         if (args.length == 1) {
-            return prefix(List.of("help","list","info","reload"), args[0]);
+            return prefix(List.of("help","list","info"), args[0]);
         }
         if (args.length == 2 && ("info".equalsIgnoreCase(args[0]))) {
             List<String> names = manager.modules().stream().map(lm -> lm.info.name()).collect(Collectors.toList());
