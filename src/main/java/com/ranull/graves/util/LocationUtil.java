@@ -27,10 +27,8 @@ public final class LocationUtil {
         double x = Math.round(location.getX());
         double y = Math.round(location.getY());
         double z = Math.round(location.getZ());
-        float yaw = location.getYaw();
-        float pitch = location.getPitch();
 
-        return new Location(w, x, y, z, yaw, pitch);
+        return new Location(w, x, y, z);
     }
 
     /**
