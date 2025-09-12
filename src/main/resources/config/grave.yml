@@ -57,6 +57,16 @@ settings:
         water-smart: false
         # Allow grave placement above the Nether roof? (Not recommended, as graves placed here may be inaccessible.)
         nether-roof: false
+        # Allow void block in the end
+        allow-void-block: true
+        # The block to use underneath the grave
+        void-block: DIRT
+        # End Settings
+        end:
+          # Search until a block is found
+          search-radius: 96
+          # Fallback Y position
+          fallback-y: 64
         # If a grave tries is trying to be created and can't find a valid location should the player keep their inventory.
         failure-keep-inventory: true
         offset:

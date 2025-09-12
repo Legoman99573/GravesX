@@ -347,33 +347,144 @@ public final class LocationManager {
             }
         }
 
-        if (location.getWorld() != null) {
-            World.Environment environment = location.getWorld().getEnvironment();
+        if (location.getWorld() == null) return null;
 
-            boolean skipRoof = (environment == World.Environment.NETHER)
-                    && !plugin.getConfig("placement.nether-roof", grave).getBoolean("placement.nether-roof");
+        World world = location.getWorld();
+        World.Environment environment = world.getEnvironment();
 
-            if (!skipRoof) {
-                Location roof = getRoof(location, entity, grave);
-                if (roof != null) {
-                    return roof;
+        if (environment == World.Environment.THE_END) {
+            Location endCandidate = endVoidScan(location, grave);
+            if (endCandidate != null) return endCandidate;
+        }
+
+        boolean skipRoof = (environment == World.Environment.NETHER)
+                && !plugin.getConfig("placement.nether-roof", grave).getBoolean("placement.nether-roof");
+
+        if (!skipRoof) {
+            Location roof = getRoof(location, entity, grave);
+            if (roof != null) return roof;
+        }
+
+        int minY = getMinHeight(location);
+        Location bottom = new Location(world, location.getX(), minY, location.getZ());
+        Block block = bottom.getBlock();
+        if (MaterialUtil.isAir(block.getType()) || !block.getType().isSolid()) {
+            bottom.setY(minY + 1);
+        }
+        return bottom;
+    }
+
+    /**
+     * End-specific void handling:
+     * - If the current column has land, returns null to allow standard flow.
+     * - Otherwise, scans outward for the nearest island; places grave 1 block above with optional support block beneath.
+     * - If none found, uses a fallback Y with optional support block.
+     */
+    private Location endVoidScan(Location location, Grave grave) {
+        World world = location.getWorld();
+        if (world == null) return null;
+
+        final int minY = getMinHeight(location);
+        final int originX = location.getBlockX();
+        final int originZ = location.getBlockZ();
+
+        boolean columnHasLand = false;
+        for (int y = Math.min(location.getBlockY(), world.getMaxHeight() - 1); y >= minY; y--) {
+            Material m = world.getBlockAt(originX, y, originZ).getType();
+            if (!MaterialUtil.isAir(m) && m.isSolid()) { columnHasLand = true; break; }
+        }
+        if (columnHasLand) return null;
+
+        final int searchRadius = plugin.getConfig("placement.end.search-radius", grave)
+                .getInt("placement.end.search-radius", 96);
+
+        final boolean allowVoidBlock = plugin.getConfig("placement.allow-void-block", grave)
+                .getBoolean("placement.allow-void-block", true);
+
+        final Material voidBlock;
+        if (allowVoidBlock) {
+            String voidBlockName = plugin.getConfig("placement.void-block", grave)
+                    .getString("placement.void-block", "DIRT");
+            Material parsed = null;
+            try {
+                if (!voidBlockName.isEmpty()) {
+                    parsed = Material.matchMaterial(voidBlockName.toUpperCase());
+                }
+            } catch (Throwable ignored) {}
+            voidBlock = (parsed != null && parsed.isBlock()) ? parsed : Material.DIRT;
+        } else {
+            voidBlock = null;
+        }
+
+        for (int r = 1; r <= searchRadius; r++) {
+            for (int dx = -r; dx <= r; dx++) {
+                int xc = originX + dx;
+                int[] zs = new int[]{originZ - r, originZ + r};
+                for (int zc : zs) {
+                    int hy = world.getHighestBlockYAt(xc, zc);
+                    if (hy <= minY) continue;
+
+                    Block base = world.getBlockAt(xc, hy, zc);
+                    if (!base.getType().isSolid()) continue;
+
+                    Block space1 = base.getRelative(0, 1, 0);
+                    Block space2 = base.getRelative(0, 2, 0);
+                    if (!MaterialUtil.isAir(space1.getType()) || !MaterialUtil.isAir(space2.getType())) continue;
+
+                    Location candidate = new Location(world, xc + 0.5, hy + 2, zc + 0.5);
+                    if (hasGrave(candidate)) continue;
+
+                    if (allowVoidBlock) {
+                        try {
+                            if (MaterialUtil.isAir(space1.getType()) || !space1.getType().isSolid()) {
+                                space1.setType(voidBlock, false);
+                            }
+                        } catch (Throwable ignored) {}
+                    }
+                    return candidate;
                 }
             }
 
-            // Final fallback to bottom of world
-            int minY = getMinHeight(location);
-            Location bottom = new Location(location.getWorld(), location.getX(), minY, location.getZ());
+            for (int dz = -r + 1; dz <= r - 1; dz++) {
+                int zc = originZ + dz;
+                int[] xs = new int[]{originX - r, originX + r};
+                for (int xc : xs) {
+                    int hy = world.getHighestBlockYAt(xc, zc);
+                    if (hy <= minY) continue;
 
-            // Optional: ensure it's not inside bedrock or unsafe
-            Block block = bottom.getBlock();
-            if (MaterialUtil.isAir(block.getType()) || !block.getType().isSolid()) {
-                bottom.setY(minY + 1);
+                    Block base = world.getBlockAt(xc, hy, zc);
+                    if (!base.getType().isSolid()) continue;
+
+                    Block space1 = base.getRelative(0, 1, 0);
+                    Block space2 = base.getRelative(0, 2, 0);
+                    if (!MaterialUtil.isAir(space1.getType()) || !MaterialUtil.isAir(space2.getType())) continue;
+
+                    Location candidate = new Location(world, xc + 0.5, hy + 2, zc + 0.5);
+                    if (hasGrave(candidate)) continue;
+
+                    if (allowVoidBlock) {
+                        try {
+                            if (MaterialUtil.isAir(space1.getType()) || !space1.getType().isSolid()) {
+                                space1.setType(voidBlock, false);
+                            }
+                        } catch (Throwable ignored) {
+                        }
+                    }
+                    return candidate;
+                }
             }
-
-            return bottom;
         }
 
-        return null;
+        final int fallbackY = plugin.getConfig("placement.end.fallback-y", grave)
+                .getInt("placement.end.fallback-y", Math.max(64, minY + 1));
+        Block support = world.getBlockAt(originX, fallbackY, originZ);
+        if (allowVoidBlock) {
+            try {
+                support.setType(voidBlock != null ? voidBlock : Material.DIRT, false);
+            } catch (Throwable ignored) {
+            }
+        }
+        return new Location(world, originX + 0.5, fallbackY + 1, originZ + 0.5);
     }
 
     /**
