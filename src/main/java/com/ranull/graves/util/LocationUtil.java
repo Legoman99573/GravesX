@@ -24,11 +24,13 @@ public final class LocationUtil {
         World w = location.getWorld();
         if (w == null) return null;
 
-        double x = location.getBlockX() + 0.5D;
-        double y = Math.max(0, Math.min(w.getMaxHeight() - 1, location.getBlockY()));
-        double z = location.getBlockZ() + 0.5D;
+        double x = Math.round(location.getX());
+        double y = Math.round(location.getY());
+        double z = Math.round(location.getZ());
+        float yaw = location.getYaw();
+        float pitch = location.getPitch();
 
-        return new Location(w, x, y, z, location.getYaw(), location.getPitch());
+        return new Location(w, x, y, z, yaw, pitch);
     }
 
     /**
