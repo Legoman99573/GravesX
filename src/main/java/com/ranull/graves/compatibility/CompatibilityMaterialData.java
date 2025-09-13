@@ -224,18 +224,30 @@ public final class CompatibilityMaterialData implements Compatibility {
                         }
                     }
                 } else {
-                    skull.setOwner(grave.getOwnerName());
+                    try {
+                        skull.setOwningPlayer(plugin.getServer().getOfflinePlayer(grave.getOwnerName()));
+                    } catch (NoSuchMethodError | NoClassDefFoundError e) {
+                        skull.setOwner(grave.getOwnerName());
+                    }
                 }
 
             } else if (headType == 1 && headBase64 != null && !headBase64.isEmpty()) {
                 if (!useFallback) {
                     SkinTextureUtil.setSkullBlockTexture(skull, grave.getOwnerName(), headBase64);
                 } else {
-                    skull.setOwner(grave.getOwnerName());
+                    try {
+                        skull.setOwningPlayer(plugin.getServer().getOfflinePlayer(grave.getOwnerName()));
+                    } catch (NoSuchMethodError | NoClassDefFoundError e) {
+                        skull.setOwner(grave.getOwnerName());
+                    }
                 }
 
             } else if (headType == 2 && headName != null && headName.length() <= 16) {
-                skull.setOwner(headName);
+                try {
+                    skull.setOwningPlayer(plugin.getServer().getOfflinePlayer(headName));
+                } catch (NoSuchMethodError | NoClassDefFoundError e) {
+                    skull.setOwner(headName);
+                }
             }
         } catch (Exception e) {
             plugin.getLogger().warning("Failed to use new skull method; falling back. Reason: " + e.getMessage());

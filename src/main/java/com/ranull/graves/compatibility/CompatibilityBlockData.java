@@ -192,7 +192,11 @@ public final class CompatibilityBlockData implements Compatibility {
     private void applySkullData(Skull skull, Grave grave, Graves plugin, int headType, String headBase64, String headName) {
         if (headType == 0) {
             if (grave.getOwnerType() == EntityType.PLAYER) {
-                skull.setOwningPlayer(plugin.getServer().getOfflinePlayer(grave.getOwnerUUID()));
+                try {
+                    skull.setOwningPlayer(plugin.getServer().getOfflinePlayer(grave.getOwnerUUID()));
+                } catch (Exception e) {
+                    skull.setOwner(grave.getOwnerName());
+                }
             } else if (grave.getOwnerTexture() != null) {
                 SkinTextureUtil.setSkullBlockTexture(skull, grave.getOwnerName(), grave.getOwnerTexture());
             } else if (headBase64 != null && !headBase64.equals("")) {
@@ -201,7 +205,11 @@ public final class CompatibilityBlockData implements Compatibility {
         } else if (headType == 1 && headBase64 != null && !headBase64.equals("")) {
             SkinTextureUtil.setSkullBlockTexture(skull, grave.getOwnerName(), headBase64);
         } else if (headType == 2 && headName != null && headName.length() <= 16) {
-            skull.setOwningPlayer(plugin.getServer().getOfflinePlayer(headName));
+            try {
+                skull.setOwningPlayer(plugin.getServer().getOfflinePlayer(headName));
+            } catch (Exception e) {
+                skull.setOwner(headName);
+            }
         }
 
         skull.update();
