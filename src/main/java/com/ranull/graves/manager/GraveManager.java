@@ -26,7 +26,9 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataContainer;
 import org.geysermc.floodgate.api.FloodgateApi;
 
 import java.lang.reflect.Field;
@@ -1911,6 +1913,18 @@ public final class GraveManager {
             }
         }
 
+        List<String> nsKeys = plugin.getConfig("ignore.item.namespacedkeys", entity, permissionList)
+                .getStringList("ignore.item.namespacedkeys");
+        if (namespacedKeys(itemStack, nsKeys)) {
+            return true;
+        }
+
+        List<String> nsKeysContains = plugin.getConfig("ignore.item.namespacedkeys-contains", entity, permissionList)
+                .getStringList("ignore.item.namespacedkeys-contains");
+        if (namespacedKeysContains(itemStack, nsKeysContains)) {
+            return true;
+        }
+
         return false;
     }
 
@@ -1986,5 +2000,88 @@ public final class GraveManager {
         long j = java.util.concurrent.ThreadLocalRandom.current().nextLong(-250, 251); // ±250ms
         long v = baseMs + j;
         return v < 0 ? 0 : v;
+    }
+
+    /**
+     * Exact match against any namespaced key on the item.
+     * Accepts "namespace:key" or just "key".
+     */
+    private boolean namespacedKeys(ItemStack itemStack, List<String> keysToMatch) {
+        if (itemStack == null || keysToMatch == null || keysToMatch.isEmpty()) return false;
+
+        Set<String> haystack = extractNamespacedKeys(itemStack);
+        for (String raw : keysToMatch) {
+            String k = StringUtil.parseString(raw, plugin);
+            if (k == null || k.isEmpty()) continue;
+            k = k.toLowerCase(Locale.ROOT);
+            if (haystack.contains(k)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    /**
+     * Substring match against any namespaced key on the item.
+     * Accepts partials like "silk" or "minecraft:".
+     */
+    private boolean namespacedKeysContains(ItemStack itemStack, List<String> patterns) {
+        if (itemStack == null || patterns == null || patterns.isEmpty()) return false;
+
+        Set<String> haystack = extractNamespacedKeys(itemStack);
+        for (String raw : patterns) {
+            String p = StringUtil.parseString(raw, plugin);
+            if (p == null || p.isEmpty()) continue;
+            p = p.toLowerCase(Locale.ROOT);
+            for (String key : haystack) {
+                if (key.contains(p)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Collects namespaced keys present on this item.
+     * Includes enchantment keys (applied & stored) and PDC keys.
+     * Keys are added in both "namespace:key" and "key" forms, lowercased.
+     */
+    private Set<String> extractNamespacedKeys(ItemStack itemStack) {
+        Set<String> out = new HashSet<>();
+        if (itemStack == null) return out;
+
+        for (Enchantment ench : itemStack.getEnchantments().keySet()) {
+            NamespacedKey k = ench.getKeyOrThrow();
+            out.add(k.toString().toLowerCase(Locale.ROOT));
+            out.add(k.getKey().toLowerCase(Locale.ROOT));
+        }
+
+        ItemMeta meta = itemStack.getItemMeta();
+
+        if (meta instanceof EnchantmentStorageMeta) {
+            EnchantmentStorageMeta esm = (EnchantmentStorageMeta) meta;
+            for (Enchantment ench : esm.getStoredEnchants().keySet()) {
+                NamespacedKey k = ench.getKeyOrThrow();
+                out.add(k.toString().toLowerCase(Locale.ROOT));
+                out.add(k.getKey().toLowerCase(Locale.ROOT));
+            }
+        }
+
+        if (meta != null) {
+            try {
+                PersistentDataContainer pdc = meta.getPersistentDataContainer();
+                for (NamespacedKey k : pdc.getKeys()) {
+                    if (k != null) {
+                        out.add(k.toString().toLowerCase(Locale.ROOT));
+                        out.add(k.getKey().toLowerCase(Locale.ROOT));
+                    }
+                }
+            } catch (NoClassDefFoundError ignored) {
+            }
+        }
+
+        return out;
     }
 }

@@ -799,6 +799,16 @@ settings:
             - ""
             #- "Custom"
 
+          # Ignore items if NamespacedKeys contains minecraft:key or plugin:key
+          namespacedkeys:
+            - ""
+            #- "ecoenchants:soulbound"
+
+          # Ignore items if any NamespacedKeys contains the following names
+          namespacedkeys-contains:
+            - ""
+            #- "soulbound"
+
         block:
           # Materials in which graves will not be created.
           material:
