@@ -404,24 +404,25 @@ public class EntityDeathListener implements Listener {
      * @return The list of item stacks for the grave.
      */
     private List<ItemStack> getGraveItemStackList(EntityDeathEvent event, LivingEntity livingEntity, List<String> permissionList) {
-        List<ItemStack> graveList = new ArrayList<>();
-        List<ItemStack> dropsCopy = new ArrayList<>(event.getDrops());
+        final List<ItemStack> graveList = new ArrayList<>();
 
         try {
-            Iterator<ItemStack> it = dropsCopy.iterator();
+            final ListIterator<ItemStack> it = event.getDrops().listIterator();
             while (it.hasNext()) {
-                ItemStack item = it.next();
-                if (item == null) continue;
+                final ItemStack item = it.next();
+                if (item == null || item.getType() == Material.AIR) continue;
 
-                if (plugin.getEntityManager().getGraveUUIDFromItemStack(item) != null) {
+                final UUID graveId = plugin.getEntityManager().getGraveUUIDFromItemStack(item);
+                if (graveId != null) {
                     if (plugin.getConfig("compass.destroy", livingEntity, permissionList).getBoolean("compass.destroy")) {
                         it.remove();
-                        event.getDrops().remove(item);
-                        continue;
-                    } else if (plugin.getConfig("compass.ignore", livingEntity, permissionList).getBoolean("compass.ignore")) {
-                        continue;
+                    } else if (!plugin.getConfig("compass.ignore", livingEntity, permissionList).getBoolean("compass.ignore")) {
+                        graveList.add(item);
+                        it.remove();
                     }
+                    continue;
                 }
+
                 if (!plugin.getGraveManager().shouldIgnoreItemStack(item, livingEntity, permissionList)) {
                     graveList.add(item);
                     it.remove();
