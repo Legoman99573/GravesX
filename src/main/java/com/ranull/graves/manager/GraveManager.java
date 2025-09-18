@@ -2045,7 +2045,7 @@ public final class GraveManager {
 
     /**
      * Collects namespaced keys present on this item.
-     * Includes enchantment keys (applied & stored) and PDC keys.
+     * Includes enchantment keys (applied and stored) and PDC keys.
      * Keys are added in both "namespace:key" and "key" forms, lowercased.
      */
     private Set<String> extractNamespacedKeys(ItemStack itemStack) {
