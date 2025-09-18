@@ -971,8 +971,10 @@ public final class GraveManager {
                     String expectedTex  = null;
 
                     if (headType == 0) {
+                        expectedName = grave.getOwnerName();
                         expectedTex = grave.getOwnerTexture();
                     } else if (headType == 1 && headBase64 != null && !headBase64.isEmpty()) {
+                        expectedName = grave.getOwnerName();
                         expectedTex = headBase64;
                     } else if (headType == 2 && headName != null && headName.length() <= 16) {
                         expectedName = headName;
