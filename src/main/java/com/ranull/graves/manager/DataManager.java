@@ -2205,8 +2205,13 @@ public final class DataManager {
             grave.setKillerUUID(killerUUID != null ? UUID.fromString(killerUUID) : null);
 
             String locationDeath = resultSet.getString("location_death");
-            if (locationDeath == null) invalidationReason.add("location_death");
-            graveLocation = locationDeath != null ? LocationUtil.stringToLocation(locationDeath) : null;
+
+            graveLocation = (locationDeath != null) ? LocationUtil.stringToLocation(locationDeath) : null;
+            if (graveLocation == null || graveLocation.getWorld() == null) {
+                plugin.getLogger().warning("Skipping grave " + uuidString + " at row " + resultSet.getRow()
+                        + " because parsed location doesn't have a valid world assigned.");
+                return null;
+            }
             grave.setLocationDeath(graveLocation);
 
             if (resultSet.getString("equipment") == null) invalidationReason.add("equipment");

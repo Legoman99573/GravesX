@@ -51,7 +51,7 @@ public class EntityDeathListener implements Listener {
      * @param event The EntityDeathEvent to handle.
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onEntityDeath(EntityDeathEvent event) throws InvocationTargetException {
+    public void onEntityDeath(EntityDeathEvent event) {
         final LivingEntity livingEntity = event.getEntity();
         final boolean isPlayer = livingEntity instanceof Player;
         final Player player = isPlayer ? (Player) livingEntity : null;
@@ -88,7 +88,7 @@ public class EntityDeathListener implements Listener {
 
         if (!isValidDamageCause(livingEntity, permissionList, entityName)) return;
 
-        if (!isPlayer && isInvalidCreatureSpawn(livingEntity, permissionList, entityName)) return;
+        if (!isPlayer && isInvalidCreatureSpawn(livingEntity, null, entityName)) return;
 
         if (isPlayer) {
             if (handlePlayerDeath(player, entityName)) return;
