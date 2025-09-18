@@ -16,33 +16,43 @@ public interface GravesXModuleCommand extends CommandExecutor {
      *
      * @return Command name or {@code null} to keep the YAML/default.
      */
-    default String getName() { return null; }
+    default String getName() {
+        return null;
+    }
 
     /**
      * Short help text shown in command lists.
      *
      * @return Description string, empty if none.
      */
-    default String getDescription() { return ""; }
+    default String getDescription() {
+        return "";
+    }
 
     /**
      * Usage string shown on errors or help.
      *
      * @return Usage text (e.g. {@code "/cmd <arg>"}), or {@code null} for default.
      */
-    default String getUsage() { return null; }
+    default String getUsage() {
+        return null;
+    }
 
     /**
      * Permission node required to run the command.
      *
      * @return Permission node or {@code null} for default.
      */
-    default String getPermission() { return null; }
+    default String getPermission() {
+        return null;
+    }
 
     /**
      * Additional names that run the same command.
      *
      * @return List of aliases, possibly empty.
      */
-    default List<String> getAliases() { return Collections.emptyList(); }
+    default List<String> getAliases() {
+        return Collections.emptyList();
+    }
 }

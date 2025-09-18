@@ -14,10 +14,20 @@ public final class ModuleClassLoader extends URLClassLoader {
      * @param jarUrl URL of the module JAR.
      * @param parent Parent class loader to delegate to.
      */
-    public ModuleClassLoader(URL jarUrl, ClassLoader parent) { super(new URL[]{jarUrl}, parent); }
+    public ModuleClassLoader(URL jarUrl, ClassLoader parent) {
+        super(new URL[]{
+                jarUrl
+        }, parent);
+    }
 
     /**
      * Closes the class loader and releases resources. Any errors are ignored.
      */
-    @Override public void close() { try { super.close(); } catch (Exception ignored) {} }
+    @Override public void close() {
+        try {
+            super.close();
+        } catch (Exception ignored) {
+            // ignored
+        }
+    }
 }

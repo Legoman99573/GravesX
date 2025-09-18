@@ -43,6 +43,7 @@ public final class ModuleContext {
     private final List<ServiceReg> services = new CopyOnWriteArrayList<ServiceReg>();
     private final List<AutoCloseable> closeables = new CopyOnWriteArrayList<AutoCloseable>();
     private final List<Runnable> shutdownHooks = new CopyOnWriteArrayList<Runnable>();
+    private volatile GravesXModuleController controller;
 
     private static final class ServiceReg {
         final Class<?> type;
@@ -59,7 +60,7 @@ public final class ModuleContext {
      * @param plugin Owning Graves plugin.
      * @param moduleName Module name used for paths and messages.
      * @param moduleClassLoader Class loader that serves module resources.
-     * @param importer Library importer used by {@link #importLibrary(String...)}.
+     * @param importer Library importer used by {@link #importLibrary(String)}.
      */
     public ModuleContext(Graves plugin,
                          String moduleName,
@@ -82,35 +83,45 @@ public final class ModuleContext {
      *
      * @return Plugin instance.
      */
-    public Graves getPlugin() { return plugin; }
+    public Graves getPlugin() {
+        return plugin;
+    }
 
     /**
      * Gets this module's name.
      *
      * @return Module name.
      */
-    public String getModuleName() { return moduleName; }
+    public String getModuleName() {
+        return moduleName;
+    }
 
     /**
      * Gets the module-specific data folder.
      *
      * @return Data folder path.
      */
-    public File getDataFolder() { return dataFolder; }
+    public File getDataFolder() {
+        return dataFolder;
+    }
 
     /**
      * Gets the logger to use for this module.
      *
      * @return Logger instance.
      */
-    public Logger getLogger() { return logger; }
+    public Logger getLogger() {
+        return logger;
+    }
 
     /**
      * Gets the module's class loader.
      *
      * @return Class loader serving module resources.
      */
-    public ClassLoader getClassLoader() { return moduleClassLoader; }
+    public ClassLoader getClassLoader() {
+        return moduleClassLoader;
+    }
 
     /**
      * Copies all default YAML resources (except module.yml) from the module JAR into this module's
@@ -288,14 +299,22 @@ public final class ModuleContext {
         return listener;
     }
 
-    private Runnable guard(final Runnable r) { return new Runnable() { public void run() { if (!disabling) r.run(); } }; }
+    private Runnable guard(final Runnable r) {
+        return new Runnable() {
+            public void run() {
+                if (!disabling) r.run();
+            }
+        };
+    }
 
     /**
      * Schedules a synchronous task using the GravesX scheduler.
      *
      * @param r Task to run.
      */
-    public void runTask(Runnable r) { plugin.getGravesXScheduler().runTask(guard(r)); }
+    public void runTask(Runnable r) {
+        plugin.getGravesXScheduler().runTask(guard(r));
+    }
 
     /**
      * Schedules a delayed synchronous task using the GravesX scheduler.
@@ -303,7 +322,9 @@ public final class ModuleContext {
      * @param r Task to run.
      * @param delay Delay in ticks before first run.
      */
-    public void runTaskLater(Runnable r, long delay) { plugin.getGravesXScheduler().runTaskLater(guard(r), delay); }
+    public void runTaskLater(Runnable r, long delay) {
+        plugin.getGravesXScheduler().runTaskLater(guard(r), delay);
+    }
 
     /**
      * Schedules a repeating synchronous task using the GravesX scheduler.
@@ -312,14 +333,18 @@ public final class ModuleContext {
      * @param delay Delay in ticks before first run.
      * @param period Period in ticks between runs.
      */
-    public void runTaskTimer(Runnable r, long delay, long period) { plugin.getGravesXScheduler().runTaskTimer(guard(r), delay, period); }
+    public void runTaskTimer(Runnable r, long delay, long period) {
+        plugin.getGravesXScheduler().runTaskTimer(guard(r), delay, period);
+    }
 
     /**
      * Schedules an asynchronous task using the GravesX scheduler.
      *
      * @param r Task to run.
      */
-    public void runTaskAsync(Runnable r) { plugin.getGravesXScheduler().runTaskAsynchronously(guard(r)); }
+    public void runTaskAsync(Runnable r) {
+        plugin.getGravesXScheduler().runTaskAsynchronously(guard(r));
+    }
 
     /**
      * Schedules a repeating asynchronous task using the GravesX scheduler.
@@ -328,7 +353,9 @@ public final class ModuleContext {
      * @param delay Delay in ticks before first run.
      * @param period Period in ticks between runs.
      */
-    public void runTaskTimerAsync(Runnable r, long delay, long period) { plugin.getGravesXScheduler().runTaskTimerAsynchronously(guard(r), delay, period); }
+    public void runTaskTimerAsync(Runnable r, long delay, long period) {
+        plugin.getGravesXScheduler().runTaskTimerAsynchronously(guard(r), delay, period);
+    }
 
     /**
      * Registers a Bukkit service and tracks it for automatic unregister.
@@ -368,9 +395,12 @@ public final class ModuleContext {
      *
      * @param coordinates One or more coordinates (implementation-defined).
      */
-    public void importLibrary(String... coordinates) {
-        if (importer != null) importer.importLibrary(this, coordinates);
-        else logger.info("[Modules] importLibrary(...) called for " + moduleName + " (no importer configured yet).");
+    public void importLibrary(String coordinates) {
+        if (importer != null) {
+            importer.importLibrary(this, coordinates);
+        } else {
+            logger.info("[Modules] importLibrary() called for " + moduleName + " (no importer configured yet).");
+        }
     }
 
     /**
@@ -401,8 +431,27 @@ public final class ModuleContext {
         closeables.clear();
     }
 
-    private static <T> List<T> snapshot(List<T> list) { return new ArrayList<T>(list); }
-    private static void safeRun(Runnable r) { try { r.run(); } catch (Throwable ignored) {} }
+    /** Internal: attaches a per-module controller (wired by the GravesXModuleController). */
+    void _internalAttachController(GravesXModuleController controller) {
+        this.controller = controller;
+    }
+
+    /** Exposes the per-module controller for enable/disable/isEnabled access. */
+    public GravesXModuleController getGravesXModules() {
+        return controller;
+    }
+
+    private static <T> List<T> snapshot(List<T> list) {
+        return new ArrayList<T>(list);
+    }
+
+    private static void safeRun(Runnable r) {
+        try {
+            r.run();
+        } catch (Throwable ignored) {
+
+        }
+    }
 
     private static void saveString(File file, String contents) throws Exception {
         try (Writer w = new FileWriter(file, StandardCharsets.UTF_8)) {

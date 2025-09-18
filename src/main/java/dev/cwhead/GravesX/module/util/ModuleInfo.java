@@ -12,20 +12,22 @@ import java.util.regex.Pattern;
 
 /**
  * Immutable descriptor of a module parsed from {@code module.yml}.
- * Holds IDs, main class, version, authors, website, and plugin/module dependency lists.
+ * Holds name, description, main class, version, authors, website,
+ * and plugin/module dependency lists.
  */
 public final class ModuleInfo {
-    private final String name, mainClass, version, website;
+    private final String name, description, mainClass, version, website;
     private final List<String> authors;
     private final List<String> pluginDepends, pluginSoftDepends, pluginLoadBefore;
     private final List<String> moduleDepends, moduleSoftDepends, moduleLoadBefore;
 
     private ModuleInfo(
-            String name, String mainClass, String version, String website, List<String> authors,
+            String name, String description, String mainClass, String version, String website, List<String> authors,
             List<String> pDep, List<String> pSoft, List<String> pBefore,
             List<String> mDep, List<String> mSoft, List<String> mBefore
     ) {
         this.name = name;
+        this.description = nv(description);
         this.mainClass = mainClass;
         this.version = (version == null || version.isBlank()) ? "0.0.0" : version;
         this.website = nv(website);
@@ -43,81 +45,112 @@ public final class ModuleInfo {
      *
      * @return Module name or {@code null} if not provided.
      */
-    public String name() { return name; }
+    public String name() {
+        return name;
+    }
+
+    /**
+     * Gets the module description.
+     *
+     * @return Description text or {@code null} if not provided.
+     */
+    public String description() {
+        return description;
+    }
 
     /**
      * Gets the fully qualified main class.
      *
      * @return Main class name or {@code null} if not provided.
      */
-    public String mainClass() { return mainClass; }
+    public String mainClass() {
+        return mainClass;
+    }
 
     /**
      * Gets the module version.
      *
      * @return Version string (defaults to {@code "0.0.0"} if missing).
      */
-    public String version() { return version; }
+    public String version() {
+        return version;
+    }
 
     /**
      * Gets the website URL for this module.
      *
      * @return Website URL or {@code null} if not provided.
      */
-    public String website() { return website; }
+    public String website() {
+        return website;
+    }
 
     /**
      * Gets the authors of this module.
      *
      * @return Unmodifiable list of author names (may be empty).
      */
-    public List<String> authors() { return authors; }
+    public List<String> authors() {
+        return authors;
+    }
 
     /**
      * Gets required Bukkit plugin dependencies.
      *
      * @return Unmodifiable list of plugin names.
      */
-    public List<String> pluginDepends() { return pluginDepends; }
+    public List<String> pluginDepends() {
+        return pluginDepends;
+    }
 
     /**
      * Gets optional Bukkit plugin dependencies.
      *
      * @return Unmodifiable list of plugin names.
      */
-    public List<String> pluginSoftDepends() { return pluginSoftDepends; }
+    public List<String> pluginSoftDepends() {
+        return pluginSoftDepends;
+    }
 
     /**
      * Gets plugins that should load after this module.
      *
      * @return Unmodifiable list of plugin names.
      */
-    public List<String> pluginLoadBefore() { return pluginLoadBefore; }
+    public List<String> pluginLoadBefore() {
+        return pluginLoadBefore;
+    }
 
     /**
      * Gets required module dependencies.
      *
      * @return Unmodifiable list of module names.
      */
-    public List<String> moduleDepends() { return moduleDepends; }
+    public List<String> moduleDepends() {
+        return moduleDepends;
+    }
 
     /**
      * Gets optional module dependencies.
      *
      * @return Unmodifiable list of module names.
      */
-    public List<String> moduleSoftDepends() { return moduleSoftDepends; }
+    public List<String> moduleSoftDepends() {
+        return moduleSoftDepends;
+    }
 
     /**
      * Gets modules that should load after this module.
      *
      * @return Unmodifiable list of module names.
      */
-    public List<String> moduleLoadBefore() { return moduleLoadBefore; }
+    public List<String> moduleLoadBefore() {
+        return moduleLoadBefore;
+    }
 
     /**
      * Parses a minimal YAML-like stream into a {@link ModuleInfo}.
-     * Supports keys: {@code name}, {@code main}, {@code version}, {@code website},
+     * Supports keys: {@code name}, {@code description}, {@code main}, {@code version}, {@code website},
      * {@code author} (single) or {@code authors} (list),
      * {@code pluginDepends}, {@code pluginSoftDepends}, {@code pluginLoadBefore},
      * {@code moduleDepends}, {@code moduleSoftDepends}, {@code moduleLoadBefore}.
@@ -190,6 +223,7 @@ public final class ModuleInfo {
         }
 
         String name  = nv(scalars.get("name"));
+        String desc  = nv(scalars.get("description"));
         String main  = nv(scalars.get("main"));
         String ver   = scalars.getOrDefault("version", "0.0.0");
         String site  = nv(scalars.get("website"));
@@ -206,7 +240,7 @@ public final class ModuleInfo {
         }
 
         return new ModuleInfo(
-                name, main, ver, site, cleanAuthors,
+                name, desc, main, ver, site, cleanAuthors,
                 lists.getOrDefault("plugindepends", List.of()),
                 lists.getOrDefault("pluginsoftdepends", List.of()),
                 lists.getOrDefault("pluginloadbefore", List.of()),
@@ -216,5 +250,7 @@ public final class ModuleInfo {
         );
     }
 
-    private static String nv(String s) { return (s == null || s.isBlank()) ? null : s; }
+    private static String nv(String s) {
+        return (s == null || s.isBlank()) ? null : s;
+    }
 }
