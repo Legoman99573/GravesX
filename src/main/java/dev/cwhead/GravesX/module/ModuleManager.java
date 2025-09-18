@@ -155,13 +155,13 @@ public final class ModuleManager {
     /**
      * Controller exposed to modules via {@link ModuleContext#getGravesXModules()}.
      *
-     * <p>Implements {@link GravesXModuleController} by delegating lifecycle operations and
+     * Implements {@link GravesXModuleController} by delegating lifecycle operations and
      * lookups to the enclosing {@code ModuleManager}. Supports both:
      * <ul>
      *   <li>acting on <em>this</em> module (the one owning the context)</li>
      *   <li>acting on a target module identified by key (module.yml name, simple class, or FQCN)</li>
      * </ul>
-     * All enable/disable operations are idempotent.</p>
+     * All enable/disable operations are idempotent.
      */
     private final class ControllerImpl implements GravesXModuleController {
         private final LoadedModule self;

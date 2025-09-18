@@ -31,13 +31,13 @@ public interface GravesXModuleController {
     /**
      * Reports whether a target module is enabled.
      *
-     * <p>The {@code moduleKey} can be:
+     * The {@code moduleKey} can be:
      * <ul>
      *   <li>the module.yml {@code name}</li>
      *   <li>the module's simple class name</li>
      *   <li>the module's fully qualified class name (FQCN)</li>
      * </ul>
-     * Matching is implementation-defined (typically case-insensitive).</p>
+     * Matching is implementation-defined (typically case-insensitive).
      *
      * @param moduleKey identifier for the target module
      * @return {@code true} if the target module is enabled; {@code false} if disabled or not found
