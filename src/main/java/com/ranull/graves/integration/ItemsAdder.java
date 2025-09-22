@@ -21,18 +21,24 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * @deprecated Use GravesXModule: ItemsAdder instead
+ *
  * Integration with the ItemsAdder plugin for handling custom furniture and blocks.
  */
+@Deprecated (since = "4.9.9.1", forRemoval = true)
 public final class ItemsAdder extends EntityDataManager {
     private final Graves plugin;
     private final Plugin itemsAdderPlugin;
 
     /**
+     * @deprecated Use GravesXModule: ItemsAdder instead
+     *
      * Constructs an ItemsAdder instance and saves data related to ItemsAdder.
      *
      * @param plugin           The Graves plugin instance.
      * @param itemsAdderPlugin The ItemsAdder plugin instance.
      */
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
     public ItemsAdder(Graves plugin, Plugin itemsAdderPlugin) {
         super(plugin);
 
@@ -43,8 +49,11 @@ public final class ItemsAdder extends EntityDataManager {
     }
 
     /**
+     * @deprecated Use GravesXModule: ItemsAdder instead
+     *
      * Copies resource files needed for ItemsAdder integration.
      */
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
     public void saveData() {
         String version = itemsAdderPlugin.getDescription().getVersion();
         String targetVersion = "3.3.0";
@@ -75,8 +84,11 @@ public final class ItemsAdder extends EntityDataManager {
     }
 
     /**
+     * @deprecated Use GravesXModule: ItemsAdder instead
+     *
      * Deletes older ItemsAdder Data to give room for new data for newer versions without affecting other files (as some models may need them for backwards compatibility).
      */
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
     private void deleteOldItemsAdderData(String path) {
         File file = new File(path);
         if (file.exists()) {
@@ -95,8 +107,11 @@ public final class ItemsAdder extends EntityDataManager {
     }
 
     /**
+     * @deprecated Use GravesXModule: ItemsAdder instead
+     *
      * Compares versions for ItemsAdder integration.
      */
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
     private int compareVersions(String v1, String v2) {
         // Split by '-' to ignore the pre-release or build metadata
         String[] mainVersion1 = v1.split("-", 2);
@@ -119,11 +134,14 @@ public final class ItemsAdder extends EntityDataManager {
     }
 
     /**
+     * @deprecated Use GravesXModule: ItemsAdder instead
+     *
      * Creates and places custom furniture at a specified location.
      *
      * @param location The location to place the furniture.
      * @param grave    The grave object associated with the furniture.
      */
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
     public void createFurniture(Location location, Grave grave) {
         location = LocationUtil.roundLocation(location).add(0.5, 0, 0.5);
 
@@ -150,28 +168,37 @@ public final class ItemsAdder extends EntityDataManager {
     }
 
     /**
+     * @deprecated Use GravesXModule: ItemsAdder instead
+     *
      * Removes all custom furniture associated with a specific grave.
      *
      * @param grave The grave object whose furniture is to be removed.
      */
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
     public void removeFurniture(Grave grave) {
         removeFurniture(getEntityDataMap(getLoadedEntityDataList(grave)));
     }
 
     /**
+     * @deprecated Use GravesXModule: ItemsAdder instead
+     *
      * Removes custom furniture associated with a specific entity data.
      *
      * @param entityData The entity data for the furniture to be removed.
      */
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
     public void removeFurniture(EntityData entityData) {
         removeFurniture(getEntityDataMap(Collections.singletonList(entityData)));
     }
 
     /**
+     * @deprecated Use GravesXModule: ItemsAdder instead
+     *
      * Removes custom furniture based on a map of entity data and entities.
      *
      * @param entityDataMap A map of entity data and corresponding entities to be removed.
      */
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
     public void removeFurniture(Map<EntityData, Entity> entityDataMap) {
         List<EntityData> entityDataList = new ArrayList<>();
 
@@ -185,11 +212,14 @@ public final class ItemsAdder extends EntityDataManager {
     }
 
     /**
+     * @deprecated Use GravesXModule: ItemsAdder instead
+     *
      * Creates and places a custom block at a specified location.
      *
      * @param location The location to place the block.
      * @param grave    The grave object associated with the block.
      */
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
     public void createBlock(Location location, Grave grave) {
         if (plugin.getConfig("itemsadder.block.enabled", grave)
                 .getBoolean("itemsadder.block.enabled")) {
@@ -208,30 +238,39 @@ public final class ItemsAdder extends EntityDataManager {
     }
 
     /**
+     * @deprecated Use GravesXModule: ItemsAdder instead
+     *
      * Checks if a custom block exists at a specified location.
      *
      * @param location The location to check.
      * @return True if a custom block exists at the location, false otherwise.
      */
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
     public boolean isCustomBlock(Location location) {
         return CustomBlock.byAlreadyPlaced(location.getBlock()) != null;
     }
 
     /**
+     * @deprecated Use GravesXModule: ItemsAdder instead
+     *
      * Removes a custom block at a specified location.
      *
      * @param location The location of the block to be removed.
      */
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
     public void removeBlock(Location location) {
         CustomBlock.remove(location);
     }
 
     /**
+     * @deprecated Use GravesXModule: ItemsAdder instead
+     *
      * True if an ItemsAdder furniture entity for this grave is currently spawned.
      *
      * @param grave The grave to check.
      * @return True if at least one valid IA furniture entity mapped to this grave exists.
      */
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
     public boolean hasFurniture(Grave grave) {
         if (grave == null) return false;
 
@@ -253,11 +292,14 @@ public final class ItemsAdder extends EntityDataManager {
     }
 
     /**
+     * @deprecated Use GravesXModule: ItemsAdder instead
+     *
      * True if an ItemsAdder custom block exists at the grave location.
      *
      * @param grave The grave to check.
      * @return True if a custom block is present where the grave is placed.
      */
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
     public boolean hasBlock(Grave grave) {
         if (grave == null) return false;
 
@@ -271,23 +313,29 @@ public final class ItemsAdder extends EntityDataManager {
     }
 
     /**
+     * @deprecated Use GravesXModule: ItemsAdder instead
+     *
      * Creates a custom furniture instance with a specified name and location.
      *
      * @param name      The name of the custom furniture.
      * @param location  The location where the furniture should be placed.
      * @return The created CustomFurniture instance, or null if creation failed.
      */
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
     private CustomFurniture createCustomFurniture(String name, Location location) {
         return CustomFurniture.spawn(name, location.getBlock());
     }
 
     /**
+     * @deprecated Use GravesXModule: ItemsAdder instead
+     *
      * Creates a custom block instance with a specified name and location.
      *
      * @param name      The name of the custom block.
      * @param location  The location where the block should be placed.
      * @return The created CustomBlock instance, or null if creation failed.
      */
+    @Deprecated (since = "4.9.9.1", forRemoval = true)
     private CustomBlock createCustomBlock(String name, Location location) {
         return CustomBlock.place(name, location);
     }
