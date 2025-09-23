@@ -112,8 +112,8 @@ public final class KeepInventoryDetector {
     public static void logWorldsWithGameruleKeepInventoryTrue(Graves plugin) {
         for (World w : Bukkit.getWorlds()) {
             if (isKeepInventoryGameruleTrue(w)) {
-                plugin.getLogger().warning("[KeepInventoryDetector] World '" + w.getName()
-                        + "' has Keep Inventory Gamerule enabled. Graves will not spawn in this world without using a bypass permission.");
+                plugin.debugMessage("[KeepInventoryDetector] World '" + w.getName()
+                        + "' has Keep Inventory Gamerule enabled. Graves will not spawn in this world without using a bypass permission.",2);
             }
         }
     }
@@ -154,8 +154,8 @@ public final class KeepInventoryDetector {
             boolean after = safeGetKeep(pd, before);
 
             if (!before && after) {
-                plugin.getLogger().warning("[KeepInventoryDetector] Keep Inventory was allowed by plugin "
-                        + owner.getName() + " v." + owner.getDescription().getVersion() + " with priority " + priority + ". Graves will not spawn in this world without using our keepInventory bypass permission or editing " + owner.getName() + "'s configuration. If there is no way to disable keepInventory through configuration or permission, contact " + owner.getName()  + "'s plugin author(s) to suggest a configuration option or permission.");
+                plugin.debugMessage("[KeepInventoryDetector] Keep Inventory was allowed by plugin "
+                        + owner.getName() + " v." + owner.getDescription().getVersion() + " with priority " + priority + ". Graves will not spawn in this world without using our keepInventory bypass permission or editing " + owner.getName() + "'s configuration. If there is no way to disable keepInventory through configuration or permission, contact " + owner.getName()  + "'s plugin author(s) to suggest a configuration option or permission.", 2);
             }
         }
     }
