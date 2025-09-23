@@ -78,8 +78,6 @@ public interface GravesXModuleController {
      */
     boolean enableModule(String moduleKey);
 
-    // ---------- Metadata access ----------
-
     /**
      * Returns the descriptor for a target module identified by key.
      *
@@ -104,8 +102,6 @@ public interface GravesXModuleController {
      * @return a collection view of all module descriptors (may be empty, never {@code null})
      */
     Collection<GravesXModuleDescriptor> listModules();
-
-    // ---------- Convenience accessors ----------
 
     /**
      * Convenience accessor for {@code getModule(moduleKey).getName()}.

@@ -19,19 +19,15 @@ import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Registers and unregisters module-defined permissions and commands from {@code module.yml}.
  */
 final class ModuleCommandRegistrar {
     private final Graves plugin;
-    private final Map<String, List<PluginCommand>> cmds = new LinkedHashMap<String, List<PluginCommand>>();
-    private final Map<String, List<Permission>> perms = new LinkedHashMap<String, List<Permission>>();
+    private final Map<String, List<PluginCommand>> cmds = new LinkedHashMap<>();
+    private final Map<String, List<Permission>> perms = new LinkedHashMap<>();
 
     /**
      * Creates a registrar bound to the owning plugin.
@@ -65,8 +61,8 @@ final class ModuleCommandRegistrar {
             for (PluginCommand pc : list) {
                 CommandExecutor ex = pc.getExecutor();
                 if (ex instanceof GravesXModuleCommand) {}
-                if (pc.getTabCompleter() instanceof GravesXModuleTabCompleter) {
-                    ((GravesXModuleTabCompleter) pc.getTabCompleter()).onUnregister();
+                if (pc.getTabCompleter() instanceof GravesXModuleTabCompleter gmtc) {
+                    gmtc.onUnregister();
                 }
                 unregister(pc);
             }
@@ -102,7 +98,7 @@ final class ModuleCommandRegistrar {
      */
     private void registerPermissions(LoadedModule lm, ConfigurationSection sec) {
         if (sec == null) return;
-        List<Permission> out = new ArrayList<Permission>();
+        List<Permission> out = new ArrayList<>();
         for (String node : sec.getKeys(false)) {
             ConfigurationSection psec = sec.getConfigurationSection(node);
             if (psec == null) continue;
@@ -110,7 +106,7 @@ final class ModuleCommandRegistrar {
             String defStr = psec.getString("default", "FALSE").toUpperCase(Locale.ROOT);
             PermissionDefault def;
             try { def = PermissionDefault.valueOf(defStr); } catch (Exception ex) { def = PermissionDefault.FALSE; }
-            Map<String, Boolean> children = new LinkedHashMap<String, Boolean>();
+            Map<String, Boolean> children = new LinkedHashMap<>();
             ConfigurationSection csec = psec.getConfigurationSection("children");
             if (csec != null) {
                 for (String child : csec.getKeys(false)) children.put(child, csec.getBoolean(child, true));
@@ -137,7 +133,7 @@ final class ModuleCommandRegistrar {
         if (sec == null) return;
         SimpleCommandMap map = commandMap();
         if (map == null) return;
-        List<PluginCommand> out = new ArrayList<PluginCommand>();
+        List<PluginCommand> out = new ArrayList<>();
         for (String name : sec.getKeys(false)) {
             ConfigurationSection c = sec.getConfigurationSection(name);
             if (c == null) continue;
@@ -158,10 +154,9 @@ final class ModuleCommandRegistrar {
 
             if (execClass != null && !execClass.isEmpty()) exec = newExecutor(execClass, lm, pc);
             if (tabClass != null && !tabClass.isEmpty()) tab = newTabCompleter(tabClass, lm, pc);
-            if (tab == null && exec instanceof GravesXModuleTabCompleter) tab = (GravesXModuleTabCompleter) exec;
+            if (tab == null && exec instanceof GravesXModuleTabCompleter gmtc) tab = gmtc;
 
-            if (exec instanceof GravesXModuleCommand) {
-                GravesXModuleCommand g = (GravesXModuleCommand) exec;
+            if (exec instanceof GravesXModuleCommand g) {
                 String d = g.getDescription();
                 String u = g.getUsage();
                 String p = g.getPermission();
@@ -172,7 +167,7 @@ final class ModuleCommandRegistrar {
                 if ((yamlAliases == null || yamlAliases.isEmpty()) && a != null && !a.isEmpty()) yamlAliases = a;
                 String providedName = g.getName();
                 if (providedName != null && !providedName.isEmpty() && !providedName.equalsIgnoreCase(name)) {
-                    if (yamlAliases == null) yamlAliases = new ArrayList<String>();
+                    if (yamlAliases == null) yamlAliases = new ArrayList<>();
                     if (!yamlAliases.contains(providedName)) yamlAliases.add(providedName);
                 }
             }
@@ -201,22 +196,21 @@ final class ModuleCommandRegistrar {
      * @return List of aliases, possibly empty.
      */
     private List<String> readAliases(Object val) {
-        if (val == null) return java.util.Collections.emptyList();
-        if (val instanceof List) {
-            List<?> raw = (List<?>) val;
-            List<String> out = new ArrayList<String>(raw.size());
+        if (val == null) return Collections.emptyList();
+        if (val instanceof List<?> raw) {
+            List<String> out = new ArrayList<>(raw.size());
             for (Object o : raw) if (o != null) out.add(String.valueOf(o));
             return out;
         }
         String s = String.valueOf(val);
         if (s.indexOf(',') >= 0) {
             String[] parts = s.split(",");
-            List<String> out = new ArrayList<String>(parts.length);
+            List<String> out = new ArrayList<>(parts.length);
             for (String p : parts) if (!p.trim().isEmpty()) out.add(p.trim());
             return out;
         }
-        if (s.isEmpty()) return java.util.Collections.emptyList();
-        return java.util.Collections.singletonList(s);
+        if (s.isEmpty()) return Collections.emptyList();
+        return Collections.singletonList(s);
     }
 
     /**

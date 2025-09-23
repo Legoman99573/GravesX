@@ -5,6 +5,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.server.PluginEnableEvent;
 
+import java.util.Objects;
+
 /**
  * Listens for plugin enable events and asks the {@link ModuleManager} to
  * retry enabling modules that were waiting on dependencies.
@@ -18,7 +20,7 @@ public final class DependencyEnableListener implements Listener {
      * @param manager Module manager to notify when plugins are enabled.
      */
     public DependencyEnableListener(ModuleManager manager) {
-        this.manager = manager;
+        this.manager = Objects.requireNonNull(manager, "manager");
     }
 
     /**

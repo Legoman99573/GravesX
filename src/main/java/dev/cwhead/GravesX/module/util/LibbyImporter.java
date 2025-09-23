@@ -4,6 +4,9 @@ import com.ranull.graves.Graves;
 import dev.cwhead.GravesX.module.ModuleContext;
 import dev.cwhead.GravesX.util.LibraryLoaderUtil;
 
+import java.util.Locale;
+import java.util.Objects;
+
 /**
  * Implements a {@link LibraryImporter} that parses Maven-style coordinates and
  * loads libraries for modules using {@link LibraryLoaderUtil}.
@@ -18,7 +21,7 @@ public final class LibbyImporter implements LibraryImporter {
      * @param plugin Owning Graves plugin.
      */
     public LibbyImporter(Graves plugin) {
-        this.plugin = plugin;
+        this.plugin = Objects.requireNonNull(plugin, "plugin");
         this.util = new LibraryLoaderUtil(plugin);
     }
 
@@ -77,10 +80,8 @@ public final class LibbyImporter implements LibraryImporter {
                 String[] kvps = query.split("&");
                 for (String kvp : kvps) {
                     int eq = kvp.indexOf('=');
-                    String key = eq >= 0 ? kvp.substring(0, eq) : kvp;
-                    String value = eq >= 0 ? kvp.substring(eq + 1) : "";
-                    key = key.trim().toLowerCase(java.util.Locale.ROOT);
-                    value = value.trim();
+                    String key = (eq >= 0 ? kvp.substring(0, eq) : kvp).trim().toLowerCase(Locale.ROOT);
+                    String value = (eq >= 0 ? kvp.substring(eq + 1) : "").trim();
                     if ("isolated".equals(key)) isolated = parseBoolean(value);
                     else if ("transitive".equals(key)) resolveTransitive = parseBoolean(value);
                     else if ("repo".equals(key)) repo = value;
@@ -119,7 +120,7 @@ public final class LibbyImporter implements LibraryImporter {
      * @return True if the value is truthy, otherwise false.
      */
     private static boolean parseBoolean(String s) {
-        String v = s.toLowerCase(java.util.Locale.ROOT);
+        String v = s.toLowerCase(Locale.ROOT);
         return "1".equals(v) || "true".equals(v) || "yes".equals(v) || "y".equals(v);
     }
 }

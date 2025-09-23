@@ -163,19 +163,20 @@ public final class ModuleInfo {
      */
     public static ModuleInfo fromYaml(InputStream in) throws Exception {
         String text = new String(in.readAllBytes());
-        Map<String, List<String>> lists = new HashMap<String, List<String>>();
-        Map<String, String> scalars = new HashMap<String, String>();
+        Map<String, List<String>> lists = new HashMap<>();
+        Map<String, String> scalars = new HashMap<>();
         String currentList = null;
         Pattern keyLine = Pattern.compile("^[A-Za-z][A-Za-z0-9_-]*\\s*:");
 
-        Set<String> listKeys = new HashSet<String>();
-        listKeys.add("authors");
-        listKeys.add("plugindepends");
-        listKeys.add("pluginsoftdepends");
-        listKeys.add("pluginloadbefore");
-        listKeys.add("moduledepends");
-        listKeys.add("modulesoftdepends");
-        listKeys.add("moduleloadbefore");
+        Set<String> listKeys = new HashSet<>(Set.of(
+                "authors",
+                "plugindepends",
+                "pluginsoftdepends",
+                "pluginloadbefore",
+                "moduledepends",
+                "modulesoftdepends",
+                "moduleloadbefore"
+        ));
 
         String[] lines = text.split("\\R");
         for (String raw : lines) {
@@ -193,14 +194,14 @@ public final class ModuleInfo {
 
                 if (val.isEmpty()) {
                     if (isListKey) {
-                        if (!lists.containsKey(k)) lists.put(k, new ArrayList<String>());
+                        lists.computeIfAbsent(k, __ -> new ArrayList<>());
                         currentList = k;
                     } else {
                         scalars.put(k, "");
                     }
                 } else {
                     if (isListKey) {
-                        List<String> arr = new ArrayList<String>();
+                        List<String> arr = new ArrayList<>();
                         String[] parts = val.split(",");
                         for (String p : parts) {
                             String v = p.trim();
@@ -235,7 +236,7 @@ public final class ModuleInfo {
         }
         List<String> cleanAuthors = new ArrayList<>();
         for (String a : authors) {
-            String t = a == null ? null : a.trim();
+            String t = (a == null) ? null : a.trim();
             if (t != null && !t.isEmpty()) cleanAuthors.add(t);
         }
 

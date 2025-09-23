@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Writer;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,10 +40,10 @@ public final class ModuleContext {
     private YamlConfiguration config;
 
     private volatile boolean disabling = false;
-    private final List<Listener> listeners = new CopyOnWriteArrayList<Listener>();
-    private final List<ServiceReg> services = new CopyOnWriteArrayList<ServiceReg>();
-    private final List<AutoCloseable> closeables = new CopyOnWriteArrayList<AutoCloseable>();
-    private final List<Runnable> shutdownHooks = new CopyOnWriteArrayList<Runnable>();
+    private final List<Listener> listeners = new CopyOnWriteArrayList<>();
+    private final List<ServiceReg> services = new CopyOnWriteArrayList<>();
+    private final List<AutoCloseable> closeables = new CopyOnWriteArrayList<>();
+    private final List<Runnable> shutdownHooks = new CopyOnWriteArrayList<>();
     private volatile GravesXModuleController controller;
 
     private static final class ServiceReg {
@@ -135,17 +136,17 @@ public final class ModuleContext {
         java.util.jar.JarFile jarFile = null;
         try {
             try {
-                java.net.URL marker = moduleClassLoader.getResource("module.yml");
+                URL marker = moduleClassLoader.getResource("module.yml");
                 if (marker != null && "jar".equalsIgnoreCase(marker.getProtocol())) {
-                    java.net.JarURLConnection juc = (java.net.JarURLConnection) marker.openConnection();
+                    java.net.JarURLConnection juc = (JarURLConnection) marker.openConnection();
                     jarFile = juc.getJarFile();
                 }
             } catch (Throwable ignored) {}
 
-            if (jarFile == null && moduleClassLoader instanceof java.net.URLClassLoader) {
-                for (java.net.URL u : ((java.net.URLClassLoader) moduleClassLoader).getURLs()) {
+            if (jarFile == null && moduleClassLoader instanceof URLClassLoader urlCl) {
+                for (URL u : urlCl.getURLs()) {
                     try {
-                        java.io.File f = new java.io.File(u.toURI());
+                        File f = new File(u.toURI());
                         if (f.isFile() && f.getName().toLowerCase(java.util.Locale.ROOT).endsWith(".jar")) {
                             jarFile = new JarFile(f);
                             break;
@@ -155,9 +156,9 @@ public final class ModuleContext {
             }
 
             if (jarFile != null) {
-                java.util.Enumeration<java.util.jar.JarEntry> entries = jarFile.entries();
+                Enumeration<JarEntry> entries = jarFile.entries();
                 while (entries.hasMoreElements()) {
-                    java.util.jar.JarEntry e = entries.nextElement();
+                    JarEntry e = entries.nextElement();
                     if (e.isDirectory()) continue;
 
                     String name = e.getName();
@@ -167,7 +168,7 @@ public final class ModuleContext {
                     String last = name.substring(name.lastIndexOf('/') + 1);
                     if ("module.yml".equalsIgnoreCase(last)) continue;
 
-                    java.io.File outFile = new java.io.File(baseDir, name);
+                    File outFile = new File(baseDir, name);
 
                     String basePath = baseDir.getCanonicalPath();
                     String outPath  = outFile.getCanonicalFile().getParentFile().getCanonicalPath();
@@ -178,11 +179,11 @@ public final class ModuleContext {
 
                     if (outFile.exists()) continue;
 
-                    java.io.File parent = outFile.getParentFile();
+                    File parent = outFile.getParentFile();
                     if (parent != null && !parent.exists()) parent.mkdirs();
 
-                    try (java.io.InputStream in = jarFile.getInputStream(e);
-                         java.io.OutputStream out = new java.io.FileOutputStream(outFile)) {
+                    try (InputStream in = jarFile.getInputStream(e);
+                         OutputStream out = new FileOutputStream(outFile)) {
                         byte[] buf = new byte[8192];
                         int r;
                         while ((r = in.read(buf)) != -1) out.write(buf, 0, r);
@@ -192,9 +193,9 @@ public final class ModuleContext {
                 }
             } else {
                 if (!configFile.exists()) {
-                    try (java.io.InputStream in = moduleClassLoader.getResourceAsStream("config.yml")) {
+                    try (InputStream in = moduleClassLoader.getResourceAsStream("config.yml")) {
                         if (in != null) {
-                            try (java.io.OutputStream out = new java.io.FileOutputStream(configFile)) {
+                            try (OutputStream out = new FileOutputStream(configFile)) {
                                 byte[] buffer = new byte[8192];
                                 int r;
                                 while ((r = in.read(buffer)) != -1) out.write(buffer, 0, r);
@@ -211,7 +212,6 @@ public final class ModuleContext {
             try { if (jarFile != null) jarFile.close(); } catch (Exception ignored) {}
         }
 
-        // Ensure there is at least a config.yml (copy or stub)
         if (!configFile.exists()) {
             try {
                 saveString(configFile, "# Auto-generated config for " + moduleName + System.lineSeparator());
@@ -300,11 +300,7 @@ public final class ModuleContext {
     }
 
     private Runnable guard(final Runnable r) {
-        return new Runnable() {
-            public void run() {
-                if (!disabling) r.run();
-            }
-        };
+        return () -> { if (!disabling) r.run(); };
     }
 
     /**
@@ -431,18 +427,22 @@ public final class ModuleContext {
         closeables.clear();
     }
 
-    /** Internal: attaches a per-module controller (wired by the GravesXModuleController). */
+    /**
+     * Internal: attaches a per-module controller (wired by the GravesXModuleController).
+     */
     void _internalAttachController(GravesXModuleController controller) {
         this.controller = controller;
     }
 
-    /** Exposes the per-module controller for enable/disable/isEnabled access. */
+    /**
+     * Exposes the per-module controller for enable/disable/isEnabled access.
+     */
     public GravesXModuleController getGravesXModules() {
         return controller;
     }
 
     private static <T> List<T> snapshot(List<T> list) {
-        return new ArrayList<T>(list);
+        return new ArrayList<>(list);
     }
 
     private static void safeRun(Runnable r) {

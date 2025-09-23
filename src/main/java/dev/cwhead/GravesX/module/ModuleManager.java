@@ -24,7 +24,7 @@ public final class ModuleManager {
     private final File modulesDir;
 
     private LibraryImporter importer;
-    private final Map<String, LoadedModule> loaded = new LinkedHashMap<String, LoadedModule>();
+    private final Map<String, LoadedModule> loaded = new LinkedHashMap<>();
     private final Set<String> pending = new LinkedHashSet<>();
     private List<String> topoOrder = List.of();
     private final ModuleCommandRegistrar commandRegistrar;
@@ -608,7 +608,7 @@ public final class ModuleManager {
      * @return List of inactive plugin names.
      */
     private List<String> inactiveRequiredPlugins(ModuleInfo info) {
-        List<String> inactive = new ArrayList<String>();
+        List<String> inactive = new ArrayList<>();
         for (String req : info.pluginDepends()) {
             Plugin p = Bukkit.getPluginManager().getPlugin(req);
             if (p != null && !p.isEnabled()) inactive.add(req);
@@ -680,5 +680,4 @@ public final class ModuleManager {
      * @param t Throwable to include.
      */
     private void severe(ModuleInfo mi, String m, Throwable t) { plugin.getLogger().log(Level.SEVERE, "[" + mi.name() + "] " + m, t); }
-
 }
