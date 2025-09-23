@@ -6,12 +6,13 @@ import com.mojang.authlib.properties.PropertyMap;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
 
 public final class SkinSignatureUtil {
-    private static String GAMEPROFILE_METHOD;
+    private SkinSignatureUtil() {}
+
+    private static volatile String GAMEPROFILE_METHOD;
 
     public static String getSignature(Entity entity) {
         if (entity instanceof Player) {
@@ -69,7 +70,7 @@ public final class SkinSignatureUtil {
 
                 return (GameProfile) gameProfile.invoke(playerObject);
             }
-        } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException ignored) {
+        } catch (ReflectiveOperationException ignored) {
         }
 
         return null;
@@ -79,11 +80,9 @@ public final class SkinSignatureUtil {
         for (Method method : playerObject.getClass().getMethods()) {
             if (method.getReturnType().getName().endsWith("GameProfile")) {
                 GAMEPROFILE_METHOD = method.getName();
-
                 return;
             }
         }
-
         GAMEPROFILE_METHOD = "";
     }
 }

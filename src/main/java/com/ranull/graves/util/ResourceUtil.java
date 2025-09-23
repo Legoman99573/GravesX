@@ -20,6 +20,8 @@ import java.util.jar.JarFile;
  */
 public final class ResourceUtil {
 
+    private ResourceUtil() {}
+
     /**
      * Copies resources from the plugin's JAR file to the specified output path.
      *
@@ -54,27 +56,29 @@ public final class ResourceUtil {
      * @return A map of resource paths to their input streams.
      */
     private static Map<String, InputStream> getResources(String path, JavaPlugin plugin) {
-        Map<String, InputStream> inputStreamHashMap = new HashMap<>();
+        Map<String, InputStream> inputStreamMap = new HashMap<>();
         URL url = plugin.getClass().getClassLoader().getResource(path);
 
         if (url != null) {
             try {
                 JarURLConnection connection = (JarURLConnection) url.openConnection();
-                JarFile jarFile = connection.getJarFile();
-                Enumeration<JarEntry> jarEntryEnumeration = jarFile.entries();
-
-                while (jarEntryEnumeration.hasMoreElements()) {
-                    JarEntry jarEntry = jarEntryEnumeration.nextElement();
-
-                    if (!jarEntry.isDirectory() && jarEntry.getName().startsWith(path)) {
-                        inputStreamHashMap.put(jarEntry.getName(), plugin.getResource(jarEntry.getName()));
+                try (JarFile jarFile = connection.getJarFile()) {
+                    Enumeration<JarEntry> entries = jarFile.entries();
+                    while (entries.hasMoreElements()) {
+                        JarEntry jarEntry = entries.nextElement();
+                        if (!jarEntry.isDirectory() && jarEntry.getName().startsWith(path)) {
+                            InputStream is = plugin.getResource(jarEntry.getName());
+                            if (is != null) {
+                                inputStreamMap.put(jarEntry.getName(), is);
+                            }
+                        }
                     }
                 }
             } catch (IOException ignored) {
             }
         }
 
-        return inputStreamHashMap;
+        return inputStreamMap;
     }
 
     /**
@@ -94,17 +98,12 @@ public final class ResourceUtil {
 
             if (!outputFile.exists() || overwrite) {
                 if (createDirectories(outputFile)) {
-                    try {
-                        OutputStream outputStream = Files.newOutputStream(outputFile.toPath());
-                        byte[] bytes = new byte[1024];
+                    try (InputStream in = inputStream; OutputStream out = Files.newOutputStream(outputFile.toPath())) {
+                        byte[] buffer = new byte[8192];
                         int len;
-
-                        while ((len = entry.getValue().read(bytes)) > 0) {
-                            outputStream.write(bytes, 0, len);
+                        while ((len = in.read(buffer)) > 0) {
+                            out.write(buffer, 0, len);
                         }
-
-                        outputStream.close();
-                        inputStream.close();
                     } catch (IOException ignored) {
                     }
                 }
@@ -120,7 +119,6 @@ public final class ResourceUtil {
      */
     private static boolean createDirectories(File file) {
         File parentFile = file.getParentFile();
-
         return parentFile != null && (parentFile.exists() || parentFile.mkdirs());
     }
 

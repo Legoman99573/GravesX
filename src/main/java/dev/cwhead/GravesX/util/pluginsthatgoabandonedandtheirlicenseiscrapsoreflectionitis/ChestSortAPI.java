@@ -1,4 +1,5 @@
 package dev.cwhead.GravesX.util.pluginsthatgoabandonedandtheirlicenseiscrapsoreflectionitis;
+
 import org.bukkit.Bukkit;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.plugin.Plugin;
@@ -10,9 +11,10 @@ import java.util.Objects;
 
 /**
  * @deprecated Unmaintained upstream. see see <a href="https://www.spigotmc.org/profile-posts/239137/">here</a>
- *
- * Minimal reflective bridge to {@code de.jeff_media.chestsort.api.ChestSortAPI}. This was done due to the actual jar wanting to use jeff-media repo that now resolves to nothing.
- * This is a messy way to call it, but fuk it
+ * <p>
+ * Minimal reflective bridge to {@code de.jeff_media.chestsort.api.ChestSortAPI}. This was done due to the actual jar wanting
+ * to use jeff-media repo that now resolves to nothing. This is a messy way to call it, but fuk it
+ * </p>
  */
 @Deprecated
 public final class ChestSortAPI {
@@ -29,7 +31,6 @@ public final class ChestSortAPI {
 
     /**
      * @deprecated Unmaintained upstream. see <a href="https://www.spigotmc.org/profile-posts/239137/">here</a>.
-     *
      * Sorts an {@link Inventory}.
      *
      * @param inventory inventory to sort (non-null)
@@ -46,14 +47,21 @@ public final class ChestSortAPI {
     private static synchronized void ensureLookup() {
         if (lookedUp) return;
         lookedUp = true;
+
         try {
-            ClassLoader cl = Bukkit.getServer().getClass().getClassLoader();
-            Class<?> apiClazz = Class.forName(API_CLASS, false, cl);
-            MethodHandles.Lookup lookup = MethodHandles.publicLookup();
+            final Plugin chestSort = Bukkit.getPluginManager().getPlugin(PLUGIN_NAME);
+            if (chestSort == null) {
+                classAvailable = false;
+                return;
+            }
+
+            final ClassLoader cl = chestSort.getClass().getClassLoader();
+            final Class<?> apiClazz = Class.forName(API_CLASS, false, cl);
+            final MethodHandles.Lookup lookup = MethodHandles.publicLookup();
 
             MH_sortInventory_Inv = staticHandle(lookup, apiClazz, Inventory.class);
 
-            classAvailable = true;
+            classAvailable = (MH_sortInventory_Inv != null);
         } catch (Throwable ignored) {
             classAvailable = false;
         }
@@ -66,8 +74,8 @@ public final class ChestSortAPI {
                                              Class<?> owner,
                                              Class<?>... params) {
         try {
-            Method m = owner.getMethod("sortInventory", params);
-            if (!m.getReturnType().equals(void.class)) return null;
+            final Method m = owner.getMethod("sortInventory", params);
+            if (m.getReturnType() != void.class) return null;
             return lookup.unreflect(m);
         } catch (Throwable ignored) {
             return null;
@@ -82,6 +90,7 @@ public final class ChestSortAPI {
         try {
             mh.invokeWithArguments(args);
         } catch (Throwable ignored) {
+            // swallow – best-effort bridge
         }
     }
 
@@ -89,7 +98,7 @@ public final class ChestSortAPI {
      * @return true if ChestSort plugin is present and enabled.
      */
     private static boolean isEnabled() {
-        Plugin p = Bukkit.getPluginManager().getPlugin(PLUGIN_NAME);
+        final Plugin p = Bukkit.getPluginManager().getPlugin(PLUGIN_NAME);
         return p != null && p.isEnabled();
     }
 }

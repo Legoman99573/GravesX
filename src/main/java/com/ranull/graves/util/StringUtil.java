@@ -6,9 +6,7 @@ import me.clip.placeholderapi.PlaceholderAPI;
 import me.imdanix.text.MiniTranslator;
 import net.md_5.bungee.api.ChatColor;
 import org.apache.commons.lang3.StringUtils;
-
 import org.apache.commons.text.WordUtils;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -24,6 +22,8 @@ import java.util.regex.Pattern;
  * Utility class for handling and formatting strings, including placeholders and color codes.
  */
 public final class StringUtil {
+
+    private StringUtil() {}
 
     /**
      * Formats a string by capitalizing each word and replacing underscores with spaces.
@@ -62,12 +62,12 @@ public final class StringUtil {
     /**
      * Parses a string and replaces placeholders with corresponding values.
      *
-     * @param string    The string to parse.
-     * @param entity    The entity involved.
-     * @param name      The name to replace in the string.
-     * @param location  The location to replace in the string.
-     * @param grave     The grave object to replace in the string.
-     * @param plugin    The plugin instance.
+     * @param string   The string to parse.
+     * @param entity   The entity involved.
+     * @param name     The name to replace in the string.
+     * @param location The location to replace in the string.
+     * @param grave    The grave object to replace in the string.
+     * @param plugin   The plugin instance.
      * @return The parsed string with placeholders replaced.
      */
     public static String parseString(String string, Entity entity, String name, Location location, Grave grave,
@@ -79,75 +79,60 @@ public final class StringUtil {
                     .replace("%y%", String.valueOf(location.getBlockY() + 0.5))
                     .replace("%z%", String.valueOf(location.getBlockZ() + 0.5));
 
-            if (string.contains("%distance%")) {
+            if (string.contains("%distance%") && entity != null) {
                 if (entity.getWorld().equals(location.getWorld())) {
                     string = string.replace("%distance%",
                             String.valueOf(Math.round(entity.getLocation().distance(location))));
-                }
-                if (!entity.getWorld().equals(location.getWorld())) {
-                    string = string.replace("%distance%",
-                            "Wrong dimension");
+                } else {
+                    string = string.replace("%distance%", "Wrong dimension");
                 }
             }
         }
 
         if (grave != null) {
             string = string.replace("%uuid%", grave.getUUID().toString())
-                    .replace("%owner_name%", grave.getOwnerName() != null
-                            ? grave.getOwnerName() : "")
+                    .replace("%owner_name%", grave.getOwnerName() != null ? grave.getOwnerName() : "")
                     .replace("%owner_name_display%", grave.getOwnerNameDisplay() != null
-                            ? grave.getOwnerNameDisplay() : (grave.getOwnerName() != null
-                            ? grave.getOwnerName() : ""))
-                    .replace("%owner_type%", grave.getOwnerType() != null
-                            ? grave.getOwnerType().name() : "")
-                    .replace("%owner_uuid%", grave.getOwnerUUID() != null
-                            ? grave.getOwnerUUID().toString() : "")
-                    .replace("%killer_name%", grave.getKillerName() != null
-                            ? grave.getKillerName() : "")
+                            ? grave.getOwnerNameDisplay()
+                            : (grave.getOwnerName() != null ? grave.getOwnerName() : ""))
+                    .replace("%owner_type%", grave.getOwnerType() != null ? grave.getOwnerType().name() : "")
+                    .replace("%owner_uuid%", grave.getOwnerUUID() != null ? grave.getOwnerUUID().toString() : "")
+                    .replace("%killer_name%", grave.getKillerName() != null ? grave.getKillerName() : "")
                     .replace("%killer_name_display%", grave.getKillerNameDisplay() != null
-                            ? grave.getKillerNameDisplay() : (grave.getKillerName() != null
-                            ? grave.getKillerName() : ""))
-                    .replace("%killer_type%", grave.getKillerType() != null
-                            ? grave.getKillerType().name() : "")
-                    .replace("%killer_uuid%", grave.getKillerUUID() != null
-                            ? grave.getKillerUUID().toString() : "")
-                    .replace("%time_creation%",
-                            String.valueOf(grave.getTimeCreation()))
-                    .replace("%time_creation_formatted%",
-                            getDateString(grave, grave.getTimeCreation(), plugin))
-                    .replace("%time_alive_remaining%",
-                            String.valueOf(grave.getTimeAliveRemaining()))
-                    .replace("%time_alive_remaining_formatted%",
-                            getTimeString(grave, grave.getTimeAliveRemaining(), plugin))
-                    .replace("%time_protection_remaining%",
-                            String.valueOf(grave.getTimeProtectionRemaining()))
+                            ? grave.getKillerNameDisplay()
+                            : (grave.getKillerName() != null ? grave.getKillerName() : ""))
+                    .replace("%killer_type%", grave.getKillerType() != null ? grave.getKillerType().name() : "")
+                    .replace("%killer_uuid%", grave.getKillerUUID() != null ? grave.getKillerUUID().toString() : "")
+                    .replace("%time_creation%", String.valueOf(grave.getTimeCreation()))
+                    .replace("%time_creation_formatted%", getDateString(grave, grave.getTimeCreation(), plugin))
+                    .replace("%time_alive_remaining%", String.valueOf(grave.getTimeAliveRemaining()))
+                    .replace("%time_alive_remaining_formatted%", getTimeString(grave, grave.getTimeAliveRemaining(), plugin))
+                    .replace("%time_protection_remaining%", String.valueOf(grave.getTimeProtectionRemaining()))
                     .replace("%time_protection_remaining_formatted%",
                             getTimeString(grave, grave.getTimeProtectionRemaining(), plugin))
-                    .replace("%time_lived%",
-                            String.valueOf(grave.getLivedTime()))
-                    .replace("%time_lived_formatted%",
-                            getTimeString(grave, grave.getLivedTime(), plugin))
+                    .replace("%time_lived%", String.valueOf(grave.getLivedTime()))
+                    .replace("%time_lived_formatted%", getTimeString(grave, grave.getLivedTime(), plugin))
                     .replace("%state_protection%",
                             grave.getProtection() && (grave.getTimeProtectionRemaining() > 0
-                                    || grave.getTimeProtectionRemaining() < 0) ? plugin
-                                    .getConfig("protection.state.unprotected", grave)
-                                    .getString("protection.state.unprotected", "Unprotected") : plugin
-                                    .getConfig("protection.state.protected", grave)
+                                    || grave.getTimeProtectionRemaining() < 0)
+                                    ? plugin.getConfig("protection.state.unprotected", grave)
+                                    .getString("protection.state.unprotected", "Unprotected")
+                                    : plugin.getConfig("protection.state.protected", grave)
                                     .getString("protection.state.protected", "Protected"))
                     .replace("%state_abandoned%", String.valueOf(grave.isAbandoned()))
                     .replace("%item%", String.valueOf(grave.getItemAmount()));
+
             if (grave.getExperience() > 0) {
-                string = string.replace("%level%", String.valueOf(ExperienceUtil
-                                .getLevelFromExperience(grave.getExperience())))
+                string = string.replace("%level%",
+                                String.valueOf(ExperienceUtil.getLevelFromExperience(grave.getExperience())))
                         .replace("%experience%", String.valueOf(grave.getExperience()));
             } else {
-                string = string.replace("%level%", "0")
-                        .replace("%experience%", "0");
+                string = string.replace("%level%", "0").replace("%experience%", "0");
             }
 
             if (grave.getOwnerType() == EntityType.PLAYER && plugin.getIntegrationManager().hasPlaceholderAPI()) {
-                string = PlaceholderAPI.setPlaceholders(plugin.getServer()
-                        .getOfflinePlayer(grave.getOwnerUUID()), string);
+                string = PlaceholderAPI.setPlaceholders(
+                        plugin.getServer().getOfflinePlayer(grave.getOwnerUUID()), string);
             }
         }
 
@@ -179,7 +164,7 @@ public final class StringUtil {
             string = plugin.getIntegrationManager().getMineDown().parseString(string);
         }
 
-        Pattern pattern = Pattern.compile("&#[a-fA-f0-9]{6}");
+        Pattern pattern = Pattern.compile("&#[A-Fa-f0-9]{6}");
         Matcher matcher = pattern.matcher(string);
 
         while (matcher.find()) {
@@ -206,7 +191,8 @@ public final class StringUtil {
      * @return the formatted world name or the original if no match is found.
      */
     private static String getWorldFormatted(String worldName, Graves plugin) {
-        List<String> worlds = plugin.getConfig("message.world", EntityType.PLAYER, null).getStringList("message.world");
+        List<String> worlds = plugin.getConfig("message.world", EntityType.PLAYER, null)
+                .getStringList("message.world");
 
         for (String worldEntry : worlds) {
             if (worldEntry.contains(worldName)) {
@@ -214,7 +200,6 @@ public final class StringUtil {
                     String[] worldFinal = worldEntry.split(": ");
                     return worldFinal[1];
                 } catch (ArrayIndexOutOfBoundsException ignored) {
-
                 }
             }
         }
@@ -240,21 +225,10 @@ public final class StringUtil {
         long minute = TimeUnit.SECONDS.toMinutes(time) - (TimeUnit.SECONDS.toHours(time) * 60);
         long second = TimeUnit.SECONDS.toSeconds(time) - (TimeUnit.SECONDS.toMinutes(time) * 60);
 
-        if (day > 0) {
-            string = string.replace("%day%", String.valueOf(day));
-        }
-
-        if (hour > 0) {
-            string = string.replace("%hour%", String.valueOf(hour));
-        }
-
-        if (minute > 0) {
-            string = string.replace("%minute%", String.valueOf(minute));
-        }
-
-        if (second > 0) {
-            string = string.replace("%second%", String.valueOf(second));
-        }
+        if (day > 0) string = string.replace("%day%", String.valueOf(day));
+        if (hour > 0) string = string.replace("%hour%", String.valueOf(hour));
+        if (minute > 0) string = string.replace("%minute%", String.valueOf(minute));
+        if (second > 0) string = string.replace("%second%", String.valueOf(second));
 
         return string;
     }
@@ -262,8 +236,8 @@ public final class StringUtil {
     /**
      * Gets the date string for a given time in a specific format.
      *
-     * @param grave The grave object.
-     * @param time  The time in milliseconds.
+     * @param grave  The grave object.
+     * @param time   The time in milliseconds.
      * @param plugin The plugin instance.
      * @return The formatted date string.
      */
@@ -272,15 +246,14 @@ public final class StringUtil {
             return new SimpleDateFormat(plugin.getConfig("time.date", grave)
                     .getString("time.date", "dd-MM-yyyy")).format(new Date(time));
         }
-
         return plugin.getConfig("time.infinite", grave).getString("time.infinite");
     }
 
     /**
      * Gets the time string for a given duration in milliseconds.
      *
-     * @param grave The grave object.
-     * @param time  The time in milliseconds.
+     * @param grave  The grave object.
+     * @param time   The time in milliseconds.
      * @param plugin The plugin instance.
      * @return The formatted time string.
      */
@@ -301,17 +274,14 @@ public final class StringUtil {
                 timeDay = plugin.getConfig("time.day", grave).getString("time.day")
                         .replace("%day%", String.valueOf(day));
             }
-
             if (hour > 0) {
                 timeHour = plugin.getConfig("time.hour", grave).getString("time.hour")
                         .replace("%hour%", String.valueOf(hour));
             }
-
             if (minute > 0) {
                 timeMinute = plugin.getConfig("time.minute", grave).getString("time.minute")
                         .replace("%minute%", String.valueOf(minute));
             }
-
             if (second > 0) {
                 timeSecond = plugin.getConfig("time.second", grave).getString("time.second")
                         .replace("%second%", String.valueOf(second));
@@ -334,7 +304,6 @@ public final class StringUtil {
             string = StringUtils.normalizeSpace(string);
         } catch (NoClassDefFoundError ignored) {
         }
-
         return string;
     }
 
@@ -349,7 +318,6 @@ public final class StringUtil {
             string = WordUtils.capitalizeFully(string);
         } catch (NoClassDefFoundError ignored) {
         }
-
         return string;
     }
 }

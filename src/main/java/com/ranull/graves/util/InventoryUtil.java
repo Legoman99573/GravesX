@@ -2,7 +2,9 @@ package com.ranull.graves.util;
 
 import com.ranull.graves.Graves;
 import de.tr7zw.nbtapi.NBTItem;
-import org.bukkit.*;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
@@ -15,6 +17,8 @@ import java.util.*;
  * Utility class for inventory-related operations.
  */
 public final class InventoryUtil {
+
+    private InventoryUtil() {}
 
     /**
      * Gets the appropriate inventory size based on the given size.
@@ -149,8 +153,8 @@ public final class InventoryUtil {
      */
     public static boolean isHelmet(ItemStack itemStack) {
         return itemStack != null && itemStack.getType().name()
-                .matches("(?i)NETHERITE_HELMET|DIAMOND_HELMET|GOLDEN_HELMET|GOLD_HELMET|IRON_HELMET|LEATHER_HELMET|" +
-                        "CHAINMAIL_HELMET|TURTLE_HELMET|CARVED_PUMPKIN|PUMPKIN");
+                .matches("(?i)NETHERITE_HELMET|DIAMOND_HELMET|GOLDEN_HELMET|GOLD_HELMET|IRON_HELMET|LEATHER_HELMET|"
+                        + "CHAINMAIL_HELMET|TURTLE_HELMET|CARVED_PUMPKIN|PUMPKIN");
     }
 
     /**
@@ -161,8 +165,8 @@ public final class InventoryUtil {
      */
     public static boolean isChestplate(ItemStack itemStack) {
         return itemStack != null && itemStack.getType().name()
-                .matches("(?i)NETHERITE_CHESTPLATE|DIAMOND_CHESTPLATE|GOLDEN_CHESTPLATE|GOLD_CHESTPLATE|" +
-                        "IRON_CHESTPLATE|LEATHER_CHESTPLATE|CHAINMAIL_CHESTPLATE|ELYTRA");
+                .matches("(?i)NETHERITE_CHESTPLATE|DIAMOND_CHESTPLATE|GOLDEN_CHESTPLATE|GOLD_CHESTPLATE|"
+                        + "IRON_CHESTPLATE|LEATHER_CHESTPLATE|CHAINMAIL_CHESTPLATE|ELYTRA");
     }
 
     /**
@@ -173,8 +177,8 @@ public final class InventoryUtil {
      */
     public static boolean isLeggings(ItemStack itemStack) {
         return itemStack != null && itemStack.getType().name()
-                .matches("(?i)NETHERITE_LEGGINGS|DIAMOND_LEGGINGS|GOLDEN_LEGGINGS|GOLD_LEGGINGS|IRON_LEGGINGS|" +
-                        "LEATHER_LEGGINGS|CHAINMAIL_LEGGINGS");
+                .matches("(?i)NETHERITE_LEGGINGS|DIAMOND_LEGGINGS|GOLDEN_LEGGINGS|GOLD_LEGGINGS|IRON_LEGGINGS|"
+                        + "LEATHER_LEGGINGS|CHAINMAIL_LEGGINGS");
     }
 
     /**
@@ -185,8 +189,8 @@ public final class InventoryUtil {
      */
     public static boolean isBoots(ItemStack itemStack) {
         return itemStack != null && itemStack.getType().name()
-                .matches("(?i)NETHERITE_BOOTS|DIAMOND_BOOTS|GOLDEN_BOOTS|GOLD_BOOTS|IRON_BOOTS|LEATHER_BOOTS|" +
-                        "CHAINMAIL_BOOTS");
+                .matches("(?i)NETHERITE_BOOTS|DIAMOND_BOOTS|GOLDEN_BOOTS|GOLD_BOOTS|IRON_BOOTS|LEATHER_BOOTS|"
+                        + "CHAINMAIL_BOOTS");
     }
 
     /**
@@ -203,17 +207,13 @@ public final class InventoryUtil {
                 try {
                     if (itemStack != null && itemStack.getType() != Material.AIR) {
                         NBTItem nbtItem = new NBTItem(itemStack);
-
                         itemStack = nbtItem.getItem();
-
                         String base64 = Base64Util.objectToBase64(nbtItem.getItem());
                         stringList.add(base64);
                     } else {
-                        // Handle empty or air item stacks
                         stringList.add(Base64Util.objectToBase64(new ItemStack(Material.AIR)));
                     }
                 } catch (Exception e) {
-                    // Handle exceptions
                     stringList.add(Base64Util.objectToBase64(new ItemStack(Material.AIR)));
                     Bukkit.getLogger().warning("Exception during Base64 conversion for: " + itemStack + " - " + e.getMessage());
                     Bukkit.getLogger().severe("NBT Data: " + itemStack);
@@ -226,7 +226,6 @@ public final class InventoryUtil {
             for (ItemStack itemStack : inventory.getContents()) {
                 try {
                     String base64 = Base64Util.objectToBase64(itemStack != null ? itemStack : new ItemStack(Material.AIR));
-
                     stringList.add(base64);
                 } catch (Exception e) {
                     stringList.add(Base64Util.objectToBase64(new ItemStack(Material.AIR)));
@@ -267,17 +266,14 @@ public final class InventoryUtil {
 
                         if (itemStack != null) {
                             NBTItem nbtItem = new NBTItem(itemStack);
-
                             itemStack = nbtItem.getItem();
-
                             inventory.setItem(counter, itemStack);
                         } else {
                             inventory.setItem(counter, (ItemStack) Base64Util.base64ToObject(String.valueOf(Material.AIR)));
                         }
                         counter++;
                     } catch (Exception e) {
-                        if (e.getMessage() != null && !e.getMessage().contains("ItemStack can't be null/air/amount of 0!"))
-                        {
+                        if (e.getMessage() != null && !e.getMessage().contains("ItemStack can't be null/air/amount of 0!")) {
                             Bukkit.getLogger().warning("Exception during Base64 conversion for item at slot " + counter + ": " + itemString + " - " + e.getMessage());
                             Bukkit.getLogger().severe("NBT Data: " + itemString);
                             Bukkit.getLogger().warning("Removed problematic item " + itemString + " from slot " + counter + ". While the grave will still generate. This is likely a Spigot/Paper bug.");

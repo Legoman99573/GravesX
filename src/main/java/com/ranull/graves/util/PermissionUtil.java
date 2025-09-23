@@ -12,6 +12,8 @@ import java.util.List;
  */
 public final class PermissionUtil {
 
+    private PermissionUtil() {}
+
     /**
      * Gets the highest integer value associated with a specific permission prefix.
      *
@@ -20,12 +22,15 @@ public final class PermissionUtil {
      * @return The highest integer value found for the specified permission prefix. Returns 0 if no such permission is found.
      */
     public static int getHighestInt(Player player, String permission) {
+        if (player == null || permission == null || permission.isEmpty()) return 0;
+
         List<Integer> gravePermissions = new ArrayList<>();
 
         for (PermissionAttachmentInfo perm : player.getEffectivePermissions()) {
-            if (perm.getPermission().contains(permission)) {
+            String permName = perm.getPermission();
+            if (permName.startsWith(permission)) {
                 try {
-                    gravePermissions.add(Integer.parseInt(perm.getPermission().replace(permission, "")));
+                    gravePermissions.add(Integer.parseInt(permName.substring(permission.length())));
                 } catch (NumberFormatException ignored) {
                 }
             }
@@ -46,12 +51,15 @@ public final class PermissionUtil {
      * @return The highest double value found for the specified permission prefix. Returns 0 if no such permission is found.
      */
     public static double getHighestDouble(Player player, String permission) {
+        if (player == null || permission == null || permission.isEmpty()) return 0D;
+
         List<Double> gravePermissions = new ArrayList<>();
 
         for (PermissionAttachmentInfo perm : player.getEffectivePermissions()) {
-            if (perm.getPermission().contains(permission)) {
+            String permName = perm.getPermission();
+            if (permName.startsWith(permission)) {
                 try {
-                    gravePermissions.add(Double.parseDouble(perm.getPermission().replace(permission, "")));
+                    gravePermissions.add(Double.parseDouble(permName.substring(permission.length())));
                 } catch (NumberFormatException ignored) {
                 }
             }
@@ -61,6 +69,6 @@ public final class PermissionUtil {
             return Collections.max(gravePermissions);
         }
 
-        return 0;
+        return 0D;
     }
 }

@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -52,6 +51,7 @@ public final class PastebinUtil {
                 ? "GravesX Dump " + LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
                 : title;
 
+        HttpURLConnection conn = null;
         try {
             StringBuilder body = new StringBuilder();
             append(body, "api_dev_key", devKey);
@@ -66,10 +66,16 @@ public final class PastebinUtil {
             }
 
             byte[] out = body.toString().getBytes(StandardCharsets.UTF_8);
-            HttpURLConnection conn = (HttpURLConnection) new URL(API_URL).openConnection();
+
+            conn = (HttpURLConnection) new URL(API_URL).openConnection();
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);
+            conn.setUseCaches(false);
+            conn.setConnectTimeout(10_000);
+            conn.setReadTimeout(15_000);
             conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+            conn.setRequestProperty("Accept", "text/plain");
+            conn.setRequestProperty("User-Agent", "GravesX/1 PastebinUtil");
             conn.setFixedLengthStreamingMode(out.length);
 
             try (OutputStream os = conn.getOutputStream()) {
@@ -77,17 +83,20 @@ public final class PastebinUtil {
             }
 
             int code = conn.getResponseCode();
-            InputStream is = (code >= 200 && code < 400) ? conn.getInputStream() : conn.getErrorStream();
+            InputStream stream = (code >= 200 && code < 400) ? conn.getInputStream() : conn.getErrorStream();
+            if (stream == null) stream = InputStream.nullInputStream();
 
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
                 String resp = br.readLine();
-                if (resp != null && resp.startsWith("http")) {
+                if (code >= 200 && code < 300 && resp != null && resp.startsWith("http")) {
                     return resp.trim();
                 }
                 return null;
             }
         } catch (IOException e) {
             return null;
+        } finally {
+            if (conn != null) conn.disconnect();
         }
     }
 
@@ -98,8 +107,8 @@ public final class PastebinUtil {
         return 1;
     }
 
-    private static void append(StringBuilder sb, String key, String val) throws UnsupportedEncodingException {
-        if (sb.length() > 0) sb.append('&');
+    private static void append(StringBuilder sb, String key, String val) {
+        if (!sb.isEmpty()) sb.append('&');
         sb.append(URLEncoder.encode(key, StandardCharsets.UTF_8))
                 .append('=')
                 .append(URLEncoder.encode(val == null ? "" : val, StandardCharsets.UTF_8));

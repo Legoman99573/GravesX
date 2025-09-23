@@ -2,16 +2,72 @@ package com.ranull.graves.util;
 
 import org.bukkit.Material;
 
+import java.util.Set;
+
 /**
- * Utility class for handling various material-related operations.
+ * Utility class for handling various material-related operations across MC 1.8–1.21.x.
+ * <p>
+ * Uses string-name checks so it can be compiled against any one API version while
+ * recognizing legacy and modern material names at runtime.
  */
 public final class MaterialUtil {
 
+    private MaterialUtil() {
+    }
+
+    private static final Set<String> AIR_NAMES = Set.of(
+            "AIR",
+            "CAVE_AIR",
+            "VOID_AIR",
+            "LEGACY_AIR",
+            "LEGACY_CAVE_AIR",
+            "LEGACY_VOID_AIR"
+    );
+
+    private static final Set<String> WATER_NAMES = Set.of(
+            "WATER",
+            "STATIONARY_WATER",
+            "LEGACY_WATER",
+            "LEGACY_STATIONARY_WATER"
+    );
+
+    private static final Set<String> LAVA_NAMES = Set.of(
+            "LAVA",
+            "STATIONARY_LAVA",
+            "LEGACY_LAVA",
+            "LEGACY_STATIONARY_LAVA"
+    );
+
+    private static final Set<String> PLAYER_HEAD_NAMES = Set.of(
+            "PLAYER_HEAD",
+            "PLAYER_WALL_HEAD",
+            "SKULL",
+            "SKULL_ITEM",
+            "LEGACY_PLAYER_HEAD",
+            "LEGACY_PLAYER_WALL_HEAD",
+            "LEGACY_SKULL",
+            "LEGACY_SKULL_ITEM"
+    );
+
+    private static final Set<String> SAFE_SUPPORTS = Set.of(
+            "SCAFFOLDING",
+            "POWDER_SNOW",
+            "WEB",
+            "COBWEB",
+            "SWEET_BERRY_BUSH",
+            "HONEY_BLOCK",
+            "TRIPWIRE",
+            "TRIPWIRE_HOOK",
+            "LEGACY_WEB",
+            "LEGACY_COBWEB",
+            "LEGACY_SWEET_BERRY_BUSH",
+            "LEGACY_HONEY_BLOCK",
+            "LEGACY_TRIPWIRE",
+            "LEGACY_TRIPWIRE_HOOK"
+    );
+
     /**
      * Checks if the given material is an air block.
-     *
-     * @param material The material to check.
-     * @return True if the material is air, false otherwise.
      */
     public static boolean isAir(Material material) {
         return isAir(material.name());
@@ -19,26 +75,13 @@ public final class MaterialUtil {
 
     /**
      * Checks if the given string represents an air block.
-     *
-     * @param string The string to check.
-     * @return True if the string represents air, false otherwise.
      */
-    public static boolean isAir(String string) {
-        switch (string) {
-            case "AIR":
-            case "CAVE_AIR":
-            case "VOID_AIR":
-                return true;
-            default:
-                return false;
-        }
+    public static boolean isAir(String name) {
+        return AIR_NAMES.contains(name);
     }
 
     /**
      * Checks if the given material is lava.
-     *
-     * @param material The material to check.
-     * @return True if the material is lava, false otherwise.
      */
     public static boolean isLava(Material material) {
         return isLava(material.name());
@@ -46,25 +89,13 @@ public final class MaterialUtil {
 
     /**
      * Checks if the given string represents lava.
-     *
-     * @param string The string to check.
-     * @return True if the string represents lava, false otherwise.
      */
-    public static boolean isLava(String string) {
-        switch (string) {
-            case "LAVA":
-            case "STATIONARY_LAVA":
-                return true;
-            default:
-                return false;
-        }
+    public static boolean isLava(String name) {
+        return LAVA_NAMES.contains(name);
     }
 
     /**
      * Checks if the given material is not solid and is safe (i.e., not lava).
-     *
-     * @param material The material to check.
-     * @return True if the material is not solid and safe, false otherwise.
      */
     public static boolean isSafeNotSolid(Material material) {
         return !isSolid(material) && !isLava(material);
@@ -72,55 +103,24 @@ public final class MaterialUtil {
 
     /**
      * Checks if the given material is solid and safe (i.e., not lava).
-     *
-     * @param material The material to check.
-     * @return True if the material is solid and safe, false otherwise.
      */
     public static boolean isSafeSolid(Material material) {
         return isSolid(material) && !isLava(material);
     }
 
     /**
-     * Checks if the given material is solid.
-     *
-     * @param material The material to check.
-     * @return True if the material is solid, false otherwise.
+     * Treats certain non-solid “supports” as solid for our purposes.
      */
     private static boolean isSolid(Material material) {
-        return material.isSolid() || isSafe(material);
+        return material.isSolid() || isSafeSupport(material);
     }
 
-    /**
-     * Checks if the given material is considered safe.
-     *
-     * @param material The material to check.
-     * @return True if the material is safe, false otherwise.
-     */
-    private static boolean isSafe(Material material) {
-        return isSafe(material.name());
-    }
-
-    /**
-     * Checks if the given string represents a safe material.
-     *
-     * @param string The string to check.
-     * @return True if the string represents a safe material, false otherwise.
-     */
-    private static boolean isSafe(String string) {
-        switch (string) {
-            case "SCAFFOLDING":
-            case "POWDER_SNOW":
-                return true;
-            default:
-                return false;
-        }
+    private static boolean isSafeSupport(Material material) {
+        return SAFE_SUPPORTS.contains(material.name());
     }
 
     /**
      * Checks if the given material is water.
-     *
-     * @param material The material to check.
-     * @return True if the material is water, false otherwise.
      */
     public static boolean isWater(Material material) {
         return isWater(material.name());
@@ -128,44 +128,22 @@ public final class MaterialUtil {
 
     /**
      * Checks if the given string represents water.
-     *
-     * @param string The string to check.
-     * @return True if the string represents water, false otherwise.
      */
-    public static boolean isWater(String string) {
-        switch (string) {
-            case "WATER":
-            case "STATIONARY_WATER":
-                return true;
-            default:
-                return false;
-        }
+    public static boolean isWater(String name) {
+        return WATER_NAMES.contains(name);
     }
 
     /**
-     * Checks if the given material is a player head.
-     *
-     * @param material The material to check.
-     * @return True if the material is a player head, false otherwise.
+     * Checks if the given material is a player head (block or item), across versions.
      */
     public static boolean isPlayerHead(Material material) {
         return isPlayerHead(material.name());
     }
 
     /**
-     * Checks if the given string represents a player head.
-     *
-     * @param string The string to check.
-     * @return True if the string represents a player head, false otherwise.
+     * Checks if the given string represents a player head (block or item), across versions.
      */
-    public static boolean isPlayerHead(String string) {
-        switch (string) {
-            case "PLAYER_HEAD":
-            case "PLAYER_WALL_HEAD":
-            case "SKULL":
-                return true;
-            default:
-                return false;
-        }
+    public static boolean isPlayerHead(String name) {
+        return PLAYER_HEAD_NAMES.contains(name);
     }
 }

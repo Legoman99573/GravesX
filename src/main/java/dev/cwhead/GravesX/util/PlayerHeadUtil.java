@@ -12,10 +12,12 @@ import java.util.*;
 /**
  * Compact utilities for snapshotting player head (skull) blocks across versions.
  */
-public class PlayerHeadUtil {
+public final class PlayerHeadUtil {
 
     /** Delimiter used to append a GXHEAD JSON payload to replace_data. */
     public static final String MARKER = "||GXHEAD||";
+
+    private PlayerHeadUtil() {}
 
     /**
      * Appends a head snapshot (if block is a head) to {@code existingReplaceData}.
@@ -60,13 +62,13 @@ public class PlayerHeadUtil {
      * Minimal serialized data for a skull block.
      */
     public static final class HeadPayload {
-        int v = 1;   // schema
-        String m;    // material
-        String bd;   // blockdata (1.13+)
-        String mount, rf, wf; // placement/orientation
-        String ou, on;        // owner uuid/name
-        String tx, sg;        // textures value/signature
-        String nm;            // custom name (JSON)
+        int v = 1;
+        String m;
+        String bd;
+        String mount, rf, wf;
+        String ou, on;
+        String tx, sg;
+        String nm;
     }
 
     /**
@@ -89,10 +91,8 @@ public class PlayerHeadUtil {
 
         try {
             Object state = block.getClass().getMethod("getState").invoke(block);
-            if (state instanceof Skull) {
-                Skull skull = (Skull) state;
+            if (state instanceof Skull skull) {
 
-                // Owner (modern / legacy)
                 try {
                     Object owning = Skull.class.getMethod("getOwningPlayer").invoke(skull);
                     if (owning != null) {
@@ -106,7 +106,6 @@ public class PlayerHeadUtil {
                     } catch (Throwable ignored) {}
                 }
 
-                // GameProfile -> textures
                 try {
                     Field profileField = skull.getClass().getDeclaredField("profile");
                     profileField.setAccessible(true);
@@ -140,7 +139,6 @@ public class PlayerHeadUtil {
                     }
                 } catch (Throwable ignored) {}
 
-                // Custom name as JSON
                 p.nm = tryReadCustomNameJson(skull);
             }
         } catch (Throwable t) {
@@ -276,13 +274,13 @@ public class PlayerHeadUtil {
      */
     private static String cardinal(String face) {
         if (face == null) return null;
-        switch (face.toUpperCase(Locale.ROOT)) {
-            case "NORTH": return "NORTH";
-            case "SOUTH": return "SOUTH";
-            case "EAST":  return "EAST";
-            case "WEST":  return "WEST";
-            default: return null;
-        }
+        return switch (face.toUpperCase(Locale.ROOT)) {
+            case "NORTH" -> "NORTH";
+            case "SOUTH" -> "SOUTH";
+            case "EAST"  -> "EAST";
+            case "WEST"  -> "WEST";
+            default -> null;
+        };
     }
 
     /**

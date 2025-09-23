@@ -3,11 +3,14 @@ package com.ranull.graves.util;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * Utility class for file operations.
  */
 public final class FileUtil {
+
+    private FileUtil() {}
 
     /**
      * Moves a file to a new location with a new name.
@@ -17,7 +20,9 @@ public final class FileUtil {
      */
     public static void moveFile(File file, String name) {
         try {
-            Files.move(file.toPath(), file.toPath().resolveSibling(name));
+            Path source = file.toPath();
+            Path target = source.resolveSibling(name);
+            Files.move(source, target);
         } catch (IOException exception) {
             exception.printStackTrace();
         }
@@ -28,7 +33,7 @@ public final class FileUtil {
      * <p>
      * This method is deprecated and will be removed in a future version.
      * Use {@link #moveFile(File, String)} instead.
-     *</p>
+     * </p>
      *
      * Copies a file to a new location with a new name.
      *
@@ -38,7 +43,9 @@ public final class FileUtil {
     @Deprecated
     public static void copyFile(File file, String name) {
         try {
-            Files.copy(file.toPath(), file.toPath().resolveSibling(name));
+            Path source = file.toPath();
+            Path target = source.resolveSibling(name);
+            Files.copy(source, target);
         } catch (IOException exception) {
             exception.printStackTrace();
         }

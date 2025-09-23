@@ -11,6 +11,8 @@ import java.lang.reflect.Method;
  */
 public final class ReflectionUtil {
 
+    private ReflectionUtil() {}
+
     /**
      * Triggers the main hand swing animation for the specified player using reflection to access Minecraft server methods.
      *
@@ -38,7 +40,8 @@ public final class ReflectionUtil {
      * @throws ClassNotFoundException If the class cannot be found.
      */
     public static Class<?> getClass(String clazz) throws ClassNotFoundException {
-        return Class.forName("net.minecraft.server." + Bukkit.getServer().getClass().getPackage().getName()
-                .replace(".", ",").split(",")[3] + "." + clazz);
+        String version = Bukkit.getServer().getClass().getPackage().getName()
+                .replace(".", ",").split(",")[3];
+        return Class.forName("net.minecraft.server." + version + "." + clazz);
     }
 }

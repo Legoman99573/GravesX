@@ -3,12 +3,13 @@ package com.ranull.graves.util;
 import org.bukkit.Color;
 import org.bukkit.Particle;
 
+import java.util.Locale;
+
 /**
  * Utility class for handling color operations, including particle dust colors.
  */
 public final class ColorUtil {
 
-    // Private constructor to prevent instantiation
     private ColorUtil() {}
 
     /**
@@ -18,54 +19,35 @@ public final class ColorUtil {
      * @return The {@link Color} corresponding to the given name, or {@code null} if no match is found.
      */
     public static Color getColor(String colorName) {
+        if (colorName == null || colorName.isEmpty()) return null;
+
         String s = colorName;
-
         if (s.startsWith("#")) {
-            try {
-                return getColorFromHex(s);
-            } catch (IllegalArgumentException ex) {
-                s = "RED";
-            }
+            Color hex = getColorFromHex(s);
+            if (hex != null) return hex;
+            s = "RED"; // fallback if bad hex
         }
 
-        switch (s.toUpperCase()) {
-            case "AQUA":
-                return Color.AQUA;
-            case "BLACK":
-                return Color.BLACK;
-            case "BLUE":
-                return Color.BLUE;
-            case "FUCHSIA":
-                return Color.FUCHSIA;
-            case "GRAY":
-                return Color.GRAY;
-            case "GREEN":
-                return Color.GREEN;
-            case "LIME":
-                return Color.LIME;
-            case "MAROON":
-                return Color.MAROON;
-            case "NAVY":
-                return Color.NAVY;
-            case "OLIVE":
-                return Color.OLIVE;
-            case "ORANGE":
-                return Color.ORANGE;
-            case "PURPLE":
-                return Color.PURPLE;
-            case "RED":
-                return Color.RED;
-            case "SILVER":
-                return Color.SILVER;
-            case "TEAL":
-                return Color.TEAL;
-            case "WHITE":
-                return Color.WHITE;
-            case "YELLOW":
-                return Color.YELLOW;
-            default:
-                return null;
-        }
+        return switch (s.toUpperCase(Locale.ROOT)) {
+            case "AQUA"    -> Color.AQUA;
+            case "BLACK"   -> Color.BLACK;
+            case "BLUE"    -> Color.BLUE;
+            case "FUCHSIA" -> Color.FUCHSIA;
+            case "GRAY"    -> Color.GRAY;
+            case "GREEN"   -> Color.GREEN;
+            case "LIME"    -> Color.LIME;
+            case "MAROON"  -> Color.MAROON;
+            case "NAVY"    -> Color.NAVY;
+            case "OLIVE"   -> Color.OLIVE;
+            case "ORANGE"  -> Color.ORANGE;
+            case "PURPLE"  -> Color.PURPLE;
+            case "RED"     -> Color.RED;
+            case "SILVER"  -> Color.SILVER;
+            case "TEAL"    -> Color.TEAL;
+            case "WHITE"   -> Color.WHITE;
+            case "YELLOW"  -> Color.YELLOW;
+            default        -> null;
+        };
     }
 
     /**
@@ -79,9 +61,7 @@ public final class ColorUtil {
      * @return The {@link Color} corresponding to the hex color code, or {@code null} if the code is invalid.
      */
     public static Color getColorFromHex(String hex) {
-        if (hex == null || !hex.startsWith("#") || hex.length() != 7) {
-            return null; // Invalid hex format
-        }
+        if (hex == null || hex.length() != 7 || hex.charAt(0) != '#') return null;
 
         try {
             int r = Integer.parseInt(hex.substring(1, 3), 16);
@@ -102,9 +82,6 @@ public final class ColorUtil {
      */
     public static Particle.DustOptions createDustOptionsFromHex(String hexColor, float size) {
         Color color = getColorFromHex(hexColor);
-        if (color == null) {
-            return null; // Invalid color code
-        }
-        return new Particle.DustOptions(color, size);
+        return (color == null) ? null : new Particle.DustOptions(color, size);
     }
 }

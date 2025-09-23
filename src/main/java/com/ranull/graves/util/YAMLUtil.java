@@ -7,6 +7,8 @@ import java.io.File;
  */
 public final class YAMLUtil {
 
+    private YAMLUtil() {}
+
     /**
      * Checks if a given file is a valid YAML file.
      *

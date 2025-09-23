@@ -12,6 +12,8 @@ import java.util.List;
  */
 public final class LocationUtil {
 
+    private LocationUtil() {}
+
     /**
      * Rounds the given location's coordinates to the nearest whole numbers.
      *
@@ -38,8 +40,10 @@ public final class LocationUtil {
      * @return A string representation of the location in the format "world|x|y|z".
      */
     public static String locationToString(Location location) {
-        return location.getWorld() != null ? location.getWorld().getName() + "|" + location.getBlockX()
-                + "|" + location.getBlockY() + "|" + location.getBlockZ() : null;
+        return location.getWorld() != null
+                ? location.getWorld().getName() + "|" + location.getBlockX()
+                + "|" + location.getBlockY() + "|" + location.getBlockZ()
+                : null;
     }
 
     /**
@@ -49,8 +53,10 @@ public final class LocationUtil {
      * @return A string representation of the chunk in the format "world|chunkX|chunkZ".
      */
     public static String chunkToString(Location location) {
-        return location.getWorld() != null ? location.getWorld().getName() + "|" + (location.getBlockX() >> 4)
-                + "|" + (location.getBlockZ() >> 4) : null;
+        return location.getWorld() != null
+                ? location.getWorld().getName() + "|" + (location.getBlockX() >> 4)
+                + "|" + (location.getBlockZ() >> 4)
+                : null;
     }
 
     /**
@@ -61,9 +67,12 @@ public final class LocationUtil {
      */
     public static Location chunkStringToLocation(String string) {
         String[] strings = string.split("\\|");
-
-        return new Location(Bukkit.getServer().getWorld(strings[0]), Integer.parseInt(strings[1]) << 4,
-                0, Integer.parseInt(strings[2]) << 4);
+        return new Location(
+                Bukkit.getServer().getWorld(strings[0]),
+                Integer.parseInt(strings[1]) << 4,
+                0,
+                Integer.parseInt(strings[2]) << 4
+        );
     }
 
     /**
@@ -74,9 +83,12 @@ public final class LocationUtil {
      */
     public static Location stringToLocation(String string) {
         String[] strings = string.split("\\|");
-
-        return new Location(Bukkit.getServer().getWorld(strings[0]), Integer.parseInt(strings[1]),
-                Integer.parseInt(strings[2]), Integer.parseInt(strings[3]));
+        return new Location(
+                Bukkit.getServer().getWorld(strings[0]),
+                Integer.parseInt(strings[1]),
+                Integer.parseInt(strings[2]),
+                Integer.parseInt(strings[3])
+        );
     }
 
     /**
@@ -131,7 +143,7 @@ public final class LocationUtil {
 
             return new Location(world, x, y, z, yaw, pitch);
         } catch (NumberFormatException e) {
-            return null; // Invalid number format
+            return null;
         }
     }
 }

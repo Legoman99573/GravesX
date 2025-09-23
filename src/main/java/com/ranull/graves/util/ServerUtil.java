@@ -9,12 +9,16 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.configuration.file.FileConfiguration;
 import oshi.SystemInfo;
-import oshi.hardware.*;
+import oshi.hardware.CentralProcessor;
+import oshi.hardware.GlobalMemory;
+import oshi.hardware.HardwareAbstractionLayer;
+import oshi.hardware.PhysicalMemory;
 import oshi.software.os.OSFileStore;
 import oshi.software.os.OperatingSystem;
 
 import java.io.*;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
 
@@ -23,6 +27,8 @@ import java.util.*;
  * This class includes methods for retrieving various system and server-related information.
  */
 public final class ServerUtil {
+
+    private ServerUtil() {}
 
     /**
      * Gathers server information and generates a dump in string format.
@@ -85,15 +91,15 @@ public final class ServerUtil {
         stringList.add("CPU: " + (cpuName != null ? cpuName : "Not available"));
         stringList.add("CPU Vendor: " + (vendorName != null ? vendorName : "Not available"));
         stringList.add("CPU Identifier: " + (identifier.getIdentifier() != null ? identifier.getIdentifier() : "Not available"));
-        // Current frequency for each core
+
         long[] currentFreqs = processor.getCurrentFreq();
-        long maxFreqs = processor.getMaxFreq();
+        long maxFreq = processor.getMaxFreq();
 
         if (currentFreqs != null && currentFreqs.length > 0) {
             stringList.add("CPU Frequencies:");
             for (int i = 0; i < currentFreqs.length; i++) {
                 String current = formatFrequency(currentFreqs[i]);
-                String max = i < maxFreqs ? formatFrequency(maxFreqs) : "Unknown Frequency";
+                String max = (maxFreq > 0) ? formatFrequency(maxFreq) : "Unknown Frequency";
                 stringList.add(" - Core " + i + ":");
                 stringList.add("   Current: " + current);
                 stringList.add("   Max: " + max);
@@ -182,15 +188,15 @@ public final class ServerUtil {
             stringList.add("- " + world.getName() + ":");
             stringList.add("  Type: " + world.getEnvironment());
             long ticks = world.getTime();
-            long dayTime = ticks % 24000; // Time of day in ticks (0-23999)
+            long dayTime = ticks % 24000;
 
-            int hours24 = (int) ((dayTime / 1000 + 6) % 24); // 6 represents sunrise at tick 0 (adjust for Minecraft's time system)
-            int minutes = (int) ((dayTime % 1000) * 60 / 1000); // Get the minute based on the tick of the day
+            int hours24 = (int) ((dayTime / 1000 + 6) % 24);
+            int minutes = (int) ((dayTime % 1000) * 60 / 1000);
 
             String formattedTime24 = String.format("%02d:%02d", hours24, minutes);
 
             int hours12 = hours24 % 12;
-            hours12 = (hours12 == 0) ? 12 : hours12; // Adjust for 12-hour clock (midnight = 12 AM, noon = 12 PM)
+            hours12 = (hours12 == 0) ? 12 : hours12;
             String amPm = (hours24 < 12) ? "AM" : "PM";
             String formattedTime12 = String.format("%02d:%02d %s", hours12, minutes, amPm);
 
@@ -199,14 +205,13 @@ public final class ServerUtil {
         }
         double tps = plugin.getServer().getServerTickManager().getTickRate();
         stringList.add("Server TPS: " + tps);
-        stringList.add("Players Online: " + plugin.getServer().getOnlinePlayers().size() + "/" +  + plugin.getServer().getMaxPlayers());
+        stringList.add("Players Online: " + plugin.getServer().getOnlinePlayers().size() + "/" + plugin.getServer().getMaxPlayers());
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             int ping;
-
             try {
                 ping = Objects.requireNonNull(player.getPlayer()).getPing();
             } catch (Exception ignored) {
-                ping = -1; //Assume there is no ping (likely just joined the server)
+                ping = -1;
             }
             stringList.add("- " + player.getName());
             stringList.add("  Display Name: " + player.getDisplayName());
@@ -219,7 +224,6 @@ public final class ServerUtil {
         stringList.add("===================");
         stringList.add("Graves Information:");
         stringList.add("===================");
-        // Add plugin-specific information
         stringList.add(plugin.getDescription().getName() + " Version: " + plugin.getDescription().getVersion());
 
         if (plugin.getVersionManager().hasAPIVersion()) {
@@ -275,7 +279,7 @@ public final class ServerUtil {
                         try {
                             String configContent = readFileToString(file);
                             String maskedConfigContent = maskPasswords(configContent, plugin.getConfig());
-                            String configBase64 = Base64.getEncoder().encodeToString(maskedConfigContent.getBytes());
+                            String configBase64 = Base64.getEncoder().encodeToString(maskedConfigContent.getBytes(StandardCharsets.UTF_8));
                             stringList.add("Config " + file.getName() + " Base64: " + configBase64);
                         } catch (IOException e) {
                             stringList.add("Config " + file.getName() + " could not be read.");
@@ -285,7 +289,6 @@ public final class ServerUtil {
             }
         }
 
-        // Join all information into a single string separated by new lines
         return joinLines(stringList);
     }
 
@@ -293,11 +296,11 @@ public final class ServerUtil {
         if (frequency >= 1_000_000_000_000.0) {
             return String.format("%.2f THz", frequency / 1_000_000_000_000.0);
         } else if (frequency >= 1_000_000_000) {
-            return String.format("%.2f GHz", frequency / 1_000_000_000);
+            return String.format("%.2f GHz", frequency / 1_000_000_000.0);
         } else if (frequency >= 1_000_000) {
-            return String.format("%.2f MHz", frequency / 1_000_000);
+            return String.format("%.2f MHz", frequency / 1_000_000.0);
         } else if (frequency >= 1_000) {
-            return String.format("%.2f kHz", frequency / 1_000);
+            return String.format("%.2f kHz", frequency / 1_000.0);
         } else {
             return frequency + " Hz";
         }
@@ -313,8 +316,9 @@ public final class ServerUtil {
     private static String readFileToString(File file) throws IOException {
         try (FileInputStream fis = new FileInputStream(file)) {
             byte[] data = new byte[(int) file.length()];
-            fis.read(data);
-            return new String(data);
+            int read = fis.read(data);
+            if (read < 0) return "";
+            return new String(data, 0, read, StandardCharsets.UTF_8);
         }
     }
 
@@ -337,7 +341,7 @@ public final class ServerUtil {
      */
     private static String getNmsVersion(Object server) throws Exception {
         Class<?> serverClass = server.getClass();
-        Method method = serverClass.getMethod("getVersion"); // Replace with actual method name if different
+        Method method = serverClass.getMethod("getVersion");
         return (String) method.invoke(server);
     }
 
@@ -348,8 +352,8 @@ public final class ServerUtil {
      * @return A string with the byte count formatted in B, KB, MB, GB, TB, or PB.
      */
     private static String formatBytes(long bytes) {
-        boolean isNegative = bytes < 0; // Check if the value is negative
-        long absoluteBytes = Math.abs(bytes); // Use absolute value for formatting
+        boolean isNegative = bytes < 0;
+        long absoluteBytes = Math.abs(bytes);
 
         StringBuilder result = new StringBuilder();
         if (absoluteBytes < 1024) {
@@ -361,7 +365,7 @@ public final class ServerUtil {
         }
 
         if (isNegative) {
-            result.insert(0, "-"); // Add the minus sign for negative values
+            result.insert(0, "-");
         }
 
         return result.toString();
@@ -382,27 +386,17 @@ public final class ServerUtil {
         return value != null ? value : "Unknown";
     }
 
-    /**
-     * Gets the detailed OS name from the system properties or files.
-     *
-     * @return A string with the OS name.
-     */
     private static String getOsName() {
         String osName = System.getProperty("os.name");
-        if (osName.toLowerCase().contains("linux")) {
+        if (osName.toLowerCase(Locale.ROOT).contains("linux")) {
             return getLinuxOsName();
         }
         return osName;
     }
 
-    /**
-     * Reads the OS name from the /etc/os-release file on Unix-like systems.
-     *
-     * @return A string with the OS name.
-     */
     private static String getLinuxOsName() {
         String osReleaseFile = "/etc/os-release";
-        try (BufferedReader reader = new BufferedReader(new FileReader(osReleaseFile))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(osReleaseFile, StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 if (line.startsWith("PRETTY_NAME=")) {
@@ -422,15 +416,14 @@ public final class ServerUtil {
      */
     private static boolean isRunningInDocker() {
         File cgroupFile = new File("/proc/self/cgroup");
-        try (BufferedReader reader = new BufferedReader(new FileReader(cgroupFile))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(cgroupFile, StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 if (line.contains("/docker/")) {
                     return true;
                 }
             }
-        } catch (IOException e) {
-            // Ignored
+        } catch (IOException ignored) {
         }
         return false;
     }
@@ -451,7 +444,6 @@ public final class ServerUtil {
      * @return True if running with a panel, otherwise false.
      */
     private static boolean isRunningWithPanel() {
-        // Example: check for known panel files or environment variables
         return new File("/.panel").exists();
     }
 
@@ -461,7 +453,8 @@ public final class ServerUtil {
      * @return True if running as root, otherwise false.
      */
     private static boolean isRunningAsRoot() {
-        return System.getProperty("user.name").equals("root");
+        String user = System.getProperty("user.name");
+        return "root".equals(user);
     }
 
     /**
@@ -472,14 +465,15 @@ public final class ServerUtil {
      * @return The modified configuration string with passwords masked.
      */
     private static String maskPasswords(String configString, FileConfiguration config) {
-        // Replace passwords with '*' characters while retaining original character count
         String maskedConfigString = configString;
         Set<String> keys = new HashSet<>(config.getKeys(true));
         for (String path : keys) {
             Object value = config.get(path);
             if (value instanceof String && isPasswordField(path)) {
                 String password = (String) value;
-                maskedConfigString = maskedConfigString.replace(password, repeat('*', password.length()));
+                if (!password.isEmpty()) {
+                    maskedConfigString = maskedConfigString.replace(password, repeat('*', password.length()));
+                }
             }
         }
         return maskedConfigString;
@@ -492,7 +486,8 @@ public final class ServerUtil {
      * @return True if the path is a password field, otherwise false.
      */
     private static boolean isPasswordField(String path) {
-        return path.toLowerCase().contains("password") || path.toLowerCase().contains("secret");
+        String p = path.toLowerCase(Locale.ROOT);
+        return p.contains("password") || p.contains("secret");
     }
 
     /**
@@ -504,7 +499,7 @@ public final class ServerUtil {
     private static String joinLines(List<String> lines) {
         StringBuilder sb = new StringBuilder();
         for (String line : lines) {
-            sb.append(line).append("\n");
+            sb.append(line).append('\n');
         }
         return sb.toString();
     }
@@ -512,7 +507,7 @@ public final class ServerUtil {
     /**
      * Repeats a character a specified number of times.
      *
-     * @param ch   The character to repeat.
+     * @param ch    The character to repeat.
      * @param times The number of times to repeat the character.
      * @return A string with the character repeated.
      */
@@ -532,7 +527,7 @@ public final class ServerUtil {
         for (Player player : Bukkit.getOnlinePlayers()) {
             sb.append(player.getName()).append(", ");
         }
-        return sb.length() > 0 ? sb.substring(0, sb.length() - 2) : "";
+        return !sb.isEmpty() ? sb.substring(0, sb.length() - 2) : "";
     }
 
     /**
@@ -543,8 +538,8 @@ public final class ServerUtil {
     private static String getPluginList() {
         StringBuilder sb = new StringBuilder();
         for (Plugin plugin : Bukkit.getPluginManager().getPlugins()) {
-            sb.append(plugin.getName()).append(" ").append(plugin.getDescription().getVersion()).append(", ");
+            sb.append(plugin.getName()).append(' ').append(plugin.getDescription().getVersion()).append(", ");
         }
-        return sb.length() > 0 ? sb.substring(0, sb.length() - 2) : "";
+        return !sb.isEmpty() ? sb.substring(0, sb.length() - 2) : "";
     }
 }

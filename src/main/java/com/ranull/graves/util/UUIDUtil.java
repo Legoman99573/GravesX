@@ -7,6 +7,8 @@ import java.util.UUID;
  */
 public final class UUIDUtil {
 
+    private UUIDUtil() {}
+
     /**
      * Converts a string to a UUID.
      *

@@ -2,7 +2,12 @@ package dev.cwhead.GravesX.exception;
 
 import org.bukkit.event.Event;
 
+import java.io.Serial;
+
 public class GravesXEventNullPointerException extends NullPointerException {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     /**
      * Thrown when a method on a {@link dev.cwhead.GravesX.event.graveevent.GraveEvent}
      * is called but that method is null for the specific event type.

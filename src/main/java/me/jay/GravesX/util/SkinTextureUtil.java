@@ -22,7 +22,9 @@ import java.util.UUID;
  * Utility class for handling player skins and textures.
  */
 public final class SkinTextureUtil {
-    private static String GAMEPROFILE_METHOD;
+    private SkinTextureUtil() {}
+
+    private static volatile String GAMEPROFILE_METHOD;
 
     /**
      * Sets the texture of a Skull block.
@@ -38,7 +40,6 @@ public final class SkinTextureUtil {
             try {
                 gameProfile.properties().put("textures", new Property("textures", base64));
                 Field profileField = skull.getClass().getDeclaredField("profile");
-
                 profileField.setAccessible(true);
                 if (profileField.getType().getSimpleName().contains("ResolvableProfile")) {
                     Constructor<?> resolvableProfileConstructor = Class.forName("net.minecraft.world.item.component.ResolvableProfile")
@@ -53,7 +54,6 @@ public final class SkinTextureUtil {
                      InstantiationException | InvocationTargetException e) {
                 gameProfile.getProperties().put("textures", new Property("textures", base64));
                 Field profileField = skull.getClass().getDeclaredField("profile");
-
                 profileField.setAccessible(true);
                 if (profileField.getType().getSimpleName().contains("ResolvableProfile")) {
                     Constructor<?> resolvableProfileConstructor = Class.forName("net.minecraft.world.item.component.ResolvableProfile")
@@ -67,11 +67,11 @@ public final class SkinTextureUtil {
             }
         } catch (NoSuchMethodError | IllegalAccessException | NoSuchFieldException | InstantiationException |
                  InvocationTargetException | ClassNotFoundException | NoSuchMethodException exception) {
-            Bukkit.getLogger().warning("Failed to set the Skull texture. Cause: " + exception.getCause());
+            Bukkit.getLogger().warning("Failed to set the Skull texture. Cause: " +
+                    (exception.getCause() != null ? exception.getCause() : exception).toString());
             exception.printStackTrace();
         }
     }
-
 
     /**
      * Sets the texture of a Skull item stack.
@@ -98,7 +98,7 @@ public final class SkinTextureUtil {
                     profileField.set(skullMeta, gameProfile);
                 }
             } catch (NoSuchMethodError | IllegalAccessException | NoSuchMethodException | ClassNotFoundException |
-                     InstantiationException | InvocationTargetException e) {
+                     InstantiationException | java.lang.reflect.InvocationTargetException e) {
                 gameProfile.getProperties().put("textures", new Property("textures", base64));
                 Field profileField = skullMeta.getClass().getDeclaredField("profile");
                 profileField.setAccessible(true);
@@ -113,8 +113,9 @@ public final class SkinTextureUtil {
                 }
             }
         } catch (NoSuchMethodError | IllegalAccessException | NoSuchFieldException | InstantiationException |
-                 InvocationTargetException | ClassNotFoundException | NoSuchMethodException exception) {
-            Bukkit.getLogger().warning("Failed to set the SkullMeta texture. Cause: " + exception.getCause());
+                 java.lang.reflect.InvocationTargetException | ClassNotFoundException | NoSuchMethodException exception) {
+            Bukkit.getLogger().warning("Failed to set the SkullMeta texture. Cause: " +
+                    (exception.getCause() != null ? exception.getCause() : exception).toString());
             exception.printStackTrace();
         }
     }
@@ -177,7 +178,6 @@ public final class SkinTextureUtil {
         return null;
     }
 
-
     /**
      * Retrieves the GameProfile of a Player.
      *
@@ -194,12 +194,10 @@ public final class SkinTextureUtil {
 
             if (GAMEPROFILE_METHOD != null && !GAMEPROFILE_METHOD.equals("")) {
                 Method gameProfile = playerObject.getClass().getMethod(GAMEPROFILE_METHOD);
-
                 gameProfile.setAccessible(true);
-
                 return (GameProfile) gameProfile.invoke(playerObject);
             }
-        } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException ignored) {
+        } catch (ReflectiveOperationException ignored) {
         }
 
         return null;
@@ -214,12 +212,10 @@ public final class SkinTextureUtil {
         for (Method method : playerObject.getClass().getMethods()) {
             if (method.getReturnType().getName().endsWith("GameProfile")) {
                 GAMEPROFILE_METHOD = method.getName();
-
                 return;
             }
         }
 
         GAMEPROFILE_METHOD = "";
     }
-
 }

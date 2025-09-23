@@ -13,6 +13,8 @@ import java.util.Base64;
  */
 public final class Base64Util {
 
+    private Base64Util() {}
+
     /**
      * Serializes an object to a Base64 encoded string.
      *
@@ -20,18 +22,15 @@ public final class Base64Util {
      * @return The Base64 encoded string representing the serialized object, or null if an error occurs.
      */
     public static String objectToBase64(Object object) {
-        try {
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            BukkitObjectOutputStream bukkitObjectOutputStream = new BukkitObjectOutputStream(byteArrayOutputStream);
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             BukkitObjectOutputStream boos = new BukkitObjectOutputStream(baos)) {
 
-            bukkitObjectOutputStream.writeObject(object);
-            bukkitObjectOutputStream.close();
-
-            return Base64.getEncoder().encodeToString(byteArrayOutputStream.toByteArray());
+            boos.writeObject(object);
+            boos.flush();
+            return Base64.getEncoder().encodeToString(baos.toByteArray());
         } catch (IOException ignored) {
-            // Log the exception if needed
-        }
 
+        }
         return null;
     }
 
@@ -42,13 +41,18 @@ public final class Base64Util {
      * @return The deserialized object, or null if an error occurs.
      */
     public static Object base64ToObject(String string) {
+        byte[] data;
         try {
-            return new BukkitObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(string)))
-                    .readObject();
-        } catch (IOException | ClassNotFoundException ignored) {
-            // Log the exception if needed
+            data = Base64.getDecoder().decode(string);
+        } catch (IllegalArgumentException ignored) {
+            return null;
         }
 
+        try (BukkitObjectInputStream bois = new BukkitObjectInputStream(new ByteArrayInputStream(data))) {
+            return bois.readObject();
+        } catch (IOException | ClassNotFoundException ignored) {
+
+        }
         return null;
     }
 }

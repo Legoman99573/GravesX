@@ -2,10 +2,18 @@ package dev.cwhead.GravesX;
 
 import com.mojang.authlib.GameProfile;
 import com.ranull.graves.Graves;
-import com.ranull.graves.data.*;
+import com.ranull.graves.data.BlockData;
+import com.ranull.graves.data.ChunkData;
+import com.ranull.graves.data.EntityData;
+import com.ranull.graves.data.HologramData;
+import com.ranull.graves.data.LocationData;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.util.PluginDownloadUtil;
-import org.bukkit.*;
+import org.bukkit.Color;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.Particle;
+import org.bukkit.Rotation;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Skull;
@@ -21,14 +29,15 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.PluginManager;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * API for managing graves in the GravesX plugin. The GravesXAPI provides methods to create graves for entities
@@ -51,7 +60,7 @@ import java.util.*;
  * </ul>
  */
 @Deprecated(forRemoval = true, since = "4.9.9.1")
-public class GravesXAPI {
+public final class GravesXAPI {
 
     private final Graves plugin;
     private final dev.cwhead.GravesX.api.GravesXAPI api;
@@ -298,8 +307,12 @@ public class GravesXAPI {
                             @Nullable List<ItemStack> itemStackList,
                             int experience, long timeAliveRemaining,
                             boolean graveProtection, long graveProtectionTime) {
-        api.gravesCreate.createGrave(victim, killer, killerEntityType, locationDeath, equipmentMap, itemStackList, experience, timeAliveRemaining, false, 0L);
-        api.gravesCreate.createGrave(victim, killer, killerEntityType, locationDeath, equipmentMap, itemStackList, experience, timeAliveRemaining, null, graveProtection, graveProtectionTime);
+        // Call once with protection settings (the original implementation did two calls).
+        api.gravesCreate.createGrave(
+                victim, killer, killerEntityType, locationDeath,
+                equipmentMap, itemStackList, experience, timeAliveRemaining,
+                null, graveProtection, graveProtectionTime
+        );
     }
 
     /**
@@ -1300,7 +1313,6 @@ public class GravesXAPI {
      */
     @Deprecated(forRemoval = true, since = "4.9.9.1")
     public void register() {
-        PluginManager pm = plugin.getServer().getPluginManager();
-        pm.registerEvents((org.bukkit.event.Listener) this, plugin);
+        plugin.getLogger().warning("[GravesX] GravesXAPI#register() is deprecated and now a no-op.");
     }
 }
