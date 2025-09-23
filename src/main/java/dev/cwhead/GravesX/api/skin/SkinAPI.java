@@ -15,13 +15,16 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class SkinAPI {
 
+    /** Utility class; prevent instantiation. */
+    public SkinAPI() {}
+
     /**
      * Gets the skin signature of the specified entity if it is a player.
      *
      * @param entity The entity whose skin signature is to be retrieved.
      * @return The skin signature of the player, or null if the entity is not a player or the signature could not be retrieved.
      */
-    public String getSkinSignature(@NotNull Entity entity) {
+    public static String getSkinSignature(@NotNull Entity entity) {
         return SkinSignatureUtil.getSignature(entity);
     }
 
@@ -32,7 +35,7 @@ public final class SkinAPI {
      * @param name   The name associated with the texture.
      * @param base64 The Base64 encoded texture.
      */
-    public void setSkullTexture(@NotNull Skull skull, @NotNull String name, @NotNull String base64) {
+    public static void setSkullTexture(@NotNull Skull skull, @NotNull String name, @NotNull String base64) {
         SkinTextureUtil.setSkullBlockTexture(skull, name, base64);
     }
 
@@ -43,7 +46,7 @@ public final class SkinAPI {
      * @param name      The name associated with the texture.
      * @param base64    The Base64 encoded texture.
      */
-    public void setSkullTexture(@NotNull SkullMeta skullMeta, @NotNull String name, @NotNull String base64) {
+    public static void setSkullTexture(@NotNull SkullMeta skullMeta, @NotNull String name, @NotNull String base64) {
         SkinTextureUtil.setSkullBlockTexture(skullMeta, name, base64);
     }
 
@@ -53,7 +56,7 @@ public final class SkinAPI {
      * @param entity The entity from which to get the texture.
      * @return The Base64 encoded texture string, or null if not found.
      */
-    public @Nullable String getTexture(@NotNull Entity entity) {
+    public static @Nullable String getTexture(@NotNull Entity entity) {
         return SkinTextureUtil.getTexture(entity);
     }
 
@@ -63,7 +66,7 @@ public final class SkinAPI {
      * @param player The player from which to get the GameProfile.
      * @return The GameProfile of the player, or null if not found.
      */
-    public @Nullable GameProfile getPlayerGameProfile(@NotNull Player player) {
+    public static @Nullable GameProfile getPlayerGameProfile(@NotNull Player player) {
         return SkinTextureUtil.getPlayerGameProfile(player);
     }
 }

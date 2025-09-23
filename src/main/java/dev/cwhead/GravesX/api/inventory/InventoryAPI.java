@@ -8,6 +8,8 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Objects;
+
 /**
  * Inventory helper API.
  */
@@ -16,8 +18,8 @@ public final class InventoryAPI {
     private final UtilAPI util;
 
     public InventoryAPI(Graves plugin, UtilAPI util) {
-        this.plugin = plugin;
-        this.util = util;
+        this.plugin = Objects.requireNonNull(plugin, "plugin");
+        this.util = Objects.requireNonNull(util, "util");
     }
 
     /**

@@ -11,6 +11,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.Objects;
 
 /**
  * API for managing existing graves.
@@ -19,7 +20,7 @@ public final class GraveManagementAPI {
     private final Graves plugin;
 
     public GraveManagementAPI(Graves plugin) {
-        this.plugin = plugin;
+        this.plugin = Objects.requireNonNull(plugin, "plugin");
     }
 
     /**
@@ -203,6 +204,7 @@ public final class GraveManagementAPI {
     public long getGraveAmount(@Nullable Player targetPlayer) {
         List<Grave> graveList = new ArrayList<>(plugin.getCacheManager().getGraveMap().values());
         if (targetPlayer == null) return graveList.size();
+
         UUID playerUUID = targetPlayer.getUniqueId();
         long count = 0;
         for (Grave g : graveList) {

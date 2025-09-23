@@ -16,6 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -26,8 +27,8 @@ public final class UtilAPI {
     private final LocationAPI world;
 
     public UtilAPI(Graves plugin, LocationAPI world) {
-        this.plugin = plugin;
-        this.world = world;
+        this.plugin = Objects.requireNonNull(plugin, "plugin");
+        this.world = Objects.requireNonNull(world, "world");
     }
 
     /**

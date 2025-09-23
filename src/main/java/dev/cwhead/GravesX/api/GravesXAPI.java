@@ -10,6 +10,8 @@ import dev.cwhead.GravesX.api.util.UtilAPI;
 import dev.cwhead.GravesX.api.world.LocationAPI;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Objects;
+
 /**
  * Facade exposing the modular GravesX APIs.
  * Obtain from your plugin on enable and keep a reference.
@@ -62,7 +64,7 @@ public final class GravesXAPI {
      * @param plugin The active {@link Graves} plugin instance used to initialize APIs
      */
     public GravesXAPI(@NotNull Graves plugin) {
-        this.plugin = plugin;
+        this.plugin = Objects.requireNonNull(plugin, "plugin");
 
         this.world = new LocationAPI(plugin);
         this.util = new UtilAPI(plugin, world);
@@ -83,7 +85,7 @@ public final class GravesXAPI {
      *
      * @return the {@link LocationAPI} instance
      */
-    public LocationAPI getLocationAPI() {
+    public @NotNull LocationAPI getLocationAPI() {
         return world;
     }
 
@@ -97,7 +99,7 @@ public final class GravesXAPI {
      *
      * @return the {@link UtilAPI} instance
      */
-    public UtilAPI getUtilAPI() {
+    public @NotNull UtilAPI getUtilAPI() {
         return util;
     }
 
@@ -110,7 +112,7 @@ public final class GravesXAPI {
      *
      * @return the {@link InventoryAPI} instance
      */
-    public InventoryAPI getInventoryAPI() {
+    public @NotNull InventoryAPI getInventoryAPI() {
         return inventory;
     }
 
@@ -124,7 +126,7 @@ public final class GravesXAPI {
      *
      * @return the {@link SkinAPI} instance
      */
-    public SkinAPI getSkinAPI() {
+    public @NotNull SkinAPI getSkinAPI() {
         return skin;
     }
 
@@ -137,7 +139,7 @@ public final class GravesXAPI {
      *
      * @return the {@link AddonAPI} instance
      */
-    public AddonAPI getAddonAPI() {
+    public @NotNull AddonAPI getAddonAPI() {
         return addon;
     }
 
@@ -150,7 +152,7 @@ public final class GravesXAPI {
      *
      * @return the {@link GraveManagementAPI} instance
      */
-    public GraveManagementAPI getGravesManagementAPI() {
+    public @NotNull GraveManagementAPI getGravesManagementAPI() {
         return gravesManage;
     }
 
@@ -163,12 +165,12 @@ public final class GravesXAPI {
      *
      * @return the {@link GraveCreationAPI} instance
      */
-    public GraveCreationAPI getGravesCreationAPI() {
+    public @NotNull GraveCreationAPI getGravesCreationAPI() {
         return gravesCreate;
     }
 
     /** Underlying Graves plugin (advanced usage). */
-    public Graves plugin() {
+    public @NotNull Graves plugin() {
         return plugin;
     }
 }

@@ -30,10 +30,10 @@ public final class GraveCreationAPI {
     private final GraveManagementAPI manage;
 
     public GraveCreationAPI(Graves plugin, LocationAPI world, UtilAPI util, GraveManagementAPI manage) {
-        this.plugin = plugin;
-        this.world = world;
-        this.util = util;
-        this.manage = manage;
+        this.plugin = Objects.requireNonNull(plugin, "plugin");
+        this.world = Objects.requireNonNull(world, "world");
+        this.util = Objects.requireNonNull(util, "util");
+        this.manage = Objects.requireNonNull(manage, "manage");
     }
 
     /**
