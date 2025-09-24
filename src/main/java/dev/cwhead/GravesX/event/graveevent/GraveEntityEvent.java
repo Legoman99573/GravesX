@@ -209,7 +209,6 @@ public class GraveEntityEvent extends GraveEvent {
      *
      * @return The killer as a {@link LivingEntity}
      * @throws GravesXEventNullPointerException if no killer is present
-     * @implNote Bukkit's API returns a {@link Player}; kept signature for backward compatibility.
      */
     public @NotNull LivingEntity getLivingEntityKiller() {
         if (livingEntity == null || livingEntity.getKiller() == null) {
