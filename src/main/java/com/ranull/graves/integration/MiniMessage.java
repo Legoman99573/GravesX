@@ -15,9 +15,7 @@ import org.bukkit.inventory.meta.components.CustomModelDataComponent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Utility class for parsing MiniMessage formatted strings into legacy text format.
@@ -26,8 +24,6 @@ public final class MiniMessage {
     public static net.kyori.adventure.text.minimessage.MiniMessage miniMessage;
     private static BukkitAudiences audiences;
     private static LegacyComponentSerializer legacyComponentSerializer;
-
-
 
     /**
      * Initializes a new MiniMessage instance. Attempts to instantiate the MiniMessage parser.
@@ -90,9 +86,9 @@ public final class MiniMessage {
      *         If MiniMessage is not initialized, returns the original string.
      */
     public static String parseString(String string) {
-        return (miniMessage != null) ?
-                legacyComponentSerializer.serialize(miniMessage.deserialize(string)) :
-                string;
+        return (miniMessage != null)
+                ? legacyComponentSerializer.serialize(miniMessage.deserialize(string))
+                : string;
     }
 
     /**
@@ -130,7 +126,8 @@ public final class MiniMessage {
      * @return              All text to be converted to StringBuilder, that is required by net.kyori.adventure.text.minimessage
      */
     public static Component convertLegacyToComponent(String legacyText) {
-        String miniMessageText = MiniTranslator.toMini(legacyText,
+        String miniMessageText = MiniTranslator.toMini(
+                legacyText,
                 MiniTranslator.Option.COLOR,
                 MiniTranslator.Option.FORMAT,
                 MiniTranslator.Option.GRADIENT,
@@ -157,13 +154,7 @@ public final class MiniMessage {
      * @return The updated ItemStack with modified book metadata, or the original ItemStack if invalid.
      */
     public static ItemStack formatBookMeta(Graves plugin, Grave grave, ItemStack itemStack, Component title, Component author, List<Component> pages, List<Component> lore) {
-        if (itemStack == null || !(itemStack.getItemMeta() instanceof BookMeta)) {
-            return itemStack;
-        }
-
-        BookMeta bookMeta = (BookMeta) itemStack.getItemMeta();
-
-        if (bookMeta == null) {
+        if (itemStack == null || !(itemStack.getItemMeta() instanceof BookMeta bookMeta)) {
             return itemStack;
         }
 
@@ -177,12 +168,12 @@ public final class MiniMessage {
 
         List<String> serializedPages = pages.stream()
                 .map(legacySerializer::serialize)
-                .collect(Collectors.toList());
+                .toList();
         bookMeta.setPages(serializedPages);
 
         List<String> serializedLore = lore.stream()
                 .map(legacySerializer::serialize)
-                .collect(Collectors.toList());
+                .toList();
         bookMeta.setLore(serializedLore);
 
         int customModelData = plugin.getConfig("obituary.model-data", grave).getInt("obituary.model-data", -1);
@@ -190,9 +181,7 @@ public final class MiniMessage {
         if (customModelData > -1) {
             try {
                 CustomModelDataComponent cmdComponent = bookMeta.getCustomModelDataComponent();
-
-                cmdComponent.setFloats(Collections.singletonList((float) customModelData));
-
+                cmdComponent.setFloats(List.of((float) customModelData));
                 bookMeta.setCustomModelDataComponent(cmdComponent);
             } catch (Exception e) {
                 bookMeta.setCustomModelData(customModelData);

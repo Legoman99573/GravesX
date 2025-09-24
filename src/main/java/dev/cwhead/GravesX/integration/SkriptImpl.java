@@ -21,7 +21,6 @@ import java.util.List;
 public class SkriptImpl {
     private final Graves plugin;
     private SkriptAddon skriptAddon;
-    private Skript skript;
 
     /**
      * Constructs a SkriptIntegration instance and registers it with the Skript plugin.
@@ -40,9 +39,6 @@ public class SkriptImpl {
      */
     private void unregister() {
         if (skriptAddon != null) {
-            // Skript doesn't provide a direct way to unregister addons
-            // Generally, this involves cleaning up any event registrations manually
-            // For simplicity, we are not handling unregistering here
             skriptAddon = null;
         }
     }
@@ -51,9 +47,9 @@ public class SkriptImpl {
      * Registers the SkriptAddon listener with the Skript plugin.
      */
     private void register() {
-        SkriptAddon addon = Skript.registerAddon(plugin);
+        skriptAddon = Skript.registerAddon(plugin);
         try {
-            addon.loadClasses("dev.cwhead.GravesX.event.integration.skript");
+            skriptAddon.loadClasses("dev.cwhead.GravesX.event.integration.skript");
             Skript.registerExpression(ExprEventGrave.class, Grave.class, ExpressionType.SIMPLE, "[the] event[-]grave");
             Skript.registerExpression(ExprEventEntity.class, Entity.class, ExpressionType.SIMPLE, "[the] event[-]entity");
             Skript.registerExpression(ExprEventTargetEntity.class, LivingEntity.class, ExpressionType.SIMPLE, "[the] event[-]target[-]entity");

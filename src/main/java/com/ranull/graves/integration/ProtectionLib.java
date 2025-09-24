@@ -18,8 +18,8 @@ public final class ProtectionLib {
     /**
      * Constructs a new ProtectionLib instance with the specified Graves plugin and ProtectionLib plugin.
      *
-     * @param plugin The main Graves plugin instance.
-     * @param protectionLibPlugin The ProtectionLib plugin instance.
+     * @param plugin               The main Graves plugin instance.
+     * @param protectionLibPlugin  The ProtectionLib plugin instance.
      */
     public ProtectionLib(Graves plugin, Plugin protectionLibPlugin) {
         this.plugin = plugin;
@@ -37,20 +37,17 @@ public final class ProtectionLib {
     public boolean canBuild(Location location, Player player) {
         if (plugin.getIntegrationManager().hasFurnitureLib()) {
             return plugin.getIntegrationManager().getFurnitureLib().canBuild(location, player);
-        } else {
-            try {
-                // Reflectively access ProtectionLib's canBuild method
-                Object protectionLib = Class.forName("de.Ste3et_C0st.ProtectionLib.main.ProtectionLib")
-                        .cast(protectionLibPlugin);
-                Method canBuild = protectionLib.getClass().getMethod("canBuild", location.getClass(),
-                        Class.forName("org.bukkit.entity.Player"));
+        }
 
-                canBuild.setAccessible(true);
+        try {
+            Class<?> apiClass = Class.forName("de.Ste3et_C0st.ProtectionLib.main.ProtectionLib");
+            Object protectionLib = apiClass.cast(protectionLibPlugin);
 
-                return (boolean) canBuild.invoke(protectionLib, location, player);
-            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException
-                     | ClassNotFoundException ignored) {
-            }
+            Method canBuild = protectionLib.getClass().getMethod("canBuild", Location.class, Player.class);
+            Object result = canBuild.invoke(protectionLib, location, player);
+            return result instanceof Boolean && (Boolean) result;
+        } catch (ClassNotFoundException | NoSuchMethodException |
+                 IllegalAccessException | InvocationTargetException ignored) {
         }
 
         return true;

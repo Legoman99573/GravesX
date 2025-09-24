@@ -12,7 +12,6 @@ import de.Ste3et_C0st.FurnitureLib.Utilitis.LocationUtil;
 import de.Ste3et_C0st.FurnitureLib.main.FurniturePlugin;
 import de.Ste3et_C0st.FurnitureLib.main.ObjectID;
 import de.Ste3et_C0st.FurnitureLib.main.entity.fContainerEntity;
-import de.Ste3et_C0st.FurnitureLib.main.entity.fEntity;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -24,7 +23,6 @@ import org.bukkit.plugin.Plugin;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -109,14 +107,16 @@ public final class FurnitureLib extends EntityDataManager {
                     objectID.setUUID(UUID.randomUUID());
                     objectID.getBlockList().stream()
                             .filter(signLocation -> signLocation.getBlock().getType().name().contains("SIGN"))
-                            .forEach((signLocation) -> setSign(signLocation.getBlock(),
-                                    plugin.getConfig("furniturelib.line", grave)
-                                            .getStringList("furniturelib.line"), grave));
+                            .forEach(signLocation -> setSign(
+                                    signLocation.getBlock(),
+                                    plugin.getConfig("furniturelib.line", grave).getStringList("furniturelib.line"),
+                                    grave
+                            ));
 
                     if (plugin.getConfig("furniturelib.head.replace", grave).getBoolean("furniturelib.head.replace")) {
                         objectID.getPacketList().stream()
-                                .filter(fEntity -> fEntity instanceof fContainerEntity)
-                                .map(fEntity -> (fContainerEntity) fEntity)
+                                .filter(fE -> fE instanceof fContainerEntity)
+                                .map(fE -> (fContainerEntity) fE)
                                 .forEach(fContainerEntity -> setSkull(fContainerEntity, grave));
                     }
 
@@ -150,7 +150,7 @@ public final class FurnitureLib extends EntityDataManager {
      * @param entityData The entity data of the furniture to remove.
      */
     public void removeFurniture(EntityData entityData) {
-        removeFurniture(Collections.singletonList(entityData));
+        removeFurniture(List.of(entityData));
     }
 
     /**
@@ -219,8 +219,7 @@ public final class FurnitureLib extends EntityDataManager {
     }
 
     private void setSign(Block block, List<String> stringList, Grave grave) {
-        if (block.getState() instanceof Sign) {
-            Sign sign = (Sign) block.getState();
+        if (block.getState() instanceof Sign sign) {
             int counter = 0;
             for (String string : stringList) {
                 if (counter <= 4) {
@@ -303,8 +302,9 @@ public final class FurnitureLib extends EntityDataManager {
 
         @Override
         public void applyPluginFunctions() {
-            furnitureLib.getFurnitureManager().getProjects().stream().filter(project -> project.getPlugin().getName()
-                    .equals(getPlugin().getDescription().getName())).forEach(Project::applyFunction);
+            furnitureLib.getFurnitureManager().getProjects().stream()
+                    .filter(project -> project.getPlugin().getName().equals(getPlugin().getDescription().getName()))
+                    .forEach(Project::applyFunction);
         }
 
         @Override

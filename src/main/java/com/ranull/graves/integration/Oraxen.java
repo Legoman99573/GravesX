@@ -7,7 +7,6 @@ import com.ranull.graves.listener.integration.oraxen.HangingBreakListener;
 import com.ranull.graves.listener.integration.oraxen.PlayerInteractEntityListener;
 import com.ranull.graves.manager.EntityDataManager;
 import com.ranull.graves.type.Grave;
-import com.ranull.graves.util.ResourceUtil;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
 import io.th0rgal.oraxen.mechanics.MechanicsManager;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.FurnitureMechanic;
@@ -73,14 +72,18 @@ public final class Oraxen extends EntityDataManager {
     @Deprecated
     public void saveData() {
         if (plugin.getConfig().getBoolean("settings.integration.oraxen.write")) {
-            String pluginFolder = plugin.getPluginsFolder() + "/" + oraxenPlugin.getName();
+            final String pluginFolder = plugin.getPluginsFolder() + "/" + oraxenPlugin.getName();
 
             try {
-                File itemsDir = new File(pluginFolder + "/items");
-                if (!itemsDir.exists()) itemsDir.mkdirs();
+                final File itemsDir = new File(pluginFolder + "/items");
+                if (!itemsDir.exists()) {
+                    itemsDir.mkdirs();
+                }
 
-                File modelDir = new File(pluginFolder + "/pack/assets/minecraft/models/gravesx");
-                if (!modelDir.exists()) modelDir.mkdirs();
+                final File modelDir = new File(pluginFolder + "/pack/assets/minecraft/models/gravesx");
+                if (!modelDir.exists()) {
+                    modelDir.mkdirs();
+                }
 
                 // Copy resources
                 copyResource(
@@ -156,27 +159,30 @@ public final class Oraxen extends EntityDataManager {
      */
     @Deprecated
     public void createFurniture(Location location, Grave grave) {
-        if (plugin.getConfig("oraxen.furniture.enabled", grave)
-                .getBoolean("oraxen.furniture.enabled")) {
+        if (plugin.getConfig("oraxen.furniture.enabled", grave).getBoolean("oraxen.furniture.enabled")) {
             try {
-                String name = plugin.getConfig("oraxen.furniture.name", grave)
+                final String name = plugin.getConfig("oraxen.furniture.name", grave)
                         .getString("oraxen.furniture.name", "");
-                FurnitureMechanic furnitureMechanic = getFurnitureMechanic(name);
+                final FurnitureMechanic furnitureMechanic = getFurnitureMechanic(name);
 
                 if (furnitureMechanic != null && location.getWorld() != null) {
                     location.getBlock().setType(Material.AIR);
 
-                    Entity furniture = furnitureMechanic.place(location, location.getYaw(), BlockFace.UP);
+                    final Entity furniture = furnitureMechanic.place(location, location.getYaw(), BlockFace.UP);
                     if (furniture != null) {
                         createEntityData(location, furniture.getUniqueId(), grave.getUUID(), EntityData.Type.ORAXEN);
-                        plugin.debugMessage("Placing Oraxen furniture for " + grave.getUUID() + " at "
-                                + location.getWorld().getName() + ", " + (location.getBlockX() + 0.5) + "x, "
-                                + (location.getBlockY() + 0.5) + "y, " + (location.getBlockZ() + 0.5) + "z", 1);
+                        plugin.debugMessage(
+                                "Placing Oraxen furniture for " + grave.getUUID() + " at "
+                                        + location.getWorld().getName() + ", "
+                                        + (location.getBlockX() + 0.5) + "x, "
+                                        + (location.getBlockY() + 0.5) + "y, "
+                                        + (location.getBlockZ() + 0.5) + "z",
+                                1
+                        );
                     }
                 }
             } catch (NoSuchMethodError ignored) {
-                plugin.warningMessage("This version of Minecraft does not support " + oraxenPlugin.getName()
-                        + " furniture");
+                plugin.warningMessage("This version of Minecraft does not support " + oraxenPlugin.getName() + " furniture");
             }
         }
     }
@@ -211,7 +217,7 @@ public final class Oraxen extends EntityDataManager {
      */
     @Deprecated
     public void removeFurniture(Map<EntityData, Entity> entityDataMap) {
-        List<EntityData> entityDataList = new ArrayList<>();
+        final List<EntityData> entityDataList = new ArrayList<>();
 
         for (Map.Entry<EntityData, Entity> entry : entityDataMap.entrySet()) {
             entry.getValue().remove();
@@ -230,18 +236,24 @@ public final class Oraxen extends EntityDataManager {
      */
     @Deprecated
     public void createBlock(Location location, Grave grave) {
-        if (plugin.getConfig("oraxen.block.enabled", grave)
-                .getBoolean("oraxen.block.enabled")) {
-            String name = plugin.getConfig("oraxen.block.name", grave)
+        if (plugin.getConfig("oraxen.block.enabled", grave).getBoolean("oraxen.block.enabled")) {
+            final String name = plugin.getConfig("oraxen.block.name", grave)
                     .getString("oraxen.block.name", "");
-            NoteBlockMechanic noteBlockMechanic = getNoteBlockMechanic(name);
+            final NoteBlockMechanic noteBlockMechanic = getNoteBlockMechanic(name);
 
             if (noteBlockMechanic != null && location.getWorld() != null) {
-                location.getBlock().setBlockData(NoteBlockMechanicFactory
-                        .createNoteBlockData(noteBlockMechanic.getCustomVariation()), false);
-                plugin.debugMessage("Placing Oraxen block for " + grave.getUUID() + " at "
-                        + location.getWorld().getName() + ", " + (location.getBlockX() + 0.5) + "x, "
-                        + (location.getBlockY() + 0.5) + "y, " + (location.getBlockZ() + 0.5) + "z", 1);
+                location.getBlock().setBlockData(
+                        NoteBlockMechanicFactory.createNoteBlockData(noteBlockMechanic.getCustomVariation()),
+                        false
+                );
+                plugin.debugMessage(
+                        "Placing Oraxen block for " + grave.getUUID() + " at "
+                                + location.getWorld().getName() + ", "
+                                + (location.getBlockX() + 0.5) + "x, "
+                                + (location.getBlockY() + 0.5) + "y, "
+                                + (location.getBlockZ() + 0.5) + "z",
+                        1
+                );
             }
         }
     }
@@ -256,11 +268,12 @@ public final class Oraxen extends EntityDataManager {
     @Deprecated
     public boolean isCustomBlock(Location location) {
         if (location.getBlock().getBlockData() instanceof NoteBlock) {
-            NoteBlock noteBlock = (NoteBlock) location.getBlock().getBlockData();
-
-            return NoteBlockMechanicFactory.getBlockMechanic((int) (noteBlock
-                    .getInstrument().getType()) * 25 + (int) noteBlock.getNote().getId()
-                    + (noteBlock.isPowered() ? 400 : 0) - 26) != null;
+            final NoteBlock noteBlock = (NoteBlock) location.getBlock().getBlockData();
+            final int key = (noteBlock.getInstrument().getType() * 25)
+                    + noteBlock.getNote().getId()
+                    + (noteBlock.isPowered() ? 400 : 0)
+                    - 26;
+            return NoteBlockMechanicFactory.getBlockMechanic(key) != null;
         }
 
         return false;
@@ -286,8 +299,7 @@ public final class Oraxen extends EntityDataManager {
      */
     @Deprecated
     public FurnitureMechanic getFurnitureMechanic(String string) {
-        MechanicFactory mechanicFactory = MechanicsManager.getMechanicFactory("furniture");
-
+        final MechanicFactory mechanicFactory = MechanicsManager.getMechanicFactory("furniture");
         return mechanicFactory != null ? (FurnitureMechanic) mechanicFactory.getMechanic(string) : null;
     }
 
@@ -300,8 +312,7 @@ public final class Oraxen extends EntityDataManager {
      */
     @Deprecated
     public NoteBlockMechanic getNoteBlockMechanic(String string) {
-        MechanicFactory mechanicFactory = MechanicsManager.getMechanicFactory("noteblock");
-
+        final MechanicFactory mechanicFactory = MechanicsManager.getMechanicFactory("noteblock");
         return mechanicFactory != null ? (NoteBlockMechanic) mechanicFactory.getMechanic(string) : null;
     }
 
@@ -314,17 +325,22 @@ public final class Oraxen extends EntityDataManager {
      */
     @Deprecated
     public boolean hasFurniture(Grave grave) {
-        if (grave == null) return false;
+        if (grave == null) {
+            return false;
+        }
 
-        Map<EntityData, Entity> map = getEntityDataMap(getLoadedEntityDataList(grave));
-        if (map.isEmpty()) return false;
+        final Map<EntityData, Entity> map = getEntityDataMap(getLoadedEntityDataList(grave));
+        if (map.isEmpty()) {
+            return false;
+        }
 
         for (Map.Entry<EntityData, Entity> e : map.entrySet()) {
-            EntityData data = e.getKey();
-            Entity ent = e.getValue();
-            if (data == null || ent == null) continue;
+            final EntityData data = e.getKey();
+            final Entity ent = e.getValue();
+            if (data == null || ent == null) {
+                continue;
+            }
 
-            // Ensure it’s our Oraxen-tracked furniture and still alive.
             if (data.getType() == EntityData.Type.ORAXEN && ent.isValid() && !ent.isDead()) {
                 return true;
             }
@@ -341,13 +357,17 @@ public final class Oraxen extends EntityDataManager {
      */
     @Deprecated
     public boolean hasBlock(Grave grave) {
-        if (grave == null) return false;
+        if (grave == null) {
+            return false;
+        }
 
         Location loc = grave.getLocationDeath();
         if (loc == null || loc.getWorld() == null) {
             loc = grave.getLocationDeath();
         }
-        if (loc == null || loc.getWorld() == null) return false;
+        if (loc == null || loc.getWorld() == null) {
+            return false;
+        }
 
         return isCustomBlock(loc);
     }

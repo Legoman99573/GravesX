@@ -13,6 +13,7 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.Objects;
 
 /**
  * Provides integration with ProtocolLib to manage block changes and updates.
@@ -34,50 +35,57 @@ public final class ProtocolLib {
     /**
      * Sets the block at a specific location to a new material and updates the client.
      *
-     * @param block   The block to change.
+     * @param block    The block to change.
      * @param material The material to set the block to.
-     * @param player  The player to whom the update will be sent.
+     * @param player   The player to whom the update will be sent.
      */
     public void setBlock(Block block, Material material, Player player) throws InvocationTargetException {
-        WrappedBlockData wrappedBlockData = WrappedBlockData.createData(material);
-        sendServerPacket(player, createBlockChangePacket(block, wrappedBlockData));
+        if (block == null || material == null || player == null) return;
+        block.getWorld();
+        if (!Objects.equals(block.getWorld(), player.getWorld())) return;
+
+        WrappedBlockData wrapped = WrappedBlockData.createData(material);
+        sendServerPacket(player, createBlockChangePacket(block, wrapped));
     }
 
     /**
      * Refreshes the block at a specific location to reflect its current state.
      *
-     * @param block   The block to refresh.
-     * @param player  The player to whom the update will be sent.
+     * @param block  The block to refresh.
+     * @param player The player to whom the update will be sent.
      */
     public void refreshBlock(Block block, Player player) throws InvocationTargetException {
-        sendServerPacket(player, createBlockChangePacket(block, WrappedBlockData.createData(block.getBlockData())));
+        if (block == null || player == null) return;
+        block.getWorld();
+        if (!Objects.equals(block.getWorld(), player.getWorld())) return;
+
+        WrappedBlockData current = WrappedBlockData.createData(block.getBlockData());
+        sendServerPacket(player, createBlockChangePacket(block, current));
     }
 
     /**
      * Creates a PacketContainer for a block change packet.
-     *
-     * @param block              The block to change.
-     * @param wrappedBlockData   The block data to set.
-     * @return The PacketContainer for the block change packet.
      */
     private PacketContainer createBlockChangePacket(Block block, WrappedBlockData wrappedBlockData) {
-        Location location = block.getLocation();
-        BlockPosition blockPosition = new BlockPosition(location.getBlockX(), location.getBlockY(), location.getBlockZ());
-        PacketContainer packetContainer = protocolManager.createPacket(PacketType.Play.Server.BLOCK_CHANGE);
+        Location loc = block.getLocation();
+        BlockPosition pos = new BlockPosition(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
 
-        packetContainer.getBlockPositionModifier().write(0, blockPosition);
-        packetContainer.getBlockData().write(0, wrappedBlockData);
-
-        return packetContainer;
+        PacketContainer packet = protocolManager.createPacket(PacketType.Play.Server.BLOCK_CHANGE);
+        packet.getBlockPositionModifier().write(0, pos);
+        packet.getBlockData().write(0, wrappedBlockData);
+        return packet;
     }
 
     /**
      * Sends a server packet to a specific player.
-     *
-     * @param player          The player to send the packet to.
-     * @param packetContainer The packet to send.
      */
     private void sendServerPacket(Player player, PacketContainer packetContainer) throws InvocationTargetException {
-        protocolManager.sendServerPacket(player, packetContainer);
+        try {
+            protocolManager.sendServerPacket(player, packetContainer);
+        } catch (Exception e) {
+            if (plugin != null) {
+                plugin.getLogger().warning("Failed to send BLOCK_CHANGE packet: " + e.getMessage());
+            }
+        }
     }
 }

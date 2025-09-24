@@ -143,9 +143,9 @@ public class Floodgate {
      */
     public UUID getCorrectUniqueId(UUID uuid) {
         if (isFloodgateId(uuid)) {
-            FloodgatePlayer player = getPlayer(uuid);
-            if (player != null) {
-                return player.getCorrectUniqueId();
+            FloodgatePlayer fgPlayer = getPlayer(uuid);
+            if (fgPlayer != null) {
+                return fgPlayer.getCorrectUniqueId();
             }
         }
         return uuid;

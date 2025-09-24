@@ -123,6 +123,7 @@ public final class CitizensNPC extends EntityDataManager {
             }
         }
     }
+
     /**
      * Creates a new NPC corpse at the specified location with the given grave data.
      *
@@ -237,12 +238,12 @@ public final class CitizensNPC extends EntityDataManager {
                 destroyMethod.invoke(npc);
                 Object registry = getNPCRegistryMethod.invoke(null);
                 deregisterMethod.invoke(registry, npc);
-                nmsRemoveMethod.invoke(null, ((org.bukkit.entity.Entity)npcClass.getMethod("getEntity").invoke(npc)));
+                nmsRemoveMethod.invoke(null, ((org.bukkit.entity.Entity) npcClass.getMethod("getEntity").invoke(npc)));
             } catch (ReflectiveOperationException e) {
                 plugin.getLogger().warning("Failed to remove NPC data entity: " + e.getMessage());
             }
         }
-        Map<EntityData, Object> map = getEntityDataNPCMap(Collections.singletonList(entityData));
+        Map<EntityData, Object> map = getEntityDataNPCMap(List.of(entityData));
         removeCorpse(map);
     }
 

@@ -17,7 +17,6 @@ import org.bukkit.entity.ItemFrame;
 import org.bukkit.event.HandlerList;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -33,7 +32,6 @@ public final class FurnitureEngine extends EntityDataManager {
 
     /**
      * @deprecated Plugin no longer exists externally
-     *
      * Constructs a FurnitureEngine instance.
      *
      * @param plugin The main plugin instance.
@@ -75,7 +73,6 @@ public final class FurnitureEngine extends EntityDataManager {
 
     /**
      * @deprecated Plugin no longer exists externally
-     *
      * Creates and places furniture at the specified location.
      *
      * @param location The location where the furniture should be placed.
@@ -100,7 +97,6 @@ public final class FurnitureEngine extends EntityDataManager {
 
     /**
      * @deprecated Plugin no longer exists externally
-     *
      * Removes furniture associated with the specified grave.
      *
      * @param grave The grave for which to remove furniture.
@@ -117,19 +113,17 @@ public final class FurnitureEngine extends EntityDataManager {
 
     /**
      * @deprecated Plugin no longer exists externally
-     *
      * Removes specific furniture entity data.
      *
      * @param entityData The entity data of the furniture to remove.
      */
     @Deprecated
     public void removeFurniture(EntityData entityData) {
-        removeFurniture(getEntityDataMap(Collections.singletonList(entityData)));
+        removeFurniture(getEntityDataMap(List.of(entityData)));
     }
 
     /**
      * @deprecated Plugin no longer exists externally
-     *
      * Removes multiple pieces of furniture based on a map of entity data to entities.
      *
      * @param entityDataMap A map of entity data to entities to remove.
@@ -147,7 +141,6 @@ public final class FurnitureEngine extends EntityDataManager {
 
     /**
      * @deprecated Plugin no longer exists externally
-     *
      * Retrieves the ItemFrame at a specified location.
      *
      * @param location The location to search for the ItemFrame.
@@ -158,8 +151,8 @@ public final class FurnitureEngine extends EntityDataManager {
         location = location.clone().add(0.0D, 1.0D, 0.0D);
         if (location.getWorld() != null) {
             for (Entity entity : location.getWorld().getNearbyEntities(location, 0.13D, 0.2D, 0.13D)) {
-                if (entity instanceof ItemFrame) {
-                    return (ItemFrame) entity;
+                if (entity instanceof ItemFrame itemFrame) {
+                    return itemFrame;
                 }
             }
         }
@@ -168,7 +161,6 @@ public final class FurnitureEngine extends EntityDataManager {
 
     /**
      * @deprecated Plugin no longer exists externally
-     *
      * Cleans up ItemFrames near the death location of a grave.
      *
      * @param grave The grave to clean up.
@@ -178,8 +170,8 @@ public final class FurnitureEngine extends EntityDataManager {
         Location location = grave.getLocationDeath();
         if (location.getWorld() != null) {
             for (Entity entity : location.getWorld().getNearbyEntities(location, 0.70, 1.0D, 0.7D)) {
-                if (entity instanceof ItemFrame) {
-                    entity.remove();
+                if (entity instanceof ItemFrame itemFrame) {
+                    itemFrame.remove();
                 }
             }
         }
@@ -219,7 +211,6 @@ public final class FurnitureEngine extends EntityDataManager {
 
     /**
      * @deprecated Plugin no longer exists externally
-     *
      * True if FurnitureEngine furniture exists at the grave's location.
      *
      * @param grave The grave to check.

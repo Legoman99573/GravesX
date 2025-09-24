@@ -27,7 +27,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -129,7 +128,6 @@ public class Nexo extends EntityDataManager {
         }
     }
 
-
     /**
      * Creates and places Nexo furniture at a specified location.
      *
@@ -177,7 +175,7 @@ public class Nexo extends EntityDataManager {
      * @param entityData The entity data of the furniture to be removed.
      */
     public void removeFurniture(EntityData entityData) {
-        removeFurniture(getEntityDataMap(Collections.singletonList(entityData)));
+        removeFurniture(getEntityDataMap(List.of(entityData)));
     }
 
     /**
@@ -239,9 +237,7 @@ public class Nexo extends EntityDataManager {
      */
     @SuppressWarnings("deprecation")
     public boolean isCustomBlock(Location location) {
-        if (location.getBlock().getBlockData() instanceof NoteBlock) {
-            NoteBlock noteBlock = (NoteBlock) location.getBlock().getBlockData();
-
+        if (location.getBlock().getBlockData() instanceof NoteBlock noteBlock) {
             int id = (int) (noteBlock.getInstrument().getType()) * 25
                     + (int) noteBlock.getNote().getId()
                     + (noteBlock.isPowered() ? 400 : 0)
@@ -256,7 +252,7 @@ public class Nexo extends EntityDataManager {
 
         return false;
     }
-    
+
     /**
      * Retrieves a FurnitureMechanic by name from the Nexo plugin.
      *

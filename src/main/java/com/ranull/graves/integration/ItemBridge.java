@@ -6,6 +6,8 @@ import com.ranull.graves.Graves;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Locale;
+
 /**
  * Integration with the ItemBridge plugin for handling custom items related to graves.
  */
@@ -60,13 +62,13 @@ public final class ItemBridge implements ItemBridgeListener {
      */
     @Override
     public ItemStack fetchItemStack(@NotNull String string) {
-        string = string.toLowerCase();
+        String key = string.toLowerCase(Locale.ROOT);
 
-        if (plugin.getVersionManager().hasPersistentData() && string.startsWith("token_")) {
-            string = string.replaceFirst("token_", "");
-
-            return plugin.getConfig().isSet("settings.token." + string)
-                    ? plugin.getRecipeManager().getToken(string) : null;
+        if (plugin.getVersionManager().hasPersistentData() && key.startsWith("token_")) {
+            String token = key.replaceFirst("token_", "");
+            return plugin.getConfig().isSet("settings.token." + token)
+                    ? plugin.getRecipeManager().getToken(token)
+                    : null;
         }
 
         return null;
@@ -83,7 +85,6 @@ public final class ItemBridge implements ItemBridgeListener {
         if (plugin.getVersionManager().hasPersistentData() && plugin.getRecipeManager().isToken(itemStack)) {
             return plugin.getRecipeManager().getTokenName(itemStack);
         }
-
         return null;
     }
 
@@ -96,6 +97,7 @@ public final class ItemBridge implements ItemBridgeListener {
      */
     @Override
     public boolean isItem(@NotNull ItemStack itemStack, @NotNull String string) {
-        return string.equals(getItemName(itemStack));
+        String name = getItemName(itemStack);
+        return name != null && name.equals(string);
     }
 }

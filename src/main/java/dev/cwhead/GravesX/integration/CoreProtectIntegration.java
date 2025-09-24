@@ -7,9 +7,7 @@ import org.bukkit.plugin.Plugin;
 
 /**
  * @deprecated Unmaintained greedware plugin.
- *
  * Handles integration with the CoreProtect plugin.
- *
  * This class provides methods to obtain and interact with the CoreProtect API.
  * It checks the CoreProtect plugin's availability and API version to ensure compatibility.
  *
@@ -48,12 +46,14 @@ public class CoreProtectIntegration {
         }
 
         Plugin coreProtectPlugin = plugin.getServer().getPluginManager().getPlugin("CoreProtect");
-        if (coreProtectPlugin != null && coreProtectPlugin instanceof CoreProtect) {
-            CoreProtect coreProtect = (CoreProtect) coreProtectPlugin;
-            if (coreProtect.isEnabled() && coreProtect.getAPI().APIVersion() >= 9) {
-                coreProtectAPI = coreProtect.getAPI();
+        if (coreProtectPlugin instanceof CoreProtect coreProtect) {
+            CoreProtectAPI api = coreProtect.getAPI();
+            if (coreProtect.isEnabled() && api.APIVersion() >= 9) {
+                coreProtectAPI = api;
             } else {
-                plugin.getLogger().severe("CoreProtect is using API version " + coreProtect.getAPI().APIVersion() + ". Graves will not be logged.");
+                plugin.getLogger().severe(
+                        "CoreProtect is using API version " + api.APIVersion() + ". Graves will not be logged."
+                );
             }
         }
         return coreProtectAPI;

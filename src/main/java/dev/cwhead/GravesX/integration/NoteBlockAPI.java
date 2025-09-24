@@ -18,6 +18,8 @@ import java.util.UUID;
  */
 public class NoteBlockAPI {
 
+    private static final String ALL_PLAYERS_KEY = "allPlayers";
+
     private final Graves plugin;
     private final Map<Object, SongPlayer> activeSongPlayers = new HashMap<>();
 
@@ -84,7 +86,7 @@ public class NoteBlockAPI {
             songPlayer.addPlayer(player);
         }
         songPlayer.setPlaying(true);
-        activeSongPlayers.put("allPlayers", songPlayer);
+        activeSongPlayers.put(ALL_PLAYERS_KEY, songPlayer);
     }
 
     /**
@@ -117,7 +119,7 @@ public class NoteBlockAPI {
      * Stops the currently playing song for all players.
      */
     public void stopSongForAllPlayers() {
-        SongPlayer songPlayer = activeSongPlayers.remove("allPlayers");
+        SongPlayer songPlayer = activeSongPlayers.remove(ALL_PLAYERS_KEY);
         if (songPlayer != null) {
             songPlayer.setPlaying(false);
             songPlayer.destroy();
@@ -153,7 +155,6 @@ public class NoteBlockAPI {
      * @return true if a song is actively playing for the player, false otherwise.
      */
     public boolean isSongPlayingForPlayer(UUID uuid) {
-        // Retrieve the SongPlayer associated with the UUID
         SongPlayer songPlayer = activeSongPlayers.get(uuid);
         return songPlayer != null && songPlayer.isPlaying();
     }
@@ -164,7 +165,7 @@ public class NoteBlockAPI {
      * @return true if a song is actively playing for all players, false otherwise.
      */
     public boolean isSongPlayingForAllPlayers() {
-        SongPlayer songPlayer = activeSongPlayers.get("allPlayers");
+        SongPlayer songPlayer = activeSongPlayers.get(ALL_PLAYERS_KEY);
         return songPlayer != null && songPlayer.isPlaying();
     }
 }
