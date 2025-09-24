@@ -2,12 +2,17 @@ package com.ranull.graves.data;
 
 import org.bukkit.Location;
 
+import java.io.Serial;
 import java.util.UUID;
 
 /**
  * Represents data for a hologram entity associated with a grave, including its line number.
  */
 public class HologramData extends EntityData {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     /**
      * Represents the line number or index associated with a specific context.
      * <p>
@@ -27,7 +32,6 @@ public class HologramData extends EntityData {
      */
     public HologramData(Location location, UUID uuidEntity, UUID uuidGrave, int line) {
         super(location, uuidEntity, uuidGrave, Type.HOLOGRAM);
-
         this.line = line;
     }
 

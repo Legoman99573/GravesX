@@ -10,7 +10,9 @@ import java.lang.reflect.Method;
 /**
  * Handles Compatibility for InventoryView to prevent runtime errors on versions older than 1.21. Thanks to <a href="https://www.spigotmc.org/threads/inventoryview-changed-to-interface-backwards-compatibility.651754/#post-4747875">Rumsfield's code</a>
  */
-public class CompatibilityInventoryView {
+public final class CompatibilityInventoryView {
+
+    private CompatibilityInventoryView() {}
 
     /**
      * In API versions 1.20.6 and earlier, InventoryView is a class.
@@ -60,7 +62,7 @@ public class CompatibilityInventoryView {
      */
     public static Inventory getTopInventory(InventoryView inventoryView) {
         try {
-            Method getTopInventory = ((Object) inventoryView).getClass().getMethod("getTopInventory");
+            Method getTopInventory = inventoryView.getClass().getMethod("getTopInventory");
             getTopInventory.setAccessible(true);
             return (Inventory) getTopInventory.invoke(inventoryView);
         } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
@@ -78,7 +80,7 @@ public class CompatibilityInventoryView {
      */
     public static Inventory getBottomInventory(InventoryView inventoryView) {
         try {
-            Method getBottomInventory = ((Object) inventoryView).getClass().getMethod("getBottomInventory");
+            Method getBottomInventory = inventoryView.getClass().getMethod("getBottomInventory");
             getBottomInventory.setAccessible(true);
             return (Inventory) getBottomInventory.invoke(inventoryView);
         } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {

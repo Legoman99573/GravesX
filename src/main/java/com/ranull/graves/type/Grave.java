@@ -9,6 +9,7 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.*;
 
@@ -17,6 +18,10 @@ import java.util.*;
  * that the grave belongs to, including inventory, location, and various other attributes.
  */
 public class Grave implements InventoryHolder, Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     /**
      * Unique identifier for this instance.
      */

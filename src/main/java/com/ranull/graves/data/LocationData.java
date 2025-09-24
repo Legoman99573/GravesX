@@ -3,6 +3,7 @@ package com.ranull.graves.data;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.UUID;
 
@@ -10,6 +11,10 @@ import java.util.UUID;
  * Represents serialized location data including world UUID, coordinates, and orientation.
  */
 public class LocationData implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     /**
      * The unique identifier for the entity.
      * <p>
@@ -57,7 +62,6 @@ public class LocationData implements Serializable {
      * </p>
      */
     private final double z;
-
 
     /**
      * Constructs a new LocationData instance from a given Location.

@@ -2,7 +2,6 @@ package com.ranull.graves.compatibility;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
-import com.mojang.authlib.properties.PropertyMap;
 import com.ranull.graves.Graves;
 import com.ranull.graves.data.BlockData;
 import com.ranull.graves.type.Grave;
@@ -67,23 +66,18 @@ public final class CompatibilityBlockData implements Compatibility {
     private BlockData handleBlockPlacement(Location location, Material material, Grave grave, Graves plugin) {
         Block block = location.getBlock();
         String originalMaterial = block.getType().name();
-        String replaceMaterial = location.getBlock().getType().name();
-        String replaceData = location.getBlock().getBlockData().clone().getAsString(true);
+        String replaceMaterial = block.getType().name();
+        String replaceData = block.getBlockData().clone().getAsString(true);
 
-        if (isLevelledBlock(block)) {
+        if (isLevelledBlock(block) || isSpecialBlock(block)) {
             replaceMaterial = null;
             replaceData = null;
         }
 
-        if (isSpecialBlock(block)) {
-            replaceMaterial = null;
-            replaceData = null;
-        }
+        block.setType(material);
 
-        location.getBlock().setType(material);
-
-        if (block.getBlockData() instanceof Waterlogged) {
-            setWaterlogged(block, originalMaterial);
+        if (block.getBlockData() instanceof Waterlogged waterlogged) {
+            setWaterlogged(block, originalMaterial, waterlogged);
         }
 
         if (material == Material.PLAYER_HEAD && block.getState() instanceof Skull) {
@@ -101,7 +95,7 @@ public final class CompatibilityBlockData implements Compatibility {
      * @return True if the block is a Levelled block, false otherwise.
      */
     private boolean isLevelledBlock(Block block) {
-        return block.getBlockData() instanceof Levelled && ((Levelled) block.getBlockData()).getLevel() != 0;
+        return block.getBlockData() instanceof Levelled l && l.getLevel() != 0;
     }
 
     /**
@@ -119,9 +113,9 @@ public final class CompatibilityBlockData implements Compatibility {
      *
      * @param block            The block to set the waterlogged state for.
      * @param originalMaterial The original material of the block.
+     * @param waterlogged      The Waterlogged data instance to update.
      */
-    private void setWaterlogged(Block block, String originalMaterial) {
-        Waterlogged waterlogged = (Waterlogged) block.getBlockData();
+    private void setWaterlogged(Block block, String originalMaterial, Waterlogged waterlogged) {
         waterlogged.setWaterlogged(MaterialUtil.isWater(originalMaterial));
         block.setBlockData(waterlogged);
     }
@@ -136,14 +130,21 @@ public final class CompatibilityBlockData implements Compatibility {
      */
     @Override
     public boolean canBuild(Player player, Location location, Graves plugin) {
-        Plugin landProtectionAddonPlugin = plugin.getServer().getPluginManager().getPlugin("GravesXAddon-LandProtection");
+        Plugin landProtectionAddonPlugin =
+                plugin.getServer().getPluginManager().getPlugin("GravesXAddon-LandProtection");
         if (landProtectionAddonPlugin != null && landProtectionAddonPlugin.isEnabled()) return true;
-        BlockPlaceEvent blockPlaceEvent = new BlockPlaceEvent(location.getBlock(),
-                location.getBlock().getState(), location.getBlock(), player.getInventory().getItemInMainHand(),
-                player, true, EquipmentSlot.HAND);
+
+        BlockPlaceEvent blockPlaceEvent = new BlockPlaceEvent(
+                location.getBlock(),
+                location.getBlock().getState(),
+                location.getBlock(),
+                player.getInventory().getItemInMainHand(),
+                player,
+                true,
+                EquipmentSlot.HAND
+        );
 
         plugin.getServer().getPluginManager().callEvent(blockPlaceEvent);
-
         return blockPlaceEvent.canBuild() && !blockPlaceEvent.isCancelled();
     }
 
@@ -182,12 +183,12 @@ public final class CompatibilityBlockData implements Compatibility {
     /**
      * Applies the skull data to the skull block.
      *
-     * @param skull     The skull block.
-     * @param grave     The grave associated with the skull.
-     * @param plugin    The Graves plugin instance.
-     * @param headType  The type of head.
+     * @param skull      The skull block.
+     * @param grave      The grave associated with the skull.
+     * @param plugin     The Graves plugin instance.
+     * @param headType   The type of head.
      * @param headBase64 The base64 encoded texture of the head.
-     * @param headName  The name of the head.
+     * @param headName   The name of the head.
      */
     private void applySkullData(Skull skull, Grave grave, Graves plugin, int headType, String headBase64, String headName) {
         if (headType == 0) {
@@ -199,10 +200,10 @@ public final class CompatibilityBlockData implements Compatibility {
                 }
             } else if (grave.getOwnerTexture() != null) {
                 SkinTextureUtil.setSkullBlockTexture(skull, grave.getOwnerName(), grave.getOwnerTexture());
-            } else if (headBase64 != null && !headBase64.equals("")) {
+            } else if (headBase64 != null && !headBase64.isEmpty()) {
                 SkinTextureUtil.setSkullBlockTexture(skull, grave.getOwnerName(), headBase64);
             }
-        } else if (headType == 1 && headBase64 != null && !headBase64.equals("")) {
+        } else if (headType == 1 && headBase64 != null && !headBase64.isEmpty()) {
             SkinTextureUtil.setSkullBlockTexture(skull, grave.getOwnerName(), headBase64);
         } else if (headType == 2 && headName != null && headName.length() <= 16) {
             try {
@@ -251,14 +252,11 @@ public final class CompatibilityBlockData implements Compatibility {
      * @return The texture of the entity as a string, or null if no texture is available.
      */
     private String getEntityTexture(EntityType entityType) {
-        switch (entityType) {
-            case ZOMBIE:
-                return "base64_texture_for_zombie";
-            case SKELETON:
-                return "base64_texture_for_skeleton";
-            default:
-                return null;
-        }
+        return switch (entityType) {
+            case ZOMBIE -> "base64_texture_for_zombie";
+            case SKELETON -> "base64_texture_for_skeleton";
+            default -> null;
+        };
     }
 
     /**
@@ -271,10 +269,8 @@ public final class CompatibilityBlockData implements Compatibility {
     public String getSkullTexture(ItemStack itemStack) {
         if (itemStack.getType() == Material.PLAYER_HEAD && itemStack.getItemMeta() != null) {
             SkullMeta skullMeta = (SkullMeta) itemStack.getItemMeta();
-
             return extractSkullTexture(skullMeta);
         }
-
         return null;
     }
 
@@ -287,7 +283,6 @@ public final class CompatibilityBlockData implements Compatibility {
     private String extractSkullTexture(SkullMeta skullMeta) {
         try {
             Field profileField = skullMeta.getClass().getDeclaredField("profile");
-
             profileField.setAccessible(true);
 
             GameProfile gameProfile = (GameProfile) profileField.get(skullMeta);
@@ -295,25 +290,31 @@ public final class CompatibilityBlockData implements Compatibility {
             if (gameProfile != null && getTexturesKey(gameProfile)) {
                 try {
                     Collection<Property> propertyCollection = gameProfile.properties().get("textures");
-
                     if (!propertyCollection.isEmpty()) {
-                        try {
-                            return propertyCollection.stream().findFirst().get().value();
-                        } catch (NoSuchMethodError blah) {
-                            return propertyCollection.stream().findFirst().get().getValue();
-                        }
-
+                        return propertyCollection.stream()
+                                .findFirst()
+                                .map(p -> {
+                                    try {
+                                        return p.value();
+                                    } catch (NoSuchMethodError ignored) {
+                                        return p.getValue();
+                                    }
+                                })
+                                .orElse(null);
                     }
-                } catch (NoSuchMethodError bleh) {
+                } catch (NoSuchMethodError ignored) {
                     Collection<Property> propertyCollection = gameProfile.getProperties().get("textures");
-
                     if (!propertyCollection.isEmpty()) {
-                        try {
-                            return propertyCollection.stream().findFirst().get().value();
-                        } catch (NoSuchMethodError blah) {
-                            return propertyCollection.stream().findFirst().get().getValue();
-                        }
-
+                        return propertyCollection.stream()
+                                .findFirst()
+                                .map(p -> {
+                                    try {
+                                        return p.value();
+                                    } catch (NoSuchMethodError ignored2) {
+                                        return p.getValue();
+                                    }
+                                })
+                                .orElse(null);
                     }
                 }
             }
@@ -324,7 +325,6 @@ public final class CompatibilityBlockData implements Compatibility {
 
         return null;
     }
-
 
     /**
      * Returns whether the profile has a "textures" property

@@ -2,6 +2,7 @@ package com.ranull.graves.data;
 
 import org.bukkit.Location;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.UUID;
 
@@ -9,6 +10,10 @@ import java.util.UUID;
  * Represents block data associated with a grave.
  */
 public class BlockData implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     /**
      * The location of the grave in the world.
      * <p>

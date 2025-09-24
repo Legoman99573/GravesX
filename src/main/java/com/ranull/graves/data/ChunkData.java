@@ -3,6 +3,7 @@ package com.ranull.graves.data;
 import org.bukkit.Location;
 import org.bukkit.World;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
@@ -12,6 +13,10 @@ import java.util.UUID;
  * Represents data for a specific chunk in the game world, including block and entity data.
  */
 public class ChunkData implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     /**
      * The world in which the grave is located.
      * <p>
