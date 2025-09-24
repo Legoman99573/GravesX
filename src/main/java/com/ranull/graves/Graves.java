@@ -78,7 +78,6 @@ public class Graves extends JavaPlugin {
     private boolean deferModuleLoad;
     private DependencyEnableListener depListener;
 
-
     @Override
     public void onLoad() {
         File gravesDirectory = new File(getDataFolder().getParentFile(), "Graves");
@@ -159,9 +158,7 @@ public class Graves extends JavaPlugin {
             KeepInventoryDetector.logWorldsWithGameruleKeepInventoryTrue(this);
         });
 
-        getGravesXScheduler().runTaskLater(() -> {
-            KeepInventoryDetector.install(this);
-        }, 1L);
+        getGravesXScheduler().runTaskLater(() -> KeepInventoryDetector.install(this), 1L);
 
         getServer().getPluginManager().registerEvents(new LateEnableHook(), this);
 
@@ -233,7 +230,6 @@ public class Graves extends JavaPlugin {
             getLogger().severe("Failed to unload IntegrationManager. Cause: " + e.getCause());
         }
 
-
         if (recipeManager != null) {
             getLogger().info("Unloading RecipeManager...");
             try {
@@ -279,31 +275,23 @@ public class Graves extends JavaPlugin {
         String storageType = Objects.requireNonNull(getConfig().getString("settings.storage.type")).toUpperCase();
 
         switch (storageType) {
-            case "POSTGRESQL":
-                libraryLoaderUtil.loadLibrary("org{}postgresql", "postgresql", "42.7.7", "org{}postgresql", "com{}ranull{}graves{}libraries{}postgresql", false);
-                break;
-            case "MARIADB":
+            case "POSTGRESQL" -> libraryLoaderUtil.loadLibrary("org{}postgresql", "postgresql", "42.7.7", "org{}postgresql", "com{}ranull{}graves{}libraries{}postgresql", false);
+            case "MARIADB" -> {
                 libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.4.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
                 libraryLoaderUtil.loadLibrary("org{}mariadb{}jdbc", "mariadb-java-client", "3.5.4", "org{}mariadb", "com{}ranull{}graves{}libraries{}mariadb", false);
-                break;
-            case "MYSQL":
-                libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.4.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
-                break;
-            case "H2":
-                libraryLoaderUtil.loadLibrary("com{}h2database", "h2", "2.3.232", "org{}h2", "com{}ranull{}graves{}libraries{}h2", false, "https://repo1.maven.org/maven2/");
-                break;
-            case "MSSQL":
+            }
+            case "MYSQL" -> libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.4.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
+            case "H2" -> libraryLoaderUtil.loadLibrary("com{}h2database", "h2", "2.3.232", "org{}h2", "com{}ranull{}graves{}libraries{}h2", false, "https://repo1.maven.org/maven2/");
+            case "MSSQL" -> {
                 String jdbcVersion;
-
                 try {
                     Class.forName("java.nio.file.Files");
                     jdbcVersion = "13.1.1.jre11-preview";
                 } catch (ClassNotFoundException e) {
                     jdbcVersion = "13.1.1.jre8-preview";
                 }
-
                 libraryLoaderUtil.loadLibrary("com{}microsoft{}sqlserver", "mssql-jdbc", jdbcVersion, "com{}microsoft", "com{}ranull{}graves{}libraries{}microsoft", false);
-                break;
+            }
         }
         libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-api", "4.24.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
         libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-minimessage", "4.24.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
@@ -382,103 +370,61 @@ public class Graves extends JavaPlugin {
     private void registerMetrics() {
         Metrics metrics = new Metrics((Plugin) this, getMetricsID());
 
-        metrics.addCustomChart(new SingleLineChart("graves", new Callable<Integer>() {
-            @Override
-            public Integer call() throws Exception {
-                return cacheManager.getGraveMap().size();
+        metrics.addCustomChart(new SingleLineChart("graves", () -> cacheManager.getGraveMap().size()));
+
+        metrics.addCustomChart(new SimplePie("permission_handler", () -> {
+            if (getIntegrationManager().hasLuckPermsHandler()) {
+                return "LuckPerms";
+            } else if (getIntegrationManager().hasVaultPermProvider()) {
+                return "Vault";
+            } else {
+                return "Bukkit";
             }
         }));
 
-        metrics.addCustomChart(new SimplePie("permission_handler", new Callable<String>() {
-            @Override
-            public String call() throws Exception {
-                if (getIntegrationManager().hasLuckPermsHandler()) {
-                    return "LuckPerms";
-                } else if (getIntegrationManager().hasVaultPermProvider()) {
-                    return "Vault";
-                } else {
-                    return "Bukkit";
-                }
+        metrics.addCustomChart(new SimplePie("database", () -> getDataManager().getType()));
+
+        metrics.addCustomChart(new SimplePie("plugin_release", () -> {
+            if (isDevelopmentBuild) {
+                return "Development Build";
+            } else if (isOutdatedBuild) {
+                return "Outdated Build";
+            } else if (isUnknownBuild) {
+                return "Unknown Build";
+            } else {
+                return "Production Build";
             }
         }));
 
-        metrics.addCustomChart(new SimplePie("database", new Callable<String>() {
-            @Override
-            public String call() throws Exception {
-                return getDataManager().getType();
-            }
-        }));
-
-        metrics.addCustomChart(new SimplePie("plugin_release", new Callable<String>() {
-            @Override
-            public String call() throws Exception {
-                if (isDevelopmentBuild) {
-                    return "Development Build";
-                } else if (isOutdatedBuild) {
-                    return "Outdated Build";
-                } else if (isUnknownBuild) {
-                    return "Unknown Build";
-                } else {
-                    return "Production Build";
-                }
-            }
-        }));
-
-        metrics.addCustomChart(new DrilldownPie("database_versions", new Callable<Map<String, Map<String, Integer>>>() {
-            @Override
-            public Map<String, Map<String, Integer>> call() throws Exception {
-                return getDataManager().getDatabaseVersions();
-            }
-        }));
+        metrics.addCustomChart(new DrilldownPie("database_versions", (Callable<Map<String, Map<String, Integer>>>) () -> getDataManager().getDatabaseVersions()));
     }
 
     private void registerMetricsLegacy() {
         Metrics metricsLegacy = new Metrics((Plugin) this, getMetricsIDLegacy());
 
-        metricsLegacy.addCustomChart(new SingleLineChart("graves", new Callable<Integer>() {
-            @Override
-            public Integer call() throws Exception {
-                return cacheManager.getGraveMap().size();
+        metricsLegacy.addCustomChart(new SingleLineChart("graves", () -> cacheManager.getGraveMap().size()));
+
+        metricsLegacy.addCustomChart(new SimplePie("permission_handler", () -> {
+            if (getIntegrationManager().hasLuckPermsHandler()) {
+                return "LuckPerms";
+            } else if (getIntegrationManager().hasVaultPermProvider()) {
+                return "Vault";
+            } else {
+                return "Bukkit";
             }
         }));
 
-        metricsLegacy.addCustomChart(new SimplePie("permission_handler", new Callable<String>() {
-            @Override
-            public String call() throws Exception {
-                if (getIntegrationManager().hasLuckPermsHandler()) {
-                    return "LuckPerms";
-                } else if (getIntegrationManager().hasVaultPermProvider()) {
-                    return "Vault";
-                } else {
-                    return "Bukkit";
-                }
+        metricsLegacy.addCustomChart(new SimplePie("database", () -> getDataManager().getType()));
+
+        metricsLegacy.addCustomChart(new SimplePie("plugin_release", () -> {
+            if (isDevelopmentBuild) {
+                return "Development Build";
+            } else {
+                return "Production Build";
             }
         }));
 
-        metricsLegacy.addCustomChart(new SimplePie("database", new Callable<String>() {
-            @Override
-            public String call() throws Exception {
-                return getDataManager().getType();
-            }
-        }));
-
-        metricsLegacy.addCustomChart(new SimplePie("plugin_release", new Callable<String>() {
-            @Override
-            public String call() throws Exception {
-                if (isDevelopmentBuild) {
-                    return "Development Build";
-                } else {
-                    return "Production Build";
-                }
-            }
-        }));
-
-        metricsLegacy.addCustomChart(new DrilldownPie("database_versions", new Callable<Map<String, Map<String, Integer>>>() {
-            @Override
-            public Map<String, Map<String, Integer>> call() throws Exception {
-                return getDataManager().getDatabaseVersions();
-            }
-        }));
+        metricsLegacy.addCustomChart(new DrilldownPie("database_versions", (Callable<Map<String, Map<String, Integer>>>) () -> getDataManager().getDatabaseVersions()));
     }
 
     public void registerListeners() {
@@ -637,19 +583,10 @@ public class Graves extends JavaPlugin {
      */
     public void integrationMessage(String string, String messageType) {
         switch (messageType) {
-            case "warning":
-            case "warn":
-                getLogger().warning("Integration: " + string);
-                break;
-            case "severe":
-            case "error":
-                getLogger().severe("Integration: " + string);
-                break;
-            case "info":
-            case "debug":
-            default:
-                getLogger().info("Integration: " + string);
-                break;
+            case "warning", "warn" -> getLogger().warning("Integration: " + string);
+            case "severe", "error" -> getLogger().severe("Integration: " + string);
+            case "info", "debug" -> getLogger().info("Integration: " + string);
+            default -> getLogger().info("Integration: " + string);
         }
     }
 
@@ -725,22 +662,20 @@ public class Graves extends JavaPlugin {
     private void updateConfigFile(String fileName, int currentConfigVersion, boolean shouldUpdateConfigVersion) {
         File configFile = new File(getDataFolder(), "config/" + fileName);
         if (configFile.exists()) {
-            try {
+            try (InputStream resourceStream = getResource("config/" + fileName)) {
                 // Use ConfigUpdater to update the file
                 String resourceName = "config/" + fileName;
-                InputStream resourceStream = getResource(resourceName);
 
                 if (resourceStream == null) {
                     getLogger().warning("Resource " + resourceName + " not found in the JAR.");
                     return;
                 }
 
-                // Update configuration
                 ConfigUpdater.update(
-                        this,             // Pass the plugin instance
-                        resourceName,           // Resource name in JAR
-                        configFile,             // File to update
-                        Collections.emptyList() // Empty list if no sections to ignore
+                        this,
+                        resourceName,
+                        configFile,
+                        Collections.emptyList()
                 );
 
                 if (shouldUpdateConfigVersion) {
@@ -772,14 +707,9 @@ public class Graves extends JavaPlugin {
                 String latestVersion = getLatestVersion();
                 String installedVersion = getDescription().getVersion();
 
-                // Debugging statements
-                //getLogger().info("Installed Version: " + installedVersion);
-                //getLogger().info("Latest Version: " + latestVersion);
-
                 if (latestVersion != null && !installedVersion.equalsIgnoreCase(latestVersion)) {
                     try {
                         int comparisonResult = compareVersions(installedVersion, latestVersion);
-                        // getLogger().info("Version Comparison Result: " + comparisonResult);
 
                         if (comparisonResult < 0) {
                             isOutdatedBuild = true;
@@ -1206,9 +1136,7 @@ public class Graves extends JavaPlugin {
         List<String> permissionList = new ArrayList<>();
         List<String> permissionListSorted = new ArrayList<>();
 
-        if (entity instanceof Player) {
-            Player player = (Player) entity;
-
+        if (entity instanceof Player player) {
             for (PermissionAttachmentInfo permissionAttachmentInfo : player.getEffectivePermissions()) {
                 if (permissionAttachmentInfo.getPermission().startsWith("graves.permission.")) {
                     String permission = permissionAttachmentInfo.getPermission()
@@ -1370,7 +1298,7 @@ public class Graves extends JavaPlugin {
         seen.add(t);
         getLogger().severe(prefix + t);
         for (StackTraceElement e : t.getStackTrace()) {
-            getLogger().severe("  at " + e.toString());
+            getLogger().severe("  at " + e);
         }
         Throwable[] suppressed = t.getSuppressed();
         if (suppressed != null) {
