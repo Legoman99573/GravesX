@@ -31,13 +31,10 @@ public class BlockPlaceListener implements Listener {
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockPlace(BlockPlaceEvent event) {
-        // Get the block being placed
         Block block = event.getBlock();
         Player player = event.getPlayer();
-        // Check if the block being placed is a grave
         Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
 
-        // If the block is a grave or if the item being used is a token, cancel the event
         if (isGraveBlock(grave) || isTokenItem(event)) {
             event.setCancelled(true);
         } else if (plugin.getGraveManager().isNearGrave(block.getLocation())) {

@@ -2,7 +2,6 @@ package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
-import dev.cwhead.GravesX.compatibility.CompatibilityParticleEnum;
 import dev.cwhead.GravesX.compatibility.CompatibilitySoundEnum;
 import dev.cwhead.GravesX.event.GravePistonExtendEvent;
 import org.bukkit.Location;
@@ -53,7 +52,11 @@ public class BlockPistonExtendListener implements Listener {
         }
     }
 
-    private void handleGravePistonMove(BlockPistonExtendEvent event, Grave grave, Block piston, BlockFace direction, List<Block> blocks) {
+    private void handleGravePistonMove(BlockPistonExtendEvent event,
+                                       Grave grave,
+                                       Block piston,
+                                       BlockFace direction,
+                                       List<Block> blocks) {
         boolean allowPush = plugin.getConfig("drop.piston-extend", grave).getBoolean("drop.piston-extend", true);
         plugin.debugMessage("allowPush value for grave at " + grave.getLocationDeath() + " is: " + allowPush, 2);
 
@@ -61,19 +64,22 @@ public class BlockPistonExtendListener implements Listener {
             plugin.debugMessage("Push is forbidden for grave at " + grave.getLocationDeath() + " with piston at " + piston.getLocation(), 2);
             event.setCancelled(true);
             return;
-        } else {
-            plugin.debugMessage("Push is allowed for grave at " + grave.getLocationDeath() + " with piston at " + piston.getLocation(), 2);
         }
 
-        GravePistonExtendEvent modern = new GravePistonExtendEvent(grave, piston.getLocation(), piston, direction, blocks);
+        plugin.debugMessage("Push is allowed for grave at " + grave.getLocationDeath() + " with piston at " + piston.getLocation(), 2);
+
+        GravePistonExtendEvent modern =
+                new GravePistonExtendEvent(grave, piston.getLocation(), piston, direction, blocks);
         plugin.debugMessage("Created modern GravePistonExtendEvent for grave at " + grave.getLocationDeath() + " with piston at " + piston.getLocation(), 2);
         plugin.getServer().getPluginManager().callEvent(modern);
 
-        com.ranull.graves.event.GravePistonExtendEvent legacy = new com.ranull.graves.event.GravePistonExtendEvent(grave, piston.getLocation(), piston, direction, blocks);
+        com.ranull.graves.event.GravePistonExtendEvent legacy =
+                new com.ranull.graves.event.GravePistonExtendEvent(grave, piston.getLocation(), piston, direction, blocks);
         plugin.debugMessage("Created legacy GravePistonExtendEvent for grave at " + grave.getLocationDeath() + " with piston at " + piston.getLocation(), 2);
         plugin.getServer().getPluginManager().callEvent(legacy);
 
-        if (!modern.isCancelled() || !modern.isAddon() || !legacy.isCancelled() || !legacy.isAddon()) {
+        // Proceed only if neither event is cancelled nor marked as addon
+        if (!(modern.isCancelled() || modern.isAddon() || legacy.isCancelled() || legacy.isAddon())) {
             plugin.debugMessage("Piston move allowed for grave at " + grave.getLocationDeath() + ". Breaking grave...", 2);
 
             try {
@@ -82,7 +88,7 @@ public class BlockPistonExtendListener implements Listener {
                 try {
                     loc.getWorld().playSound(loc, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("ENTITY_GENERIC_EXPLODE")), 1.0f, 1.0f);
                 } catch (Exception e) {
-                    loc.getWorld().playSound(loc, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("EXPLODE")), 1.0f, 1.0f); // pre 1.9
+                    loc.getWorld().playSound(loc, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("EXPLODE")), 1.0f, 1.0f);
                 }
             } catch (Exception ignored) {
                 // ignored

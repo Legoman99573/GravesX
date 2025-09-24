@@ -32,7 +32,7 @@ public class EntityDamageByEntityListener implements Listener {
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
-        Entity entity = event.getEntity();
+        final Entity entity = event.getEntity();
 
         if (shouldCancelDamage(entity)) {
             event.setCancelled(true);
@@ -46,7 +46,8 @@ public class EntityDamageByEntityListener implements Listener {
      * @return True if the damage should be cancelled, false otherwise.
      */
     private boolean shouldCancelDamage(Entity entity) {
-        return (entity instanceof ItemFrame || (isVersion1_7OrAbove() && entity instanceof ArmorStand))
+        return (entity instanceof ItemFrame
+                || (isVersion1_7OrAbove() && entity instanceof ArmorStand))
                 && isAssociatedWithGrave(entity);
     }
 
@@ -63,7 +64,7 @@ public class EntityDamageByEntityListener implements Listener {
      * Checks if the entity is associated with a grave.
      *
      * @param entity The entity to check.
-     * @return True if the entity is associated with a grave, false otherwise.
+     * @return True if the entity is associated with a grave, otherwise false.
      */
     private boolean isAssociatedWithGrave(Entity entity) {
         return plugin.getEntityDataManager().getGrave(entity) != null;

@@ -2,6 +2,7 @@ package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
 import org.bukkit.block.Block;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -33,7 +34,7 @@ public class PlayerBucketListener implements Listener {
      */
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onPlayerBucketEmpty(PlayerBucketEmptyEvent event) {
-        Block block = getTargetBlock(event);
+        final Block block = getTargetBlock(event);
 
         if (isGraveBlock(block)) {
             preventBucketUsage(event, block);
@@ -50,7 +51,7 @@ public class PlayerBucketListener implements Listener {
      * @param event The PlayerBucketFillEvent to handle.
      */
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
-    public void onPlayerBucketFill(PlayerBucketFillEvent event) {
+    public void onPlayerBucketFill(final PlayerBucketFillEvent event) {
         Block block = event.getBlockClicked();
 
         if (isGraveBlock(block)) {
@@ -87,12 +88,13 @@ public class PlayerBucketListener implements Listener {
      * @param event The event to cancel.
      * @param block The block being interacted with.
      */
-    private void preventBucketUsage(org.bukkit.event.Event event, Block block) {
+    private void preventBucketUsage(Event event, Block block) {
         block.getState().update();
-        if (event instanceof PlayerBucketEmptyEvent) {
-            ((PlayerBucketEmptyEvent) event).setCancelled(true);
-        } else if (event instanceof PlayerBucketFillEvent) {
-            ((PlayerBucketFillEvent) event).setCancelled(true);
+
+        if (event instanceof PlayerBucketEmptyEvent e) {
+            e.setCancelled(true);
+        } else if (event instanceof PlayerBucketFillEvent e) {
+            e.setCancelled(true);
         }
     }
 }

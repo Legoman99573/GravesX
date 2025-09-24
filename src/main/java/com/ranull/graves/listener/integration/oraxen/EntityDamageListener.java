@@ -18,7 +18,6 @@ public class EntityDamageListener implements Listener {
 
     /**
      * @deprecated Recommend Nexo as a replacement.
-     *
      * Constructs a new EntityDamageListener with the specified Oraxen instance.
      *
      * @param oraxen The Oraxen instance to use.
@@ -30,7 +29,6 @@ public class EntityDamageListener implements Listener {
 
     /**
      * @deprecated Recommend Nexo as a replacement.
-     *
      * Handles EntityDamageEvent. If the entity being damaged is an ItemFrame and is associated with a grave,
      * it cancels the damage event.
      *
@@ -46,7 +44,6 @@ public class EntityDamageListener implements Listener {
 
     /**
      * @deprecated Recommend Nexo as a replacement.
-     *
      * Checks if the entity is an ItemFrame and has an associated grave.
      *
      * @param event The EntityDamageEvent.
@@ -54,6 +51,7 @@ public class EntityDamageListener implements Listener {
      */
     @Deprecated
     private boolean isItemFrameAndHasGrave(EntityDamageEvent event) {
-        return event.getEntity() instanceof ItemFrame && oraxen.getGrave(event.getEntity()) != null;
+        return event.getEntity() instanceof ItemFrame
+                && oraxen.getGrave(event.getEntity()) != null;
     }
 }

@@ -48,8 +48,8 @@ public class FurnitureBreakListener implements Listener {
 
         // If the furniture is part of a grave and matches the configured ItemsAdder furniture, cancel the event
         if (grave != null) {
-            if (plugin.getConfig("itemsadder.furniture.enabled", player).getBoolean("itemsadder.furniture.enabled") &&
-                    furnitureId.equals(plugin.getConfig("itemsadder.furniture.name", player).getString("itemsadder.furniture.name"))) {
+            if (plugin.getConfig("itemsadder.furniture.enabled", player).getBoolean("itemsadder.furniture.enabled")
+                    && furnitureId.equals(plugin.getConfig("itemsadder.furniture.name", player).getString("itemsadder.furniture.name"))) {
                 event.setCancelled(true);
             }
         }

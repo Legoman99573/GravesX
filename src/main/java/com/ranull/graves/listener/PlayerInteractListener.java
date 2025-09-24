@@ -53,13 +53,13 @@ public class PlayerInteractListener implements Listener {
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
 
-        if (isMainHandInteraction(event) && isNotSpectatorMode(player)) {
-            if (event.getClickedBlock() != null) {
-                handleBlockInteraction(event, player);
-            }
-            if (event.getItem() != null) {
-                handleCompassInteraction(event, player);
-            }
+        if (!isMainHandInteraction(event) || !isNotSpectatorMode(player)) return;
+
+        if (event.getClickedBlock() != null) {
+            handleBlockInteraction(event, player);
+        }
+        if (event.getItem() != null) {
+            handleCompassInteraction(event, player);
         }
     }
 
@@ -70,7 +70,8 @@ public class PlayerInteractListener implements Listener {
      * @return True if the interaction is performed with the main hand, false otherwise.
      */
     private boolean isMainHandInteraction(PlayerInteractEvent event) {
-        return !plugin.getVersionManager().hasSecondHand() || (event.getHand() != null && event.getHand() == EquipmentSlot.HAND);
+        return !plugin.getVersionManager().hasSecondHand()
+                || (event.getHand() != null && event.getHand() == EquipmentSlot.HAND);
     }
 
     /**
@@ -91,9 +92,7 @@ public class PlayerInteractListener implements Listener {
      */
     private void handleBlockInteraction(PlayerInteractEvent event, Player player) {
         Block block = event.getClickedBlock();
-        if (block == null) {
-            return; // Exit early if block is null
-        }
+        if (block == null) return;
 
         if (event.useInteractedBlock() != Event.Result.DENY && event.getAction() == Action.RIGHT_CLICK_BLOCK) {
             handleGraveInteraction(event, player, block);
@@ -108,31 +107,25 @@ public class PlayerInteractListener implements Listener {
      * @param block  The block being interacted with.
      */
     private void handleGraveInteraction(PlayerInteractEvent event, Player player, Block block) {
-        if (block == null) {
-            return; // Exit early if block is null
-        }
-
         Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
 
         if (grave == null) {
             Block blockRelative = block.getRelative(event.getBlockFace());
-
             if (!blockRelative.getType().isSolid()) {
                 grave = plugin.getBlockManager().getGraveFromBlock(blockRelative);
             }
         }
 
-        if (grave != null) {
-            event.setCancelled(true);
-            try {
-                Grave finalGrave = grave;
-                plugin.getGravesXScheduler().runTaskLater(() -> {
-                    plugin.getGraveManager().openGrave(player, block.getLocation(), finalGrave);
-                }, 1L);
-            } catch (Exception e) {
-                plugin.getLogger().severe("Failed to open grave at x:" + block.getLocation().getBlockX() + " y:" + block.getLocation().getBlockY() + " z:" + block.getLocation().getBlockZ());
-                plugin.logStackTrace(e);
-            }
+        if (grave == null) return;
+
+        event.setCancelled(true);
+        Grave finalGrave = grave;
+        try {
+            plugin.getGravesXScheduler().runTaskLater(() ->
+                    plugin.getGraveManager().openGrave(player, block.getLocation(), finalGrave), 1L);
+        } catch (Exception e) {
+            plugin.getLogger().severe("Failed to open grave at x:" + block.getX() + " y:" + block.getY() + " z:" + block.getZ());
+            plugin.logStackTrace(e);
         }
     }
 
@@ -144,14 +137,10 @@ public class PlayerInteractListener implements Listener {
      */
     private void handleCompassInteraction(PlayerInteractEvent event, Player player) {
         ItemStack itemStack = event.getItem();
-        if (itemStack == null) {
-            return;
-        }
+        if (itemStack == null) return;
 
         UUID uuid = plugin.getEntityManager().getGraveUUIDFromItemStack(itemStack);
-        if (uuid == null) {
-            return;
-        }
+        if (uuid == null) return;
 
         if (!plugin.getCacheManager().getGraveMap().containsKey(uuid)) {
             player.getInventory().remove(itemStack);
@@ -216,14 +205,14 @@ public class PlayerInteractListener implements Listener {
                     plugin.getParticleManager().startCompassParticleTrail(
                             player.getLocation(),
                             grave.getLocationDeath(),
-                            plugin.getVersionManager().getParticleForVersion(Objects.requireNonNull(
-                                            plugin.getConfig("compass.particles.particle", grave)
-                                                    .getString("compass.particles.particle"))
-                                    .toUpperCase()),
+                            plugin.getVersionManager().getParticleForVersion(
+                                    Objects.requireNonNull(plugin.getConfig("compass.particles.particle", grave)
+                                            .getString("compass.particles.particle")).toUpperCase()
+                            ),
                             plugin.getConfig("compass.particles.count", grave)
                                     .getInt("compass.particles.count", 5),
                             plugin.getConfig("compass.particles.speed", grave)
-                                    .getDouble("compass.particles.speed", 0.3),
+                                    .getDouble("compass.particles.speed", 0.3D),
                             plugin.getConfig("compass.particles.duration", grave)
                                     .getInt("compass.particles.duration"),
                             player.getUniqueId()
@@ -234,5 +223,4 @@ public class PlayerInteractListener implements Listener {
 
         event.setCancelled(true);
     }
-
 }

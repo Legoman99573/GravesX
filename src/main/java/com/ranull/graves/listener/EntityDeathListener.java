@@ -4,8 +4,13 @@ import com.ranull.graves.Graves;
 import com.ranull.graves.compatibility.CompatibilityInventoryView;
 import com.ranull.graves.data.BlockData;
 import com.ranull.graves.type.Grave;
-import com.ranull.graves.util.*;
-import dev.cwhead.GravesX.event.*;
+import com.ranull.graves.util.ExperienceUtil;
+import com.ranull.graves.util.LocationUtil;
+import dev.cwhead.GravesX.event.GraveBlockPlaceEvent;
+import dev.cwhead.GravesX.event.GraveCreateEvent;
+import dev.cwhead.GravesX.event.GraveObituaryAddEvent;
+import dev.cwhead.GravesX.event.GravePlayerHeadDropEvent;
+import dev.cwhead.GravesX.event.GraveProtectionCreateEvent;
 import me.jay.GravesX.util.SkinSignatureUtil;
 import me.jay.GravesX.util.SkinTextureUtil;
 import org.bukkit.GameRule;
@@ -13,7 +18,11 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.entity.*;
+import org.bukkit.entity.Creature;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Zombie;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -27,7 +36,6 @@ import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.MetadataValue;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 /**
@@ -74,8 +82,7 @@ public class EntityDeathListener implements Listener {
 
         final List<String> permissionList = isPlayer ? plugin.getPermissionList(livingEntity) : null;
 
-        if (!isPlayer && livingEntity instanceof Zombie) {
-            Zombie zombie = (Zombie) livingEntity;
+        if (!isPlayer && livingEntity instanceof Zombie zombie) {
             if (isConfiguredZombieType(zombie) && hasGravesXMetadata(zombie)) {
                 removePlayerSkullFromDrops(zombie, event);
             }
@@ -115,7 +122,7 @@ public class EntityDeathListener implements Listener {
         final List<ItemStack> removedItemStackList = getRemovedItemStacks(livingEntity);
 
         if (isPlayer && pde != null && location.getWorld() != null) {
-            InventoryView view = player.getOpenInventory();
+           InventoryView view = player.getOpenInventory();
             if (view != null) {
                 Inventory top = CompatibilityInventoryView.getTopInventory(view);
                 if (top != null && (top.getType() == InventoryType.WORKBENCH || top.getType() == InventoryType.CRAFTING)) {
@@ -163,7 +170,7 @@ public class EntityDeathListener implements Listener {
      * @return true if the zombie is of the configured type, false otherwise
      */
     private boolean isConfiguredZombieType(Zombie zombie) {
-        String configuredZombieType = plugin.getConfig().getString("zombie.type", "ZOMBIE").toUpperCase();
+        final String configuredZombieType = plugin.getConfig().getString("zombie.type", "ZOMBIE").toUpperCase();
         return zombie.getType() == EntityType.valueOf(configuredZombieType);
     }
 
@@ -199,7 +206,7 @@ public class EntityDeathListener implements Listener {
      */
     private List<ItemStack> getRemovedItemStacks(LivingEntity livingEntity) {
         List<ItemStack> list = new ArrayList<>();
-        var map = plugin.getCacheManager().getRemovedItemStackMap();
+        Map<UUID, List<ItemStack>> map = plugin.getCacheManager().getRemovedItemStackMap();
         if (map.containsKey(livingEntity.getUniqueId())) {
             list.addAll(map.get(livingEntity.getUniqueId()));
             map.remove(livingEntity.getUniqueId());
@@ -509,7 +516,7 @@ public class EntityDeathListener implements Listener {
     private void setupGrave(Grave grave, LivingEntity livingEntity, String entityName, List<String> permissionList) {
         grave.setOwnerType(livingEntity.getType());
         grave.setOwnerName(entityName);
-        grave.setOwnerNameDisplay(livingEntity instanceof Player ? ((Player) livingEntity).getDisplayName() : entityName);
+        grave.setOwnerNameDisplay(livingEntity instanceof Player p ? p.getDisplayName() : entityName);
         grave.setOwnerUUID(livingEntity.getUniqueId());
         grave.setPermissionList(permissionList);
         grave.setYaw(livingEntity.getLocation().getYaw());
@@ -534,8 +541,7 @@ public class EntityDeathListener implements Listener {
         plugin.debugMessage("Experience Percentage for " + grave.getUUID() + ": " + pct, 2);
 
         if (pct >= 0) {
-            if (livingEntity instanceof Player) {
-                Player p = (Player) livingEntity;
+            if (livingEntity instanceof Player p) {
                 if (plugin.hasGrantedPermission("graves.experience", p)) {
                     int adjusted = ExperienceUtil.getDropPercent(ExperienceUtil.getPlayerExperience(p), pct);
                     grave.setExperience(adjusted);
@@ -572,8 +578,7 @@ public class EntityDeathListener implements Listener {
             grave.setKillerUUID(livingEntity.getKiller().getUniqueId());
         } else if (livingEntity.getLastDamageCause() != null) {
             EntityDamageEvent e = livingEntity.getLastDamageCause();
-            if (e.getCause() == EntityDamageEvent.DamageCause.ENTITY_ATTACK && e instanceof EntityDamageByEntityEvent) {
-                EntityDamageByEntityEvent by = (EntityDamageByEntityEvent) e;
+            if (e.getCause() == EntityDamageEvent.DamageCause.ENTITY_ATTACK && e instanceof EntityDamageByEntityEvent by) {
                 grave.setKillerUUID(by.getDamager().getUniqueId());
                 grave.setKillerType(by.getDamager().getType());
                 grave.setKillerName(plugin.getEntityManager().getEntityName(by.getDamager()));
@@ -605,7 +610,6 @@ public class EntityDeathListener implements Listener {
             }
         }
     }
-
 
     /**
      * Places the grave at the specified location.
@@ -731,7 +735,7 @@ public class EntityDeathListener implements Listener {
                                 + ", y: " + location.getBlockY()
                                 + ", z: " + location.getBlockZ() + ".", 2);
                     } else {
-                        Location graveLoc = grave.getLocationDeath();
+                        final Location graveLoc = grave.getLocationDeath();
                         plugin.debugMessage("World not found. Player Head added to " + livingEntity.getName()
                                 + "'s grave at location x: " + graveLoc.getBlockX()
                                 + ", y: " + graveLoc.getBlockY()
@@ -853,8 +857,8 @@ public class EntityDeathListener implements Listener {
             com.ranull.graves.event.GraveBlockPlaceEvent legacy = new com.ranull.graves.event.GraveBlockPlaceEvent(grave, loc, entry.getValue(), entry.getKey().getBlock(), livingEntity);
             plugin.getServer().getPluginManager().callEvent(legacy);
 
-            if (!modern.isCancelled() || !modern.isAddon() || !legacy.isCancelled() || !legacy.isAddon()) {
-                return;
+            if (modern.isCancelled() || modern.isAddon() || legacy.isCancelled() || legacy.isAddon()) {
+                continue;
             }
 
             Location effectiveLoc = modern.hasLocation() ? modern.getLocation()
@@ -876,9 +880,8 @@ public class EntityDeathListener implements Listener {
      * @param livingEntity  The entity that died.
      */
     private void handleFailedGravePlacement(EntityDeathEvent event, Grave grave, Location location, LivingEntity livingEntity) {
-        if (event instanceof PlayerDeathEvent
+        if (event instanceof PlayerDeathEvent pde
                 && plugin.getConfig("placement.failure-keep-inventory", grave).getBoolean("placement.failure-keep-inventory")) {
-            PlayerDeathEvent pde = (PlayerDeathEvent) event;
             try {
                 pde.setKeepLevel(true);
                 pde.setKeepInventory(true);

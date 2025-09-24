@@ -36,28 +36,34 @@ public class PlayerDeathListener implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerDeath(PlayerDeathEvent event) {
-        List<ItemStack> itemStackList = event.getDrops();
-        List<ItemStack> itemsToRemove = new ArrayList<>();
+        List<ItemStack> drops = event.getDrops();
+        List<ItemStack> toRemove = new ArrayList<>();
 
-        for (ItemStack itemStack : itemStackList) {
-            if (isCompassToRemove(event, itemStack)) {
-                itemsToRemove.add(itemStack);
+        for (ItemStack stack : drops) {
+            if (isCompassToRemove(event, stack)) {
+                toRemove.add(stack);
             }
         }
 
-        itemStackList.removeAll(itemsToRemove);
-        cacheRemainingItems(event, itemStackList);
+        drops.removeAll(toRemove);
+        cacheRemainingItems(event, drops);
     }
 
     /**
      * Checks if the given item stack is a compass that should be removed based on the plugin configuration.
      *
-     * @param event The PlayerDeathEvent.
+     * @param event     The PlayerDeathEvent.
      * @param itemStack The item stack to check.
      * @return True if the item stack is a compass that should be removed, false otherwise.
      */
     private boolean isCompassToRemove(PlayerDeathEvent event, ItemStack itemStack) {
-        return itemStack != null && itemStack.getType().toString().toLowerCase().contains("compass")
+        if (itemStack == null) return false;
+
+        // Support across MC versions: COMPASS (1.8+) and RECOVERY_COMPASS (1.19+)
+        String typeName = itemStack.getType().name(); // already upper-case
+        boolean isAnyCompass = typeName.contains("COMPASS");
+
+        return isAnyCompass
                 && plugin.getEntityManager().getGraveUUIDFromItemStack(itemStack) != null
                 && plugin.getConfig("compass.destroy", event.getEntity()).getBoolean("compass.destroy");
     }
@@ -66,10 +72,11 @@ public class PlayerDeathListener implements Listener {
      * Caches the remaining items from the drop list for later reference.
      *
      * @param event The PlayerDeathEvent.
-     * @param itemStackList The list of remaining item stacks.
+     * @param items The list of remaining item stacks.
      */
-    private void cacheRemainingItems(PlayerDeathEvent event, List<ItemStack> itemStackList) {
-        plugin.getCacheManager().getRemovedItemStackMap()
-                .put(event.getEntity().getUniqueId(), new ArrayList<>(itemStackList));
+    private void cacheRemainingItems(PlayerDeathEvent event, List<ItemStack> items) {
+        plugin.getCacheManager()
+                .getRemovedItemStackMap()
+                .put(event.getEntity().getUniqueId(), new ArrayList<>(items));
     }
 }

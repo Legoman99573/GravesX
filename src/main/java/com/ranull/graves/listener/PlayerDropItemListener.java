@@ -23,19 +23,19 @@ public class PlayerDropItemListener implements Listener {
     }
 
     /**
-     * Handles the PlayerDropItemEvent to remove items from the world if they are associated with graves.
+     * Handles the PlayerDropItemEvent to prevent dropping items that are associated with graves.
      *
      * If the dropped item is linked to a grave (i.e., it has a grave UUID associated with it),
-     * the item drop is cancelled, and the item is removed from the world.
+     * the item drop is cancelled and the item entity is removed to avoid dupes or desyncs.
      *
      * @param event The PlayerDropItemEvent to handle.
      */
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onPlayerDropItem(PlayerDropItemEvent event) {
-        ItemStack itemStack = event.getItemDrop().getItemStack();
-
-        if (isGraveItem(itemStack)) {
-            event.getItemDrop().remove();
+        ItemStack stack = event.getItemDrop().getItemStack();
+        if (isGraveItem(stack)) {
+            event.setCancelled(true);         // prevent the drop
+            event.getItemDrop().remove();     // remove spawned entity just in case
         }
     }
 
@@ -46,6 +46,6 @@ public class PlayerDropItemListener implements Listener {
      * @return True if the item stack is associated with a grave, false otherwise.
      */
     private boolean isGraveItem(ItemStack itemStack) {
-        return plugin.getEntityManager().getGraveUUIDFromItemStack(itemStack) != null;
+        return itemStack != null && plugin.getEntityManager().getGraveUUIDFromItemStack(itemStack) != null;
     }
 }

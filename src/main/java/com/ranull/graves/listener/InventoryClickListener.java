@@ -51,9 +51,10 @@ public class InventoryClickListener implements Listener {
     public void onInventoryClick(InventoryClickEvent event) {
         InventoryHolder inventoryHolder = event.getInventory().getHolder();
         Player player = (Player) event.getWhoClicked();
+
         if (inventoryHolder != null) {
-            if (inventoryHolder instanceof Grave) {
-                handleGraveInventoryClick(event, player, (Grave) inventoryHolder);
+            if (inventoryHolder instanceof Grave grave) {
+                handleGraveInventoryClick(event, player, grave);
             } else if (event.getWhoClicked() instanceof Player) {
                 handlePlayerInventoryClick(event, player, inventoryHolder);
             }
@@ -62,7 +63,6 @@ public class InventoryClickListener implements Listener {
                 handleShiftClick(event);
             }
             isCompassItem(event);
-
         }
     }
 
@@ -76,7 +76,6 @@ public class InventoryClickListener implements Listener {
         Inventory clickedInventory = event.getClickedInventory();
         if (clickedInventory == null) return;
 
-
         ItemStack item = event.getCursor();
         if (item == null || !item.hasItemMeta()) return;
 
@@ -88,16 +87,10 @@ public class InventoryClickListener implements Listener {
             if (graveUUID != null) {
                 Grave grave = plugin.getCacheManager().getGraveMap().get(graveUUID);
                 if (grave != null) {
-
-                    String compassName;
-                    if (plugin.getIntegrationManager().hasMiniMessage()) {
-                        String compassNameNew = StringUtil.parseString("&f" + plugin
-                                .getConfig("compass.name", grave).getString("compass.name"), grave, plugin);
-                        compassName = MiniMessage.parseString(compassNameNew);
-                    } else {
-                        compassName = StringUtil.parseString("&f" + plugin
-                                .getConfig("compass.name", grave).getString("compass.name"), grave, plugin);
-                    }
+                    String compassName = plugin.getIntegrationManager().hasMiniMessage()
+                            ? MiniMessage.parseString(StringUtil.parseString("&f" + plugin
+                            .getConfig("compass.name", grave).getString("compass.name"), grave, plugin))
+                            : StringUtil.parseString("&f" + plugin.getConfig("compass.name", grave).getString("compass.name"), grave, plugin);
 
                     if (itemMeta.getDisplayName().equals(compassName)) {
                         InventoryType inventoryType = event.getInventory().getType();
@@ -130,16 +123,10 @@ public class InventoryClickListener implements Listener {
             if (graveUUID != null) {
                 Grave grave = plugin.getCacheManager().getGraveMap().get(graveUUID);
                 if (grave != null) {
-
-                    String compassName;
-                    if (plugin.getIntegrationManager().hasMiniMessage()) {
-                        String compassNameNew = StringUtil.parseString("&f" + plugin
-                                .getConfig("compass.name", grave).getString("compass.name"), grave, plugin);
-                        compassName = MiniMessage.parseString(compassNameNew);
-                    } else {
-                        compassName = StringUtil.parseString("&f" + plugin
-                                .getConfig("compass.name", grave).getString("compass.name"), grave, plugin);
-                    }
+                    String compassName = plugin.getIntegrationManager().hasMiniMessage()
+                            ? MiniMessage.parseString(StringUtil.parseString("&f" + plugin
+                            .getConfig("compass.name", grave).getString("compass.name"), grave, plugin))
+                            : StringUtil.parseString("&f" + plugin.getConfig("compass.name", grave).getString("compass.name"), grave, plugin);
 
                     if (itemMeta.getDisplayName().equals(compassName)) {
                         InventoryType inventoryType = event.getInventory().getType();
@@ -159,17 +146,10 @@ public class InventoryClickListener implements Listener {
      * @return true if the inventory grants XP, false otherwise.
      */
     private boolean checkIfXPGivingInventory(InventoryType inventoryType) {
-        switch (inventoryType.name()) {
-            case "FURNACE":
-            case "BLAST_FURNACE":
-            case "SMOKER":
-            case "ANVIL":
-            case "GRINDSTONE":
-            case "HOPPER":
-                return true;
-            default:
-                return false;
-        }
+        return switch (inventoryType.name()) {
+            case "FURNACE", "BLAST_FURNACE", "SMOKER", "ANVIL", "GRINDSTONE", "HOPPER" -> true;
+            default -> false;
+        };
     }
 
     /**
@@ -192,78 +172,62 @@ public class InventoryClickListener implements Listener {
      * Handles inventory clicks when the inventory holder is a Grave.
      *
      * @param event  The InventoryClickEvent.
+     * @param player The Player clicking.
      * @param grave  The Grave inventory holder.
      */
-//    private void handleGraveInventoryClick(InventoryClickEvent event, Player player, Grave grave) {
-//        if (!grave.getGravePreview()) {
-//            if (plugin.getEntityManager().canOpenGrave(player, grave)) {
-//                // Schedule a task to update the grave's inventory in the data manager
-//                plugin.getGravesXScheduler().runTaskLater(plugin, () ->
-//                        plugin.getDataManager().updateGrave(grave, "inventory",
-//                                InventoryUtil.inventoryToString(grave.getInventory())), 1L);
-//            } else {
-//                event.setCancelled(true);
-//            }
-//        } else {
-//            event.setCancelled(true);
-//        }
-//    }
     private void handleGraveInventoryClick(InventoryClickEvent event, Player player, Grave grave) {
-        if (!grave.getGravePreview()) {
-            if (plugin.getEntityManager().canOpenGrave(player, grave)) {
-                Inventory clickedInventory = event.getClickedInventory();
-                InventoryAction action = event.getAction();
-                Inventory topInventory = CompatibilityInventoryView.getTopInventory(event); // The grave's inventory
-                Inventory bottomInventory = CompatibilityInventoryView.getBottomInventory(event); // The player's inventory
-                Grave.StorageMode storageMode = plugin.getGraveManager().getStorageMode(plugin.getConfig("storage.mode", grave)
-                        .getString("storage.mode"));
-
-                // If the player is interacting with the grave's inventory
-                if (clickedInventory != null) {
-                    if (storageMode == Grave.StorageMode.EXACT) {
-                        // Block shift-clicking items INTO the grave from player's inventory
-                        if (action == InventoryAction.MOVE_TO_OTHER_INVENTORY && clickedInventory.equals(bottomInventory)) {
-                            event.setCancelled(true);
-                            return;
-                        }
-
-
-                        // Block manual placement of items into the grave
-                        if (clickedInventory.equals(grave.getInventory())) {
-                            if (action == InventoryAction.PLACE_ALL
-                                    || action == InventoryAction.PLACE_SOME
-                                    || action == InventoryAction.PLACE_ONE
-                                    || action == InventoryAction.SWAP_WITH_CURSOR) {
-                                event.setCancelled(true);
-                                return;
-                            } else {
-                                plugin.getGravesXScheduler().runTaskLater(() ->
-                                        plugin.getDataManager().updateGrave(grave, "inventory",
-                                                InventoryUtil.inventoryToString(grave.getInventory())), 1L);
-                            }
-
-                            // Allow shift-clicking or picking items OUT of the grave
-                            if (action == InventoryAction.PICKUP_ALL
-                                    || action == InventoryAction.PICKUP_SOME
-                                    || action == InventoryAction.PICKUP_HALF
-                                    || action == InventoryAction.PICKUP_ONE
-                                    || action == InventoryAction.MOVE_TO_OTHER_INVENTORY && clickedInventory.equals(topInventory)) {
-                                // Schedule a task to update the grave's inventory in the data manager
-                                plugin.getGravesXScheduler().runTaskLater(() ->
-                                        plugin.getDataManager().updateGrave(grave, "inventory",
-                                                InventoryUtil.inventoryToString(grave.getInventory())), 1L);
-                            }
-                        }
-                    }
-                }
-            } else {
-                event.setCancelled(true);
-            }
-        } else {
+        if (grave.getGravePreview()) {
             event.setCancelled(true);
+            return;
+        }
+
+        if (!plugin.getEntityManager().canOpenGrave(player, grave)) {
+            event.setCancelled(true);
+            return;
+        }
+
+        Inventory clickedInventory = event.getClickedInventory();
+        InventoryAction action = event.getAction();
+        Inventory topInventory = CompatibilityInventoryView.getTopInventory(event); // grave inv
+        Inventory bottomInventory = CompatibilityInventoryView.getBottomInventory(event); // player inv
+        Grave.StorageMode storageMode = plugin.getGraveManager().getStorageMode(plugin.getConfig("storage.mode", grave).getString("storage.mode"));
+
+        if (clickedInventory == null) return;
+
+        if (storageMode == Grave.StorageMode.EXACT) {
+            // Block shift-clicking items INTO the grave from player's inventory
+            if (action == InventoryAction.MOVE_TO_OTHER_INVENTORY && clickedInventory.equals(bottomInventory)) {
+                event.setCancelled(true);
+                return;
+            }
+
+            if (clickedInventory.equals(grave.getInventory())) {
+                // Block manual placement of items into the grave
+                if (action == InventoryAction.PLACE_ALL
+                        || action == InventoryAction.PLACE_SOME
+                        || action == InventoryAction.PLACE_ONE
+                        || action == InventoryAction.SWAP_WITH_CURSOR) {
+                    event.setCancelled(true);
+                    return;
+                } else {
+                    plugin.getGravesXScheduler().runTaskLater(() ->
+                            plugin.getDataManager().updateGrave(grave, "inventory",
+                                    InventoryUtil.inventoryToString(grave.getInventory())), 1L);
+                }
+
+                // Allow taking items OUT of the grave, then persist
+                if (action == InventoryAction.PICKUP_ALL
+                        || action == InventoryAction.PICKUP_SOME
+                        || action == InventoryAction.PICKUP_HALF
+                        || action == InventoryAction.PICKUP_ONE
+                        || (action == InventoryAction.MOVE_TO_OTHER_INVENTORY && clickedInventory.equals(topInventory))) {
+                    plugin.getGravesXScheduler().runTaskLater(() ->
+                            plugin.getDataManager().updateGrave(grave, "inventory",
+                                    InventoryUtil.inventoryToString(grave.getInventory())), 1L);
+                }
+            }
         }
     }
-
 
     /**
      * Handles inventory clicks when the player interacts with GraveList or GraveMenu inventories.
@@ -273,10 +237,10 @@ public class InventoryClickListener implements Listener {
      * @param inventoryHolder The inventory holder.
      */
     private void handlePlayerInventoryClick(InventoryClickEvent event, Player player, InventoryHolder inventoryHolder) {
-        if (inventoryHolder instanceof GraveList) {
-            handleGraveListClick(event, player, (GraveList) inventoryHolder);
-        } else if (inventoryHolder instanceof GraveMenu) {
-            handleGraveMenuClick(event, player, (GraveMenu) inventoryHolder);
+        if (inventoryHolder instanceof GraveList graveList) {
+            handleGraveListClick(event, player, graveList);
+        } else if (inventoryHolder instanceof GraveMenu graveMenu) {
+            handleGraveMenuClick(event, player, graveMenu);
         }
     }
 

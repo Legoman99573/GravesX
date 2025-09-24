@@ -46,10 +46,8 @@ public class PlayerMoveListener implements Listener {
 
     /**
      * Handles the PlayerMoveEvent to manage interactions with graves and update player locations.
-     *
      * This method checks if the player has moved and whether the new location is inside a border and safe.
      * It then updates the player's last known solid location if applicable.
-     *
      * Additionally, if the player is moving over a location that is known to contain a grave,
      * and if the grave's configuration allows walking over it, the grave is automatically looted
      * if the player is allowed to open it.
@@ -164,14 +162,13 @@ public class PlayerMoveListener implements Listener {
         }
     }
 
-
     private void removeSpecificCompassNearGrave(Player player, Location location) {
         long now = System.currentTimeMillis();
         UUID playerId = player.getUniqueId();
 
         // Cooldown check (1 second per player)
-        if (compassCheckCooldown.containsKey(playerId) &&
-                now - compassCheckCooldown.get(playerId) < 1000) {
+        Long last = compassCheckCooldown.get(playerId);
+        if (last != null && (now - last) < 1000) {
             return;
         }
         compassCheckCooldown.put(playerId, now);
@@ -188,6 +185,7 @@ public class PlayerMoveListener implements Listener {
         if (location.getWorld() == null) return;
 
         ItemStack[] items = inventory.getContents();
+        if (items == null) return;
 
         for (ItemStack item : items) {
             if (item == null || item.getType() != recoveryCompass) continue;
@@ -227,13 +225,13 @@ public class PlayerMoveListener implements Listener {
      * @return The UUID of the grave associated with the item stack, or null if not found.
      */
     private UUID getGraveUUIDFromItemStack(ItemStack itemStack) {
-        if (itemStack.hasItemMeta()) {
-            if (itemStack.getItemMeta() == null) return null;
-            String uuidString = itemStack.getItemMeta().getPersistentDataContainer()
-                    .get(new NamespacedKey(plugin, "graveUUID"), PersistentDataType.STRING);
-            return uuidString != null ? UUID.fromString(uuidString) : null;
-        }
-        return null;
+        if (!itemStack.hasItemMeta()) return null;
+        ItemMeta meta = itemStack.getItemMeta();
+        if (meta == null) return null;
+
+        String uuidString = meta.getPersistentDataContainer()
+                .get(new NamespacedKey(plugin, "graveUUID"), PersistentDataType.STRING);
+        return uuidString != null ? UUID.fromString(uuidString) : null;
     }
 
     /**

@@ -47,6 +47,7 @@ public class PlayerTeleportListener implements Listener {
     public void onPlayerTeleport(PlayerTeleportEvent event) {
         Player player = event.getPlayer();
         Location newLocation = event.getTo();
+        if (newLocation == null) return;
 
         // Check if the teleport destination is a grave location
         if (plugin.getGraveManager().isNearGrave(newLocation, player)) {
@@ -63,44 +64,48 @@ public class PlayerTeleportListener implements Listener {
     private void removeSpecificCompassNearGrave(Player player, Location location) {
         PlayerInventory inventory = player.getInventory();
         ItemStack[] items = inventory.getContents();
+        if (items == null || location.getWorld() == null) return;
+
+        Material recoveryCompass;
+        try {
+            recoveryCompass = Material.valueOf(String.valueOf(
+                    plugin.getVersionManager().getMaterialForVersion("RECOVERY_COMPASS")));
+        } catch (IllegalArgumentException e) {
+            // Unsupported on this version
+            return;
+        }
 
         for (ItemStack item : items) {
-            if (item != null && item.hasItemMeta()) {
-                ItemMeta itemMeta = item.getItemMeta();
-                if (itemMeta != null) {
-                    // Check if the item is a compass with the specific name
-                    if ((item.getType() == Material.valueOf(String.valueOf(plugin.getVersionManager().getMaterialForVersion("RECOVERY_COMPASS"))))
-                            && itemMeta.hasDisplayName()) {
+            if (item == null || !item.hasItemMeta() || item.getType() != recoveryCompass) continue;
 
-                        UUID graveUUID = getGraveUUIDFromItemStack(item);
+            ItemMeta itemMeta = item.getItemMeta();
+            if (itemMeta == null || !itemMeta.hasDisplayName()) continue;
 
-                        if (graveUUID != null) {
-                            Grave grave = plugin.getCacheManager().getGraveMap().get(graveUUID);
-                            try {
-                                if (grave != null && location.getWorld() != null) {
-                                    Location graveLocation = plugin.getGraveManager().getGraveLocation(player.getLocation(), grave);
-                                    if (graveLocation != null && location.distance(graveLocation) <= 15) {
-                                        // Remove the specific item from the inventory
-                                        String compassName;
-                                        if (plugin.getIntegrationManager().hasMiniMessage()) {
-                                            String compassNameNew = StringUtil.parseString("&f" + plugin
-                                                    .getConfig("compass.name", grave).getString("compass.name"), grave, plugin);
-                                            compassName = MiniMessage.parseString(compassNameNew);
-                                        } else {
-                                            compassName = StringUtil.parseString("&f" + plugin
-                                                    .getConfig("compass.name", grave).getString("compass.name"), grave, plugin);
-                                        }
-                                        if (itemMeta.getDisplayName().equals(compassName)) {
-                                            inventory.remove(item);
-                                        }
-                                    }
-                                }
-                            }  catch (IllegalArgumentException | NullPointerException ignored) {
-                                // ignored
-                            }
-                        }
+            UUID graveUUID = getGraveUUIDFromItemStack(item);
+            if (graveUUID == null) continue;
+
+            Grave grave = plugin.getCacheManager().getGraveMap().get(graveUUID);
+            if (grave == null) continue;
+
+            try {
+                Location graveLocation = plugin.getGraveManager().getGraveLocation(location, grave);
+                if (graveLocation == null || !location.getWorld().equals(graveLocation.getWorld())) continue;
+
+                if (location.distance(graveLocation) <= 15) {
+                    String configured = plugin.getConfig("compass.name", grave).getString("compass.name");
+                    if (configured == null) continue;
+
+                    String compassName = StringUtil.parseString("&f" + configured, grave, plugin);
+                    if (plugin.getIntegrationManager().hasMiniMessage()) {
+                        compassName = MiniMessage.parseString(compassName);
+                    }
+
+                    if (itemMeta.getDisplayName().equals(compassName)) {
+                        inventory.remove(item);
                     }
                 }
+            } catch (IllegalArgumentException | NullPointerException ignored) {
+                // Preserve original behavior: silently ignore unexpected failures
             }
         }
     }
@@ -112,12 +117,12 @@ public class PlayerTeleportListener implements Listener {
      * @return The UUID of the grave associated with the item stack, or null if not found.
      */
     private UUID getGraveUUIDFromItemStack(ItemStack itemStack) {
-        if (itemStack.hasItemMeta()) {
-            if (itemStack.getItemMeta() == null) return null;
-            String uuidString = itemStack.getItemMeta().getPersistentDataContainer()
-                    .get(new NamespacedKey(plugin, "graveUUID"), PersistentDataType.STRING);
-            return uuidString != null ? UUID.fromString(uuidString) : null;
-        }
-        return null;
+        if (!itemStack.hasItemMeta()) return null;
+        ItemMeta meta = itemStack.getItemMeta();
+        if (meta == null) return null;
+
+        String uuidString = meta.getPersistentDataContainer()
+                .get(new NamespacedKey(plugin, "graveUUID"), PersistentDataType.STRING);
+        return uuidString != null ? UUID.fromString(uuidString) : null;
     }
 }

@@ -2,7 +2,6 @@ package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
-import dev.cwhead.GravesX.compatibility.CompatibilityParticleEnum;
 import dev.cwhead.GravesX.compatibility.CompatibilitySoundEnum;
 import dev.cwhead.GravesX.event.GraveExplodeEvent;
 import org.bukkit.Location;
@@ -86,9 +85,9 @@ public class EntityExplodeListener implements Listener {
      * @return True if the target is inside the cube, false otherwise.
      */
     private boolean isWithinCube(Location center, Location target, int radius) {
-        return Math.abs(target.getBlockX() - center.getBlockX()) <= radius &&
-                Math.abs(target.getBlockY() - center.getBlockY()) <= radius &&
-                Math.abs(target.getBlockZ() - center.getBlockZ()) <= radius;
+        return Math.abs(target.getBlockX() - center.getBlockX()) <= radius
+                && Math.abs(target.getBlockY() - center.getBlockY()) <= radius
+                && Math.abs(target.getBlockZ() - center.getBlockZ()) <= radius;
     }
 
     /**

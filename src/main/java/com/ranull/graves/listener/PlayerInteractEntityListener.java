@@ -34,30 +34,28 @@ public class PlayerInteractEntityListener implements Listener {
      * either open the grave or cancel the event based on the grave's state and the player's actions.
      *
      * The event is only processed if:
-     * - The hand used for the interaction is the main hand (or the plugin version does not support a second hand).
-     * - The player is not in Spectator mode (if the server version is 1.7).
+     * - The hand used for the interaction is the main hand (or the server version does not support offhand).
+     * - The player is not in Spectator mode (except on very old versions that lack Spectator).
      *
      * @param event The PlayerInteractEntityEvent to handle.
      */
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
-    public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
+    public void onPlayerInteractEntity(final PlayerInteractEntityEvent event) {
         Player player = event.getPlayer();
+        Entity clicked = event.getRightClicked();
 
-        if (isMainHandInteraction(event) && isItemFrame(event.getRightClicked()) && isNotSpectatorMode(player)) {
-            Entity entity = event.getRightClicked();
-            Grave grave = plugin.getEntityDataManager().getGrave(entity);
+        if (!isMainHandInteraction(event)) return;
+        if (!isItemFrame(clicked)) return;
+        if (!isNotSpectatorMode(player)) return;
 
-            if (grave != null) {
-                event.setCancelled(plugin.getGraveManager().openGrave(player, entity.getLocation(), grave));
-            }
+        Grave grave = plugin.getEntityDataManager().getGrave(clicked);
+        if (grave != null) {
+            event.setCancelled(plugin.getGraveManager().openGrave(player, clicked.getLocation(), grave));
         }
     }
 
     /**
      * Checks if the interaction is performed with the main hand.
-     *
-     * @param event The PlayerInteractEntityEvent.
-     * @return True if the interaction is performed with the main hand, false otherwise.
      */
     private boolean isMainHandInteraction(PlayerInteractEntityEvent event) {
         return !plugin.getVersionManager().hasSecondHand() || event.getHand() == EquipmentSlot.HAND;
@@ -65,9 +63,6 @@ public class PlayerInteractEntityListener implements Listener {
 
     /**
      * Checks if the entity being interacted with is an ItemFrame.
-     *
-     * @param entity The entity being interacted with.
-     * @return True if the entity is an ItemFrame, false otherwise.
      */
     private boolean isItemFrame(Entity entity) {
         return entity instanceof ItemFrame;
@@ -75,9 +70,6 @@ public class PlayerInteractEntityListener implements Listener {
 
     /**
      * Checks if the player is not in Spectator mode.
-     *
-     * @param player The player to check.
-     * @return True if the player is not in Spectator mode, false otherwise.
      */
     private boolean isNotSpectatorMode(Player player) {
         return plugin.getVersionManager().is_v1_7() || player.getGameMode() != GameMode.SPECTATOR;

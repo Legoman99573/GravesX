@@ -42,7 +42,9 @@ public class BlockBurnAndIgniteListener implements Listener {
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockBurn(BlockBurnEvent event) {
-        if (plugin.getGraveManager().isNearGrave(event.getBlock().getLocation(), event.getIgnitingBlock()) || plugin.getGraveManager().isNearGrave(event.getBlock().getLocation(), event.getBlock())) {
+        boolean near = plugin.getGraveManager().isNearGrave(event.getBlock().getLocation(), event.getIgnitingBlock())
+                || plugin.getGraveManager().isNearGrave(event.getBlock().getLocation(), event.getBlock());
+        if (near) {
             event.setCancelled(true);
         }
     }
@@ -54,8 +56,9 @@ public class BlockBurnAndIgniteListener implements Listener {
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockIgnite(BlockIgniteEvent event) {
-        if (plugin.getGraveManager().isNearGrave(event.getBlock().getLocation(), event.getIgnitingBlock()) ||
-                plugin.getGraveManager().isNearGrave(event.getBlock().getLocation(), event.getBlock())) {
+        boolean near = plugin.getGraveManager().isNearGrave(event.getBlock().getLocation(), event.getIgnitingBlock())
+                || plugin.getGraveManager().isNearGrave(event.getBlock().getLocation(), event.getBlock());
+        if (near) {
             event.setCancelled(true);
         }
     }

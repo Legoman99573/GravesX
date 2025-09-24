@@ -29,14 +29,11 @@ public class PlayerJoinListener implements Listener {
 
     /**
      * Handles the PlayerJoinEvent to notify players about available plugin updates.
-     *
      * This method checks if the plugin's update check is enabled and if the player has the
      * permission to receive update notifications. If so, it runs an asynchronous task to
      * fetch the latest version of the plugin and compares it with the player's current version.
-     *
      * If the player's version is outdated, a message is sent to the player indicating the
      * current version, the latest version, and a link to the Spigot resource page.
-     *
      * The comparison is handled carefully to ensure proper handling of version format errors.
      *
      * @param event The PlayerJoinEvent to handle.
@@ -44,11 +41,8 @@ public class PlayerJoinListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-
         if (shouldCheckForUpdates(player)) {
-            plugin.getGravesXScheduler().runTaskAsynchronously(plugin, () -> {
-                notifyPlayerIfOutdated(player);
-            });
+            plugin.getGravesXScheduler().runTaskAsynchronously(() -> notifyPlayerIfOutdated(player));
         }
     }
 
@@ -59,7 +53,7 @@ public class PlayerJoinListener implements Listener {
      * @return True if updates should be checked, false otherwise.
      */
     private boolean shouldCheckForUpdates(Player player) {
-        return plugin.getConfig().getBoolean("settings.update.check") && plugin.hasGrantedPermission("graves.update.notify", player.getPlayer());
+        return plugin.getConfig().getBoolean("settings.update.check") && plugin.hasGrantedPermission("graves.update.notify", player);
     }
 
     /**
@@ -70,24 +64,22 @@ public class PlayerJoinListener implements Listener {
     private void notifyPlayerIfOutdated(Player player) {
         String latestVersion = plugin.getLatestVersion();
         String installedVersion = plugin.getDescription().getVersion();
-        String prefix = plugin.getConfig("message.prefix", player)
-                .getString("message.prefix");
+        String prefix = plugin.getConfig("message.prefix", player).getString("message.prefix");
         try {
             int comparisonResult = compareVersions(installedVersion, latestVersion);
-            // getLogger().info("Version Comparison Result: " + comparisonResult);
 
             if (comparisonResult < 0) {
                 List<String> stringList = plugin.getConfig("message.grave-plugin-version-outdated", player)
                         .getStringList("message.grave-plugin-version-outdated");
                 if (plugin.getIntegrationManager().hasMiniMessage()) {
                     for (String message : stringList) {
-                        String toConvert = StringUtil.parseString(prefix + message, player.getPlayer(), plugin);
+                        String toConvert = StringUtil.parseString(prefix + message, player, plugin);
                         String newString = MiniMessage.parseString(toConvert);
                         player.sendMessage(newString);
                     }
                 } else {
                     for (String message : stringList) {
-                        player.sendMessage(StringUtil.parseString(prefix + message, player.getPlayer(), plugin));
+                        player.sendMessage(StringUtil.parseString(prefix + message, player, plugin));
                     }
                 }
             } else if (comparisonResult > 0) {
@@ -95,24 +87,28 @@ public class PlayerJoinListener implements Listener {
                         .getStringList("message.grave-plugin-version-development");
                 if (plugin.getIntegrationManager().hasMiniMessage()) {
                     for (String message : stringList) {
-                        String toConvert = StringUtil.parseString(prefix + message.replace("%public-version", plugin.getLatestVersion()), player.getPlayer(), plugin);
+                        String toConvert = StringUtil.parseString(
+                                prefix + message.replace("%public-version", plugin.getLatestVersion()),
+                                player, plugin);
                         String newString = MiniMessage.parseString(toConvert);
                         player.sendMessage(newString);
                     }
                 } else {
                     for (String message : stringList) {
-                        player.sendMessage(StringUtil.parseString(prefix + message.replace("%public-version", plugin.getLatestVersion()), player.getPlayer(), plugin));
+                        player.sendMessage(StringUtil.parseString(
+                                prefix + message.replace("%public-version", plugin.getLatestVersion()),
+                                player, plugin));
                     }
                 }
             } else {
                 String string = plugin.getConfig("message.grave-plugin-version-latest", player)
                         .getString("message.grave-plugin-version-latest");
                 if (plugin.getIntegrationManager().hasMiniMessage()) {
-                        String toConvert = StringUtil.parseString(prefix + string, player.getPlayer(), plugin);
-                        String newString = MiniMessage.parseString(toConvert);
-                        player.sendMessage(newString);
+                    String toConvert = StringUtil.parseString(prefix + string, player, plugin);
+                    String newString = MiniMessage.parseString(toConvert);
+                    player.sendMessage(newString);
                 } else {
-                    player.sendMessage(StringUtil.parseString(prefix + string, player.getPlayer(), plugin));
+                    player.sendMessage(StringUtil.parseString(prefix + string, player, plugin));
                 }
             }
         } catch (NumberFormatException exception) {
@@ -120,13 +116,13 @@ public class PlayerJoinListener implements Listener {
                     .getStringList("message.grave-plugin-version-outdated");
             if (plugin.getIntegrationManager().hasMiniMessage()) {
                 for (String message : stringList) {
-                    String toConvert = StringUtil.parseString(prefix + message, player.getPlayer(), plugin);
+                    String toConvert = StringUtil.parseString(prefix + message, player, plugin);
                     String newString = MiniMessage.parseString(toConvert);
                     player.sendMessage(newString);
                 }
             } else {
                 for (String message : stringList) {
-                    player.sendMessage(StringUtil.parseString(prefix + message, player.getPlayer(), plugin));
+                    player.sendMessage(StringUtil.parseString(prefix + message, player, plugin));
                 }
             }
         }
@@ -147,12 +143,8 @@ public class PlayerJoinListener implements Listener {
         for (int i = 0; i < length; i++) {
             int v1 = i < levels1.length ? Integer.parseInt(levels1[i]) : 0;
             int v2 = i < levels2.length ? Integer.parseInt(levels2[i]) : 0;
-            if (v1 < v2) {
-                return -1;
-            }
-            if (v1 > v2) {
-                return 1;
-            }
+            if (v1 < v2) return -1;
+            if (v1 > v2) return 1;
         }
         return 0;
     }

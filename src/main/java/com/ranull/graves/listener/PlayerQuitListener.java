@@ -7,8 +7,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
 
-import java.lang.reflect.InvocationTargetException;
-
 /**
  * Listener for handling PlayerQuitEvent to manage player-related data when they leave the game.
  */
@@ -26,7 +24,6 @@ public class PlayerQuitListener implements Listener {
 
     /**
      * Handles the PlayerQuitEvent to clean up player-related data upon their departure.
-     *
      * This method removes the player's last solid location and stops any ongoing modification.
      *
      * @param event The PlayerQuitEvent to handle.
@@ -34,7 +31,6 @@ public class PlayerQuitListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
-
         removeLastSolidLocation(player);
     }
 

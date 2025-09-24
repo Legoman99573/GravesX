@@ -3,10 +3,8 @@ package com.ranull.graves.listener;
 import com.ranull.graves.Graves;
 import com.ranull.graves.compatibility.CompatibilityInventoryView;
 import com.ranull.graves.type.Grave;
-import dev.cwhead.GravesX.compatibility.CompatibilityParticleEnum;
 import dev.cwhead.GravesX.compatibility.CompatibilitySoundEnum;
 import org.bukkit.Location;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -39,53 +37,26 @@ public class InventoryCloseListener implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onInventoryClose(InventoryCloseEvent event) {
-        if (isGraveInventory(event) && isPlayer(event.getPlayer())) {
-            Player player = (Player) event.getPlayer();
-            Entity entity = event.getPlayer();
-            Inventory topInventory = CompatibilityInventoryView.getTopInventory(event);
-            Grave grave = (Grave) topInventory.getHolder();
-
-            // Call the custom GraveCloseEvent
-            callGraveCloseEvent(event, grave, player, entity);
-
-            if (grave != null && isEmptyGrave(grave)) {
-                handleEmptyGrave(event, player, grave, entity);
-            }
-
-            // Play a sound effect related to closing the inventory
-            plugin.getEntityManager().playWorldSound("sound.close", player, grave);
-        }
-    }
-
-    /**
-     * Checks if the event's inventory holder is a grave.
-     *
-     * @param event The InventoryCloseEvent.
-     * @return True if the inventory holder is a grave, false otherwise.
-     */
-    private boolean isGraveInventory(InventoryCloseEvent event) {
         Inventory topInventory = CompatibilityInventoryView.getTopInventory(event);
-        return topInventory.getHolder() instanceof Grave;
+        if (!(topInventory.getHolder() instanceof Grave grave)) return;
+        if (!(event.getPlayer() instanceof Player player)) return;
+
+        // Fire close events (modern + legacy)
+        callGraveCloseEvent(event, grave, player);
+
+        // If empty, handle as "looted"
+        if (isEmptyGrave(grave)) {
+            handleEmptyGrave(event, player, grave);
+        }
+
+        // Play a sound related to closing the inventory
+        plugin.getEntityManager().playWorldSound("sound.close", player, grave);
     }
 
     /**
-     * Checks if the entity is a player.
-     *
-     * @param entity The entity to check.
-     * @return True if the entity is a player, false otherwise.
+     * Fires the custom GraveCloseEvent (modern + legacy).
      */
-    private boolean isPlayer(Object entity) {
-        return entity instanceof Player;
-    }
-
-    /**
-     * Calls the custom GraveCloseEvent.
-     *
-     * @param event  The InventoryCloseEvent.
-     * @param grave  The grave associated with the inventory.
-     * @param player The player who closed the inventory.
-     */
-    private void callGraveCloseEvent(InventoryCloseEvent event, Grave grave, Player player, Entity entity) {
+    private void callGraveCloseEvent(InventoryCloseEvent event, Grave grave, Player player) {
         dev.cwhead.GravesX.event.GraveCloseEvent modern =
                 new dev.cwhead.GravesX.event.GraveCloseEvent(event.getView(), grave, player);
         plugin.getServer().getPluginManager().callEvent(modern);
@@ -95,52 +66,17 @@ public class InventoryCloseListener implements Listener {
         plugin.getServer().getPluginManager().callEvent(legacy);
     }
 
-
     /**
-     * Calls the custom GraveCloseEvent.
-     *
-     * @param event  The InventoryCloseEvent.
-     * @param grave  The grave associated with the inventory.
-     * @param player The player who closed the inventory.
-     */
-    private void callGraveLootedEvent(InventoryCloseEvent event, Grave grave, Player player, Entity entity) {
-        dev.cwhead.GravesX.event.GraveLootedEvent modern =
-                new dev.cwhead.GravesX.event.GraveLootedEvent(event.getView(), grave, player);
-        plugin.getServer().getPluginManager().callEvent(modern);
-
-        com.ranull.graves.event.GraveLootedEvent legacy =
-                new com.ranull.graves.event.GraveLootedEvent(event.getView(), grave, player);
-        plugin.getServer().getPluginManager().callEvent(legacy);
-
-        if (!modern.isCancelled() || !modern.isAddon() || !legacy.isCancelled() || !legacy.isAddon()) {
-            if (plugin.getIntegrationManager().hasNoteBlockAPI()) {
-                if (plugin.getIntegrationManager().getNoteBlockAPI().isSongPlayingForPlayer(player)) {
-                    plugin.getIntegrationManager().getNoteBlockAPI().stopSongForPlayer(player);
-                }
-                if (plugin.getIntegrationManager().getNoteBlockAPI().isSongPlayingForAllPlayers()) {
-                    plugin.getIntegrationManager().getNoteBlockAPI().stopSongForAllPlayers();
-                }
-            }
-        }
-    }
-
-    /**
-     * Checks if the grave is empty.
-     *
-     * @param grave The grave to check.
-     * @return True if the grave is empty, false otherwise.
+     * @return True if the grave has no items remaining.
      */
     private boolean isEmptyGrave(Grave grave) {
         return grave.getItemAmount() <= 0;
     }
 
     /**
-     * Handles actions for an empty grave.
-     *
-     * @param player The player who closed the inventory.
-     * @param grave  The empty grave.
+     * Handles actions for an empty (fully looted) grave.
      */
-    private void handleEmptyGrave(InventoryCloseEvent event, Player player, Grave grave, Entity entity) {
+    private void handleEmptyGrave(InventoryCloseEvent event, Player player, Grave grave) {
         dev.cwhead.GravesX.event.GraveLootedEvent modern =
                 new dev.cwhead.GravesX.event.GraveLootedEvent(event.getView(), grave, player);
         plugin.getServer().getPluginManager().callEvent(modern);

@@ -2,12 +2,9 @@ package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
-import dev.cwhead.GravesX.compatibility.CompatibilityParticleEnum;
 import dev.cwhead.GravesX.compatibility.CompatibilitySoundEnum;
 import dev.cwhead.GravesX.event.GraveProjectileHitEvent;
 import org.bukkit.Location;
-import org.bukkit.Particle;
-import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -38,39 +35,31 @@ public class ProjectileHitListener implements Listener {
 
         Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
         if (grave == null) return;
-        if (!plugin.getConfig("drop.projectile.enabled", grave).getBoolean("drop.projectile.enabled"))
-            return;
+        if (!plugin.getConfig("drop.projectile.enabled", grave).getBoolean("drop.projectile.enabled")) return;
 
         Location location = block.getLocation();
         ProjectileSource shooter = event.getEntity().getShooter();
 
         ShooterKind kind = classifyShooter(shooter);
         switch (kind) {
-            case PLAYER:
-                if (!plugin.getConfig("drop.projectile.player", grave).getBoolean("drop.projectile.player"))
-                    return;
+            case PLAYER -> {
+                if (!plugin.getConfig("drop.projectile.player", grave).getBoolean("drop.projectile.player")) return;
                 handleProjectileHitFromPlayer((Player) shooter, event, block, grave, location);
-                break;
-
-            case LIVING:
-                if (!plugin.getConfig("drop.projectile.living-entity", grave).getBoolean("drop.projectile.living-entity"))
-                    return;
+            }
+            case LIVING -> {
+                if (!plugin.getConfig("drop.projectile.living-entity", grave).getBoolean("drop.projectile.living-entity")) return;
                 handleProjectileHitFromLiving((LivingEntity) shooter, event, block, grave, location);
-                break;
-
-            case OTHER:
-                if (!plugin.getConfig("drop.projectile.other", grave).getBoolean("drop.projectile.other"))
-                    return;
+            }
+            case OTHER -> {
+                if (!plugin.getConfig("drop.projectile.other", grave).getBoolean("drop.projectile.other")) return;
                 handleProjectileHitFromOther(event, block, grave, location);
-                break;
+            }
         }
     }
 
     private ShooterKind classifyShooter(ProjectileSource shooter) {
-        if (shooter instanceof Player)
-            return ShooterKind.PLAYER;
-        if (shooter instanceof LivingEntity)
-            return ShooterKind.LIVING;
+        if (shooter instanceof Player) return ShooterKind.PLAYER;
+        if (shooter instanceof LivingEntity) return ShooterKind.LIVING;
         return ShooterKind.OTHER;
     }
 

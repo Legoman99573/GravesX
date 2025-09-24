@@ -42,6 +42,7 @@ public class HangingBreakListener implements Listener {
      * @return True if the entity is an ItemFrame and has an associated grave, false otherwise.
      */
     private boolean isItemFrameAndHasGrave(HangingBreakEvent event) {
-        return event.getEntity() instanceof ItemFrame && nexo.getGrave(event.getEntity()) != null;
+        return event.getEntity() instanceof ItemFrame
+                && nexo.getGrave(event.getEntity()) != null;
     }
 }

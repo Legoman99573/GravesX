@@ -17,7 +17,6 @@ public class FurnitureBreakListener implements Listener {
 
     /**
      * @deprecated Plugin no longer exists externally. Use FurnitureLib instead.
-     *
      * Constructs a new FurnitureBreakListener with the specified FurnitureEngine instance.
      *
      * @param furnitureEngine The FurnitureEngine instance to use.
@@ -29,7 +28,6 @@ public class FurnitureBreakListener implements Listener {
 
     /**
      * @deprecated Plugin no longer exists externally. Use FurnitureLib instead.
-     *
      * Handles FurnitureBreakEvent. Cancels the event if the furniture being broken is associated with a grave.
      *
      * @param event The FurnitureBreakEvent to handle.
@@ -38,8 +36,9 @@ public class FurnitureBreakListener implements Listener {
     @EventHandler
     public void onFurnitureBreak(FurnitureBreakEvent event) {
         ItemFrame itemFrame = furnitureEngine.getItemFrame(event.getFurnitureLocation());
+        if (itemFrame == null) return;
 
-        if (itemFrame != null && isFurnitureAssociatedWithGrave(event, itemFrame)) {
+        if (isFurnitureAssociatedWithGrave(event, itemFrame)) {
             event.setCancelled(true);
         }
     }

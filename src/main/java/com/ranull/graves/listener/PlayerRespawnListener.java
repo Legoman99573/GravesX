@@ -30,7 +30,6 @@ public class PlayerRespawnListener implements Listener {
 
     /**
      * Handles the PlayerRespawnEvent to perform actions related to graves when a player respawns.
-     *
      * This method:
      * - Runs a scheduled task to execute a function configured for respawn events.
      * - Checks if a compass should be given to the player based on the respawn time and config settings.
@@ -73,7 +72,7 @@ public class PlayerRespawnListener implements Listener {
             // Check if potion effect is enabled and player has the appropriate permission
             boolean isPotionEffectEnabled = plugin.getConfig("respawn.potion-effect", player, permissionList)
                     .getBoolean("respawn.potion-effect");
-            boolean hasPotionEffectPermission = plugin.hasGrantedPermission("graves.potion-effect", player.getPlayer());
+            boolean hasPotionEffectPermission = plugin.hasGrantedPermission("graves.potion-effect", player);
 
             if (!isPotionEffectEnabled || !hasPotionEffectPermission) {
                 return;
@@ -90,8 +89,12 @@ public class PlayerRespawnListener implements Listener {
                         .getInt("respawn.potion-effect-duration") * 20; // Duration in ticks (20 ticks = 1 second)
 
                 // Create and apply potion effects
-                PotionEffect potionEffect = new PotionEffect(plugin.getVersionManager().getPotionEffectTypeFromVersion("RESISTANCE"), effectDuration, 4);
-                PotionEffect potionEffect2 = new PotionEffect(plugin.getVersionManager().getPotionEffectTypeFromVersion("FIRE_RESISTANCE"), effectDuration, 0);
+                PotionEffect potionEffect = new PotionEffect(
+                        plugin.getVersionManager().getPotionEffectTypeFromVersion("RESISTANCE"),
+                        effectDuration, 4);
+                PotionEffect potionEffect2 = new PotionEffect(
+                        plugin.getVersionManager().getPotionEffectTypeFromVersion("FIRE_RESISTANCE"),
+                        effectDuration, 0);
                 player.addPotionEffect(potionEffect);
                 player.addPotionEffect(potionEffect2);
             }
@@ -106,10 +109,13 @@ public class PlayerRespawnListener implements Listener {
      * @param grave The grave associated with the player.
      */
     private void scheduleRespawnFunction(Player player, List<String> permissionList, Grave grave) {
-        plugin.getGravesXScheduler().runTaskLater(plugin, () -> {
-            plugin.getEntityManager().runFunction(player, plugin
-                    .getConfig("respawn.function", player, permissionList)
-                    .getString("respawn.function", "none"), grave);
+        plugin.getGravesXScheduler().runTaskLater(() -> {
+            plugin.getEntityManager().runFunction(
+                    player,
+                    plugin.getConfig("respawn.function", player, permissionList)
+                            .getString("respawn.function", "none"),
+                    grave
+            );
         }, 1L);
     }
 
@@ -123,8 +129,7 @@ public class PlayerRespawnListener implements Listener {
      */
     private boolean shouldGiveCompass(Player player, List<String> permissionList, Grave grave) {
         return plugin.getVersionManager().hasCompassMeta()
-                && plugin.getConfig("respawn.compass", player, permissionList)
-                .getBoolean("respawn.compass")
+                && plugin.getConfig("respawn.compass", player, permissionList).getBoolean("respawn.compass")
                 && grave.getLivedTime() <= plugin.getConfig("respawn.compass-time", player, permissionList)
                 .getInt("respawn.compass-time") * 1000L;
     }
@@ -142,7 +147,6 @@ public class PlayerRespawnListener implements Listener {
 
         if (!locationList.isEmpty()) {
             ItemStack itemStack = plugin.getEntityManager().createGraveCompass(player, locationList.get(0), grave);
-
             if (itemStack != null) {
                 player.getInventory().addItem(itemStack);
             }

@@ -6,7 +6,6 @@ import com.ranull.graves.inventory.GraveList;
 import com.ranull.graves.inventory.GraveMenu;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.StringUtil;
-import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -48,72 +47,66 @@ public class InventoryDragListener implements Listener {
         InventoryHolder inventoryHolder = event.getInventory().getHolder();
         Player player = (Player) event.getWhoClicked();
 
-        if (inventoryHolder != null) {
-            if (inventoryHolder instanceof Grave) {
-                handleGraveInventoryDrag(event, player, (Grave) inventoryHolder);
-            } else if (event.getWhoClicked() instanceof Player) {
-                handlePlayerInventoryDrag(event, player, inventoryHolder);
-            }
-            isCompassItem(event);
+        if (inventoryHolder == null) return;
+
+        if (inventoryHolder instanceof Grave grave) {
+            handleGraveInventoryDrag(event, player, grave);
+        } else if (event.getWhoClicked() instanceof Player) {
+            handlePlayerInventoryDrag(event, player, inventoryHolder);
         }
+
+        // Guard against dragging the Graves compass into XP-giving inventories
+        checkCompassDrag(event);
     }
 
     /**
      * Checks if a specific type of compass (e.g., RECOVERY_COMPASS) was dragged into the player's inventory.
-     *
-     * @param event The InventoryDragEvent to check.
      */
-    private void isCompassItem(InventoryDragEvent event) {
+    private void checkCompassDrag(InventoryDragEvent event) {
         Map<Integer, ItemStack> newItems = event.getNewItems();
         for (ItemStack item : newItems.values()) {
             if (item == null || !item.hasItemMeta()) continue;
 
-            ItemMeta itemMeta = item.getItemMeta();
-            if (itemMeta == null || !itemMeta.hasDisplayName()) continue;
+            ItemMeta meta = item.getItemMeta();
+            if (meta == null || !meta.hasDisplayName()) continue;
 
-            if (item.getType() == Material.valueOf(String.valueOf(plugin.getVersionManager().getMaterialForVersion("RECOVERY_COMPASS")))) {
-                UUID graveUUID = getGraveUUIDFromItemStack(item);
-                if (graveUUID != null) {
+            try {
+                if (item.getType() == plugin.getVersionManager().getMaterialForVersion("RECOVERY_COMPASS")) {
+                    UUID graveUUID = getGraveUUIDFromItemStack(item);
+                    if (graveUUID == null) continue;
+
                     Grave grave = plugin.getCacheManager().getGraveMap().get(graveUUID);
-                    if (grave != null) {
+                    if (grave == null) continue;
 
-                        String compassName;
-                        if (plugin.getIntegrationManager().hasMiniMessage()) {
-                            String compassNameNew = StringUtil.parseString("&f" + plugin
-                                    .getConfig("compass.name", grave).getString("compass.name"), grave, plugin);
-                            compassName = MiniMessage.parseString(compassNameNew);
-                        } else {
-                            compassName = StringUtil.parseString("&f" + plugin
-                                    .getConfig("compass.name", grave).getString("compass.name"), grave, plugin);
-                        }
+                    String configured = plugin.getConfig("compass.name", grave).getString("compass.name");
+                    String parsedLegacy = StringUtil.parseString("&f" + configured, grave, plugin);
+                    String expectedName = plugin.getIntegrationManager().hasMiniMessage()
+                            ? MiniMessage.parseString(parsedLegacy)
+                            : parsedLegacy;
 
-                        if (itemMeta.getDisplayName().equals(compassName)) {
-                            InventoryType inventoryType = event.getInventory().getType();
-                            if (checkIfXPGivingInventory(inventoryType)) {
-                                event.setCancelled(true);
-                            }
+                    if (meta.getDisplayName().equals(expectedName)) {
+                        InventoryType type = event.getInventory().getType();
+                        if (isXpGivingInventory(type)) {
+                            event.setCancelled(true);
+                            return;
                         }
                     }
                 }
+            } catch (Throwable ignored) {
+                // Be defensive across MC versions/material availability
             }
         }
     }
 
     /**
      * Handles inventory drags when the inventory holder is a Grave.
-     *
-     * @param event  The InventoryDragEvent.
-     * @param player The player dragging items.
-     * @param grave  The Grave inventory holder.
      */
     private void handleGraveInventoryDrag(InventoryDragEvent event, Player player, Grave grave) {
         if (!grave.getGravePreview()) {
             if (plugin.getEntityManager().canOpenGrave(player, grave)) {
-//                // Schedule a task to update the grave's inventory in the data manager
-//                plugin.getGravesXScheduler().runTaskLater(plugin, () ->
-//                        plugin.getDataManager().updateGrave(grave, "inventory",
-//                                InventoryUtil.inventoryToString(grave.getInventory())), 1L);
-//            } else {
+                // For EXACT storage mode we generally disallow dragging into the grave.
+                event.setCancelled(true);
+            } else {
                 event.setCancelled(true);
             }
         } else {
@@ -123,45 +116,27 @@ public class InventoryDragListener implements Listener {
 
     /**
      * Handles inventory drags when the player interacts with GraveList or GraveMenu inventories.
-     *
-     * @param event           The InventoryDragEvent.
-     * @param player          The player dragging items.
-     * @param inventoryHolder The inventory holder.
      */
-    private void handlePlayerInventoryDrag(InventoryDragEvent event, Player player, InventoryHolder inventoryHolder) {
-        if (inventoryHolder instanceof GraveList) {
-            handleGraveListDrag(event, player, (GraveList) inventoryHolder);
-        } else if (inventoryHolder instanceof GraveMenu) {
-            handleGraveMenuDrag(event, player, (GraveMenu) inventoryHolder);
+    private void handlePlayerInventoryDrag(InventoryDragEvent event, Player player, InventoryHolder holder) {
+        if (holder instanceof GraveList list) {
+            handleGraveListDrag(event, player, list);
+        } else if (holder instanceof GraveMenu menu) {
+            handleGraveMenuDrag(event, player, menu);
         }
     }
 
     /**
-     * Checks if the inventory type is one that grants XP (e.g., Furnace, Anvil, Grindstone).
-     *
-     * @param inventoryType The type of the inventory.
-     * @return true if the inventory grants XP, false otherwise.
+     * @return true if the inventory type grants XP (e.g., Furnace, Anvil, Grindstone).
      */
-    private boolean checkIfXPGivingInventory(InventoryType inventoryType) {
-        switch (inventoryType.name()) {
-            case "FURNACE":
-            case "BLAST_FURNACE":
-            case "SMOKER":
-            case "ANVIL":
-            case "GRINDSTONE":
-            case "HOPPER":
-                return true;
-            default:
-                return false;
-        }
+    private boolean isXpGivingInventory(InventoryType type) {
+        return switch (type) {
+            case FURNACE, BLAST_FURNACE, SMOKER, ANVIL, GRINDSTONE, HOPPER -> true;
+            default -> false;
+        };
     }
 
     /**
      * Handles inventory drags for GraveList inventories.
-     *
-     * @param event     The InventoryDragEvent.
-     * @param player    The player dragging items.
-     * @param graveList The GraveList inventory holder.
      */
     private void handleGraveListDrag(InventoryDragEvent event, Player player, GraveList graveList) {
         // Prevent dragging items in or out of GraveList
@@ -170,20 +145,16 @@ public class InventoryDragListener implements Listener {
 
     /**
      * Handles inventory drags for GraveMenu inventories.
-     *
-     * @param event     The InventoryDragEvent.
-     * @param player    The player dragging items.
-     * @param graveMenu The GraveMenu inventory holder.
      */
     private void handleGraveMenuDrag(InventoryDragEvent event, Player player, GraveMenu graveMenu) {
-        Grave grave = graveMenu.getGrave();
         try {
+            Grave grave = graveMenu.getGrave();
             if (grave != null) {
                 // Prevent dragging items into restricted slots in GraveMenu
                 event.setCancelled(true);
             }
         } catch (NullPointerException | IllegalArgumentException ignored) {
-            // Likely grave doesn't exist. Ignore this.
+            // Likely grave doesn't exist. Close to be safe.
             event.getWhoClicked().closeInventory();
             event.setCancelled(true);
         }
@@ -192,16 +163,15 @@ public class InventoryDragListener implements Listener {
     /**
      * Retrieves the Grave UUID from the item stack.
      *
-     * @param itemStack The item stack to check.
      * @return The UUID of the grave associated with the item stack, or null if not found.
      */
     private UUID getGraveUUIDFromItemStack(ItemStack itemStack) {
-        if (itemStack.hasItemMeta()) {
-            if (itemStack.getItemMeta() == null) return null;
-            String uuidString = itemStack.getItemMeta().getPersistentDataContainer()
-                    .get(new NamespacedKey(plugin, "graveUUID"), PersistentDataType.STRING);
-            return uuidString != null ? UUID.fromString(uuidString) : null;
-        }
-        return null;
+        if (!itemStack.hasItemMeta()) return null;
+        ItemMeta meta = itemStack.getItemMeta();
+        if (meta == null) return null;
+
+        String uuidString = meta.getPersistentDataContainer()
+                .get(new NamespacedKey(plugin, "graveUUID"), PersistentDataType.STRING);
+        return uuidString != null ? UUID.fromString(uuidString) : null;
     }
 }

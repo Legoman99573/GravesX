@@ -36,9 +36,8 @@ public class InventoryOpenListener implements Listener {
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onInventoryOpen(InventoryOpenEvent event) {
-        if (isGraveInventory(event)) {
-            handleGraveInventoryOpen(event);
-        }
+        if (!isGraveInventory(event)) return;
+        handleGraveInventoryOpen(event);
     }
 
     /**
@@ -58,25 +57,23 @@ public class InventoryOpenListener implements Listener {
      */
     private void handleGraveInventoryOpen(InventoryOpenEvent event) {
         Inventory topInventory = CompatibilityInventoryView.getTopInventory(event);
-        InventoryHolder inventoryHolder = topInventory.getHolder();
+        InventoryHolder holder = topInventory.getHolder();
 
-        if (inventoryHolder instanceof Grave && event.getPlayer() instanceof Player) {
-            Grave grave = (Grave) inventoryHolder;
-            Player player = (Player) event.getPlayer();
+        if (!(holder instanceof Grave grave) || !(event.getPlayer() instanceof Player player)) return;
 
-            GraveOpenEvent modern =
-                    new dev.cwhead.GravesX.event.GraveOpenEvent(event.getView(), grave, player);
-            plugin.getServer().getPluginManager().callEvent(modern);
+        GraveOpenEvent modern =
+                new GraveOpenEvent(event.getView(), grave, player);
+        plugin.getServer().getPluginManager().callEvent(modern);
 
-            com.ranull.graves.event.GraveOpenEvent legacy = new com.ranull.graves.event.GraveOpenEvent(event.getView(), grave, player);
-            plugin.getServer().getPluginManager().callEvent(legacy);
+        com.ranull.graves.event.GraveOpenEvent legacy =
+                new com.ranull.graves.event.GraveOpenEvent(event.getView(), grave, player);
+        plugin.getServer().getPluginManager().callEvent(legacy);
 
-            boolean cancelled = modern.isCancelled() || legacy.isCancelled();
-            boolean addon = modern.isAddon() || legacy.isAddon();
+        boolean cancelled = modern.isCancelled() || legacy.isCancelled();
+        boolean addon = modern.isAddon() || legacy.isAddon();
 
-            if (cancelled && !addon) {
-                event.setCancelled(true);
-            }
+        if (cancelled && !addon) {
+            event.setCancelled(true);
         }
     }
 }

@@ -77,9 +77,9 @@ public class NPCInteractListener implements Listener {
     /**
      * Opens the grave if it exists in the cache.
      *
-     * @param event    The NPC.Events.Interact event.
+     * @param event     The NPC.Events.Interact event.
      * @param npcGlobal The global NPC instance.
-     * @param uuid     The UUID of the grave.
+     * @param uuid      The UUID of the grave.
      */
     private void openGraveIfExists(NPC.Events.Interact event, NPC.Global npcGlobal, UUID uuid) {
         Grave grave = plugin.getCacheManager().getGraveMap().get(uuid);

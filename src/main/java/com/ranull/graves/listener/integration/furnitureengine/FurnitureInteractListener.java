@@ -7,6 +7,7 @@ import com.ranull.graves.type.Grave;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+
 /**
  * @deprecated Plugin no longer exists externally. Use FurnitureLib instead.
  *
@@ -43,10 +44,9 @@ public class FurnitureInteractListener implements Listener {
     @EventHandler
     public void onFurnitureInteract(FurnitureInteractEvent event) {
         ItemFrame itemFrame = furnitureEngine.getItemFrame(event.getFurnitureLocation());
+        if (itemFrame == null) return;
 
-        if (itemFrame != null) {
-            handleFurnitureInteraction(event, itemFrame);
-        }
+        handleFurnitureInteraction(event, itemFrame);
     }
 
     /**
@@ -61,7 +61,6 @@ public class FurnitureInteractListener implements Listener {
     @Deprecated
     private void handleFurnitureInteraction(FurnitureInteractEvent event, ItemFrame itemFrame) {
         Grave grave = furnitureEngine.getGrave(itemFrame.getLocation(), itemFrame.getUniqueId());
-
         if (grave != null) {
             event.setCancelled(plugin.getGraveManager().openGrave(event.getPlayer(), itemFrame.getLocation(), grave));
         }

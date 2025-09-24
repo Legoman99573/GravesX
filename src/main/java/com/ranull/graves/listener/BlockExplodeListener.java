@@ -2,7 +2,6 @@ package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
-import dev.cwhead.GravesX.compatibility.CompatibilityParticleEnum;
 import dev.cwhead.GravesX.compatibility.CompatibilitySoundEnum;
 import dev.cwhead.GravesX.event.GraveExplodeEvent;
 import org.bukkit.Location;
@@ -86,9 +85,9 @@ public class BlockExplodeListener implements Listener {
      * @return True if the target is inside the cube, false otherwise.
      */
     private boolean isWithinCube(Location center, Location target, int radius) {
-        return Math.abs(target.getBlockX() - center.getBlockX()) <= radius &&
-                Math.abs(target.getBlockY() - center.getBlockY()) <= radius &&
-                Math.abs(target.getBlockZ() - center.getBlockZ()) <= radius;
+        return Math.abs(target.getBlockX() - center.getBlockX()) <= radius
+                && Math.abs(target.getBlockY() - center.getBlockY()) <= radius
+                && Math.abs(target.getBlockZ() - center.getBlockZ()) <= radius;
     }
 
     /**
@@ -111,8 +110,7 @@ public class BlockExplodeListener implements Listener {
      * @param location  The location of the grave.
      */
     private void handleGraveExplosion(BlockExplodeEvent event, Iterator<Block> iterator, Block block, Grave grave, Location location) {
-        GraveExplodeEvent modern =
-                new GraveExplodeEvent(location, null, grave);
+        GraveExplodeEvent modern = new GraveExplodeEvent(location, null, grave);
         plugin.getServer().getPluginManager().callEvent(modern);
 
         com.ranull.graves.event.GraveExplodeEvent legacy =
@@ -129,23 +127,21 @@ public class BlockExplodeListener implements Listener {
             if (modern.hasLocation()) {
                 effectiveLoc = modern.getLocation();
             } else {
-                legacy.getLocation();
                 effectiveLoc = legacy.getLocation();
             }
         } catch (Throwable ignored) {
-            //ignored
         }
 
         try {
             Location deathLoc = grave.getLocationDeath();
-            Objects.requireNonNull(deathLoc.getWorld()).spawnParticle(plugin.getVersionManager().getParticleForVersion("EXPLOSION"), deathLoc, 1);
+            Objects.requireNonNull(deathLoc.getWorld())
+                    .spawnParticle(plugin.getVersionManager().getParticleForVersion("EXPLOSION"), deathLoc, 1);
             try {
                 deathLoc.getWorld().playSound(deathLoc, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("ENTITY_GENERIC_EXPLODE")), 1.0f, 1.0f);
             } catch (Exception e) {
-                deathLoc.getWorld().playSound(deathLoc, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("EXPLODE")), 1.0f, 1.0f); // pre 1.9
+                deathLoc.getWorld().playSound(deathLoc, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("EXPLODE")), 1.0f, 1.0f);
             }
         } catch (Exception ignored) {
-            // ignored
         }
 
         if (plugin.getConfig("drop.explode", grave).getBoolean("drop.explode")) {
@@ -162,5 +158,4 @@ public class BlockExplodeListener implements Listener {
             plugin.getEntityManager().spawnZombie(effectiveLoc, grave);
         }
     }
-
 }

@@ -9,7 +9,6 @@ import org.bukkit.event.hanging.HangingBreakEvent;
 
 /**
  * @deprecated Recommend Nexo as a replacement.
- *
  * Listens for HangingBreakEvent and cancels the event if the entity being broken is an ItemFrame associated with a grave.
  */
 @Deprecated
@@ -18,7 +17,6 @@ public class HangingBreakListener implements Listener {
 
     /**
      * @deprecated Recommend Nexo as a replacement.
-     *
      * Constructs a new HangingBreakListener with the specified Oraxen instance.
      *
      * @param oraxen The Oraxen instance to use.
@@ -30,7 +28,6 @@ public class HangingBreakListener implements Listener {
 
     /**
      * @deprecated Recommend Nexo as a replacement.
-     *
      * Handles HangingBreakEvent. If the entity being broken is an ItemFrame and is associated with a grave,
      * it cancels the event.
      *
@@ -46,7 +43,6 @@ public class HangingBreakListener implements Listener {
 
     /**
      * @deprecated Recommend Nexo as a replacement.
-     *
      * Checks if the entity is an ItemFrame and has an associated grave.
      *
      * @param event The HangingBreakEvent.
@@ -54,6 +50,7 @@ public class HangingBreakListener implements Listener {
      */
     @Deprecated
     private boolean isItemFrameAndHasGrave(HangingBreakEvent event) {
-        return event.getEntity() instanceof ItemFrame && oraxen.getGrave(event.getEntity()) != null;
+        return event.getEntity() instanceof ItemFrame
+                && oraxen.getGrave(event.getEntity()) != null;
     }
 }
