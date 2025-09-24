@@ -4,17 +4,19 @@ import com.ranull.graves.type.Grave;
 import org.bukkit.Location;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.HandlerList;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * @deprecated Use {@link dev.cwhead.GravesX.event.GraveZombieSpawnEvent} instead.
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveZombieSpawnEvent} instead. Will be removed in 4.9.10.1.
  * Represents an event that occurs when a zombie spawns at a grave.
  * <p>
  * This event extends {@link dev.cwhead.GravesX.event.graveevent.GraveEvent} and provides details about the location of the spawn
  * and the entity that the zombie is targeting.
  * </p>
  */
-@Deprecated (since = "4.9.9.1", forRemoval = true)
+@Deprecated(since = "4.9.9.1", forRemoval = true)
+@ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
 public class GraveZombieSpawnEvent extends dev.cwhead.GravesX.event.GraveZombieSpawnEvent {
 
     /**
@@ -34,7 +36,8 @@ public class GraveZombieSpawnEvent extends dev.cwhead.GravesX.event.GraveZombieS
      * It provides the mechanism for adding, removing, and invoking event handlers.
      * </p>
      */
-    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    @Deprecated(since = "4.9.9.1", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
     public GraveZombieSpawnEvent(@NotNull Location location, @NotNull LivingEntity targetEntity, @NotNull Grave grave) {
         super(location, targetEntity, grave);
     }

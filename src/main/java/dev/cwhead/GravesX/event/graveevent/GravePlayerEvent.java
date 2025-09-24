@@ -5,6 +5,8 @@ import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.interfaces.Addon;
 import dev.cwhead.GravesX.exception.GravesXEventMethodNotSupportedException;
 import org.bukkit.Location;
+import org.bukkit.block.Block;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.HandlerList;
@@ -61,7 +63,16 @@ public class GravePlayerEvent extends GraveEntityEvent implements Cancellable, A
      * @param livingEntity  The living entity associated with the event, if any (usually same as player).
      * @param targetEntity  The entity targeted by the event, if any.
      */
-    public GravePlayerEvent(@NotNull Grave grave, @NotNull Player player, @Nullable Location location, @Nullable BlockData.BlockType blockType, @Nullable org.bukkit.block.Block block, @Nullable InventoryView inventoryView, @Nullable org.bukkit.entity.LivingEntity livingEntity, @Nullable org.bukkit.entity.LivingEntity targetEntity) {
+    public GravePlayerEvent(
+            @NotNull Grave grave,
+            @NotNull Player player,
+            @Nullable Location location,
+            @Nullable BlockData.BlockType blockType,
+            @Nullable Block block,
+            @Nullable InventoryView inventoryView,
+            @Nullable LivingEntity livingEntity,
+            @Nullable LivingEntity targetEntity
+    ) {
         super(grave, player, location, blockType, block, livingEntity, targetEntity);
         this.player = Objects.requireNonNull(player, "player");
         this.inventoryView = inventoryView;

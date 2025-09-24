@@ -5,18 +5,20 @@ import dev.cwhead.GravesX.event.graveevent.GraveEvent;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.HandlerList;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * @deprecated Use {@link dev.cwhead.GravesX.event.GraveObituaryAddEvent} instead.
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveObituaryAddEvent} instead. Will be removed in 4.9.10.1.
  * Represents an event that occurs when an Obituary is added to a grave.
  * <p>
  * This event extends {@link GraveEvent} and is cancellable, allowing event listeners
  * to prevent obituaries from being included in graves.
  * </p>
  */
-@Deprecated (since = "4.9.9.1", forRemoval = true)
+@Deprecated(since = "4.9.9.1", forRemoval = true)
+@ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
 public class GraveObituaryAddEvent extends dev.cwhead.GravesX.event.GraveObituaryAddEvent {
 
     /**
@@ -36,7 +38,8 @@ public class GraveObituaryAddEvent extends dev.cwhead.GravesX.event.GraveObituar
      * @param location The location associated with this obituary addition.
      * @param entity   The entity for which the grave is being created (nullable).
      */
-    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    @Deprecated(since = "4.9.9.1", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
     public GraveObituaryAddEvent(@NotNull Grave grave, @NotNull Location location, @Nullable Entity entity) {
         super(grave, location, entity);
     }

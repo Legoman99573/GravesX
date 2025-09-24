@@ -4,18 +4,20 @@ import com.ranull.graves.type.Grave;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.HandlerList;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * @deprecated Use {@link dev.cwhead.GravesX.event.GravePlayerHeadDropEvent} instead.
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GravePlayerHeadDropEvent} instead. Will be removed in 4.9.10.1.
  * Represents an event that occurs when a Players Head is added to a grave.
  * <p>
  * This event extends {@link dev.cwhead.GravesX.event.graveevent.GraveEvent} and is cancellable, allowing event listeners
  * to prevent Player Heads from being included in graves.
  * </p>
  */
-@Deprecated (since = "4.9.9.1", forRemoval = true)
+@Deprecated(since = "4.9.9.1", forRemoval = true)
+@ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
 public class GravePlayerHeadDropEvent extends dev.cwhead.GravesX.event.GravePlayerHeadDropEvent {
 
     /**
@@ -35,7 +37,8 @@ public class GravePlayerHeadDropEvent extends dev.cwhead.GravesX.event.GravePlay
      * @param location The location where the player head will be dropped.
      * @param entity   The entity for which the player head will be dropped (nullable).
      */
-    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    @Deprecated(since = "4.9.9.1", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
     public GravePlayerHeadDropEvent(@NotNull Grave grave, @NotNull Location location, @Nullable Entity entity) {
         super(grave, location, entity);
     }

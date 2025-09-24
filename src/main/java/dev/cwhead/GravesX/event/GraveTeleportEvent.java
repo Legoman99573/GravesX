@@ -7,6 +7,8 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Objects;
+
 /**
  * Represents an event that is triggered when a player teleports to a grave.
  * <p>
@@ -32,8 +34,7 @@ public class GraveTeleportEvent extends GraveEntityEvent {
      * @param entity The entity who is teleporting to the grave.
      */
     public GraveTeleportEvent(@NotNull Grave grave, @NotNull Entity entity) {
-        super(grave, entity, grave.getLocationDeath(), null, null, (entity instanceof LivingEntity) ? (LivingEntity) entity : null, null
-        );
+        super(Objects.requireNonNull(grave, "grave"), Objects.requireNonNull(entity, "entity"), grave.getLocationDeath(), null, null, (entity instanceof LivingEntity le) ? le : null, null);
     }
 
     /**

@@ -5,17 +5,19 @@ import dev.cwhead.GravesX.exception.GravesXEventIllegalArgumentException;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * @deprecated Use {@link dev.cwhead.GravesX.event.GraveCompassUseEvent} instead.
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveCompassUseEvent} instead. Will be removed in 4.9.10.1.
  * Represents an event that occurs when a grave compass is used.
  * <p>
  * This event extends {@link dev.cwhead.GravesX.event.graveevent.GravePlayerEvent} and is cancellable, allowing event listeners
  * to prevent the creation of the grave if necessary.
  * </p>
  */
-@Deprecated (since = "4.9.9.1", forRemoval = true)
+@Deprecated(since = "4.9.9.1", forRemoval = true)
+@ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
 public class GraveCompassUseEvent extends dev.cwhead.GravesX.event.GraveCompassUseEvent {
 
     /**
@@ -34,7 +36,8 @@ public class GraveCompassUseEvent extends dev.cwhead.GravesX.event.GraveCompassU
      * @param player The player for which is using the compass.
      * @param grave  The grave being created.
      */
-    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    @Deprecated(since = "4.9.9.1", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
     public GraveCompassUseEvent(@NotNull Player player, @NotNull Grave grave) {
         super(player, grave);
     }
@@ -45,14 +48,17 @@ public class GraveCompassUseEvent extends dev.cwhead.GravesX.event.GraveCompassU
      * @param entity The entity for which is using the compass.
      * @param grave  The grave being created.
      */
-    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    @Deprecated(since = "4.9.9.1", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
     public GraveCompassUseEvent(@NotNull Entity entity, @NotNull Grave grave) {
         super(requirePlayer(entity), grave);
     }
 
     private static @NotNull Player requirePlayer(@NotNull Entity entity) {
-        if (entity instanceof Player) return (Player) entity;
-        throw new GravesXEventIllegalArgumentException("GraveCompassUseEvent requires a Player. Received " + entity.getType() + " instead.");
+        if (entity instanceof Player p) return p;
+        throw new GravesXEventIllegalArgumentException(
+                "GraveCompassUseEvent requires a Player. Received " + entity.getType() + " instead."
+        );
     }
 
     /**

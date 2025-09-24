@@ -6,17 +6,19 @@ import dev.cwhead.GravesX.exception.GravesXEventIllegalArgumentException;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * @deprecated Use {@link dev.cwhead.GravesX.event.GraveParticleEvent} instead.
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveParticleEvent} instead. Will be removed in 4.9.10.1.
  * Represents an event that occurs when a particle is spawned to a grave location.
  * <p>
  * This event extends {@link GravePlayerEvent} and is cancellable, allowing event listeners
  * to prevent the creation of the grave if necessary.
  * </p>
  */
-@Deprecated (since = "4.9.9.1", forRemoval = true)
+@Deprecated(since = "4.9.9.1", forRemoval = true)
+@ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
 public class GraveParticleEvent extends dev.cwhead.GravesX.event.GraveParticleEvent {
 
     /**
@@ -35,7 +37,8 @@ public class GraveParticleEvent extends dev.cwhead.GravesX.event.GraveParticleEv
      * @param player The player for which is spawning the particles from a compass.
      * @param grave  The grave being created.
      */
-    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    @Deprecated(since = "4.9.9.1", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
     public GraveParticleEvent(@NotNull Player player, @NotNull Grave grave) {
         super(player, grave);
     }
@@ -47,14 +50,17 @@ public class GraveParticleEvent extends dev.cwhead.GravesX.event.GraveParticleEv
      * @param entity The entity for which is spawning the particles from a compass.
      * @param grave  The grave being created.
      */
-    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    @Deprecated(since = "4.9.9.1", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
     public GraveParticleEvent(@NotNull Entity entity, @NotNull Grave grave) {
         super(requirePlayer(entity), grave);
     }
 
     private static @NotNull Player requirePlayer(@NotNull Entity entity) {
-        if (entity instanceof Player) return (Player) entity;
-        throw new GravesXEventIllegalArgumentException("GraveParticleEvent requires a Player. Received " + entity.getType() + " instead.");
+        if (entity instanceof Player p) return p;
+        throw new GravesXEventIllegalArgumentException(
+                "GraveParticleEvent requires a Player. Received " + entity.getType() + " instead."
+        );
     }
 
     /**

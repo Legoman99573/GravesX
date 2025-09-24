@@ -7,18 +7,20 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * @deprecated Use {@link dev.cwhead.GravesX.event.GraveProjectileHitEvent} instead.
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveProjectileHitEvent} instead. Will be removed in 4.9.10.1.
  * Represents an event that occurs when a grave is hit with a projectile.
  * <p>
  * This event extends {@link dev.cwhead.GravesX.event.graveevent.GraveEntityEvent} and provides information about the grave
  * that is hit with a projectile.
  * </p>
  */
-@Deprecated (since = "4.9.9.1", forRemoval = true)
+@Deprecated(since = "4.9.9.1", forRemoval = true)
+@ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
 public class GraveProjectileHitEvent extends dev.cwhead.GravesX.event.GraveProjectileHitEvent {
 
     /**
@@ -40,7 +42,8 @@ public class GraveProjectileHitEvent extends dev.cwhead.GravesX.event.GraveProje
      * @param entity   The projectile entity involved in the event.
      * @param block    The block involved in the event, if any.
      */
-    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    @Deprecated(since = "4.9.9.1", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
     public GraveProjectileHitEvent(@NotNull Location location, @NotNull Player player, @NotNull Grave grave, @NotNull Entity entity, @Nullable Block block) {
         super(location, player, grave, entity, block);
     }
@@ -55,12 +58,9 @@ public class GraveProjectileHitEvent extends dev.cwhead.GravesX.event.GraveProje
      * @param entity       The projectile entity involved in the event.
      * @param block        The block involved in the event, if any.
      */
-    @Deprecated (since = "4.9.9.1")
-    public GraveProjectileHitEvent(@NotNull Location location,
-                                   @NotNull LivingEntity livingEntity,
-                                   @NotNull Grave grave,
-                                   @NotNull Entity entity,
-                                   @Nullable Block block) {
+    @Deprecated(since = "4.9.9.1", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
+    public GraveProjectileHitEvent(@NotNull Location location, @NotNull LivingEntity livingEntity, @NotNull Grave grave, @NotNull Entity entity, @Nullable Block block) {
         super(location, livingEntity, grave, entity, block);
     }
 
@@ -73,7 +73,8 @@ public class GraveProjectileHitEvent extends dev.cwhead.GravesX.event.GraveProje
      * @param entity   The projectile entity involved in the event.
      * @param block    The block involved in the event, if any.
      */
-    @Deprecated (since = "4.9.9.1")
+    @Deprecated(since = "4.9.9.1", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
     public GraveProjectileHitEvent(@NotNull Location location, @NotNull Grave grave, @NotNull Entity entity, @Nullable Block block) {
         super(location, grave, entity, block);
     }

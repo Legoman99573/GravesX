@@ -47,7 +47,13 @@ public class GraveBlockPlaceEvent extends GraveEvent {
      * @param block        The block being placed.
      * @param livingEntity The Killer
      */
-    public GraveBlockPlaceEvent(@NotNull Grave grave, @NotNull Location location, @Nullable BlockData.BlockType blockType, @Nullable Block block, @Nullable LivingEntity livingEntity) {
+    public GraveBlockPlaceEvent(
+            @NotNull Grave grave,
+            @NotNull Location location,
+            @Nullable BlockData.BlockType blockType,
+            @Nullable Block block,
+            @Nullable LivingEntity livingEntity
+    ) {
         super(grave, location, blockType, block);
         this.livingEntity = livingEntity;
     }
@@ -141,8 +147,7 @@ public class GraveBlockPlaceEvent extends GraveEvent {
      * @return true if a killer is associated with this event.
      */
     public boolean hasKiller() {
-        if (livingEntity == null) return false;
-        return livingEntity.getKiller() != null;
+        return livingEntity != null && livingEntity.getKiller() != null;
     }
 
     /**
@@ -151,8 +156,8 @@ public class GraveBlockPlaceEvent extends GraveEvent {
      * @return true if the killer is a Player and still references a valid Player object.
      */
     public boolean hasPlayer() {
-        if (livingEntity instanceof Player) {
-            return ((Player) livingEntity).getPlayer() != null;
+        if (livingEntity instanceof Player p) {
+            return p.getPlayer() != null;
         }
         return false;
     }
@@ -164,8 +169,8 @@ public class GraveBlockPlaceEvent extends GraveEvent {
      * @throws GravesXEventNullPointerException if the killer is not a player.
      */
     public Player getPlayer() {
-        if (livingEntity instanceof Player) {
-            return ((Player) livingEntity).getPlayer();
+        if (livingEntity instanceof Player p) {
+            return p.getPlayer();
         }
         throw new GravesXEventNullPointerException(this, "player");
     }

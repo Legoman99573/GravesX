@@ -1,7 +1,7 @@
 package dev.cwhead.GravesX.event;
 
-import com.ranull.graves.type.Grave;
 import com.ranull.graves.data.BlockData;
+import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.graveevent.GravePlayerEvent;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -10,6 +10,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
 
 /**
  * Represents an event that occurs when a grave is broken by a {@link Player}.
@@ -49,7 +51,7 @@ public class GraveBreakEvent extends GravePlayerEvent {
      * @param blockType The block type if already known (nullable). If null, it will be resolved from the block.
      */
     public GraveBreakEvent(@NotNull Block block, @NotNull Player player, @NotNull Grave grave, @Nullable BlockData.BlockType blockType) {
-        super(grave, player, safeLocation(block, grave), resolveBlockType(blockType, block), block, null, player, null);
+        super(Objects.requireNonNull(grave, "grave"), Objects.requireNonNull(player, "player"), safeLocation(Objects.requireNonNull(block, "block"), grave), resolveBlockType(blockType, block), block, null, player, null);
     }
 
     private static @NotNull Location safeLocation(@NotNull Block block, @NotNull Grave grave) {
@@ -60,7 +62,6 @@ public class GraveBreakEvent extends GravePlayerEvent {
         if (given != null) return given;
 
         final Material mat = block.getType();
-
         try {
             return BlockData.BlockType.valueOf(mat.name());
         } catch (IllegalArgumentException ignored) {

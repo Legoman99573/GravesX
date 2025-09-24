@@ -3,17 +3,19 @@ package com.ranull.graves.event;
 import com.ranull.graves.type.Grave;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.HandlerList;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * @deprecated Use {@link dev.cwhead.GravesX.event.GraveCreateEvent} instead.
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveCreateEvent} instead. Will be removed in 4.9.10.1.
  * Represents an event that occurs when a grave is created for an entity.
  * <p>
  * This event extends {@link dev.cwhead.GravesX.event.graveevent.GraveEntityEvent} and is cancellable, allowing event listeners
  * to prevent the creation of the grave if necessary.
  * </p>
  */
-@Deprecated (since = "4.9.9.1", forRemoval = true)
+@Deprecated(since = "4.9.9.1", forRemoval = true)
+@ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
 public class GraveCreateEvent extends dev.cwhead.GravesX.event.GraveCreateEvent {
 
     /**
@@ -32,7 +34,8 @@ public class GraveCreateEvent extends dev.cwhead.GravesX.event.GraveCreateEvent 
      * @param entity The entity for which the grave is being created.
      * @param grave  The grave being created.
      */
-    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    @Deprecated(since = "4.9.9.1", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
     public GraveCreateEvent(@NotNull Entity entity, @NotNull Grave grave) {
         super(entity, grave);
     }

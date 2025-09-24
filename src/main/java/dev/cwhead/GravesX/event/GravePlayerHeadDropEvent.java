@@ -9,6 +9,8 @@ import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
+
 /**
  * Represents an event that occurs when a Players Head is added to a grave.
  * <p>
@@ -38,7 +40,7 @@ public class GravePlayerHeadDropEvent extends GraveEvent {
      * @param entity   The entity for which the player head will be dropped (nullable).
      */
     public GravePlayerHeadDropEvent(@NotNull Grave grave, @NotNull Location location, @Nullable Entity entity) {
-        super(grave, location, null, null);
+        super(Objects.requireNonNull(grave, "grave"), Objects.requireNonNull(location, "location"), null, null);
         this.entity = entity;
     }
 

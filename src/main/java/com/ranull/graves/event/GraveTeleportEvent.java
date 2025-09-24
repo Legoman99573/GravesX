@@ -4,17 +4,19 @@ import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.graveevent.GraveEntityEvent;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.HandlerList;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * @deprecated Use {@link dev.cwhead.GravesX.event.GraveTeleportEvent} instead.
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveTeleportEvent} instead. Will be removed in 4.9.10.1.
  * Represents an event that is triggered when a player teleports to a grave.
  * <p>
  * This event is fired when a player teleports to a specified location associated with a grave.
  * It extends from the {@link GraveEntityEvent} class, inheriting the basic event properties.
  * </p>
  */
-@Deprecated (since = "4.9.9.1", forRemoval = true)
+@Deprecated(since = "4.9.9.1", forRemoval = true)
+@ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
 public class GraveTeleportEvent extends dev.cwhead.GravesX.event.GraveTeleportEvent {
 
     /**
@@ -33,7 +35,8 @@ public class GraveTeleportEvent extends dev.cwhead.GravesX.event.GraveTeleportEv
      * @param grave  The grave associated with the event.
      * @param entity The entity who is teleporting to the grave.
      */
-    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    @Deprecated(since = "4.9.9.1", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
     public GraveTeleportEvent(@NotNull Grave grave, @NotNull Entity entity) {
         super(grave, entity);
     }

@@ -7,6 +7,8 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Objects;
+
 /**
  * Represents an event that occurs when grave protection is created.
  * <p>
@@ -32,7 +34,7 @@ public class GraveProtectionCreateEvent extends GraveEntityEvent {
      * @param grave  The grave being protected.
      */
     public GraveProtectionCreateEvent(@NotNull Entity entity, @NotNull Grave grave) {
-        super(grave, entity, grave.getLocationDeath(), null, null, (entity instanceof LivingEntity) ? (LivingEntity) entity : null, null);
+        super(Objects.requireNonNull(grave, "grave"), Objects.requireNonNull(entity, "entity"), grave.getLocationDeath(), null, null, (entity instanceof LivingEntity le) ? le : null, null);
     }
 
     /**

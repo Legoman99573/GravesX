@@ -6,17 +6,19 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.InventoryView;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * @deprecated Use {@link dev.cwhead.GravesX.event.GraveLootedEvent} instead.
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveLootedEvent} instead. Will be removed in 4.9.10.1.
  * Represents an event that occurs when an inventory associated with a grave is completely looted.
  * <p>
  * This event extends {@link dev.cwhead.GravesX.event.graveevent.GravePlayerEvent} and provides information about the grave
  * and the player involved when the inventory is completely looted.
  * </p>
  */
-@Deprecated (since = "4.9.9.1", forRemoval = true)
+@Deprecated(since = "4.9.9.1", forRemoval = true)
+@ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
 public class GraveLootedEvent extends dev.cwhead.GravesX.event.GraveLootedEvent {
 
     /**
@@ -36,7 +38,8 @@ public class GraveLootedEvent extends dev.cwhead.GravesX.event.GraveLootedEvent 
      * @param grave         The grave associated with the inventory view.
      * @param player        The player who is closing the inventory.
      */
-    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    @Deprecated(since = "4.9.9.1", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
     public GraveLootedEvent(@NotNull InventoryView inventoryView,
                             @NotNull Grave grave,
                             @NotNull Player player) {
@@ -51,14 +54,17 @@ public class GraveLootedEvent extends dev.cwhead.GravesX.event.GraveLootedEvent 
      * @param grave         The grave associated with the inventory view.
      * @param entity        The entity who is closing the inventory.
      */
-    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    @Deprecated(since = "4.9.9.1", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
     public GraveLootedEvent(@NotNull Grave grave, @NotNull InventoryView inventoryView, @NotNull Entity entity) {
         super(inventoryView, grave, requirePlayer(entity));
     }
 
     private static @NotNull Player requirePlayer(@NotNull Entity entity) {
-        if (entity instanceof Player) return (Player) entity;
-        throw new GravesXEventIllegalArgumentException("GraveLootedEvent requires a Player. Received " + entity.getType() + " instead.");
+        if (entity instanceof Player p) return p;
+        throw new GravesXEventIllegalArgumentException(
+                "GraveLootedEvent requires a Player. Received " + entity.getType() + " instead."
+        );
     }
 
     /**

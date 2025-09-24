@@ -2,17 +2,19 @@ package com.ranull.graves.event;
 
 import com.ranull.graves.type.Grave;
 import org.bukkit.event.HandlerList;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * @deprecated Use {@link dev.cwhead.GravesX.event.GraveAbandonedEvent} instead.
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveAbandonedEvent} instead. Will be removed in 4.9.10.1.
  * Represents an event that occurs when a grave is abandoned.
  * <p>
  * This event extends {@link dev.cwhead.GravesX.event.graveevent.GraveEvent} and provides information about the grave
  * that is abandoned.
  * </p>
  */
-@Deprecated (since = "4.9.9.1", forRemoval = true)
+@Deprecated(since = "4.9.9.1", forRemoval = true)
+@ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
 public class GraveAbandonedEvent extends dev.cwhead.GravesX.event.GraveAbandonedEvent {
 
     /**
@@ -31,7 +33,8 @@ public class GraveAbandonedEvent extends dev.cwhead.GravesX.event.GraveAbandoned
      * @param grave The grave that is abandoned. The location of the grave at the time
      *              of abandonment is automatically set from the grave's death location.
      */
-    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    @Deprecated(since = "4.9.9.1", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
     public GraveAbandonedEvent(@NotNull Grave grave) {
         super(grave);
     }

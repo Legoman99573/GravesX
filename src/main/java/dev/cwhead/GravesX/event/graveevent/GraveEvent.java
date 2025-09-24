@@ -12,6 +12,7 @@ import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -98,7 +99,7 @@ public abstract class GraveEvent extends Event implements Cancellable, Addon {
      * @param block     The block involved in the event, if any.
      */
     protected GraveEvent(@NotNull Grave grave, @Nullable Location location, @Nullable BlockData.BlockType blockType, @Nullable Block block) {
-        this.grave = grave;
+        this.grave = Objects.requireNonNull(grave, "grave");
         this.location = location;
         this.blockType = blockType;
         this.block = block;
@@ -215,7 +216,7 @@ public abstract class GraveEvent extends Event implements Cancellable, Addon {
      * @param location The new location of the event.
      */
     public void setLocation(@NotNull Location location) {
-        this.location = location;
+        this.location = Objects.requireNonNull(location, "location");
     }
 
     /**

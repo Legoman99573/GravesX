@@ -10,6 +10,8 @@ import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
+
 /**
  * Represents an event that occurs when a grave explodes.
  * <p>
@@ -38,7 +40,7 @@ public class GraveExplodeEvent extends GraveEvent {
      * @param grave    The grave that is exploding.
      */
     public GraveExplodeEvent(@NotNull Location location, @Nullable Entity entity, @NotNull Grave grave) {
-        super(grave, location, null, null);
+        super(Objects.requireNonNull(grave, "grave"), Objects.requireNonNull(location, "location"), null, null);
         this.entity = entity;
     }
 
@@ -76,10 +78,10 @@ public class GraveExplodeEvent extends GraveEvent {
      * @throws GravesXEventNullPointerException if the source is not a player or absent.
      */
     public @NotNull Player getPlayer() {
-        if (!(entity instanceof Player)) {
+        if (!(entity instanceof Player p)) {
             throw new GravesXEventNullPointerException(this, "player");
         }
-        return (Player) entity;
+        return p;
     }
 
     /**

@@ -9,6 +9,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Objects;
+
 /**
  * Fired just before an entity is teleported to a grave.
  * <p>
@@ -39,7 +41,7 @@ public class GravePreTeleportEvent extends GraveEntityEvent {
      * @param entity The entity who is teleporting to the grave.
      */
     public GravePreTeleportEvent(@NotNull Grave grave, @NotNull Entity entity) {
-        super(grave, entity, grave.getLocationDeath(), null, null, (entity instanceof LivingEntity) ? (LivingEntity) entity : null, null);
+        super(Objects.requireNonNull(grave, "grave"), Objects.requireNonNull(entity, "entity"), grave.getLocationDeath(), null, null, (entity instanceof LivingEntity le) ? le : null, null);
         this.entity = entity;
     }
 
@@ -59,10 +61,10 @@ public class GravePreTeleportEvent extends GraveEntityEvent {
      * @throws GravesXEventNullPointerException if the teleporting entity is not a player.
      */
     public @NotNull Player getPlayer() {
-        if (!(entity instanceof Player)) {
+        if (!(entity instanceof Player p)) {
             throw new GravesXEventNullPointerException(this, "player");
         }
-        return (Player) entity;
+        return p;
     }
 
     /**

@@ -2,13 +2,16 @@ package dev.cwhead.GravesX.event;
 
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.graveevent.GraveEvent;
+import dev.cwhead.GravesX.exception.GravesXEventNullPointerException;
 import org.bukkit.Location;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Represents an event that occurs when a zombie spawns at a grave.
@@ -41,7 +44,7 @@ public class GraveZombieSpawnEvent extends GraveEvent {
      * @param grave        The grave associated with the event.
      */
     public GraveZombieSpawnEvent(@NotNull Location location, @NotNull LivingEntity targetEntity, @NotNull Grave grave) {
-        super(grave, location, null, null);
+        super(Objects.requireNonNull(grave, "grave"), Objects.requireNonNull(location, "location"), null, grave.getLocationDeath().getBlock());
         this.targetEntity = Objects.requireNonNull(targetEntity, "targetEntity");
     }
 
@@ -61,6 +64,48 @@ public class GraveZombieSpawnEvent extends GraveEvent {
      */
     public @NotNull EntityType getTargetEntityType() {
         return targetEntity.getType();
+    }
+
+    /**
+     * Returns whether the target is a {@link Player}.
+     *
+     * @return {@code true} if the target is a player; otherwise {@code false}.
+     */
+    public boolean hasPlayerTarget() {
+        return targetEntity instanceof Player;
+    }
+
+    /**
+     * Returns the targeted {@link Player}.
+     *
+     * @return the player being targeted.
+     * @throws GravesXEventNullPointerException if the target is not a player.
+     */
+    public @NotNull Player getTargetPlayer() {
+        if (!(targetEntity instanceof Player p)) {
+            throw new GravesXEventNullPointerException(this, "player");
+        }
+        return p;
+    }
+
+    /**
+     * Returns the targeted player's name.
+     *
+     * @return the player's current name.
+     * @throws GravesXEventNullPointerException if the target is not a player.
+     */
+    public @NotNull String getTargetPlayerName() {
+        return getTargetPlayer().getName();
+    }
+
+    /**
+     * Returns the targeted player's UUID.
+     *
+     * @return the player's unique identifier.
+     * @throws GravesXEventNullPointerException if the target is not a player.
+     */
+    public @NotNull UUID getTargetPlayerUniqueId() {
+        return getTargetPlayer().getUniqueId();
     }
 
     /**

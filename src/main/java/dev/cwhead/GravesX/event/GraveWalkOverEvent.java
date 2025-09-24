@@ -8,6 +8,8 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Objects;
+
 /**
  * Represents an event where a grave is walked over.
  * <p>
@@ -34,7 +36,7 @@ public class GraveWalkOverEvent extends GraveEntityEvent {
      * @param grave    The grave that is being walked over and looted.
      */
     public GraveWalkOverEvent(@NotNull Entity entity, @NotNull Location location, @NotNull Grave grave) {
-        super(grave, entity, location, null, null, (entity instanceof LivingEntity) ? (LivingEntity) entity : null, null);
+        super(Objects.requireNonNull(grave, "grave"), Objects.requireNonNull(entity, "entity"), Objects.requireNonNull(location, "location"), null, grave.getLocationDeath().getBlock(), (entity instanceof LivingEntity le) ? le : null, null);
     }
 
     /**

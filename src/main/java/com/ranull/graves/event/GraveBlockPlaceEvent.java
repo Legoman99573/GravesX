@@ -6,17 +6,19 @@ import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.HandlerList;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * @deprecated Use {@link dev.cwhead.GravesX.event.GraveBlockPlaceEvent} instead.
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveBlockPlaceEvent} instead. Will be removed in 4.9.10.1.
  * Represents an event that occurs when a grave is placed by a {@link org.bukkit.entity.LivingEntity} whether that be a {@link org.bukkit.entity.Player} or {@link org.bukkit.entity.Entity}.
  * <p>
  * This event extends {@link dev.cwhead.GravesX.event.graveevent.GraveEvent} and provides information about the grave
  * and the {@link org.bukkit.entity.LivingEntity} ({@link org.bukkit.entity.Player} or {@link org.bukkit.entity.Entity}) involved when the grave is placed.
  * </p>
  */
-@Deprecated (since = "4.9.9.1", forRemoval = true)
+@Deprecated(since = "4.9.9.1", forRemoval = true)
+@ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
 public class GraveBlockPlaceEvent extends dev.cwhead.GravesX.event.GraveBlockPlaceEvent {
 
     /**
@@ -38,8 +40,15 @@ public class GraveBlockPlaceEvent extends dev.cwhead.GravesX.event.GraveBlockPla
      * @param block        The block being placed.
      * @param livingEntity The Killer
      */
-    @Deprecated (since = "4.9.9.1", forRemoval = true)
-    public GraveBlockPlaceEvent(@NotNull Grave grave, @NotNull Location location, @NotNull BlockData.BlockType blockType, Block block, LivingEntity livingEntity) {
+    @Deprecated(since = "4.9.9.1", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
+    public GraveBlockPlaceEvent(
+            @NotNull Grave grave,
+            @NotNull Location location,
+            @NotNull BlockData.BlockType blockType,
+            Block block,
+            LivingEntity livingEntity
+    ) {
         super(grave, location, blockType, block, livingEntity);
     }
 
@@ -51,7 +60,8 @@ public class GraveBlockPlaceEvent extends dev.cwhead.GravesX.event.GraveBlockPla
      * @param location  The location where the block is being placed.
      * @param blockType The type of the block being placed.
      */
-    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    @Deprecated(since = "4.9.9.1", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
     public GraveBlockPlaceEvent(@NotNull Grave grave, @NotNull Location location, @NotNull BlockData.BlockType blockType) {
         super(grave, location, blockType, null, null);
     }

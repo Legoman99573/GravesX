@@ -6,10 +6,11 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.InventoryView;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * @deprecated Use {@link dev.cwhead.GravesX.event.GraveOpenEvent} instead.
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveOpenEvent} instead. Will be removed in 4.9.10.1.
  * Represents an event that occurs when a player opens an inventory associated
  * with a grave.
  * <p>
@@ -17,7 +18,8 @@ import org.jetbrains.annotations.NotNull;
  * about the grave and the inventory view that is being opened.
  * </p>
  */
-@Deprecated
+@Deprecated(since = "4.9.9.1", forRemoval = true)
+@ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
 public class GraveOpenEvent extends dev.cwhead.GravesX.event.GraveOpenEvent {
 
     /**
@@ -37,6 +39,8 @@ public class GraveOpenEvent extends dev.cwhead.GravesX.event.GraveOpenEvent {
      * @param grave         The grave associated with the inventory view.
      * @param player        The player who is opening the inventory.
      */
+    @Deprecated(since = "4.9.9.1", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
     public GraveOpenEvent(@NotNull InventoryView inventoryView, @NotNull Grave grave, @NotNull Player player) {
         super(inventoryView, grave, player);
     }
@@ -49,14 +53,17 @@ public class GraveOpenEvent extends dev.cwhead.GravesX.event.GraveOpenEvent {
      * @param grave         The grave associated with the inventory view.
      * @param entity        The entity who is opening the inventory.
      */
-    @Deprecated
+    @Deprecated(since = "4.9.9.1", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
     public GraveOpenEvent(@NotNull InventoryView inventoryView, @NotNull Grave grave, @NotNull Entity entity) {
         super(inventoryView, grave, requirePlayer(entity));
     }
 
     private static @NotNull Player requirePlayer(@NotNull Entity entity) {
-        if (entity instanceof Player) return (Player) entity;
-        throw new GravesXEventIllegalArgumentException("GraveOpenEvent requires a Player. Received " + entity.getType() + " instead.");
+        if (entity instanceof Player p) return p; // Java 17 pattern matching
+        throw new GravesXEventIllegalArgumentException(
+                "GraveOpenEvent requires a Player. Received " + entity.getType() + " instead."
+        );
     }
 
     /**

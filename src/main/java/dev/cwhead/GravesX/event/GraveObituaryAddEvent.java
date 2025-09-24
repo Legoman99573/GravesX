@@ -13,6 +13,8 @@ import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
+
 /**
  * Represents an event that occurs when an Obituary is added to a grave.
  * <p>
@@ -44,7 +46,7 @@ public class GraveObituaryAddEvent extends GraveEvent {
      * @param entity   The entity for which the grave is being created (nullable).
      */
     public GraveObituaryAddEvent(@NotNull Grave grave, @NotNull Location location, @Nullable Entity entity) {
-        super(grave, location, null, null);
+        super(Objects.requireNonNull(grave, "grave"), Objects.requireNonNull(location, "location"), null, null);
         this.entity = entity;
     }
 
@@ -75,8 +77,8 @@ public class GraveObituaryAddEvent extends GraveEvent {
      * @return true if player, false otherwise
      */
     public boolean hasPlayer() {
-        if (entity instanceof Player) {
-            Player player = ((Player) entity).getPlayer();
+        if (entity instanceof Player p) {
+            Player player = p.getPlayer();
             return player != null;
         }
         return false;
@@ -90,14 +92,14 @@ public class GraveObituaryAddEvent extends GraveEvent {
      * @throws GravesXEventIllegalArgumentException if entity pulled was not a player
      */
     public @NotNull Player getPlayer() {
-        if (entity instanceof Player) {
-            Player player = ((Player) entity).getPlayer();
+        if (entity instanceof Player p) {
+            Player player = p.getPlayer();
             if (player != null) {
                 return player;
             }
             throw new GravesXEventNullPointerException(this, "player");
         }
-        EntityType entityType = entity != null ? entity.getType() : EntityType.UNKNOWN;
+        EntityType entityType = (entity != null) ? entity.getType() : EntityType.UNKNOWN;
         throw new GravesXEventIllegalArgumentException("GraveObituaryAddEvent made a call to get player. Received " + entityType + " instead.");
     }
 

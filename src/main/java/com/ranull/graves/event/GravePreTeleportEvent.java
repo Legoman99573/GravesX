@@ -3,17 +3,19 @@ package com.ranull.graves.event;
 import com.ranull.graves.type.Grave;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.HandlerList;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * @deprecated Use {@link dev.cwhead.GravesX.event.GravePreTeleportEvent} instead.
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GravePreTeleportEvent} instead. Will be removed in 4.9.10.1.
  * Fired just before an entity is teleported to a grave.
  * <p>
  * This event extends {@link dev.cwhead.GravesX.event.graveevent.GraveEntityEvent} and is cancellable, allowing listeners
  * to prevent the teleport.
  * </p>
  */
-@Deprecated (since = "4.9.9.1", forRemoval = true)
+@Deprecated(since = "4.9.9.1", forRemoval = true)
+@ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
 public class GravePreTeleportEvent extends dev.cwhead.GravesX.event.GravePreTeleportEvent {
 
     /**
@@ -31,7 +33,8 @@ public class GravePreTeleportEvent extends dev.cwhead.GravesX.event.GravePreTele
      * @param grave  The grave associated with the event.
      * @param entity The entity who is teleporting to the grave.
      */
-    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    @Deprecated(since = "4.9.9.1", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
     public GravePreTeleportEvent(@NotNull Grave grave, @NotNull Entity entity) {
         super(grave, entity);
     }

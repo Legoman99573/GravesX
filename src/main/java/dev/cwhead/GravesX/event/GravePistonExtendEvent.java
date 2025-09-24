@@ -30,9 +30,9 @@ public class GravePistonExtendEvent extends GraveEvent {
      */
     private static final HandlerList HANDLERS = new HandlerList();
 
-    private final Block pistonBlock;
-    private final BlockFace direction;
-    private final List<Block> movedBlocks;
+    private final @NotNull Block pistonBlock;
+    private final @NotNull BlockFace direction;
+    private final @NotNull List<Block> movedBlocks;
 
     /**
      * Constructs a new {@code GravePistonExtendEvent}.
@@ -44,7 +44,7 @@ public class GravePistonExtendEvent extends GraveEvent {
      * @param movedBlocks The list of blocks being moved by the piston.
      */
     public GravePistonExtendEvent(@NotNull Grave grave, @Nullable Location location, @NotNull Block pistonBlock, @NotNull BlockFace direction, @NotNull List<Block> movedBlocks) {
-        super(grave, location, null, null);
+        super(Objects.requireNonNull(grave, "grave"), location, null, null);
         this.pistonBlock = Objects.requireNonNull(pistonBlock, "pistonBlock");
         this.direction = Objects.requireNonNull(direction, "direction");
         this.movedBlocks = List.copyOf(Objects.requireNonNull(movedBlocks, "movedBlocks"));

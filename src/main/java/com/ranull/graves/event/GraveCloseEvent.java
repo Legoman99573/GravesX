@@ -6,17 +6,19 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.InventoryView;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * @deprecated Use {@link dev.cwhead.GravesX.event.GraveCloseEvent} instead.
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveCloseEvent} instead. Will be removed in 4.9.10.1.
  * Represents an event that occurs when an inventory associated with a grave is closed.
  * <p>
  * This event extends {@link dev.cwhead.GravesX.event.graveevent.GraveEvent} and provides information about the grave
  * and the player involved when the inventory is closed.
  * </p>
  */
-@Deprecated (since = "4.9.9.1", forRemoval = true)
+@Deprecated(since = "4.9.9.1", forRemoval = true)
+@ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
 public class GraveCloseEvent extends dev.cwhead.GravesX.event.GraveCloseEvent {
 
     /**
@@ -36,7 +38,8 @@ public class GraveCloseEvent extends dev.cwhead.GravesX.event.GraveCloseEvent {
      * @param grave         The grave associated with the inventory view.
      * @param player        The player who is closing the inventory.
      */
-    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    @Deprecated(since = "4.9.9.1", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
     public GraveCloseEvent(@NotNull InventoryView inventoryView, @NotNull Grave grave, @NotNull Player player) {
         super(inventoryView, grave, player);
     }
@@ -49,13 +52,14 @@ public class GraveCloseEvent extends dev.cwhead.GravesX.event.GraveCloseEvent {
      * @param inventoryView The inventory view that is being closed.
      * @param entity        The entity who is closing the inventory.
      */
-    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    @Deprecated(since = "4.9.9.1", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
     public GraveCloseEvent(@NotNull Grave grave, @NotNull InventoryView inventoryView, @NotNull Entity entity) {
         super(inventoryView, grave, requirePlayer(entity));
     }
 
     private static @NotNull Player requirePlayer(@NotNull Entity entity) {
-        if (entity instanceof Player) return (Player) entity;
+        if (entity instanceof Player p) return p;
         throw new GravesXEventIllegalArgumentException("GraveCloseEvent requires a Player. Received " + entity.getType() + " instead");
     }
 

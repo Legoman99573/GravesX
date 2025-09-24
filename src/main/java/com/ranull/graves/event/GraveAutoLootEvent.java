@@ -4,17 +4,19 @@ import com.ranull.graves.type.Grave;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.HandlerList;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * @deprecated Use {@link dev.cwhead.GravesX.event.GraveAutoLootEvent} instead.
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveAutoLootEvent} instead. Will be removed in 4.9.10.1.
  * Represents an event where a grave is automatically looted.
  * <p>
  * This event extends {@link dev.cwhead.GravesX.event.graveevent.GraveEvent} and provides information about the entity involved,
  * the location of the grave, and the grave itself.
  * </p>
  */
-@Deprecated (since = "4.9.9.1", forRemoval = true)
+@Deprecated(since = "4.9.9.1", forRemoval = true)
+@ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
 public class GraveAutoLootEvent extends dev.cwhead.GravesX.event.GraveAutoLootEvent {
 
     /**
@@ -34,7 +36,8 @@ public class GraveAutoLootEvent extends dev.cwhead.GravesX.event.GraveAutoLootEv
      * @param location The location of the grave being looted.
      * @param grave    The grave that is being looted.
      */
-    @Deprecated (since = "4.9.9.1", forRemoval = true)
+    @Deprecated(since = "4.9.9.1", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
     public GraveAutoLootEvent(@NotNull Entity entity, @NotNull Location location, @NotNull Grave grave) {
         super(entity, location, grave);
     }
