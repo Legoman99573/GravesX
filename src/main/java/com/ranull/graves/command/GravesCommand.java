@@ -2,12 +2,9 @@ package com.ranull.graves.command;
 
 import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
+import dev.cwhead.GravesX.compatibility.CompatibilityTeleport;
 import dev.cwhead.GravesX.util.PluginDownloadUtil;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Material;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -15,12 +12,14 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ExperienceOrb;
 import org.bukkit.entity.Player;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -28,6 +27,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -360,46 +360,85 @@ public final class GravesCommand implements CommandExecutor, TabCompleter {
     }
 
     private void handleTeleportCommand(CommandSender commandSender, String[] args) {
-        if (commandSender instanceof Player player) {
-            if (args.length == 1 || args.length == 2 && args[1].equals(player.getName())) {
-                if (plugin.hasGrantedPermission("graves.teleport.command", player)) {
-                    if (!plugin.getGraveManager().getGraveList(player).isEmpty()) {
-                        Grave grave = plugin.getGraveManager().getGraveList(player).get(0);
-                        if (plugin.hasGrantedPermission("graves.teleport.command.free", player)) {
-                            player.teleport(grave.getLocationDeath());
-                        } else {
-                            plugin.getEntityManager().teleportEntity(player, plugin.getGraveManager()
-                                    .getGraveLocationList(player.getLocation(), grave).get(0), grave);
-                        }
-                    } else {
-                        commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET + "You have no graves.");
-                    }
-                } else {
-                    plugin.getEntityManager().sendMessage("message.permission-denied", player);
-                }
-            }
-            if (args.length == 2 && !args[1].equals(player.getName())) {
-                if (plugin.hasGrantedPermission("graves.teleport.command.others", player)) {
-                    OfflinePlayer offlinePlayer = plugin.getServer().getOfflinePlayer(args[1]);
-                    if (!plugin.getGraveManager().getGraveList(offlinePlayer).isEmpty()) {
-                        Grave grave = plugin.getGraveManager().getGraveList(offlinePlayer).get(0);
-                        if (plugin.hasGrantedPermission("graves.teleport.command.others.free", player)) {
-                            player.teleport(plugin.getGraveManager().getGraveLocation(grave.getLocationDeath().add(1, 0, 1), grave));
-                        } else {
-                            plugin.getEntityManager().teleportEntity(player, plugin.getGraveManager()
-                                    .getGraveLocationList(player.getLocation(), grave).get(0), grave);
-                        }
-                    } else {
-                        commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » "
-                                + ChatColor.RESET + ChatColor.RED + args[1] + ChatColor.RESET + " has no graves.");
-                    }
-                } else {
-                    plugin.getEntityManager().sendMessage("message.permission-denied", player);
-                }
-            }
-        } else {
+        if (!(commandSender instanceof Player player)) {
             sendHelpMenu(commandSender);
+            return;
         }
+
+        if (args.length == 1 || (args.length == 2 && args[1].equalsIgnoreCase(player.getName()))) {
+            if (!plugin.hasGrantedPermission("graves.teleport.command", player)) {
+                plugin.getEntityManager().sendMessage("message.permission-denied", player);
+                return;
+            }
+
+            var graves = plugin.getGraveManager().getGraveList(player);
+            if (graves.isEmpty()) {
+                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET + "You have no graves.");
+                return;
+            }
+
+            Grave grave = graves.get(0);
+            Location deathLoc = grave.getLocationDeath();
+            if (deathLoc == null || deathLoc.getWorld() == null) {
+                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET + "Grave location is unavailable.");
+                return;
+            }
+
+            if (plugin.hasGrantedPermission("graves.teleport.command.free", player)) {
+                CompatibilityTeleport.teleportSafely(player, deathLoc, plugin).thenAccept(ok -> {
+                    if (!ok) {
+                        player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET + "Teleport failed.");
+                    }
+                });
+            } else {
+                Location target = plugin.getGraveManager()
+                        .getGraveLocationList(player.getLocation(), grave)
+                        .get(0);
+                plugin.getEntityManager().teleportEntity(player, target, grave);
+            }
+            return;
+        }
+
+        if (args.length == 2 && !args[1].equalsIgnoreCase(player.getName())) {
+            if (!plugin.hasGrantedPermission("graves.teleport.command.others", player)) {
+                plugin.getEntityManager().sendMessage("message.permission-denied", player);
+                return;
+            }
+
+            OfflinePlayer targetPl = plugin.getServer().getOfflinePlayer(args[1]);
+            var graves = plugin.getGraveManager().getGraveList(targetPl);
+            if (graves.isEmpty()) {
+                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
+                        + ChatColor.RED + args[1] + ChatColor.RESET + " has no graves.");
+                return;
+            }
+
+            Grave grave = graves.get(0);
+            Location base = grave.getLocationDeath();
+            if (base == null || base.getWorld() == null) {
+                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET + "Grave location is unavailable.");
+                return;
+            }
+
+            if (plugin.hasGrantedPermission("graves.teleport.command.others.free", player)) {
+                // Resolve a safe spot near the grave (+1,0,+1) using your helper
+                Location target = plugin.getGraveManager().getGraveLocation(base.clone().add(1, 0, 1), grave);
+                CompatibilityTeleport.teleportSafely(player, target, plugin).thenAccept(ok -> {
+                    if (!ok) {
+                        player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET + "Teleport failed.");
+                    }
+                });
+            } else {
+                Location target = plugin.getGraveManager()
+                        .getGraveLocationList(player.getLocation(), grave)
+                        .get(0);
+                plugin.getEntityManager().teleportEntity(player, target, grave);
+            }
+            return;
+        }
+
+        // Otherwise show help
+        sendHelpMenu(commandSender);
     }
 
     private void handleGiveTokenCommand(CommandSender commandSender, String[] args) {

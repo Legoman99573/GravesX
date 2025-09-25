@@ -13,6 +13,7 @@ import dev.cwhead.GravesX.addon.GravesXAddon;
 import dev.cwhead.GravesX.command.GxModulesCommand;
 import dev.cwhead.GravesX.debug.KeepInventoryDetector;
 import dev.cwhead.GravesX.debug.LateEnableHook;
+import dev.cwhead.GravesX.listener.PlayerAfterRespawnListener;
 import dev.cwhead.GravesX.manager.ParticleManager;
 import dev.cwhead.GravesX.module.listener.DependencyEnableListener;
 import dev.cwhead.GravesX.module.util.LibbyImporter;
@@ -434,7 +435,11 @@ public class Graves extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PlayerBucketListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerQuitListener(this), this);
-        getServer().getPluginManager().registerEvents(new PlayerRespawnListener(this), this);
+        if (getVersionManager().isFolia()) {
+            getServer().getPluginManager().registerEvents(new PlayerAfterRespawnListener(this), this);
+        } else {
+            getServer().getPluginManager().registerEvents(new PlayerRespawnListener(this), this);
+        }
         getServer().getPluginManager().registerEvents(new PlayerTeleportListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerDropItemListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerDeathListener(this), this);

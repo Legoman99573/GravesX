@@ -19,25 +19,32 @@ import me.jay.GravesX.util.pluginsWithoutMavenReposOrUsefulApiDocsThatCauseBugs.
 import com.ranull.graves.util.StringUtil;
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.block.Skull;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.*;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
-import org.geysermc.floodgate.api.FloodgateApi;
+import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.Field;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.BiConsumer;
 
 /**
  * Manages the operations and lifecycle of graves within the Graves plugin.
  */
 public final class GraveManager {
+
     /**
      * The main plugin instance associated with Graves.
      * <p>
@@ -52,7 +59,7 @@ public final class GraveManager {
      *
      * @param plugin the Graves plugin instance.
      */
-    public GraveManager(Graves plugin) {
+    public GraveManager(@NotNull Graves plugin) {
         this.plugin = plugin;
         startGraveTimer();
     }
@@ -61,30 +68,25 @@ public final class GraveManager {
      * Starts the grave timer task that periodically checks and updates graves.
      */
     private void startGraveTimer() {
-        plugin.getGravesXScheduler().runTaskTimer(this::checkAndUpdateGraves, 20L, 20L); // 10 ticks = 0.5 seconds
+        plugin.getGravesXScheduler().runTaskTimer(this::checkAndUpdateGraves, 20L, 20L);
     }
 
     /**
      * Checks and updates graves, entities, and blocks, removing expired elements and triggering necessary events.
      */
     private void checkAndUpdateGraves() {
-        List<Grave> graveRemoveList = new ArrayList<>();
-        List<EntityData> entityDataRemoveList = new ArrayList<>();
-        List<BlockData> blockDataRemoveList = new ArrayList<>();
+        final List<Grave> graveRemoveList = new ArrayList<>();
+        final List<EntityData> entityDataRemoveList = new ArrayList<>();
+        final List<BlockData> blockDataRemoveList = new ArrayList<>();
 
-        // Process graves for timeout and protection expiration
         processGraves(graveRemoveList);
 
-        // Restore missing graves from cache
         restoreMissingGraves();
 
-        // Process any entity or block-based timeouts
         processChunks(entityDataRemoveList, blockDataRemoveList);
 
-        // Remove any elements that have expired or completed their lifecycle
         removeExpiredElements(graveRemoveList, entityDataRemoveList, blockDataRemoveList);
 
-        // Remove lingering holograms
         plugin.getHologramManager().purgeLingeringHolograms();
     }
 
@@ -99,22 +101,21 @@ public final class GraveManager {
         for (Grave grave : new ArrayList<>(graves)) {
             long remainingTime = grave.getTimeAliveRemaining();
 
-            if (remainingTime == -1) {
+            if (remainingTime == -1L) {
                 continue;
             }
 
             plugin.debugMessage("Checking grave: " + grave.getUUID() + " with remaining time: " + remainingTime, 2);
 
-            if (remainingTime == 0) {
+            if (remainingTime == 0L) {
                 handleGraveTimeout(grave, graveRemoveList);
             }
 
-            if (grave.getProtection() && grave.getTimeProtectionRemaining() == 0) {
+            if (grave.getProtection() && grave.getTimeProtectionRemaining() == 0L) {
                 toggleGraveProtection(grave);
             }
         }
     }
-
 
     /**
      * Handles the timeout or abandonment of a grave by firing the
@@ -124,16 +125,16 @@ public final class GraveManager {
      * @param grave           the grave to check.
      * @param graveRemoveList graves to remove get added here.
      */
-    private void handleGraveTimeout(final Grave grave, final List<Grave> graveRemoveList) {
+    private void handleGraveTimeout(Grave grave, List<Grave> graveRemoveList) {
         long remaining = grave.getTimeAliveRemaining();
 
-        if (remaining == -1) {
+        if (remaining == -1L) {
             return;
         }
 
         plugin.debugMessage("GraveTimeout check for " + grave.getUUID(), 1);
 
-        if (remaining > 0) {
+        if (remaining > 0L) {
             return;
         }
 
@@ -141,7 +142,7 @@ public final class GraveManager {
         boolean abandonEnabled = plugin.getConfig("drop.abandon", grave).getBoolean("drop.abandon", false);
 
         if (abandonEnabled && dropOnTimeout) {
-            plugin.debugMessage("Config ‘drop.abandon’ ignored because ‘drop.timeout’ is enabled", 2);
+            plugin.debugMessage("Config 'drop.abandon' ignored because 'drop.timeout' is enabled", 2);
             abandonEnabled = false;
         }
 
@@ -153,30 +154,28 @@ public final class GraveManager {
 
         if (tevModern.isCancelled() || tevModern.isAddon() || tevLegacy.isCancelled() || tevLegacy.isAddon()) {
             plugin.debugMessage("GraveTimeoutEvent cancelled → infinite life for " + grave.getUUID(), 2);
-            grave.setTimeAliveRemaining(-1);
+            grave.setTimeAliveRemaining(-1L);
             return;
         }
 
-        final Location loc = (tevModern.hasLocation() ? tevModern.getLocation() : tevLegacy.getLocation());
-        if (loc == null || loc.getWorld() == null) {
+        Location loc = (tevModern.hasLocation() ? tevModern.getLocation() : tevLegacy.getLocation());
+        if (loc.getWorld() == null) {
             plugin.debugMessage("Invalid timeout location for " + grave.getUUID(), 2);
             return;
         }
 
         loc.getChunk().load(true);
 
-        final boolean finalAbandonEnabled = abandonEnabled;
+        boolean abandonEnabledSnapshot = abandonEnabled;
         plugin.getGravesXScheduler().runTask(() -> {
-            Chunk chunk = loc.getChunk();
+            org.bukkit.Chunk chunk = loc.getChunk();
             if (!chunk.isLoaded()) {
-                plugin.debugMessage(
-                        "Chunk still not loaded at (" + chunk.getX() + "," + chunk.getZ() + ")", 2
-                );
+                plugin.debugMessage("Chunk still not loaded at (" + chunk.getX() + "," + chunk.getZ() + ")", 2);
                 return;
             }
             chunk.setForceLoaded(true);
 
-            if (dropOnTimeout && !finalAbandonEnabled) {
+            if (dropOnTimeout && !abandonEnabledSnapshot) {
                 plugin.debugMessage("Dropping on timeout: " + grave.getUUID(), 2);
                 dropGraveItems(loc, grave);
                 dropGraveExperience(loc, grave);
@@ -187,15 +186,13 @@ public final class GraveManager {
                 return;
             }
 
-            if (!dropOnTimeout && finalAbandonEnabled) {
+            if (!dropOnTimeout && abandonEnabledSnapshot) {
                 plugin.debugMessage("Abandoning grave: " + grave.getUUID(), 2);
 
-                GraveAbandonedEvent aevModern =
-                        new dev.cwhead.GravesX.event.GraveAbandonedEvent(grave);
+                GraveAbandonedEvent aevModern = new GraveAbandonedEvent(grave);
                 plugin.getServer().getPluginManager().callEvent(aevModern);
 
-                com.ranull.graves.event.GraveAbandonedEvent aevLegacy =
-                        new com.ranull.graves.event.GraveAbandonedEvent(grave);
+                com.ranull.graves.event.GraveAbandonedEvent aevLegacy = new com.ranull.graves.event.GraveAbandonedEvent(grave);
                 plugin.getServer().getPluginManager().callEvent(aevLegacy);
 
                 if (aevModern.isCancelled() || aevModern.isAddon() || aevLegacy.isCancelled() || aevLegacy.isAddon()) {
@@ -206,13 +203,14 @@ public final class GraveManager {
                     graveRemoveList.add(grave);
                     removeGrave(grave);
                 } else {
-                    Location abandonLoc = (aevModern.hasLocation() ? aevModern.getLocation() : aevLegacy.getLocation());
+                    org.bukkit.Location abandonLoc = (aevModern.hasLocation() ? aevModern.getLocation() : aevLegacy.getLocation());
                     sendPlayerMessage(grave, "message.grave-abandoned", abandonLoc != null ? abandonLoc : loc);
                     abandonGrave(grave);
                 }
                 chunk.setForceLoaded(false);
                 return;
             }
+
             GraveExpiredEvent graveExpiredEvent = new GraveExpiredEvent(grave);
             plugin.getServer().getPluginManager().callEvent(graveExpiredEvent);
 
@@ -224,6 +222,7 @@ public final class GraveManager {
                 chunk.setForceLoaded(false);
                 return;
             }
+
             plugin.debugMessage("Fallback drop for " + grave.getUUID() + " was cancelled. Grave will now last forever.", 2);
             chunk.setForceLoaded(false);
         });
@@ -232,6 +231,10 @@ public final class GraveManager {
 
     /**
      * Utility to send a message to the grave owner if they're online.
+     *
+     * @param grave      the grave whose owner should be notified
+     * @param messageKey the message key to resolve from messages configuration
+     * @param location   the relevant location to include with the message
      */
     private void sendPlayerMessage(Grave grave, String messageKey, Location location) {
         if (grave.getOwnerType() == EntityType.PLAYER && grave.getOwnerUUID() != null) {
@@ -243,86 +246,128 @@ public final class GraveManager {
     }
 
     /**
-     * Checks if there are any players in the given chunk.
-     *
-     * @param chunk the chunk to check.
-     * @return true if there are players in the chunk, false otherwise.
-     */
-    private boolean arePlayersInChunk(Chunk chunk) {
-        return Arrays.stream(chunk.getEntities()).anyMatch(entity -> entity instanceof Player);
-    }
-
-    /**
      * Processes all chunks to handle entities and blocks within them.
      *
      * @param entityDataRemoveList the list to which entity data to be removed will be added.
-     * @param blockDataRemoveList the list to which block data to be removed will be added.
+     * @param blockDataRemoveList  the list to which block data to be removed will be added.
      */
     private void processChunks(List<EntityData> entityDataRemoveList, List<BlockData> blockDataRemoveList) {
-        for (ChunkData chunkData : plugin.getCacheManager().getChunkMap().values()) {
+        Collection<ChunkData> chunks = plugin.getCacheManager().getChunkMap().values();
+        for (ChunkData chunkData : chunks) {
             if (!chunkData.isLoaded()) {
                 continue;
             }
 
-            Location location = new Location(chunkData.getWorld(), chunkData.getX() << 4, 0, chunkData.getZ() << 4);
+            Location anchor = new Location(chunkData.getWorld(), chunkData.getX() << 4, 0.0D, chunkData.getZ() << 4);
+            plugin.getGravesXScheduler().execute(anchor, () -> {
+                if (!chunkData.isLoaded()) {
+                    return;
+                }
 
-            // Process Entity Data
-            processEntityData(chunkData, entityDataRemoveList, location);
-
-            // Process Block Data
-            processBlockData(chunkData, blockDataRemoveList);
+                processEntityData(chunkData, entityDataRemoveList, anchor);
+                processBlockData(chunkData, blockDataRemoveList);
+            });
         }
     }
 
     /**
      * Removes expired graves, entities, and blocks from the system.
      *
-     * @param graveRemoveList the list of graves to be removed.
-     * @param entityDataRemoveList the list of entity data to be removed.
-     * @param blockDataRemoveList the list of block data to be removed.
+     * @param graveRemoveList       the list of graves to be removed.
+     * @param entityDataRemoveList  the list of entity data to be removed.
+     * @param blockDataRemoveList   the list of block data to be removed.
      */
     private void removeExpiredElements(List<Grave> graveRemoveList, List<EntityData> entityDataRemoveList, List<BlockData> blockDataRemoveList) {
-        if (plugin.isEnabled()) {
-            for (Grave grave : graveRemoveList) {
-                plugin.debugMessage("Removing grave: " + grave.getUUID(), 2);
-                removeGrave(grave);
-            }
-            for (EntityData entityData : entityDataRemoveList) {
-                if (entityData != null) { // Null check before calling removeEntityData
-                    removeEntityData(entityData);
-                } else {
-                    plugin.debugMessage("Attempted to remove null EntityData", 2);
-                }
-            }
-            for (BlockData blockData : blockDataRemoveList) {
-                plugin.getBlockManager().removeBlock(blockData);
-            }
-            graveRemoveList.clear();
-            entityDataRemoveList.clear();
-            blockDataRemoveList.clear();
-            plugin.getGUIManager().refreshMenus();
+        if (!plugin.isEnabled()) {
+            return;
         }
+
+        List<Grave> gravesSnapshot = new ArrayList<>(graveRemoveList);
+        List<EntityData> entitySnapshot = new ArrayList<>(entityDataRemoveList);
+        List<BlockData> blockSnapshot = new ArrayList<>(blockDataRemoveList);
+
+        graveRemoveList.clear();
+        entityDataRemoveList.clear();
+        blockDataRemoveList.clear();
+
+        for (Grave grave : gravesSnapshot) {
+            plugin.debugMessage("Removing grave: " + grave.getUUID(), 2);
+
+            Location graveLoc = null;
+            try {
+                graveLoc = grave.getLocationDeath();
+            } catch (Throwable ignored) {
+                // ignored
+            }
+
+            if (graveLoc != null && graveLoc.getWorld() != null) {
+                Location anchor = new Location(graveLoc.getWorld(), graveLoc.getX(), graveLoc.getY(), graveLoc.getZ());
+                plugin.getGravesXScheduler().execute(anchor, () -> removeGrave(grave));
+            } else {
+                plugin.getGravesXScheduler().runTask(() -> removeGrave(grave));
+            }
+        }
+
+        for (EntityData entityData : entitySnapshot) {
+            if (entityData == null) {
+                plugin.debugMessage("Attempted to remove null EntityData", 2);
+                continue;
+            }
+
+            Location entityLoc = null;
+            try {
+                entityLoc = entityData.getLocation();
+            } catch (Throwable ignored) {
+            }
+
+            if (entityLoc != null && entityLoc.getWorld() != null) {
+                Location anchor = new Location(entityLoc.getWorld(), entityLoc.getX(), entityLoc.getY(), entityLoc.getZ());
+                plugin.getGravesXScheduler().execute(anchor, () -> removeEntityData(entityData));
+            } else {
+                plugin.getGravesXScheduler().runTask(() -> removeEntityData(entityData));
+            }
+        }
+
+        for (BlockData blockData : blockSnapshot) {
+            Location blockLoc = null;
+            try {
+                blockLoc = blockData.getLocation();
+            } catch (Throwable ignored) {
+            }
+
+            if (blockLoc != null && blockLoc.getWorld() != null) {
+                Location anchor = new Location(blockLoc.getWorld(), blockLoc.getX(), blockLoc.getY(), blockLoc.getZ());
+                plugin.getGravesXScheduler().execute(anchor, () -> plugin.getBlockManager().removeBlock(blockData));
+            } else {
+                plugin.getGravesXScheduler().runTask(() -> plugin.getBlockManager().removeBlock(blockData));
+            }
+        }
+
+        plugin.getGravesXScheduler().runTask(() -> plugin.getGUIManager().refreshMenus());
     }
 
     /**
      * Processes the entity data within the given chunk.
      *
-     * @param chunkData          the data of the chunk being processed.
-     * @param entityDataRemoveList the list to which entity data to be removed will be added.
-     * @param location           the location representing the chunk coordinates.
+     * @param chunkData             the data of the chunk being processed.
+     * @param entityDataRemoveList  the list to which entity data to be removed will be added.
+     * @param location              the location representing the chunk coordinates.
      */
     private void processEntityData(ChunkData chunkData, List<EntityData> entityDataRemoveList, Location location) {
         try {
-            for (EntityData entityData : new ArrayList<>(chunkData.getEntityDataMap().values())) {
+            Collection<EntityData> values = chunkData.getEntityDataMap().values();
+
+            for (EntityData entityData : new ArrayList<>(values)) {
                 if (entityData == null) {
-                    plugin.debugMessage("Encountered null EntityData while processing chunk at coordinates: ("
-                            + chunkData.getX() + ", " + chunkData.getZ() + ").", 2);
+                    plugin.debugMessage("Encountered null EntityData while processing chunk at coordinates: (" + chunkData.getX() + ", " + chunkData.getZ() + ").", 2);
                     continue;
                 }
 
-                if (entityData.getUUIDGrave() != null && plugin.getCacheManager().getGraveMap().containsKey(entityData.getUUIDGrave())) {
-                    if (plugin.isEnabled() && entityData instanceof HologramData) {
-                        processHologramData((HologramData) entityData, location, entityDataRemoveList);
+                boolean hasGrave = entityData.getUUIDGrave() != null && plugin.getCacheManager().getGraveMap().containsKey(entityData.getUUIDGrave());
+
+                if (hasGrave) {
+                    if (plugin.isEnabled() && entityData instanceof HologramData hologramData) {
+                        processHologramData(hologramData, location, entityDataRemoveList);
                     }
                 } else {
                     entityDataRemoveList.add(entityData);
@@ -336,31 +381,44 @@ public final class GraveManager {
     /**
      * Processes hologram data within the chunk.
      *
-     * @param hologramData       the hologram data to be processed.
-     * @param location           the location representing the chunk coordinates.
-     * @param entityDataRemoveList the list to which hologram data to be removed will be added.
+     * @param hologramData          the hologram data to be processed.
+     * @param location              the location representing the chunk coordinates.
+     * @param entityDataRemoveList  the list to which hologram data to be removed will be added.
      */
     private void processHologramData(HologramData hologramData, Location location, List<EntityData> entityDataRemoveList) {
         try {
             Grave grave = plugin.getCacheManager().getGraveMap().get(hologramData.getUUIDGrave());
 
-            if (grave != null) {
-                List<String> lineList = plugin.getConfig("hologram.line", grave).getStringList("hologram.line");
-                Collections.reverse(lineList);
+            if (grave == null) {
+                return;
+            }
 
-                for (Entity entity : hologramData.getLocation().getChunk().getEntities()) {
-                    if (entity.getUniqueId().equals(hologramData.getUUIDEntity())) {
-                        if (hologramData.getLine() < lineList.size()) {
-                            if (plugin.getIntegrationManager().hasMiniMessage()) {
-                                String newHologramLine = StringUtil.parseString(lineList.get(hologramData.getLine()), location, grave, plugin);
-                                entity.setCustomName(MiniMessage.parseString(newHologramLine));
-                            } else {
-                                entity.setCustomName(StringUtil.parseString(lineList.get(hologramData.getLine()), location, grave, plugin));
-                            }
-                        } else {
-                            entityDataRemoveList.add(hologramData);
-                        }
+            List<String> configured = plugin.getConfig("hologram.line", grave).getStringList("hologram.line");
+            List<String> lineList = new ArrayList<>(configured);
+            Collections.reverse(lineList);
+
+            Location holoLoc = hologramData.getLocation();
+            if (holoLoc == null || holoLoc.getWorld() == null) {
+                entityDataRemoveList.add(hologramData);
+                return;
+            }
+
+            Chunk chunk = holoLoc.getChunk();
+            for (Entity entity : chunk.getEntities()) {
+                if (!entity.getUniqueId().equals(hologramData.getUUIDEntity())) {
+                    continue;
+                }
+
+                int index = hologramData.getLine();
+                if (index < lineList.size()) {
+                    String parsed = StringUtil.parseString(lineList.get(index), location, grave, plugin);
+                    if (plugin.getIntegrationManager().hasMiniMessage()) {
+                        entity.setCustomName(MiniMessage.parseString(parsed));
+                    } else {
+                        entity.setCustomName(parsed);
                     }
+                } else {
+                    entityDataRemoveList.add(hologramData);
                 }
             }
         } catch (ArrayIndexOutOfBoundsException | IllegalStateException ignored) {
@@ -371,18 +429,32 @@ public final class GraveManager {
     /**
      * Processes the block data within the given chunk.
      *
-     * @param chunkData          the data of the chunk being processed.
-     * @param blockDataRemoveList the list to which block data to be removed will be added.
+     * @param chunkData             the data of the chunk being processed.
+     * @param blockDataRemoveList   the list to which block data to be removed will be added.
      */
     private void processBlockData(ChunkData chunkData, List<BlockData> blockDataRemoveList) {
         try {
-            for (BlockData blockData : new ArrayList<>(chunkData.getBlockDataMap().values())) {
-                if (blockData.getLocation().getWorld() != null) {
-                    if (plugin.getCacheManager().getGraveMap().containsKey(blockData.getGraveUUID())) {
-                        graveParticle(blockData.getLocation(), plugin.getCacheManager().getGraveMap().get(blockData.getGraveUUID()));
-                    } else {
-                        blockDataRemoveList.add(blockData);
-                    }
+            Collection<BlockData> values = chunkData.getBlockDataMap().values();
+
+            for (BlockData blockData : new ArrayList<>(values)) {
+                if (blockData == null) {
+                    continue;
+                }
+
+                Location loc = blockData.getLocation();
+                if (loc == null || loc.getWorld() == null) {
+                    blockDataRemoveList.add(blockData);
+                    continue;
+                }
+
+                UUID graveId = blockData.getGraveUUID();
+                boolean hasGrave = graveId != null && plugin.getCacheManager().getGraveMap().containsKey(graveId);
+
+                if (hasGrave) {
+                    Grave grave = plugin.getCacheManager().getGraveMap().get(graveId);
+                    graveParticle(loc, grave);
+                } else {
+                    blockDataRemoveList.add(blockData);
                 }
             }
         } catch (ArrayIndexOutOfBoundsException ignored) {
@@ -396,17 +468,29 @@ public final class GraveManager {
     @SuppressWarnings("ConstantConditions")
     public void unload() {
         for (Player player : plugin.getServer().getOnlinePlayers()) {
-            if (player.getOpenInventory() != null) { // Mohist, might return null even when Bukkit shouldn't.
-                Inventory topInventory = CompatibilityInventoryView.getTopInventory(player.getOpenInventory());
-                InventoryHolder inventoryHolder = topInventory.getHolder();
+            InventoryView view = player.getOpenInventory();
+            if (view == null) {
+                continue;
+            }
 
-                try {
-                    if (inventoryHolder instanceof Grave || inventoryHolder instanceof GraveList
-                            || inventoryHolder instanceof GraveMenu) {
-                        player.closeInventory();
-                    }
-                } catch (Exception ignored) {
+            Inventory topInventory = CompatibilityInventoryView.getTopInventory(view);
+            if (topInventory == null) {
+                continue;
+            }
+
+            InventoryHolder inventoryHolder = topInventory.getHolder();
+            if (inventoryHolder == null) {
+                continue;
+            }
+
+            try {
+                if (inventoryHolder instanceof Grave
+                        || inventoryHolder instanceof GraveList
+                        || inventoryHolder instanceof GraveMenu) {
+                    player.closeInventory();
                 }
+            } catch (Exception ignored) {
+                // ignore any platform-specific edge cases
             }
         }
     }
@@ -416,13 +500,14 @@ public final class GraveManager {
      *
      * @param grave the grave to toggle protection for.
      */
-    public void toggleGraveProtection(Grave grave) {
+    public void toggleGraveProtection(com.ranull.graves.type.Grave grave) {
         boolean currentProtection = grave.getProtection();
         long protectionRemaining = grave.getTimeProtectionRemaining();
+
         grave.setProtection(!currentProtection);
         plugin.getDataManager().updateGrave(grave, "protection", grave.getProtection() ? 1 : 0);
 
-        if (protectionRemaining == -1) {
+        if (protectionRemaining == -1L) {
             plugin.debugMessage("Grave " + grave.getUUID() + " has infinite protection, skipping protection remaining handling.", 2);
             return;
         }
@@ -441,7 +526,7 @@ public final class GraveManager {
                 grave.setProtection(true);
                 plugin.debugMessage("GraveProtectionExpiredEvent called for grave: " + grave.getUUID(), 2);
                 plugin.getDataManager().updateGrave(grave, "protection", 1);
-                grave.setTimeProtection(-1);
+                grave.setTimeProtection(-1L);
             } else if (!cancelled && !addon) {
                 plugin.debugMessage("Grave protection expired for grave: " + grave.getUUID(), 1);
                 plugin.getDataManager().updateGrave(grave, "protection", grave.getProtection() ? 1 : 0);
@@ -452,34 +537,43 @@ public final class GraveManager {
     /**
      * Abandons a grave.
      *
-     * @param grave    the grave to abandon.
+     * @param grave the grave to abandon.
      */
-    public void abandonGrave(Grave grave) {
+    public void abandonGrave(com.ranull.graves.type.Grave grave) {
         grave.setAbandoned(true);
-        if (plugin.getConfig("drop.abandon-lose-experience", grave).getBoolean("drop.abandon-lose-experience", true))
+
+        if (plugin.getConfig("drop.abandon-lose-experience", grave).getBoolean("drop.abandon-lose-experience", true)) {
             grave.setExperience(0);
+        }
+
         grave.setTimeProtection(0);
         grave.setTimeCreation(System.currentTimeMillis());
-        grave.setTimeAlive(-1);
-        grave.setTimeAliveRemaining(-1);
+        grave.setTimeAlive(-1L);
+        grave.setTimeAliveRemaining(-1L);
         grave.setOwnerName("Abandoned");
         grave.setOwnerDisplayName("Abandoned");
         grave.setOwnerTexture("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZTYxZjFmY2Q0MmY0OGNhNTFmOWRhN2M1NWI3MmYzNWE4MjZlNzViNmEwMjA0OGExZGVhNWQ3MTE5YmM5Y2Q2OSJ9fX0=");
+
         plugin.getDataManager().updateGrave(grave, "owner_name", grave.getOwnerName());
         plugin.getDataManager().updateGrave(grave, "experience", grave.getExperience());
         plugin.getDataManager().updateGrave(grave, "owner_name_display", grave.getOwnerDisplayName());
         plugin.getDataManager().updateGrave(grave, "is_abandoned", grave.isAbandoned() ? 1 : 0);
+
         // plugin.getDataManager().loadGraveMap();
     }
-
     /**
      * Spawns particle effects around a grave.
+     * <p>
+     * Folia-compatible: the actual particle spawning is scheduled on the correct
+     * region thread via the GravesX scheduler using the provided location.
+     * </p>
      *
      * @param location the location of the grave.
      * @param grave    the grave to spawn particles for.
      */
     public void graveParticle(Location location, Grave grave) {
         if (!plugin.getVersionManager().hasParticle()
+                || location == null
                 || location.getWorld() == null
                 || !plugin.getConfig("particle.enabled", grave).getBoolean("particle.enabled")) {
             return;
@@ -487,7 +581,7 @@ public final class GraveManager {
 
         Particle particle = plugin.getVersionManager().getParticleForVersion("REDSTONE");
 
-        final String configuredType = plugin.getConfig("particle.type", grave).getString("particle.type");
+        String configuredType = plugin.getConfig("particle.type", grave).getString("particle.type");
         if (configuredType != null && !configuredType.isEmpty()) {
             try {
                 particle = plugin.getVersionManager().getParticleForVersion(configuredType);
@@ -498,167 +592,178 @@ public final class GraveManager {
             }
         }
 
-        final int count = plugin.getConfig("particle.count", grave).getInt("particle.count");
-        final double offX = plugin.getConfig("particle.offset.x", grave).getDouble("particle.offset.x");
-        final double offY = plugin.getConfig("particle.offset.y", grave).getDouble("particle.offset.y");
-        final double offZ = plugin.getConfig("particle.offset.z", grave).getDouble("particle.offset.z");
-        location = location.clone().add(offX + 0.5, offY + 0.5, offZ + 0.5);
+        int count = plugin.getConfig("particle.count", grave).getInt("particle.count");
+        double offX = plugin.getConfig("particle.offset.x", grave).getDouble("particle.offset.x");
+        double offY = plugin.getConfig("particle.offset.y", grave).getDouble("particle.offset.y");
+        double offZ = plugin.getConfig("particle.offset.z", grave).getDouble("particle.offset.z");
 
-        if (location.getWorld() == null) return;
-
-        try {
-            switch (particle.name()) {
-                case "BLOCK":
-                case "BLOCK_CRUMBLE":
-                case "BLOCK_MARKER":
-                case "DUST_PILLAR":
-                case "FALLING_DUST": {
-                    BlockData gravesBD =
-                            plugin.getParticleManager().getGravesBlockData(grave, location);
-                    try {
-                        location.getWorld().spawnParticle(particle, location, count, gravesBD);
-                        break;
-                    } catch (IllegalArgumentException badType) {
-                        org.bukkit.block.data.BlockData bukkitBD =
-                                plugin.getParticleManager().toBukkitBlockData(gravesBD);
-                        if (bukkitBD != null) {
-                            location.getWorld().spawnParticle(particle, location, count, bukkitBD);
-                        } else {
-                            location.getWorld().spawnParticle(particle, location, count);
-                        }
-                    }
-                    break;
-                }
-
-                case "DUST":
-                case "REDSTONE": {
-                    int sizeInt = plugin.getConfig("particle.dust-size", grave).getInt("particle.dust-size");
-                    float size = (float) sizeInt;
-                    Color color = plugin.getParticleManager().safeColor(
-                            plugin.getConfig("particle.dust-color", grave).getString("particle.dust-color", "RED"),
-                            org.bukkit.Color.RED
-                    );
-                    try {
-                        location.getWorld().spawnParticle(particle, location, count,
-                                new Particle.DustOptions(color, size));
-                    } catch (IllegalArgumentException e) {
-                        location.getWorld().spawnParticle(particle, location, count, 1);
-                    }
-                    break;
-                }
-
-                case "DUST_COLOR_TRANSITION": {
-                    float size = (float) plugin.getConfig("particle.dust-size", grave)
-                            .getDouble("particle.dust-size", 1.0);
-                    Color from = plugin.getParticleManager().safeColor(
-                            plugin.getConfig("particle.dust.from-color", grave)
-                                    .getString("particle.dust.from-color", "WHITE"),
-                            Color.WHITE
-                    );
-                    Color to = plugin.getParticleManager().safeColor(
-                            plugin.getConfig("particle.dust.to-color", grave)
-                                    .getString("particle.dust.to-color", "RED"),
-                            Color.RED
-                    );
-                    Particle.DustTransition transition = new Particle.DustTransition(from, to, size);
-                    location.getWorld().spawnParticle(particle, location, count, transition);
-                    break;
-                }
-
-                case "ENTITY_EFFECT":
-                case "TINTED_LEAVES": {
-                    Color tint = plugin.getParticleManager().safeColor(
-                            plugin.getConfig("particle.color", grave).getString("particle.color", "WHITE"),
-                            Color.WHITE
-                    );
-                    try {
-                        location.getWorld().spawnParticle(particle, location, count, tint);
-                    } catch (IllegalArgumentException ex) {
-                        location.getWorld().spawnParticle(particle, location, count);
-                    }
-                    break;
-                }
-
-                case "ITEM": {
-                    ItemStack stack = plugin.getParticleManager().parseItemStack(grave);
-                    if (stack != null) location.getWorld().spawnParticle(particle, location, count, stack);
-                    else               location.getWorld().spawnParticle(particle, location, count);
-                    break;
-                }
-
-                case "SCULK_CHARGE": {
-                    float charge = (float) plugin.getConfig("particle.sculk-charge", grave)
-                            .getDouble("particle.sculk-charge", 1.0D);
-                    try {
-                        location.getWorld().spawnParticle(particle, location, count, charge);
-                    } catch (IllegalArgumentException ex) {
-                        location.getWorld().spawnParticle(particle, location, count);
-                    }
-                    break;
-                }
-
-                case "SHRIEK": {
-                    int delay = plugin.getConfig("particle.shriek-delay", grave)
-                            .getInt("particle.shriek-delay", 1);
-                    try {
-                        location.getWorld().spawnParticle(particle, location, count, delay);
-                    } catch (IllegalArgumentException ex) {
-                        location.getWorld().spawnParticle(particle, location, count, 1);
-                    }
-                    break;
-                }
-
-                case "TRAIL": {
-                    Object trail = plugin.getParticleManager().parseTrailData(plugin, grave);
-                    if (trail != null) {
-                        try {
-                            location.getWorld().spawnParticle(particle, location, count, trail);
-                            break;
-                        } catch (IllegalArgumentException ex) {
-                            plugin.debugMessage("TRAIL data not supported: " + ex.getMessage(), 2);
-                        }
-                    }
-                    location.getWorld().spawnParticle(particle, location, count);
-                    break;
-                }
-
-                case "VIBRATION": {
-                    String mode = plugin.getConfig("particle.vibration.mode", grave)
-                            .getString("particle.vibration.mode", "single")
-                            .toLowerCase(java.util.Locale.ROOT);
-
-                    if ("bounce".equals(mode)) {
-                        plugin.getParticleManager().spawnVibrationBounce(
-                                plugin, location, grave, particle, count
-                        );
-                    } else {
-                        Vibration vib = plugin.getParticleManager().buildVibrationSingle(plugin, location, grave);
-                        if (vib != null) location.getWorld().spawnParticle(particle, location, count, vib);
-                        else             location.getWorld().spawnParticle(particle, location, count);
-                    }
-                    break;
-                }
-
-                default: {
-                    try {
-                        location.getWorld().spawnParticle(particle, location, count);
-                    } catch (IllegalArgumentException e) {
-                        location.getWorld().spawnParticle(particle, location, count, 0, 0, 0, 0);
-                    }
-                    break;
-                }
-            }
-        } catch (Throwable t) {
-            plugin.debugMessage("Particle spawn failed for " + particle + ": " + t.getMessage(), 2);
+        Location anchor = location.clone().add(offX + 0.5D, offY + 0.5D, offZ + 0.5D);
+        if (anchor.getWorld() == null) {
+            return;
         }
+
+        Particle finalParticle = particle;
+        plugin.getGravesXScheduler().execute(anchor, () -> {
+            try {
+                org.bukkit.World world = anchor.getWorld();
+                if (world == null) {
+                    return;
+                }
+
+                switch (finalParticle.name()) {
+                    case "BLOCK":
+                    case "BLOCK_CRUMBLE":
+                    case "BLOCK_MARKER":
+                    case "DUST_PILLAR":
+                    case "FALLING_DUST": {
+                        BlockData gravesBD = plugin.getParticleManager().getGravesBlockData(grave, anchor);
+                        try {
+                            world.spawnParticle(finalParticle, anchor, count, gravesBD);
+                            break;
+                        } catch (IllegalArgumentException badType) {
+                            org.bukkit.block.data.BlockData bukkitBD = plugin.getParticleManager().toBukkitBlockData(gravesBD);
+                            if (bukkitBD != null) {
+                                world.spawnParticle(finalParticle, anchor, count, bukkitBD);
+                            } else {
+                                world.spawnParticle(finalParticle, anchor, count);
+                            }
+                        }
+                        break;
+                    }
+
+                    case "DUST":
+                    case "REDSTONE": {
+                        int sizeInt = plugin.getConfig("particle.dust-size", grave).getInt("particle.dust-size");
+                        float size = (float) sizeInt;
+                        Color color = plugin.getParticleManager().safeColor(
+                                plugin.getConfig("particle.dust-color", grave).getString("particle.dust-color", "RED"),
+                                Color.RED
+                        );
+                        try {
+                            world.spawnParticle(finalParticle, anchor, count, new Particle.DustOptions(color, size));
+                        } catch (IllegalArgumentException e) {
+                            world.spawnParticle(finalParticle, anchor, count, 1);
+                        }
+                        break;
+                    }
+
+                    case "DUST_COLOR_TRANSITION": {
+                        float size = (float) plugin.getConfig("particle.dust-size", grave)
+                                .getDouble("particle.dust-size", 1.0D);
+                        Color from = plugin.getParticleManager().safeColor(
+                                plugin.getConfig("particle.dust.from-color", grave).getString("particle.dust.from-color", "WHITE"),
+                                Color.WHITE
+                        );
+                        Color to = plugin.getParticleManager().safeColor(
+                                plugin.getConfig("particle.dust.to-color", grave).getString("particle.dust.to-color", "RED"),
+                                Color.RED
+                        );
+                        Particle.DustTransition transition = new Particle.DustTransition(from, to, size);
+                        world.spawnParticle(finalParticle, anchor, count, transition);
+                        break;
+                    }
+
+                    case "ENTITY_EFFECT":
+                    case "TINTED_LEAVES": {
+                        Color tint = plugin.getParticleManager().safeColor(
+                                plugin.getConfig("particle.color", grave).getString("particle.color", "WHITE"),
+                                Color.WHITE
+                        );
+                        try {
+                            world.spawnParticle(finalParticle, anchor, count, tint);
+                        } catch (java.lang.IllegalArgumentException ex) {
+                            world.spawnParticle(finalParticle, anchor, count);
+                        }
+                        break;
+                    }
+
+                    case "ITEM": {
+                        ItemStack stack = plugin.getParticleManager().parseItemStack(grave);
+                        if (stack != null) {
+                            world.spawnParticle(finalParticle, anchor, count, stack);
+                        } else {
+                            world.spawnParticle(finalParticle, anchor, count);
+                        }
+                        break;
+                    }
+
+                    case "SCULK_CHARGE": {
+                        float charge = (float) plugin.getConfig("particle.sculk-charge", grave).getDouble("particle.sculk-charge", 1.0D);
+                        try {
+                            world.spawnParticle(finalParticle, anchor, count, charge);
+                        } catch (java.lang.IllegalArgumentException ex) {
+                            world.spawnParticle(finalParticle, anchor, count);
+                        }
+                        break;
+                    }
+
+                    case "SHRIEK": {
+                        int delay = plugin.getConfig("particle.shriek-delay", grave).getInt("particle.shriek-delay", 1);
+                        try {
+                            world.spawnParticle(finalParticle, anchor, count, delay);
+                        } catch (IllegalArgumentException ex) {
+                            world.spawnParticle(finalParticle, anchor, count, 1);
+                        }
+                        break;
+                    }
+
+                    case "TRAIL": {
+                        Object trail = plugin.getParticleManager().parseTrailData(plugin, grave);
+                        if (trail != null) {
+                            try {
+                                world.spawnParticle(finalParticle, anchor, count, trail);
+                                break;
+                            } catch (IllegalArgumentException ex) {
+                                plugin.debugMessage("TRAIL data not supported: " + ex.getMessage(), 2);
+                            }
+                        }
+                        world.spawnParticle(finalParticle, anchor, count);
+                        break;
+                    }
+
+                    case "VIBRATION": {
+                        String mode = plugin.getConfig("particle.vibration.mode", grave).getString("particle.vibration.mode", "single").toLowerCase(java.util.Locale.ROOT);
+
+                        if ("bounce".equals(mode)) {
+                            plugin.getParticleManager().spawnVibrationBounce(plugin, anchor, grave, finalParticle, count);
+                        } else {
+                            Vibration vib = plugin.getParticleManager().buildVibrationSingle(plugin, anchor, grave);
+                            if (vib != null) {
+                                world.spawnParticle(finalParticle, anchor, count, vib);
+                            } else {
+                                world.spawnParticle(finalParticle, anchor, count);
+                            }
+                        }
+                        break;
+                    }
+
+                    default: {
+                        try {
+                            world.spawnParticle(finalParticle, anchor, count);
+                        } catch (java.lang.IllegalArgumentException e) {
+                            world.spawnParticle(finalParticle, anchor, count, 0, 0, 0, 0);
+                        }
+                        break;
+                    }
+                }
+            } catch (java.lang.Throwable t) {
+                plugin.debugMessage("Particle spawn failed for " + finalParticle + ": " + t.getMessage(), 2);
+            }
+        });
     }
 
     /**
      * Removes the oldest grave.
+     *
+     * @param livingEntity the entity whose oldest grave should be removed
      */
-
     public void removeOldestGrave(LivingEntity livingEntity) {
+        if (livingEntity == null) {
+            return;
+        }
+
         Grave toDel = plugin.getCacheManager().getOldestGrave(livingEntity.getUniqueId());
+
         if (toDel != null) {
             removeGrave(toDel);
         }
@@ -669,56 +774,80 @@ public final class GraveManager {
      *
      * @param grave the grave to remove.
      */
-    public void removeGrave(Grave grave) {
+    public void removeGrave(com.ranull.graves.type.Grave grave) {
+        if (grave == null) {
+            return;
+        }
+
         plugin.debugMessage("Starting removal of grave: " + grave.getUUID(), 1);
-        closeGrave(grave);
-        plugin.getBlockManager().removeBlock(grave);
-        plugin.getHologramManager().removeHologram(grave);
-        plugin.getEntityManager().removeEntity(grave);
-        plugin.getDataManager().removeGrave(grave);
 
-        if (plugin.getIntegrationManager().hasMultiPaper()) {
-            plugin.getIntegrationManager().getMultiPaper().notifyGraveRemoval(grave);
-        }
-        if (plugin.getIntegrationManager().hasFurnitureLib()) {
-            plugin.getIntegrationManager().getFurnitureLib().removeFurniture(grave);
-        }
-        if (plugin.getIntegrationManager().hasFurnitureEngine()) {
-            plugin.getLogger().warning("You have FurnitureEngine enabled. ");
-            plugin.getIntegrationManager().getFurnitureEngine().removeFurniture(grave);
-        }
-        if (plugin.getIntegrationManager().hasItemsAdder()) {
-            plugin.getIntegrationManager().getItemsAdder().removeFurniture(grave);
-        }
-        if (plugin.getIntegrationManager().hasOraxen()) {
-            plugin.getIntegrationManager().getOraxen().removeFurniture(grave);
-        }
-        if (plugin.getIntegrationManager().hasNexo()) {
-            plugin.getIntegrationManager().getNexo().removeFurniture(grave);
-        }
-        if (plugin.getIntegrationManager().hasPlayerNPC()) {
-            plugin.getIntegrationManager().getPlayerNPC().removeCorpse(grave);
-        }
-        if (plugin.getIntegrationManager().hasFancyNpcs()) {
-            plugin.getIntegrationManager().getFancyNpcs().removeCorpse(grave);
-        }
-        if (plugin.getIntegrationManager().hasCitizensNPC()) {
-            plugin.getIntegrationManager().getCitizensNPC().removeCorpse(grave);
+        Location anchor = null;
+        try {
+            anchor = grave.getLocationDeath();
+        } catch (Throwable ignored) {
         }
 
-        for (GraveProvider p : RegisterGraveProviders.getAll()) {
+        Runnable work = () -> {
             try {
-                p.remove(grave);
-            } catch (Throwable t) {
-                plugin.getLogger().warning("[CustomGraveProvider " + p.id() + "] remove() failed: " + t.getMessage());
+                closeGrave(grave);
+
+                plugin.getBlockManager().removeBlock(grave);
+                plugin.getHologramManager().removeHologram(grave);
+                plugin.getEntityManager().removeEntity(grave);
+
+                plugin.getDataManager().removeGrave(grave);
+
+                // Integrations
+                if (plugin.getIntegrationManager().hasMultiPaper()) {
+                    plugin.getIntegrationManager().getMultiPaper().notifyGraveRemoval(grave);
+                }
+                if (plugin.getIntegrationManager().hasFurnitureLib()) {
+                    plugin.getIntegrationManager().getFurnitureLib().removeFurniture(grave);
+                }
+                if (plugin.getIntegrationManager().hasFurnitureEngine()) {
+                    plugin.getLogger().warning("You have FurnitureEngine enabled. ");
+                    plugin.getIntegrationManager().getFurnitureEngine().removeFurniture(grave);
+                }
+                if (plugin.getIntegrationManager().hasItemsAdder()) {
+                    plugin.getIntegrationManager().getItemsAdder().removeFurniture(grave);
+                }
+                if (plugin.getIntegrationManager().hasOraxen()) {
+                    plugin.getIntegrationManager().getOraxen().removeFurniture(grave);
+                }
+                if (plugin.getIntegrationManager().hasNexo()) {
+                    plugin.getIntegrationManager().getNexo().removeFurniture(grave);
+                }
+                if (plugin.getIntegrationManager().hasPlayerNPC()) {
+                    plugin.getIntegrationManager().getPlayerNPC().removeCorpse(grave);
+                }
+                if (plugin.getIntegrationManager().hasFancyNpcs()) {
+                    plugin.getIntegrationManager().getFancyNpcs().removeCorpse(grave);
+                }
+                if (plugin.getIntegrationManager().hasCitizensNPC()) {
+                    plugin.getIntegrationManager().getCitizensNPC().removeCorpse(grave);
+                }
+
+                for (GraveProvider p : RegisterGraveProviders.getAll()) {
+                    try {
+                        p.remove(grave);
+                    } catch (java.lang.Throwable t) {
+                        plugin.getLogger().warning("[CustomGraveProvider " + p.id() + "] remove() failed: " + t.getMessage());
+                    }
+                }
+
+                plugin.getCacheManager().getGraveMap().remove(grave.getUUID());
+                plugin.debugMessage("Grave " + grave.getUUID() + " removed from cache", 1);
+            } catch (java.lang.Throwable t) {
+                plugin.getLogger().warning("Error while removing grave " + grave.getUUID() + ": " + t.getMessage());
             }
+        };
+
+        if (anchor != null && anchor.getWorld() != null) {
+            plugin.getGravesXScheduler().execute(anchor, work);
+        } else {
+            plugin.getGravesXScheduler().runTask(work);
         }
-
-        // Remove from cache
-        plugin.getCacheManager().getGraveMap().remove(grave.getUUID());
-        plugin.debugMessage("Grave " + grave.getUUID() + " removed from cache", 1);
     }
-
 
     /**
      * Removes entity data associated with a grave.
@@ -726,69 +855,91 @@ public final class GraveManager {
      * @param entityData the entity data to remove.
      */
     public void removeEntityData(EntityData entityData) {
-        if (entityData.getType() == null) {
+        if (entityData == null || entityData.getType() == null) {
             plugin.debugMessage("Attempted to remove null entity data. This is not a bug", 3);
             return;
         }
-        switch (entityData.getType()) {
-            case HOLOGRAM: {
-                plugin.getHologramManager().removeHologram(entityData);
-                break;
-            }
-            case FURNITURELIB: {
-                plugin.getIntegrationManager().getFurnitureLib().removeEntityData(entityData);
-                break;
-            }
-            case FURNITUREENGINE: {
-                plugin.getIntegrationManager().getFurnitureEngine().removeEntityData(entityData);
-                break;
-            }
-            case ITEMSADDER: {
-                plugin.getIntegrationManager().getItemsAdder().removeEntityData(entityData);
-                break;
-            }
-            case ORAXEN: {
-                plugin.getIntegrationManager().getOraxen().removeEntityData(entityData);
-                break;
-            }
-            case NEXO: {
-                plugin.getIntegrationManager().getNexo().removeEntityData(entityData);
-                break;
-            }
-            case PLAYERNPC: {
-                plugin.getIntegrationManager().getPlayerNPC().removeEntityData(entityData);
-                break;
-            }
-            case CITIZENSNPC: {
-                plugin.getIntegrationManager().getCitizensNPC().removeEntityData(entityData);
-                break;
-            }
-            case CUSTOM: {
-                List<GraveProvider> providers = RegisterGraveProviders.getAll();
-                if (providers.isEmpty()) break;
 
-                for (GraveProvider p : providers) {
-                    if (p == null) continue;
-                    try {
-                        if (p.supports(entityData) && p.removeEntityData(entityData)) {
-                            plugin.getHologramManager().removeHologram(entityData);
-                            return;
-                        }
-                    } catch (Throwable t) {
-                        String pid;
-                        try {
-                            pid = String.valueOf(p.id());
-                        }
-                        catch (Throwable ignored) {
-                            pid = p.getClass().getName();
-                        }
+        org.bukkit.Location anchor = null;
+        try {
+            anchor = entityData.getLocation();
+        } catch (java.lang.Throwable ignored) {
+        }
 
-                        plugin.getLogger().warning("[CustomGraveProvider " + pid + "] removeEntityData() failed: " + t.getMessage());
-                        plugin.logStackTrace(t);
-                    }
+        java.lang.Runnable work = () -> {
+            switch (entityData.getType()) {
+                case HOLOGRAM: {
+                    plugin.getHologramManager().removeHologram(entityData);
+                    break;
                 }
-                break;
+                case FURNITURELIB: {
+                    plugin.getIntegrationManager().getFurnitureLib().removeEntityData(entityData);
+                    break;
+                }
+                case FURNITUREENGINE: {
+                    plugin.getIntegrationManager().getFurnitureEngine().removeEntityData(entityData);
+                    break;
+                }
+                case ITEMSADDER: {
+                    plugin.getIntegrationManager().getItemsAdder().removeEntityData(entityData);
+                    break;
+                }
+                case ORAXEN: {
+                    plugin.getIntegrationManager().getOraxen().removeEntityData(entityData);
+                    break;
+                }
+                case NEXO: {
+                    plugin.getIntegrationManager().getNexo().removeEntityData(entityData);
+                    break;
+                }
+                case PLAYERNPC: {
+                    plugin.getIntegrationManager().getPlayerNPC().removeEntityData(entityData);
+                    break;
+                }
+                case CITIZENSNPC: {
+                    plugin.getIntegrationManager().getCitizensNPC().removeEntityData(entityData);
+                    break;
+                }
+                case CUSTOM: {
+                    List<GraveProvider> providers = RegisterGraveProviders.getAll();
+                    if (providers.isEmpty()) {
+                        break;
+                    }
+
+                    for (GraveProvider p : providers) {
+                        if (p == null) {
+                            continue;
+                        }
+                        try {
+                            if (p.supports(entityData) && p.removeEntityData(entityData)) {
+                                plugin.getHologramManager().removeHologram(entityData);
+                                return;
+                            }
+                        } catch (Throwable t) {
+                            String pid;
+                            try {
+                                pid = String.valueOf(p.id());
+                            } catch (java.lang.Throwable ignored) {
+                                pid = p.getClass().getName();
+                            }
+
+                            plugin.getLogger().warning("[CustomGraveProvider " + pid + "] removeEntityData() failed: " + t.getMessage());
+                            plugin.logStackTrace(t);
+                        }
+                    }
+                    break;
+                }
+                default: {
+                    // no-op
+                    break;
+                }
             }
+        };
+
+        if (anchor != null && anchor.getWorld() != null) {
+            plugin.getGravesXScheduler().execute(anchor, work);
+        } else {
+            plugin.getGravesXScheduler().runTask(work);
         }
     }
 
@@ -799,25 +950,41 @@ public final class GraveManager {
      */
     @SuppressWarnings("ConstantConditions")
     public void closeGrave(Grave grave) {
-        List<HumanEntity> inventoryViewers = grave.getInventory().getViewers();
+        Inventory inv = grave.getInventory();
+        if (inv != null) {
+            List<HumanEntity> inventoryViewers = inv.getViewers();
 
-        for (HumanEntity humanEntity : new ArrayList<>(inventoryViewers)) {
-            grave.getInventory().getViewers().remove(humanEntity);
-            humanEntity.closeInventory();
-            plugin.debugMessage("Closing grave " + grave.getUUID() + " for " + humanEntity.getName(), 1);
+            for (HumanEntity humanEntity : new ArrayList<>(inventoryViewers)) {
+                try {
+                    inv.getViewers().remove(humanEntity);
+                } catch (Throwable ignored) {
+                    // Defensive: some platforms may throw here
+                }
+                try {
+                    humanEntity.closeInventory();
+                } catch (Throwable ignored) {
+                    // Defensive: ensure we don't break the loop
+                }
+                plugin.debugMessage("Closing grave " + grave.getUUID() + " for " + humanEntity.getName(), 1);
+            }
         }
 
         for (Player player : plugin.getServer().getOnlinePlayers()) {
-            if (player.getOpenInventory() != null) { // Mohist, might return null even when Bukkit shouldn't.
-                Inventory topInventory = CompatibilityInventoryView.getTopInventory(player.getOpenInventory());
-                InventoryHolder inventoryHolder = topInventory.getHolder();
+            InventoryView view = player.getOpenInventory();
+            if (view == null) {
+                continue;
+            }
 
-                if (inventoryHolder instanceof GraveMenu) {
-                    GraveMenu graveMenu = (GraveMenu) inventoryHolder;
+            Inventory topInventory = CompatibilityInventoryView.getTopInventory(view);
+            if (topInventory == null) {
+                continue;
+            }
 
-                    if (graveMenu.getGrave().getUUID().equals(grave.getUUID())) {
-                        player.closeInventory();
-                    }
+            InventoryHolder inventoryHolder = topInventory.getHolder();
+            if (inventoryHolder instanceof GraveMenu graveMenu) {
+                if (graveMenu.getGrave() != null
+                        && graveMenu.getGrave().getUUID().equals(grave.getUUID())) {
+                    player.closeInventory();
                 }
             }
         }
@@ -842,26 +1009,15 @@ public final class GraveManager {
      * @param permissionList  the list of permissions associated with the grave.
      * @return the created grave.
      */
-    /**
-     * Creates a new grave for the specified entity, list of item stacks, and permissions.
-     * <p>
-     * This method supports both players and non-player entities. For players, it ensures
-     * Floodgate compatibility by normalizing UUIDs and usernames for Bedrock users.
-     *
-     * @param entity          the entity to create the grave for (can be a Player or any Entity).
-     * @param itemStackList   the list of item stacks to be included in the grave.
-     * @param permissionList  the list of permissions associated with the grave.
-     * @return the created grave.
-     */
     public Grave createGrave(Entity entity, List<ItemStack> itemStackList, List<String> permissionList) {
-        Grave grave = new Grave(UUID.randomUUID());
+        Grave grave = new Grave(java.util.UUID.randomUUID());
+
         String entityName = plugin.getEntityManager().getEntityName(entity);
         UUID ownerUUID = entity.getUniqueId();
         String ownerName = entityName;
         String displayName = entity.getCustomName();
 
-        if (entity instanceof Player) {
-            Player player = (Player) entity;
+        if (entity instanceof Player player) {
             displayName = player.getDisplayName();
             if (plugin.getIntegrationManager().hasFloodgate()) {
                 ownerUUID = plugin.getIntegrationManager().getFloodgate().getCorrectUniqueId(player);
@@ -876,18 +1032,27 @@ public final class GraveManager {
         grave.setOwnerNameDisplay(displayName);
         grave.setOwnerUUID(ownerUUID);
 
-        grave.setInventory(createGraveInventory(
-                grave,
-                entity.getLocation(),
-                itemStackList,
-                StringUtil.parseString(
-                        plugin.getConfig("gui.grave.title", entity, permissionList).getString("gui.grave.title"),
-                        entity, entity.getLocation(), grave, plugin),
-                getStorageMode(plugin.getConfig("storage.mode", entity, permissionList).getString("storage.mode"))
-        ));
+        Location baseLocation = entity.getLocation().clone();
+        String rawTitle = plugin.getConfig("gui.grave.title", entity, permissionList).getString("gui.grave.title");
+        String parsedTitle = StringUtil.parseString(rawTitle, entity, baseLocation, grave, plugin);
+        String storageModeStr = plugin.getConfig("storage.mode", entity, permissionList).getString("storage.mode");
+
+        plugin.getGravesXScheduler().execute(baseLocation, () -> {
+            try {
+                grave.setInventory(createGraveInventory(
+                        grave,
+                        baseLocation,
+                        itemStackList,
+                        parsedTitle,
+                        getStorageMode(storageModeStr)
+                ));
+            } catch (Throwable t) {
+                plugin.getLogger().warning("Failed to create grave inventory for " + grave.getUUID() + ": " + t.getMessage());
+                plugin.logStackTrace(t);
+            }
+        });
 
         plugin.debugMessage("Creating grave " + grave.getUUID() + " for entity " + entityName, 1);
-
         return grave;
     }
 
@@ -895,10 +1060,36 @@ public final class GraveManager {
      * Restores graves that are in cache but missing from the world.
      */
     private void restoreMissingGraves() {
-        for (Grave grave : plugin.getCacheManager().getGraveMap().values()) {
+        Collection<Grave> graves = plugin.getCacheManager().getGraveMap().values();
+
+        for (Grave grave : new ArrayList<>(graves)) {
+            if (grave == null) {
+                continue;
+            }
+
             if (!isGravePlaced(grave)) {
                 plugin.debugMessage("Grave " + grave.getUUID() + " missing from world. Regenerating at saved location.", 1);
-                plugin.getGraveManager().placeGrave(grave.getLocationDeath(), grave);
+
+                Location loc = null;
+                try {
+                    loc = grave.getLocationDeath();
+                } catch (java.lang.Throwable ignored) {
+                }
+
+                if (loc == null || loc.getWorld() == null) {
+                    plugin.debugMessage("Cannot restore grave " + grave.getUUID() + ": null/invalid death location.", 2);
+                    continue;
+                }
+
+                Location anchor = loc;
+                plugin.getGravesXScheduler().execute(anchor, () -> {
+                    try {
+                        plugin.getGraveManager().placeGrave(anchor, grave);
+                    } catch (java.lang.Throwable t) {
+                        plugin.getLogger().warning("Failed to place missing grave " + grave.getUUID() + ": " + t.getMessage());
+                        plugin.logStackTrace(t);
+                    }
+                });
             }
         }
     }
@@ -906,130 +1097,188 @@ public final class GraveManager {
     /**
      * Determines if the grave is placed in the world by checking for any physical
      * block or entity presence at the grave's location. This includes checking for
-     * FancyNPCs plugin entities (corpses).
+     * plugin-provided furniture/blocks and NPC corpses.
+     *
+     * Folia-safe:
+     * - All world/entity/block access is executed on the owning region thread via
+     *   plugin.getGravesXScheduler().execute(location, runnable).
+     * - If the region task fails or times out, we conservatively return true to avoid duplication.
      *
      * @param grave the grave to check.
-     * @return true if a block or entity is present at the grave's location, including FancyNPCs.
+     * @return true if a block or entity is present at the grave's location (including integrations).
      */
     public boolean isGravePlaced(Grave grave) {
-        Location location = grave.getLocationDeath();
+        final Location location = grave.getLocationDeath();
+        if (location == null) return false;
+        final World world = location.getWorld();
+        if (world == null) return false;
 
-        if (location == null || location.getWorld() == null) return false;
+        try {
+            if (plugin.getIntegrationManager().hasFurnitureLib()
+                    && plugin.getConfig("furniturelib.enabled", grave).getBoolean("furniturelib.enabled", false)
+                    && plugin.getIntegrationManager().getFurnitureLib().hasFurniture(grave)) return true;
 
-        Collection<Entity> nearbyEntities = location.getWorld().getNearbyEntities(location, 0.49, 0.49, 0.49);
-        if (!nearbyEntities.isEmpty()) {
+            if (plugin.getIntegrationManager().hasFurnitureEngine()
+                    && plugin.getConfig("furnitureengine.enabled", grave).getBoolean("furnitureengine.enabled", false)
+                    && plugin.getIntegrationManager().getFurnitureEngine().hasFurniture(grave)) return true;
+
+            if (plugin.getIntegrationManager().hasFancyNpcs()
+                    && plugin.getConfig("fancynpcs.corpse.enabled", grave).getBoolean("fancynpcs.corpse.enabled", false)
+                    && plugin.getIntegrationManager().getFancyNpcs().hasCorpse(grave)) return true;
+
+            if (plugin.getIntegrationManager().hasCitizensNPC()
+                    && plugin.getConfig("citizens.corpse.enabled", grave).getBoolean("citizens.corpse.enabled", false)
+                    && plugin.getIntegrationManager().getCitizensNPC().hasNPCCorpse(grave)) return true;
+
+            if (plugin.getIntegrationManager().hasItemsAdder()
+                    && (plugin.getConfig("itemsadder.furniture.enabled", grave).getBoolean("itemsadder.furniture.enabled", false)
+                    || plugin.getConfig("itemsadder.block.enabled", grave).getBoolean("itemsadder.block.enabled", false))) {
+                if (plugin.getIntegrationManager().getItemsAdder().hasFurniture(grave)
+                        || plugin.getIntegrationManager().getItemsAdder().hasBlock(grave)) return true;
+            }
+
+            if (plugin.getIntegrationManager().hasOraxen()
+                    && (plugin.getConfig("oraxen.furniture.enabled", grave).getBoolean("oraxen.furniture.enabled", false)
+                    || plugin.getConfig("oraxen.block.enabled", grave).getBoolean("oraxen.block.enabled", false))) {
+                if (plugin.getIntegrationManager().getOraxen().hasBlock(grave)
+                        || plugin.getIntegrationManager().getOraxen().hasFurniture(grave)) return true;
+            }
+
+            if (plugin.getIntegrationManager().hasNexo()
+                    && (plugin.getConfig("nexo.furniture.enabled", grave).getBoolean("nexo.furniture.enabled", false)
+                    || plugin.getConfig("nexo.block.enabled", grave).getBoolean("nexo.block.enabled", false))) {
+                if (plugin.getIntegrationManager().getNexo().hasBlock(grave)
+                        || plugin.getIntegrationManager().getNexo().hasFurniture(grave)) return true;
+            }
+
+            for (GraveProvider p : RegisterGraveProviders.getAll()) {
+                try {
+                    if (p != null && p.isPlaced(grave)) return true;
+                } catch (Throwable t) {
+                    plugin.getLogger().warning("[CustomGraveProvider " + (p != null ? p.id() : "null")
+                            + "] isPlaced() failed: " + t.getMessage());
+                }
+            }
+        } catch (Throwable t) {
+            plugin.getLogger().warning("Integration quick-check failed in isGravePlaced: " + t.getMessage());
+        }
+
+        final CompletableFuture<Boolean> result = new CompletableFuture<>();
+
+        plugin.getGravesXScheduler().execute(location, () -> {
+            try {
+                final Collection<Entity> nearby = world.getNearbyEntities(location, 0.49D, 0.49D, 0.49D);
+                if (!nearby.isEmpty()) {
+                    result.complete(true);
+                    return;
+                }
+
+                final Block block = location.getBlock();
+                if (isHeadBlock(block)) {
+                    try {
+                        final BlockState state = block.getState();
+                        if (state instanceof Skull skull) {
+                            final int headType = plugin.getConfig("block.head.type", grave).getInt("block.head.type");
+                            final String headBase64 = plugin.getConfig("block.head.base64", grave).getString("block.head.base64");
+                            final String headName = plugin.getConfig("block.head.name", grave).getString("block.head.name");
+
+                            String expectedName = null;
+                            String expectedTex = null;
+
+                            if (headType == 0) {
+                                expectedName = grave.getOwnerName();
+                                expectedTex  = grave.getOwnerTexture();
+                            } else if (headType == 1 && headBase64 != null && !headBase64.isEmpty()) {
+                                expectedName = grave.getOwnerName();
+                                expectedTex  = headBase64;
+                            } else if (headType == 2 && headName != null && headName.length() <= 16) {
+                                expectedName = headName;
+                                expectedTex  = grave.getOwnerTexture();
+                            }
+
+                            boolean match = false;
+
+                            if (expectedTex != null && !expectedTex.isEmpty()) {
+                                try {
+                                    final java.lang.reflect.Field profileField = skull.getClass().getDeclaredField("profile");
+                                    profileField.setAccessible(true);
+                                    final Object gp = profileField.get(skull);
+                                    if (gp != null) {
+                                        java.util.Collection<?> props;
+                                        try {
+                                            final Object map = gp.getClass().getMethod("properties").invoke(gp);
+                                            props = (java.util.Collection<?>) map.getClass().getMethod("get", Object.class).invoke(map, "textures");
+                                        } catch (NoSuchMethodException e) {
+                                            final Object map = gp.getClass().getMethod("getProperties").invoke(gp);
+                                            props = (java.util.Collection<?>) map.getClass().getMethod("get", Object.class).invoke(map, "textures");
+                                        }
+                                        if (props != null && !props.isEmpty()) {
+                                            final Object prop = props.iterator().next();
+                                            String value;
+                                            try {
+                                                value = (String) prop.getClass().getMethod("value").invoke(prop);
+                                            } catch (NoSuchMethodException nsme) {
+                                                value = (String) prop.getClass().getMethod("getValue").invoke(prop);
+                                            }
+                                            if (expectedTex.equals(value)) {
+                                                match = true;
+                                            }
+                                        }
+                                    }
+                                } catch (Throwable ignored) {}
+
+                                if (!match && expectedName != null && !expectedName.isEmpty()) {
+                                    try {
+                                        final Object owning = Skull.class.getMethod("getOwningPlayer").invoke(skull);
+                                        if (owning != null) {
+                                            final String n = (String) owning.getClass().getMethod("getName").invoke(owning);
+                                            if (n != null && n.equalsIgnoreCase(expectedName)) {
+                                                match = true;
+                                            }
+                                        } else {
+                                            try {
+                                                final String legacy = (String) Skull.class.getMethod("getOwner").invoke(skull);
+                                                if (legacy != null && legacy.equalsIgnoreCase(expectedName)) {
+                                                    match = true;
+                                                }
+                                            } catch (Throwable ignored) {}
+                                        }
+                                    } catch (Throwable ignored) {}
+                                }
+                            }
+
+                            if (match) {
+                                result.complete(true);
+                                return;
+                            }
+                        }
+                    } catch (Throwable ignored) {}
+                }
+
+                result.complete(false);
+            } catch (Throwable t) {
+                plugin.debugMessage("isGravePlaced region work failed for " + grave.getUUID()
+                        + " → treating as placed. Reason: " + t, 2);
+                result.complete(true);
+            }
+        });
+
+        try {
+            return result.get(250, TimeUnit.MILLISECONDS);
+        } catch (TimeoutException te) {
+            plugin.debugMessage("isGravePlaced timed out for " + grave.getUUID()
+                    + " → assuming placed to avoid duplication.", 2);
+            return true;
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            plugin.debugMessage("isGravePlaced interrupted for " + grave.getUUID()
+                    + " → assuming placed.", 2);
+            return true;
+        } catch (ExecutionException ee) {
+            plugin.debugMessage("isGravePlaced failed for " + grave.getUUID()
+                    + " → assuming placed. Reason: " + ee.getCause(), 2);
             return true;
         }
-
-        if (plugin.getIntegrationManager().hasFurnitureLib() && plugin.getConfig("furniurelib.enabled", grave).getBoolean("furniturelib.enabled", false)) {
-            if (plugin.getIntegrationManager().getFurnitureLib().hasFurniture(grave)) return true;
-        }
-
-        if (plugin.getIntegrationManager().hasFurnitureEngine() && plugin.getConfig("furnitureengine.enabled", grave).getBoolean("furnitureengine.enabled", false)) {
-            if (plugin.getIntegrationManager().getFurnitureEngine().hasFurniture(grave)) return true;
-        }
-
-        if (plugin.getIntegrationManager().hasFancyNpcs() && plugin.getConfig("fancynpcs.corpse.enabled", grave).getBoolean("fancynpcs.corpse.enabled", false)) {
-            if (plugin.getIntegrationManager().getFancyNpcs().hasCorpse(grave)) return true;
-        }
-
-        if (plugin.getIntegrationManager().hasCitizensNPC() && plugin.getConfig("citizens.corpse.enabled", grave).getBoolean("citizens.corpse.enabled", false)) {
-            if (plugin.getIntegrationManager().getCitizensNPC().hasNPCCorpse(grave)) return true;
-        }
-
-        if (plugin.getIntegrationManager().hasItemsAdder() && plugin.getConfig("itemsadder.furniture.enabled", grave).getBoolean("itemsadder.furniture.enabled") || plugin.getIntegrationManager().hasItemsAdder() && plugin.getConfig("itemsadder.block.enabled", grave).getBoolean("itemsadder.block.enabled")) {
-            if (plugin.getIntegrationManager().getItemsAdder().hasFurniture(grave) || plugin.getIntegrationManager().getItemsAdder().hasBlock(grave)) return true;
-        }
-
-        if (plugin.getIntegrationManager().hasOraxen() && plugin.getConfig("oraxen.furniture.enabled", grave).getBoolean("oraxen.furniture.enabled") || plugin.getIntegrationManager().hasOraxen() && plugin.getConfig("oraxen.block.enabled", grave).getBoolean("oraxen.block.enabled")) {
-            if (plugin.getIntegrationManager().getOraxen().hasBlock(grave) || plugin.getIntegrationManager().getOraxen().hasFurniture(grave)) return true;
-        }
-
-        if (plugin.getIntegrationManager().hasNexo() && plugin.getConfig("nexo.furniture.enabled", grave).getBoolean("nexo.furniture.enabled") || plugin.getIntegrationManager().hasNexo() && plugin.getConfig("nexo.block.enabled", grave).getBoolean("nexo.block.enabled")) {
-            if (plugin.getIntegrationManager().getNexo().hasBlock(grave) || plugin.getIntegrationManager().getNexo().hasFurniture(grave)) return true;
-        }
-
-        for (GraveProvider p : RegisterGraveProviders.getAll()) {
-            try {
-                if (p.isPlaced(grave)) return true;
-            } catch (Throwable t) {
-                plugin.getLogger().warning("[CustomGraveProvider " + p.id() + "] isPlaced() failed: " + t.getMessage());
-            }
-        }
-
-        Block block = location.getBlock();
-        if (isHeadBlock(block)) {
-            try {
-                if (block.getState() instanceof Skull) {
-                    Skull skull = (Skull) block.getState();
-
-                    int headType = plugin.getConfig("block.head.type", grave).getInt("block.head.type");
-                    String headBase64 = plugin.getConfig("block.head.base64", grave).getString("block.head.base64");
-                    String headName = plugin.getConfig("block.head.name", grave).getString("block.head.name");
-
-                    String expectedName = null;
-                    String expectedTex  = null;
-
-                    if (headType == 0) {
-                        expectedName = grave.getOwnerName();
-                        expectedTex = grave.getOwnerTexture();
-                    } else if (headType == 1 && headBase64 != null && !headBase64.isEmpty()) {
-                        expectedName = grave.getOwnerName();
-                        expectedTex = headBase64;
-                    } else if (headType == 2 && headName != null && headName.length() <= 16) {
-                        expectedName = headName;
-                        expectedTex = grave.getOwnerTexture();
-                    }
-
-                    boolean match = false;
-
-                    if (expectedTex != null && !expectedTex.isEmpty()) {
-                        try {
-                            Field profileField = skull.getClass().getDeclaredField("profile");
-                            profileField.setAccessible(true);
-                            Object gp = profileField.get(skull);
-                            if (gp != null) {
-                                Collection<?> props;
-                                try {
-                                    Object map = gp.getClass().getMethod("properties").invoke(gp);
-                                    props = (Collection<?>) map.getClass().getMethod("get", Object.class).invoke(map, "textures");
-                                } catch (NoSuchMethodException e) {
-                                    Object map = gp.getClass().getMethod("getProperties").invoke(gp);
-                                    props = (Collection<?>) map.getClass().getMethod("get", Object.class).invoke(map, "textures");
-                                }
-                                if (props != null && !props.isEmpty()) {
-                                    Object prop = props.iterator().next();
-                                    String value;
-                                    try { value = (String) prop.getClass().getMethod("value").invoke(prop); }
-                                    catch (NoSuchMethodException nsme) { value = (String) prop.getClass().getMethod("getValue").invoke(prop); }
-                                    if (expectedTex.equals(value)) match = true;
-                                }
-                            }
-                        } catch (Throwable ignored) {}
-                    }
-
-                    if (!match && (expectedName != null && !expectedName.isEmpty())) {
-                        try {
-                            Object owning = Skull.class.getMethod("getOwningPlayer").invoke(skull);
-                            if (owning != null) {
-                                String n = (String) owning.getClass().getMethod("getName").invoke(owning);
-                                if (n != null && n.equalsIgnoreCase(expectedName)) match = true;
-                            } else {
-                                try {
-                                    String legacy = (String) Skull.class.getMethod("getOwner").invoke(skull);
-                                    if (legacy != null && legacy.equalsIgnoreCase(expectedName)) match = true;
-                                } catch (Throwable ignored) {}
-                            }
-                        } catch (Throwable ignored) {}
-                    }
-
-                    if (match) return true;
-                }
-            } catch (Throwable ignored) {
-            }
-        }
-
-        return false;
     }
 
     private boolean isHeadBlock(Block block) {
@@ -1047,18 +1296,22 @@ public final class GraveManager {
      * @return the corresponding storage mode.
      */
     public Grave.StorageMode getStorageMode(String string) {
-        try {
-            Grave.StorageMode storageMode = Grave.StorageMode.valueOf(string.toUpperCase());
+        if (string == null || string.isEmpty()) {
+            return Grave.StorageMode.EXACT;
+        }
 
-            if (storageMode == Grave.StorageMode.CHESTSORT && !plugin.getIntegrationManager().hasChestSort()) {
+        try {
+            Grave.StorageMode storageMode = Grave.StorageMode.valueOf(string.toUpperCase(java.util.Locale.ROOT));
+
+            if (storageMode == Grave.StorageMode.CHESTSORT
+                    && !plugin.getIntegrationManager().hasChestSort()) {
                 return Grave.StorageMode.COMPACT;
             }
 
             return storageMode;
-        } catch (NullPointerException | IllegalArgumentException ignored) {
+        } catch (IllegalArgumentException ignored) {
+            return Grave.StorageMode.EXACT;
         }
-
-        return Grave.StorageMode.COMPACT;
     }
 
     /**
@@ -1068,103 +1321,119 @@ public final class GraveManager {
      * @param grave    the grave to be placed.
      */
     public void placeGrave(Location location, Grave grave) {
-        plugin.getBlockManager().createBlock(location, grave);
-        plugin.getHologramManager().createHologram(location, grave);
-        plugin.getEntityManager().createArmorStand(location, grave);
-        plugin.getEntityManager().createItemFrame(location, grave);
-
-        if (plugin.getIntegrationManager().hasFurnitureLib()) {
-            plugin.getIntegrationManager().getFurnitureLib().createFurniture(location, grave);
+        if (location == null || location.getWorld() == null || grave == null) {
+            return;
         }
 
-        if (plugin.getIntegrationManager().hasFurnitureEngine()) {
-            plugin.getIntegrationManager().getFurnitureEngine().createFurniture(location, grave);
-        }
-
-        if (plugin.getIntegrationManager().hasItemsAdder()) {
-            plugin.getIntegrationManager().getItemsAdder().createFurniture(location, grave);
-        }
-
-        if (plugin.getIntegrationManager().hasOraxen()) {
-            plugin.getIntegrationManager().getOraxen().createFurniture(location, grave);
-        }
-
-        if (plugin.getIntegrationManager().hasNexo()) {
-            plugin.getIntegrationManager().getNexo().createFurniture(location, grave);
-        }
-
-        if (plugin.getIntegrationManager().hasPlayerNPC()) {
-            plugin.getIntegrationManager().getPlayerNPC().createCorpse(location, grave);
-        }
-
-        if (plugin.getIntegrationManager().hasCitizensNPC()) {
-            plugin.getIntegrationManager().getCitizensNPC().createCorpse(location, grave);
-        }
-        if (plugin.getIntegrationManager().hasFancyNpcs() && !plugin.getIntegrationManager().hasFloodgate()) {
-            plugin.getIntegrationManager().getFancyNpcs().createCorpse(grave.getUUID(),grave.getLocationDeath(),grave);
-        }
-        if (plugin.getIntegrationManager().hasFancyNpcs() && plugin.getIntegrationManager().hasFloodgate()) {
-            if (FloodgateApi.getInstance().isFloodgatePlayer(grave.getOwnerUUID())) {
-                plugin.getIntegrationManager().getFancyNpcs().createBedrockcompatCorpse(grave.getUUID(),grave.getLocationDeath(),grave);
-            } else {
-                plugin.getIntegrationManager().getFancyNpcs().createCorpse(grave.getUUID(),grave.getLocationDeath(),grave);
-            }
-        }
-
-        for (GraveProvider p : RegisterGraveProviders.getAll()) {
+        Location anchor = location.clone();
+        plugin.getGravesXScheduler().execute(anchor, () -> {
             try {
-                p.place(location, grave);
+                plugin.getBlockManager().createBlock(anchor, grave);
+                plugin.getHologramManager().createHologram(anchor, grave);
+                plugin.getEntityManager().createArmorStand(anchor, grave);
+                plugin.getEntityManager().createItemFrame(anchor, grave);
+
+                if (plugin.getIntegrationManager().hasFurnitureLib()) {
+                    plugin.getIntegrationManager().getFurnitureLib().createFurniture(anchor, grave);
+                }
+
+                if (plugin.getIntegrationManager().hasFurnitureEngine()) {
+                    plugin.getIntegrationManager().getFurnitureEngine().createFurniture(anchor, grave);
+                }
+
+                if (plugin.getIntegrationManager().hasItemsAdder()) {
+                    plugin.getIntegrationManager().getItemsAdder().createFurniture(anchor, grave);
+                }
+
+                if (plugin.getIntegrationManager().hasOraxen()) {
+                    plugin.getIntegrationManager().getOraxen().createFurniture(anchor, grave);
+                }
+
+                if (plugin.getIntegrationManager().hasNexo()) {
+                    plugin.getIntegrationManager().getNexo().createFurniture(anchor, grave);
+                }
+
+                if (plugin.getIntegrationManager().hasPlayerNPC()) {
+                    plugin.getIntegrationManager().getPlayerNPC().createCorpse(anchor, grave);
+                }
+
+                if (plugin.getIntegrationManager().hasCitizensNPC()) {
+                    plugin.getIntegrationManager().getCitizensNPC().createCorpse(anchor, grave);
+                }
+
+                if (plugin.getIntegrationManager().hasFancyNpcs() && !plugin.getIntegrationManager().hasFloodgate()) {
+                    plugin.getIntegrationManager().getFancyNpcs().createCorpse(grave.getUUID(), grave.getLocationDeath(), grave);
+                }
+
+                if (plugin.getIntegrationManager().hasFancyNpcs() && plugin.getIntegrationManager().hasFloodgate()) {
+                    try {
+                        if (plugin.getIntegrationManager().getFloodgate().isFloodgateId(grave.getOwnerUUID())) {
+                            plugin.getIntegrationManager().getFancyNpcs().createBedrockcompatCorpse(grave.getUUID(), grave.getLocationDeath(), grave);
+                        } else {
+                            plugin.getIntegrationManager().getFancyNpcs().createCorpse(grave.getUUID(), grave.getLocationDeath(), grave);
+                        }
+                    } catch (Throwable ignored) {
+                        plugin.getIntegrationManager().getFancyNpcs().createCorpse(grave.getUUID(), grave.getLocationDeath(), grave);
+                    }
+                }
+
+                for (GraveProvider p : RegisterGraveProviders.getAll()) {
+                    try {
+                        p.place(anchor, grave);
+                    } catch (Throwable t) {
+                        plugin.getLogger().warning("[CustomGraveProvider " + p.id() + "] place() failed: " + t.getMessage());
+                    }
+                }
             } catch (Throwable t) {
-                plugin.getLogger().warning("[CustomGraveProvider " + p.id() + "] place() failed: " + t.getMessage());
+                plugin.getLogger().warning("Failed to place grave " + grave.getUUID() + ": " + t.getMessage());
+                plugin.logStackTrace(t);
             }
-        }
+        });
     }
 
     /**
      * Retrieves the grave inventory for a specified grave and living entity.
      *
-     * @param grave                  the grave.
-     * @param livingEntity           the living entity.
-     * @param graveItemStackList     the list of item stacks to be included in the grave.
-     * @param removedItemStackList   the list of item stacks to be removed.
-     * @param permissionList         the list of permissions associated with the grave.
+     * @param grave                 the grave.
+     * @param livingEntity          the living entity.
+     * @param graveItemStackList    the list of item stacks to be included in the grave.
+     * @param removedItemStackList  the list of item stacks to be removed.
+     * @param permissionList        the list of permissions associated with the grave.
      * @return the created grave inventory.
      */
-    public Inventory getGraveInventory(Grave grave, LivingEntity livingEntity,
-                                       List<ItemStack> graveItemStackList, List<ItemStack> removedItemStackList,
-                                       List<String> permissionList) {
-        List<ItemStack> filterGraveItemStackList = filterGraveItemStackList(graveItemStackList, removedItemStackList,
-                livingEntity, permissionList);
+    public Inventory getGraveInventory(Grave grave,
+            LivingEntity livingEntity,
+            List<org.bukkit.inventory.ItemStack> graveItemStackList,
+            List<org.bukkit.inventory.ItemStack> removedItemStackList,
+            List<String> permissionList) {
+        List<ItemStack> filterGraveItemStackList = filterGraveItemStackList(graveItemStackList, removedItemStackList, livingEntity, permissionList);
+
         String title;
         if (plugin.getIntegrationManager().hasMiniMessage()) {
-            String newTitle = StringUtil.parseString(plugin.getConfig("gui.grave.title", grave)
-                    .getString("gui.grave.title"), livingEntity, grave.getLocationDeath(), grave, plugin);
+            String newTitle = StringUtil.parseString(plugin.getConfig("gui.grave.title", grave).getString("gui.grave.title"), livingEntity, grave.getLocationDeath(), grave, plugin);
             title = MiniMessage.parseString(newTitle);
         } else {
-            title = StringUtil.parseString(plugin.getConfig("gui.grave.title", grave)
-                    .getString("gui.grave.title"), livingEntity, grave.getLocationDeath(), grave, plugin);
+            title = StringUtil.parseString(plugin.getConfig("gui.grave.title", grave).getString("gui.grave.title"), livingEntity, grave.getLocationDeath(), grave, plugin);
         }
 
-        Grave.StorageMode storageMode = getStorageMode(plugin.getConfig("storage.mode", grave)
-                .getString("storage.mode"));
+        Grave.StorageMode storageMode = getStorageMode(plugin.getConfig("storage.mode", grave).getString("storage.mode"));
 
-        return plugin.getGraveManager().createGraveInventory(grave, grave.getLocationDeath(), filterGraveItemStackList,
-                title, storageMode);
+        return plugin.getGraveManager().createGraveInventory(grave, grave.getLocationDeath(), filterGraveItemStackList, title, storageMode);
     }
 
     /**
      * Creates a grave inventory with the specified parameters.
      *
-     * @param inventoryHolder  the holder of the inventory.
-     * @param location         the location of the grave.
-     * @param itemStackList    the list of item stacks to be included in the inventory.
-     * @param title            the title of the inventory.
-     * @param storageMode      the storage mode for the inventory.
+     * @param inventoryHolder the holder of the inventory.
+     * @param location        the location of the grave.
+     * @param itemStackList   the list of item stacks to be included in the inventory.
+     * @param title           the title of the inventory.
+     * @param storageMode     the storage mode for the inventory.
      * @return the created inventory.
      */
-    public Inventory createGraveInventory(InventoryHolder inventoryHolder, Location location,
-                                          List<ItemStack> itemStackList, String title, Grave.StorageMode storageMode) {
+    public Inventory createGraveInventory(InventoryHolder inventoryHolder, Location location, List<ItemStack> itemStackList, String title, Grave.StorageMode storageMode) {
         if (storageMode == Grave.StorageMode.COMPACT || storageMode == Grave.StorageMode.CHESTSORT) {
+
             Inventory tempInventory = plugin.getServer().createInventory(null, 54);
             int counter = 0;
 
@@ -1180,15 +1449,13 @@ public final class GraveManager {
             }
 
             counter = 0;
-
             for (ItemStack itemStack : tempInventory.getContents()) {
                 if (itemStack != null) {
                     counter++;
                 }
             }
 
-            Inventory inventory = plugin.getServer().createInventory(inventoryHolder,
-                    InventoryUtil.getInventorySize(counter), title);
+            Inventory inventory = plugin.getServer().createInventory(inventoryHolder, InventoryUtil.getInventorySize(counter), title);
 
             for (ItemStack itemStack : tempInventory.getContents()) {
                 if (itemStack != null && location != null && location.getWorld() != null) {
@@ -1196,20 +1463,20 @@ public final class GraveManager {
                 }
             }
 
-            if (storageMode == Grave.StorageMode.CHESTSORT && plugin.getIntegrationManager().hasChestSort()) {
+            if (storageMode == Grave.StorageMode.CHESTSORT
+                    && plugin.getIntegrationManager().hasChestSort()) {
                 plugin.getIntegrationManager().getChestSort().sortInventory(inventory);
             }
 
             return inventory;
+
         } else if (storageMode == Grave.StorageMode.EXACT) {
             if (plugin.getVersionManager().hasEnchantmentCurse()) {
-                itemStackList.removeIf(itemStack -> itemStack != null &&
-                        itemStack.containsEnchantment(Enchantment.VANISHING_CURSE));
+                itemStackList.removeIf(itemStack -> itemStack != null && itemStack.containsEnchantment(Enchantment.VANISHING_CURSE));
             }
 
-            ItemStack itemStackAir = new ItemStack(Material.AIR);
-            Inventory inventory = plugin.getServer().createInventory(inventoryHolder,
-                    InventoryUtil.getInventorySize(itemStackList.size()), title);
+            ItemStack itemStackAir = new ItemStack(org.bukkit.Material.AIR);
+            Inventory inventory = plugin.getServer().createInventory(inventoryHolder, InventoryUtil.getInventorySize(itemStackList.size()), title);
 
             int counter = 0;
             for (ItemStack itemStack : itemStackList) {
@@ -1218,7 +1485,6 @@ public final class GraveManager {
                 } else if (itemStack != null && location != null && location.getWorld() != null) {
                     location.getWorld().dropItem(location, itemStack);
                 }
-
                 counter++;
             }
 
@@ -1232,71 +1498,60 @@ public final class GraveManager {
      * Gets the size of the item stacks array.
      *
      * @param itemStacks the array of item stacks.
-     * @return the size of the item stacks array.
+     * @return the number of non-null item stacks in the array.
      */
     public int getItemStacksSize(ItemStack[] itemStacks) {
-        int counter = 0;
+        if (itemStacks == null) {
+            return 0;
+        }
 
+        int counter = 0;
         for (ItemStack itemStack : itemStacks) {
             if (itemStack != null) {
                 counter++;
             }
         }
-
         return counter;
-    }
-
-    /**
-     * Filters the grave item stack list based on the living entity and permission list.
-     *
-     * @param itemStackList     the original list of item stacks.
-     * @param livingEntity      the living entity.
-     * @param permissionList    the list of permissions associated with the grave.
-     * @return the filtered list of item stacks.
-     */
-    public List<ItemStack> filterGraveItemStackList(List<ItemStack> itemStackList, LivingEntity livingEntity, List<String> permissionList) {
-        return filterGraveItemStackList(itemStackList, new ArrayList<>(), livingEntity, permissionList);
     }
 
     /**
      * Filters the grave item stack list based on the living entity, removed item stacks, and permission list.
      *
-     * @param itemStackList         the original list of item stacks.
-     * @param removedItemStackList  the list of item stacks to be removed.
-     * @param livingEntity          the living entity.
-     * @param permissionList        the list of permissions associated with the grave.
+     * @param itemStackList        the original list of item stacks.
+     * @param removedItemStackList the list of item stacks to be removed.
+     * @param livingEntity         the living entity.
+     * @param permissionList       the list of permissions associated with the grave.
      * @return the filtered list of item stacks.
      */
-    public List<ItemStack> filterGraveItemStackList(List<ItemStack> itemStackList, List<ItemStack> removedItemStackList,
-                                                    LivingEntity livingEntity, List<String> permissionList) {
-        itemStackList = new ArrayList<>(itemStackList);
+    public List<ItemStack> filterGraveItemStackList(List<ItemStack> itemStackList, List<ItemStack> removedItemStackList, LivingEntity livingEntity, List<String> permissionList) {
+        List<ItemStack> source = (itemStackList != null) ? new ArrayList<>(itemStackList) : new ArrayList<>();
+        List<ItemStack> removed = (removedItemStackList != null) ? new ArrayList<>(removedItemStackList) : new ArrayList<>();
 
-        if (livingEntity instanceof Player && getStorageMode(plugin.getConfig("storage.mode",
-                livingEntity, permissionList).getString("storage.mode")) == Grave.StorageMode.EXACT) {
-            Player player = (Player) livingEntity;
+        if (livingEntity instanceof Player player && getStorageMode(plugin.getConfig("storage.mode", livingEntity, permissionList).getString("storage.mode")) == Grave.StorageMode.EXACT) {
+
             List<ItemStack> playerInventoryContentList = Arrays.asList(player.getInventory().getContents());
 
             List<ItemStack> itemStackListNew = new ArrayList<>(playerInventoryContentList);
-            List<ItemStack> differenceList = new ArrayList<>(removedItemStackList);
+            List<ItemStack> differenceList = new ArrayList<>(removed);
 
-            differenceList.removeIf(itemStackList::contains);
+            differenceList.removeIf(source::contains);
+
             itemStackListNew.removeAll(differenceList);
-            itemStackList.removeAll(playerInventoryContentList);
 
-            if (!itemStackList.isEmpty()) {
+            source.removeAll(playerInventoryContentList);
+
+            if (!source.isEmpty()) {
                 int counter = 0;
 
                 for (ItemStack itemStack : new ArrayList<>(itemStackListNew)) {
-                    if (!itemStackList.isEmpty()) {
+                    if (!source.isEmpty()) {
                         if (itemStack == null) {
-                            itemStackListNew.set(counter, itemStackList.get(0));
+                            itemStackListNew.set(counter, source.get(0));
                         } else {
-                            itemStackListNew.add(itemStackList.get(0));
+                            itemStackListNew.add(source.get(0));
                         }
-
-                        itemStackList.remove(0);
+                        source.remove(0);
                     }
-
                     counter++;
                 }
             }
@@ -1304,7 +1559,7 @@ public final class GraveManager {
             return itemStackListNew;
         }
 
-        return itemStackList;
+        return source;
     }
 
     /**
@@ -1323,28 +1578,67 @@ public final class GraveManager {
      * @param grave    the grave to be broken.
      */
     public void breakGrave(Location location, Grave grave) {
-        dropGraveItems(location, grave);
-        dropGraveExperience(location, grave);
-        removeGrave(grave);
-        plugin.debugMessage("Grave " + grave.getUUID() + " broken", 1);
+        if (grave == null) {
+            return;
+        }
+        if (location == null || location.getWorld() == null) {
+            removeGrave(grave);
+            plugin.debugMessage("Grave " + grave.getUUID() + " broken (no valid location/world for drops)", 1);
+            return;
+        }
+
+        Location anchor = location.clone();
+        plugin.getGravesXScheduler().execute(anchor, () -> {
+            try {
+                dropGraveItems(anchor, grave);
+                dropGraveExperience(anchor, grave);
+            } catch (Throwable t) {
+                plugin.debugMessage("Error while dropping items/XP for grave " + grave.getUUID() + ": " + t.getMessage(), 2);
+                plugin.logStackTrace(t);
+            } finally {
+                removeGrave(grave);
+                plugin.debugMessage("Grave " + grave.getUUID() + " broken", 1);
+            }
+        });
     }
 
     /**
      * Drops the items from a grave at the specified location.
+     * <p>
+     * Folia-compatible: item drops are executed on the correct region thread
+     * using {@code location} as the anchor.
+     * </p>
      *
      * @param location the location to drop the items.
      * @param grave    the grave containing the items.
      */
     public void dropGraveItems(Location location, Grave grave) {
-        if (grave != null && location.getWorld() != null) {
-            for (ItemStack itemStack : grave.getInventory()) {
-                if (itemStack != null) {
-                    location.getWorld().dropItemNaturally(location, itemStack);
-                }
-            }
-
-            grave.getInventory().clear();
+        if (grave == null || location == null || location.getWorld() == null) {
+            return;
         }
+
+        Inventory inv = grave.getInventory();
+
+        Location anchor = location.clone();
+        plugin.getGravesXScheduler().execute(anchor, () -> {
+            try {
+                World world = anchor.getWorld();
+                if (world == null) {
+                    return;
+                }
+
+                for (ItemStack itemStack : inv.getContents()) {
+                    if (itemStack != null) {
+                        world.dropItemNaturally(anchor, itemStack);
+                    }
+                }
+
+                inv.clear();
+            } catch (Throwable t) {
+                plugin.debugMessage("dropGraveItems failed for " + grave.getUUID() + ": " + t.getMessage(), 2);
+                plugin.logStackTrace(t);
+            }
+        });
     }
 
     /**
@@ -1354,11 +1648,36 @@ public final class GraveManager {
      * @param grave  the grave containing the experience.
      */
     public void giveGraveExperience(Player player, Grave grave) {
-        if (grave.getExperience() > 0) {
-            player.giveExp(grave.getExperience());
+        if (player == null || grave == null) {
+            return;
+        }
+
+        int xp = grave.getExperience();
+        if (xp <= 0) {
+            return;
+        }
+
+        Location anchor = player.getLocation();
+        if (anchor.getWorld() == null) {
+            plugin.getGravesXScheduler().runTask(() -> {
+                if (!player.isOnline()) {
+                    return;
+                }
+                player.giveExp(xp);
+                grave.setExperience(0);
+                plugin.getEntityManager().playWorldSound("ENTITY_EXPERIENCE_ORB_PICKUP", player);
+            });
+            return;
+        }
+
+        plugin.getGravesXScheduler().execute(anchor, () -> {
+            if (!player.isOnline()) {
+                return;
+            }
+            player.giveExp(xp);
             grave.setExperience(0);
             plugin.getEntityManager().playWorldSound("ENTITY_EXPERIENCE_ORB_PICKUP", player);
-        }
+        });
     }
 
     /**
@@ -1368,13 +1687,32 @@ public final class GraveManager {
      * @param grave    the grave containing the experience.
      */
     public void dropGraveExperience(Location location, Grave grave) {
-        if (grave.getExperience() > 0 && location.getWorld() != null) {
-            ExperienceOrb experienceOrb = (ExperienceOrb) location.getWorld()
-                    .spawnEntity(location, EntityType.EXPERIENCE_ORB);
-
-            experienceOrb.setExperience(grave.getExperience());
-            grave.setExperience(0);
+        if (grave == null || location == null || location.getWorld() == null) {
+            return;
         }
+
+        int xp = grave.getExperience();
+        if (xp <= 0) {
+            return;
+        }
+
+        Location anchor = location.clone();
+        plugin.getGravesXScheduler().execute(anchor, () -> {
+            try {
+                World world = anchor.getWorld();
+                if (world == null) {
+                    return;
+                }
+
+                ExperienceOrb experienceOrb = (ExperienceOrb) world.spawnEntity(anchor, EntityType.EXPERIENCE_ORB);
+
+                experienceOrb.setExperience(xp);
+                grave.setExperience(0);
+            } catch (Throwable t) {
+                plugin.debugMessage("dropGraveExperience failed for " + grave.getUUID() + ": " + t.getMessage(), 2);
+                plugin.logStackTrace(t);
+            }
+        });
     }
 
     /**
@@ -1416,8 +1754,15 @@ public final class GraveManager {
     public List<Grave> getGraveList(UUID uuid) {
         List<Grave> graveList = new ArrayList<>();
 
+        if (uuid == null) {
+            return graveList;
+        }
+
         plugin.getCacheManager().getGraveMap().forEach((key, value) -> {
-            if (!value.isAbandoned() && value.getOwnerUUID() != null && value.getOwnerUUID().equals(uuid)) {
+            if (value != null
+                    && !value.isAbandoned()
+                    && value.getOwnerUUID() != null
+                    && value.getOwnerUUID().equals(uuid)) {
                 graveList.add(value);
             }
         });
@@ -1451,18 +1796,33 @@ public final class GraveManager {
     /**
      * Opens a grave for a player.
      *
+     * <p>
+     * Folia-compatible: world/player interactions (auto-loot, opening inventories,
+     * running commands, playing sounds) are executed on the correct region thread
+     * using the provided {@code location} as the anchor. The method returns {@code true}
+     * once the operation has been scheduled (if permitted), not necessarily after it completes.
+     * </p>
+     *
      * @param entity   the entity attempting to open the grave.
      * @param location the location of the grave.
      * @param grave    the grave to be opened.
-     * @return true if the grave was opened successfully, false otherwise.
+     * @param preview  whether to open the grave in preview mode (when allowed by config).
+     * @return true if the open/auto-loot operation was scheduled, false otherwise.
      */
     public boolean openGrave(Entity entity, Location location, Grave grave, boolean preview) {
-        if (entity instanceof Player) {
-            Player player = (Player) entity;
+        if (!(entity instanceof Player player)) {
+            return false;
+        }
 
-            plugin.getEntityManager().swingMainHand(player);
+        Location anchor = (location != null ? location : player.getLocation());
+        if (anchor.getWorld() == null) {
+            return false;
+        }
 
-            if (plugin.getEntityManager().canOpenGrave(player, grave)) {
+        plugin.getGravesXScheduler().execute(anchor, () -> plugin.getEntityManager().swingMainHand(player));
+
+        if (plugin.getEntityManager().canOpenGrave(player, grave)) {
+            plugin.getGravesXScheduler().execute(anchor, () -> {
                 cleanupCompasses(player, grave);
 
                 if (player.isSneaking() && plugin.hasGrantedPermission("graves.autoloot", player.getPlayer())) {
@@ -1474,6 +1834,7 @@ public final class GraveManager {
 
                     if (!modern.isCancelled() || !modern.isAddon() || !legacy.isCancelled() || !legacy.isAddon()) {
                         autoLootGrave(player, location, grave);
+
                         if (plugin.getIntegrationManager().hasNoteBlockAPI()) {
                             if (plugin.getIntegrationManager().getNoteBlockAPI().isSongPlayingForPlayer(player)) {
                                 plugin.getIntegrationManager().getNoteBlockAPI().stopSongForPlayer(player);
@@ -1493,16 +1854,20 @@ public final class GraveManager {
                     plugin.getEntityManager().runCommands("event.command.open", player, location, grave);
                     plugin.getEntityManager().playWorldSound("sound.open", location, grave);
                 }
+            });
 
-                return true;
-            } else {
-                if (plugin.getConfig("protection.preview", grave).getBoolean("protection.preview", false)
-                        && plugin.getConfig("grave.preview", grave).getBoolean("grave.preview", false)) {
+            return true;
+        } else {
+            plugin.getGravesXScheduler().execute(anchor, () -> {
+                boolean protPreview = plugin.getConfig("protection.preview", grave).getBoolean("protection.preview", false);
+                boolean gravePreview = plugin.getConfig("grave.preview", grave).getBoolean("grave.preview", false);
+
+                if (protPreview && gravePreview) {
                     grave.setGravePreview(preview);
                     player.openInventory(grave.getInventory());
                     plugin.getEntityManager().runCommands("event.command.open", player, location, grave);
                     plugin.getEntityManager().playWorldSound("sound.open", location, grave);
-                } else if (plugin.getConfig("protection.preview", grave).getBoolean("protection.preview", false)) {
+                } else if (protPreview) {
                     grave.setGravePreview(false);
                     player.openInventory(grave.getInventory());
                     plugin.getEntityManager().runCommands("event.command.open", player, location, grave);
@@ -1511,7 +1876,7 @@ public final class GraveManager {
                     plugin.getEntityManager().sendMessage("message.protection", player, location, grave);
                     plugin.getEntityManager().playWorldSound("sound.protection", location, grave);
                 }
-            }
+            });
         }
 
         return false;
@@ -1524,10 +1889,24 @@ public final class GraveManager {
      * @param grave  the grave associated with the compasses.
      */
     public void cleanupCompasses(Player player, Grave grave) {
-        for (Map.Entry<ItemStack, UUID> entry : plugin.getEntityManager()
-                .getCompassesFromInventory(player).entrySet()) {
-            if (grave.getUUID().equals(entry.getValue())) {
-                player.getInventory().remove(entry.getKey());
+        if (player == null || grave == null) {
+            return;
+        }
+
+        Map<ItemStack, UUID> compasses = plugin.getEntityManager().getCompassesFromInventory(player);
+
+        if (compasses.isEmpty()) {
+            return;
+        }
+
+        for (Map.Entry<ItemStack, UUID> entry : compasses.entrySet()) {
+            UUID target = entry.getValue();
+            if (target != null && target.equals(grave.getUUID())) {
+                try {
+                    player.getInventory().remove(entry.getKey());
+                } catch (java.lang.Throwable ignored) {
+                    // Be defensive against platform quirks
+                }
             }
         }
     }
@@ -1537,9 +1916,13 @@ public final class GraveManager {
      *
      * @param baseLocation the base location.
      * @param grave        the grave to retrieve the locations for.
-     * @return the list of locations.
+     * @return the list of locations ordered by proximity in the same world, followed by other worlds.
      */
     public List<Location> getGraveLocationList(Location baseLocation, Grave grave) {
+        if (baseLocation == null || grave == null) {
+            return new ArrayList<>();
+        }
+
         List<Location> locationList = new ArrayList<>(plugin.getBlockManager().getBlockList(grave));
         Map<Double, Location> locationMap = new HashMap<>();
         List<Location> otherWorldLocationList = new ArrayList<>();
@@ -1560,7 +1943,6 @@ public final class GraveManager {
             }
 
             locationList = new ArrayList<>(new TreeMap<>(locationMap).values());
-
             locationList.addAll(otherWorldLocationList);
         }
 
@@ -1572,13 +1954,16 @@ public final class GraveManager {
      *
      * @param location the base location.
      * @param grave    the grave to retrieve the location for.
-     * @return the nearest grave location.
+     * @return the nearest grave location, or {@code null} if none found.
      */
     public Location getGraveLocation(Location location, Grave grave) {
-        if (location == null) return null;
+        if (location == null || grave == null) {
+            return null;
+        }
+
         List<Location> locationList = plugin.getGraveManager().getGraveLocationList(location, grave);
 
-        return !locationList.isEmpty() ? locationList.get(0) : null;
+        return (!locationList.isEmpty() ? locationList.get(0) : null);
     }
 
     /**
@@ -1589,13 +1974,22 @@ public final class GraveManager {
      * @param grave    the grave to be looted.
      */
     public void autoLootGrave(Entity entity, Location location, Grave grave) {
-        if (entity instanceof Player) {
-            Player player = (Player) entity;
-            Grave.StorageMode storageMode = getStorageMode(plugin.getConfig("storage.mode", grave)
-                    .getString("storage.mode"));
+        if (!(entity instanceof Player player)) {
+            return;
+        }
+
+        Location anchor = (location != null ? location : player.getLocation());
+        if (anchor.getWorld() == null) {
+            return;
+        }
+
+        plugin.getGravesXScheduler().execute(anchor, () -> {
+            Grave.StorageMode storageMode = getStorageMode(
+                    plugin.getConfig("storage.mode", grave).getString("storage.mode")
+            );
 
             if (storageMode == Grave.StorageMode.EXACT) {
-                List<ItemStack> itemStackListLeftOver = new ArrayList<>();
+                java.util.List<ItemStack> itemStackListLeftOver = new ArrayList<>();
                 int counter = 0;
                 int inventorySize = player.getInventory().getSize();
 
@@ -1605,15 +1999,16 @@ public final class GraveManager {
                             if (counter < inventorySize) {
                                 player.getInventory().setItem(counter, itemStack);
                                 grave.getInventory().remove(itemStack);
+
                                 if (counter == 17 && plugin.getVersionManager().hasSecondHand()) {
                                     player.getInventory().setItem(17, itemStack);
                                     grave.getInventory().remove(itemStack);
                                 }
-                                if ((counter == 39 && InventoryUtil.isHelmet(itemStack))
-                                        || (counter == 38 && InventoryUtil.isChestplate(itemStack))
-                                        || (counter == 37 && InventoryUtil.isLeggings(itemStack))
-                                        || (counter == 36 && InventoryUtil.isBoots(itemStack))) {
-                                    InventoryUtil.playArmorEquipSound(player, itemStack);
+                                if ((counter == 39 && com.ranull.graves.util.InventoryUtil.isHelmet(itemStack))
+                                        || (counter == 38 && com.ranull.graves.util.InventoryUtil.isChestplate(itemStack))
+                                        || (counter == 37 && com.ranull.graves.util.InventoryUtil.isLeggings(itemStack))
+                                        || (counter == 36 && com.ranull.graves.util.InventoryUtil.isBoots(itemStack))) {
+                                    com.ranull.graves.util.InventoryUtil.playArmorEquipSound(player, itemStack);
                                 }
                             } else {
                                 itemStackListLeftOver.add(itemStack);
@@ -1622,24 +2017,24 @@ public final class GraveManager {
                             itemStackListLeftOver.add(itemStack);
                         }
                     }
-
                     counter++;
                 }
+
                 grave.getInventory().clear();
+
                 for (ItemStack itemStack : itemStackListLeftOver) {
                     for (Map.Entry<Integer, ItemStack> itemStackEntry : player.getInventory().addItem(itemStack).entrySet()) {
-                        grave.getInventory().addItem(itemStackEntry.getValue())
-                                .forEach((key, value) -> player.getWorld().dropItem(player.getLocation(), value));
+                        grave.getInventory().addItem(itemStackEntry.getValue()).forEach((key, value) -> player.getWorld().dropItem(player.getLocation(), value));
                     }
                 }
             } else {
-                InventoryUtil.equipArmor(grave.getInventory(), player);
-                InventoryUtil.equipItems(grave.getInventory(), player);
+                InventoryUtil.equipArmor(grave.getInventory(), player);InventoryUtil.equipItems(grave.getInventory(), player);
             }
 
             player.updateInventory();
-            plugin.getDataManager().updateGrave(grave, "inventory",
-                    InventoryUtil.inventoryToString(grave.getInventory()));
+
+            plugin.getDataManager().updateGrave(grave, "inventory", InventoryUtil.inventoryToString(grave.getInventory()));
+
             plugin.getEntityManager().runCommands("event.command.open", player, location, grave);
 
             if (grave.getItemAmount() <= 0) {
@@ -1647,15 +2042,19 @@ public final class GraveManager {
                 plugin.getEntityManager().sendMessage("message.looted", player, location, grave);
                 plugin.getEntityManager().playWorldSound("sound.close", location, grave);
                 plugin.getEntityManager().spawnZombie(location, player, player, grave);
+
                 giveGraveExperience(player, grave);
+
                 playEffect("effect.loot", location, grave);
+
                 removeGrave(grave);
                 closeGrave(grave);
+
                 plugin.debugMessage("Grave " + grave.getUUID() + " autolooted by " + player.getName(), 1);
             } else {
                 plugin.getEntityManager().playWorldSound("sound.open", location, grave);
             }
-        }
+        });
     }
 
     /**
@@ -1666,47 +2065,6 @@ public final class GraveManager {
      */
     public boolean isNearGrave(Location location) {
         return isNearGrave(location, null, null);
-    }
-
-    /**
-     * Checks if the given location is within configured blocks of any grave.
-     *
-     * @param location The location to check.
-     * @param player   Optional player to consider for additional logic.
-     * @param block    Optional block to consider for additional logic.
-     * @return True if the location is within configured blocks of any grave, false otherwise.
-     */
-    public boolean isNearGrave(Location location, Player player, Block block) {
-        try {
-            for (Grave grave : plugin.getCacheManager().getGraveMap().values()) {
-                if (!plugin.getConfig("grave.should-protect-radius", grave).getBoolean("grave.should-protect-radius")) {
-                    break;
-                }
-
-                Location graveLocation = player != null
-                        ? plugin.getGraveManager().getGraveLocation(player.getLocation(), grave)
-                        : block != null
-                        ? plugin.getGraveManager().getGraveLocation(block.getLocation(), grave)
-                        : plugin.getGraveManager().getGraveLocation(location, grave);
-
-                if (graveLocation == null || graveLocation.getWorld() != null && !graveLocation.getWorld().equals(location.getWorld())) {
-                    break;
-                }
-
-                int protectionRadius = plugin.getConfig("grave.protection-radius", grave).getInt("grave.protection-radius");
-                if (protectionRadius <= 0) break;
-
-                if (Math.abs(graveLocation.getBlockX() - location.getBlockX()) <= protectionRadius &&
-                        Math.abs(graveLocation.getBlockY() - location.getBlockY()) <= protectionRadius &&
-                        Math.abs(graveLocation.getBlockZ() - location.getBlockZ()) <= protectionRadius) {
-                    return true;
-                }
-            }
-        } catch (Exception ignored) {
-            // Graceful fallback in case of error
-        }
-
-        return false;
     }
 
     /**
@@ -1721,6 +2079,63 @@ public final class GraveManager {
      */
     public boolean isNearGrave(Location location, Block block) {
         return isNearGrave(location, null, block);
+    }
+
+
+    /**
+     * Checks if the given location is within configured blocks of any grave.
+     *
+     * @param location The location to check.
+     * @param player   Optional player to consider for additional logic.
+     * @param block    Optional block to consider for additional logic.
+     * @return true if the location is within the configured protection radius of any grave; false otherwise.
+     */
+    public boolean isNearGrave(Location location, Player player, Block block) {
+        if (location == null || location.getWorld() == null) {
+            return false;
+        }
+
+        try {
+            Collection<Grave> graves = plugin.getCacheManager().getGraveMap().values();
+
+            for (Grave grave : new ArrayList<>(graves)) {
+                if (grave == null) {
+                    continue;
+                }
+
+                if (!plugin.getConfig("grave.should-protect-radius", grave).getBoolean("grave.should-protect-radius", false)) {
+                    continue;
+                }
+
+                Location base =
+                        (player != null) ? player.getLocation()
+                                : (block != null) ? block.getLocation()
+                                : location;
+
+                Location graveLocation = plugin.getGraveManager().getGraveLocation(base, grave);
+
+                if (graveLocation == null
+                        || graveLocation.getWorld() == null
+                        || !graveLocation.getWorld().equals(location.getWorld())) {
+                    continue;
+                }
+
+                int protectionRadius = plugin.getConfig("grave.protection-radius", grave).getInt("grave.protection-radius", 0);
+                if (protectionRadius <= 0) {
+                    continue;
+                }
+
+                if (Math.abs(graveLocation.getBlockX() - location.getBlockX()) <= protectionRadius
+                        && Math.abs(graveLocation.getBlockY() - location.getBlockY()) <= protectionRadius
+                        && Math.abs(graveLocation.getBlockZ() - location.getBlockZ()) <= protectionRadius) {
+                    return true;
+                }
+            }
+        } catch (Throwable ignored) {
+            // Graceful fallback in case of any error
+        }
+
+        return false;
     }
 
     /**
@@ -1740,7 +2155,6 @@ public final class GraveManager {
             }
         }
 
-        // Fallback if no specific reason is found
         return StringUtil.format(causeName);
     }
 
@@ -1767,38 +2181,43 @@ public final class GraveManager {
 
     /**
      * Plays an effect at a specified location with additional data for a grave.
+     * <p>
+     * Folia-compatible: effect playback is scheduled on the correct region thread
+     * using {@code location} as the anchor.
+     * </p>
      *
-     * @param string   the effect string.
+     * @param string   the effect string (config key or enum name).
      * @param location the location to play the effect.
      * @param data     additional data for the effect.
      * @param grave    the grave associated with the effect.
      */
     public void playEffect(String string, Location location, int data, Grave grave) {
-        if (location.getWorld() != null) {
-            if (grave != null) {
-                string = plugin.getConfig(string, grave).getString(string);
-            }
-
-            if (string != null && !string.equals("")) {
-                try {
-                    location.getWorld().playEffect(location, Effect.valueOf(string.toUpperCase()), data);
-                } catch (IllegalArgumentException exception) {
-                    plugin.debugMessage(string.toUpperCase() + " is not an Effect ENUM", 1);
-                }
-            }
+        if (location == null || location.getWorld() == null) {
+            return;
         }
-    }
 
-    /**
-     * Checks if an item stack should be ignored based on the entity and grave.
-     *
-     * @param itemStack the item stack to check.
-     * @param entity    the entity.
-     * @param grave     the grave.
-     * @return true if the item stack should be ignored, false otherwise.
-     */
-    public boolean shouldIgnoreItemStack(ItemStack itemStack, Entity entity, Grave grave) {
-        return shouldIgnoreItemStack(itemStack, entity, grave.getPermissionList());
+        String effectName = string;
+        if (grave != null) {
+            effectName = plugin.getConfig(string, grave).getString(string);
+        }
+
+        if (effectName == null || effectName.isEmpty()) {
+            return;
+        }
+
+        final String resolved = effectName;
+        plugin.getGravesXScheduler().execute(location, () -> {
+            World world = location.getWorld();
+            if (world == null) {
+                return;
+            }
+            try {
+                Effect effect = Effect.valueOf(resolved.toUpperCase(Locale.ROOT));
+                world.playEffect(location, effect, data);
+            } catch (IllegalArgumentException ex) {
+                plugin.debugMessage(resolved.toUpperCase(Locale.ROOT) + " is not an Effect ENUM", 1);
+            }
+        });
     }
 
     /**
@@ -1813,6 +2232,7 @@ public final class GraveManager {
         if (itemStack == null || itemStack.getType() == Material.AIR) {
             return true;
         }
+
         if (Bukkit.getPluginManager().isPluginEnabled("AdvancedEnchantments")) {
             if (ReflectSupportAE.isSoulbound(itemStack)) {
                 entity.getWorld().dropItem(entity.getLocation(), itemStack);
@@ -1823,8 +2243,7 @@ public final class GraveManager {
             }
         }
 
-        if (plugin.getConfig("ignore.item.material", entity, permissionList)
-                .getStringList("ignore.item.material").contains(itemStack.getType().name())) {
+        if (plugin.getConfig("ignore.item.material", entity, permissionList).getStringList("ignore.item.material").contains(itemStack.getType().name())) {
             return true;
         }
 
@@ -1833,42 +2252,65 @@ public final class GraveManager {
 
             if (itemMeta != null) {
                 if (itemMeta.hasDisplayName()) {
-                    for (String string : plugin.getConfig("ignore.item.name", entity, permissionList)
+                    for (String s : plugin.getConfig("ignore.item.name", entity, permissionList)
                             .getStringList("ignore.item.name")) {
-                        if (!string.isEmpty()
-                                && itemMeta.getDisplayName().equals(StringUtil.parseString(string, plugin))) {
+                        if (!s.isEmpty()
+                                && itemMeta.getDisplayName().equals(StringUtil.parseString(s, plugin))) {
                             return true;
                         }
                     }
 
-                    for (String string : plugin.getConfig("ignore.item.name-contains", entity, permissionList)
+                    for (String s : plugin.getConfig("ignore.item.name-contains", entity, permissionList)
                             .getStringList("ignore.item.name-contains")) {
-                        if (!string.isEmpty()
-                                && itemMeta.getDisplayName().contains(StringUtil.parseString(string, plugin))) {
+                        if (!s.isEmpty()
+                                && itemMeta.getDisplayName().contains(StringUtil.parseString(s, plugin))) {
                             return true;
                         }
                     }
                 }
 
                 if (itemMeta.hasLore() && itemMeta.getLore() != null) {
-                    List<String> itemLore = itemMeta.getLore();
+                    List<String> loreLines = itemMeta.getLore();
 
-                    for (String string : plugin.getConfig("ignore.item.lore", entity, permissionList)
+                    for (String s : plugin.getConfig("ignore.item.lore", entity, permissionList)
                             .getStringList("ignore.item.lore")) {
-                        if (!string.isEmpty()) {
-                            for (String lore : itemLore) {
-                                if (lore.equals(StringUtil.parseString(string, plugin))) {
+                        if (!s.isEmpty()) {
+                            String target = StringUtil.parseString(s, plugin);
+                            for (String lore : loreLines) {
+                                if (lore.equals(target)) {
                                     return true;
                                 }
                             }
                         }
                     }
 
-                    for (String string : plugin.getConfig("ignore.item.lore-contains", entity, permissionList)
+                    for (String s : plugin.getConfig("ignore.item.lore-contains", entity, permissionList)
                             .getStringList("ignore.item.lore-contains")) {
-                        if (!string.isEmpty()) {
-                            for (String lore : itemLore) {
-                                if (lore.contains(StringUtil.parseString(string, plugin))) {
+                        if (s.isEmpty()) continue;
+
+                        String parsed = StringUtil.parseString(s, plugin);
+                        String[] parts = parsed.split("\\n", -1);
+
+                        if (parts.length == 1) {
+                            String needle = parts[0];
+                            for (String lore : loreLines) {
+                                if (lore != null && !needle.isEmpty() && lore.contains(needle)) {
+                                    return true;
+                                }
+                            }
+                        } else {
+                            int window = parts.length;
+                            for (int start = 0; start <= loreLines.size() - window; start++) {
+                                boolean allMatch = true;
+                                for (int i = 0; i < window; i++) {
+                                    String part = parts[i];
+                                    String lore = loreLines.get(start + i);
+                                    if (lore == null || (part != null && !part.isEmpty() && !lore.contains(part))) {
+                                        allMatch = false;
+                                        break;
+                                    }
+                                }
+                                if (allMatch) {
                                     return true;
                                 }
                             }
@@ -1878,50 +2320,53 @@ public final class GraveManager {
             }
         }
 
-        List<String> enchantList = plugin.getConfig("ignore.item.enchantment", entity, permissionList)
+        List<String> enchantList = plugin
+                .getConfig("ignore.item.enchantment", entity, permissionList)
                 .getStringList("ignore.item.enchantment");
 
-        List<String> enchantContainsList = plugin.getConfig("ignore.item.enchantment-contains", entity, permissionList)
+        List<String> enchantContainsList = plugin
+                .getConfig("ignore.item.enchantment-contains", entity, permissionList)
                 .getStringList("ignore.item.enchantment-contains");
 
         for (Map.Entry<Enchantment, Integer> entry : itemStack.getEnchantments().entrySet()) {
             Enchantment enchantment = entry.getKey();
             int level = entry.getValue();
 
-            String fullKey = enchantment.getKey().toString().toLowerCase();
-            String shortKey = enchantment.getKey().getKey().toLowerCase();
+            String fullKey = enchantment.getKey().toString().toLowerCase(Locale.ROOT);
+            String shortKey = enchantment.getKey().getKey().toLowerCase(Locale.ROOT);
 
-            for (String configKey : enchantList) {
-                configKey = StringUtil.parseString(configKey, plugin).toLowerCase();
+            for (String configKeyRaw : enchantList) {
+                String configKey = StringUtil.parseString(configKeyRaw, plugin).toLowerCase(Locale.ROOT);
 
                 if (configKey.contains("@")) {
                     String[] parts = configKey.split("@");
                     if (parts.length == 2) {
                         String key = parts[0];
                         String lvl = parts[1];
-                        if ((key.equals(fullKey) || key.equals(shortKey)) && Integer.toString(level).equals(lvl)) {
+                        if ((key.equals(fullKey) || key.equals(shortKey)) && String.valueOf(level).equals(lvl)) {
                             return true;
                         }
                     }
                 }
             }
 
-            for (String containsKey : enchantContainsList) {
-                containsKey = StringUtil.parseString(containsKey, plugin).toLowerCase();
-                if (!containsKey.isEmpty() &&
-                        (fullKey.contains(containsKey) || shortKey.contains(containsKey))) {
+            for (String containsKeyRaw : enchantContainsList) {
+                String containsKey = StringUtil.parseString(containsKeyRaw, plugin).toLowerCase(Locale.ROOT);
+                if (!containsKey.isEmpty() && (fullKey.contains(containsKey) || shortKey.contains(containsKey))) {
                     return true;
                 }
             }
         }
 
-        List<String> nsKeys = plugin.getConfig("ignore.item.namespacedkeys", entity, permissionList)
+        List<String> nsKeys = plugin
+                .getConfig("ignore.item.namespacedkeys", entity, permissionList)
                 .getStringList("ignore.item.namespacedkeys");
         if (namespacedKeys(itemStack, nsKeys)) {
             return true;
         }
 
-        List<String> nsKeysContains = plugin.getConfig("ignore.item.namespacedkeys-contains", entity, permissionList)
+        List<String> nsKeysContains = plugin
+                .getConfig("ignore.item.namespacedkeys-contains", entity, permissionList)
                 .getStringList("ignore.item.namespacedkeys-contains");
         if (namespacedKeysContains(itemStack, nsKeysContains)) {
             return true;
@@ -1929,42 +2374,21 @@ public final class GraveManager {
 
         return false;
     }
-
-    /**
-     * Checks if there is a grave at the specified location.
-     *
-     * @param location The location to check.
-     * @return True if there is a grave at the location, false otherwise.
-     */
-    public boolean hasGraveAtLocation(Location location) {
-        List<Grave> graves = getAllGraves();
-        if (graves != null) {
-            for (Grave grave : graves) {
-                if (grave.getLocationDeath().equals(location)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
     /**
      * Gets a list of all graves.
      *
-     * @return A list of all graves.
+     * @return a snapshot list of all graves currently known to the cache (never {@code null}).
      */
     public List<Grave> getAllGraves() {
-        // Implement logic to retrieve all graves from your storage system (e.g., database, in-memory cache)
-        return null;
-    }
+        Map<UUID, Grave> graveMap = plugin.getCacheManager().getGraveMap();
+        if (graveMap == null || graveMap.isEmpty()) {
+            return Collections.emptyList();
+        }
 
-    /**
-     * @deprecated This method is deprecated.
-     * Use {@link #shouldIgnoreBlock(Block, Entity, List<String>)} instead.
-     */
-    @Deprecated
-    public boolean shouldIgnoreBlock(Block block, Entity entity, Grave grave) {
-        return shouldIgnoreBlock(block, entity, grave.getPermissionList());
+        List<Grave> snapshot = new ArrayList<>(graveMap.values());
+
+        snapshot.removeIf(Objects::isNull);
+        return snapshot;
     }
 
     /**
@@ -1978,43 +2402,28 @@ public final class GraveManager {
     }
 
     /**
-     * Checks if a block should be ignored based on the entity and permissions.
-     *
-     * @param block           the block to check.
-     * @param entity          the entity.
-     * @param permissionList  the list of permissions.
-     * @return true if the block should be ignored, false otherwise.
-     */
-    public boolean shouldIgnoreBlock(Block block, Entity entity, List<String> permissionList) {
-        List<String> stringList = plugin.getConfig("ignore.block.material", entity, permissionList)
-                .getStringList("ignore.block.material");
-
-        for (String string : stringList) {
-            if (!string.equals("") && string.equals(block.getType().name())) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static long withJitter(long baseMs) {
-        long j = java.util.concurrent.ThreadLocalRandom.current().nextLong(-250, 251); // ±250ms
-        long v = baseMs + j;
-        return v < 0 ? 0 : v;
-    }
-
-    /**
      * Exact match against any namespaced key on the item.
      * Accepts "namespace:key" or just "key".
      */
     private boolean namespacedKeys(ItemStack itemStack, List<String> keysToMatch) {
-        if (itemStack == null || keysToMatch == null || keysToMatch.isEmpty()) return false;
+        if (itemStack == null || keysToMatch == null || keysToMatch.isEmpty()) {
+            return false;
+        }
 
         Set<String> haystack = extractNamespacedKeys(itemStack);
+        if (haystack.isEmpty()) {
+            return false;
+        }
+
         for (String raw : keysToMatch) {
             String k = StringUtil.parseString(raw, plugin);
-            if (k == null || k.isEmpty()) continue;
+            if (k == null) {
+                continue;
+            }
+            k = k.trim();
+            if (k.isEmpty()) {
+                continue;
+            }
             k = k.toLowerCase(Locale.ROOT);
             if (haystack.contains(k)) {
                 return true;
@@ -2023,19 +2432,31 @@ public final class GraveManager {
         return false;
     }
 
-
     /**
      * Substring match against any namespaced key on the item.
      * Accepts partials like "silk" or "minecraft:".
      */
     private boolean namespacedKeysContains(ItemStack itemStack, List<String> patterns) {
-        if (itemStack == null || patterns == null || patterns.isEmpty()) return false;
+        if (itemStack == null || patterns == null || patterns.isEmpty()) {
+            return false;
+        }
 
         Set<String> haystack = extractNamespacedKeys(itemStack);
+        if (haystack.isEmpty()) {
+            return false;
+        }
+
         for (String raw : patterns) {
             String p = StringUtil.parseString(raw, plugin);
-            if (p == null || p.isEmpty()) continue;
+            if (p == null) {
+                continue;
+            }
+            p = p.trim();
+            if (p.isEmpty()) {
+                continue;
+            }
             p = p.toLowerCase(Locale.ROOT);
+
             for (String key : haystack) {
                 if (key.contains(p)) {
                     return true;
@@ -2052,22 +2473,39 @@ public final class GraveManager {
      */
     private Set<String> extractNamespacedKeys(ItemStack itemStack) {
         Set<String> out = new HashSet<>();
-        if (itemStack == null) return out;
+        if (itemStack == null) {
+            return out;
+        }
+
+        // Helper to add both full and short forms
+        BiConsumer<NamespacedKey, Set<String>> addKey = (k, set) -> {
+            if (k != null) {
+                set.add(k.toString().toLowerCase(Locale.ROOT));
+                set.add(k.getKey().toLowerCase(Locale.ROOT));
+            }
+        };
 
         for (Enchantment ench : itemStack.getEnchantments().keySet()) {
-            NamespacedKey k = ench.getKeyOrThrow();
-            out.add(k.toString().toLowerCase(Locale.ROOT));
-            out.add(k.getKey().toLowerCase(Locale.ROOT));
+            NamespacedKey k;
+            try {
+                k = ench.getKeyOrThrow();
+            } catch (NoSuchMethodError ignored) {
+                k = ench.getKey();
+            }
+            addKey.accept(k, out);
         }
 
         ItemMeta meta = itemStack.getItemMeta();
 
-        if (meta instanceof EnchantmentStorageMeta) {
-            EnchantmentStorageMeta esm = (EnchantmentStorageMeta) meta;
+        if (meta instanceof EnchantmentStorageMeta esm) {
             for (Enchantment ench : esm.getStoredEnchants().keySet()) {
-                NamespacedKey k = ench.getKeyOrThrow();
-                out.add(k.toString().toLowerCase(Locale.ROOT));
-                out.add(k.getKey().toLowerCase(Locale.ROOT));
+                NamespacedKey k;
+                try {
+                    k = ench.getKeyOrThrow();
+                } catch (NoSuchMethodError ignored) {
+                    k = ench.getKey();
+                }
+                addKey.accept(k, out);
             }
         }
 
@@ -2075,12 +2513,10 @@ public final class GraveManager {
             try {
                 PersistentDataContainer pdc = meta.getPersistentDataContainer();
                 for (NamespacedKey k : pdc.getKeys()) {
-                    if (k != null) {
-                        out.add(k.toString().toLowerCase(Locale.ROOT));
-                        out.add(k.getKey().toLowerCase(Locale.ROOT));
-                    }
+                    addKey.accept(k, out);
                 }
             } catch (NoClassDefFoundError ignored) {
+                // PDC not available on this platform/version
             }
         }
 

@@ -14,118 +14,96 @@ import org.bukkit.potion.PotionEffect;
 import java.util.List;
 
 /**
- * Listener for handling PlayerRespawnEvent to manage grave-related functionality upon player respawn.
+ * Handles player respawns and performs grave-related actions:
+ * <ul>
+ *   <li>Runs a configured function shortly after respawn.</li>
+ *   <li>Optionally grants temporary potion effects if the grave is recent.</li>
+ *   <li>Optionally gives a compass pointing to the grave.</li>
+ * </ul>
+ * All world/player inventory interactions are deferred to the respawn location's region
+ * to ensure correct, thread-safe execution order after the player is placed in the world.
  */
 public class PlayerRespawnListener implements Listener {
     private final Graves plugin;
 
-    /**
-     * Constructs a PlayerRespawnListener with the specified Graves plugin.
-     *
-     * @param plugin The Graves plugin instance.
-     */
     public PlayerRespawnListener(Graves plugin) {
         this.plugin = plugin;
     }
 
-    /**
-     * Handles the PlayerRespawnEvent to perform actions related to graves when a player respawns.
-     * This method:
-     * - Runs a scheduled task to execute a function configured for respawn events.
-     * - Checks if a compass should be given to the player based on the respawn time and config settings.
-     * - Applies a potion effect if the player respawns within the allowed time.
-     *
-     * @param event The PlayerRespawnEvent to handle.
-     */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerRespawn(PlayerRespawnEvent event) {
-        Player player = event.getPlayer();
-        List<String> permissionList = plugin.getPermissionList(player);
-        List<Grave> graveList = plugin.getGraveManager().getGraveList(player);
+        plugin.getLogger().severe("fired respawn event");
+        final Player player = event.getPlayer();
+        final List<String> permissionList = plugin.getPermissionList(player);
+        final List<Grave> graveList = plugin.getGraveManager().getGraveList(player);
 
-        if (!graveList.isEmpty()) {
-            Grave grave = graveList.get(graveList.size() - 1);
+        if (graveList.isEmpty()) return;
 
-            // Schedule a function to run after player respawn
-            scheduleRespawnFunction(player, permissionList, grave);
+        final Grave grave = graveList.get(graveList.size() - 1);
+        final Location respawnLoc = event.getRespawnLocation().clone();
 
-            // Apply potion effect if within allowed time
-            applyPotionEffectIfWithinTime(player, permissionList, grave);
+        scheduleRespawnFunction(player, permissionList, grave, respawnLoc);
 
-            // Check if a compass should be given to the player
-            if (shouldGiveCompass(player, permissionList, grave)) {
-                giveCompassToPlayer(event, player, grave);
-            }
+        applyPotionEffectIfWithinTime(player, permissionList, grave, respawnLoc);
+
+        if (shouldGiveCompass(player, permissionList, grave)) {
+            giveCompassToPlayer(event, player, grave, respawnLoc);
         }
     }
 
     /**
-     * Applies a potion effect to the player if they respawn within the allowed time.
-     *
-     * @param player The player who respawned.
-     * @param permissionList The list of permissions for the player.
-     * @param grave The grave associated with the player.
+     * Schedules the configured respawn function to run one tick after respawn on the
+     * player's respawn location region.
      */
-    private void applyPotionEffectIfWithinTime(Player player, List<String> permissionList, Grave grave) {
-        // Schedule the task to run after the player has respawned
-        plugin.getGravesXScheduler().runTaskLater(plugin, () -> {
-            // Check if potion effect is enabled and player has the appropriate permission
-            boolean isPotionEffectEnabled = plugin.getConfig("respawn.potion-effect", player, permissionList)
-                    .getBoolean("respawn.potion-effect");
-            boolean hasPotionEffectPermission = plugin.hasGrantedPermission("graves.potion-effect", player);
-
-            if (!isPotionEffectEnabled || !hasPotionEffectPermission) {
-                return;
-            }
-
-            // Get the respawn time limit
-            long respawnTimeLimit = plugin.getConfig("respawn.potion-effect-time-limit", player, permissionList)
-                    .getInt("respawn.potion-effect-time-limit") * 1000L;
-
-            // Check if the grave's lived time is within the respawn time limit
-            if (grave.getLivedTime() <= respawnTimeLimit) {
-                // Get the potion effect duration
-                int effectDuration = plugin.getConfig("respawn.potion-effect-duration", player, permissionList)
-                        .getInt("respawn.potion-effect-duration") * 20; // Duration in ticks (20 ticks = 1 second)
-
-                // Create and apply potion effects
-                PotionEffect potionEffect = new PotionEffect(
-                        plugin.getVersionManager().getPotionEffectTypeFromVersion("RESISTANCE"),
-                        effectDuration, 4);
-                PotionEffect potionEffect2 = new PotionEffect(
-                        plugin.getVersionManager().getPotionEffectTypeFromVersion("FIRE_RESISTANCE"),
-                        effectDuration, 0);
-                player.addPotionEffect(potionEffect);
-                player.addPotionEffect(potionEffect2);
-            }
-        }, 1L); // Run 1 tick after respawn
+    private void scheduleRespawnFunction(Player player, List<String> permissionList, Grave grave, Location respawnLoc) {
+        plugin.getGravesXScheduler().runTaskLater(() ->
+                        plugin.getGravesXScheduler().execute(respawnLoc, () ->
+                                plugin.getEntityManager().runFunction(
+                                        player,
+                                        plugin.getConfig("respawn.function", player, permissionList)
+                                                .getString("respawn.function", "none"),
+                                        grave
+                                )
+                        )
+                , 1L);
     }
 
     /**
-     * Schedules a function to run after the player respawns.
-     *
-     * @param player The player who respawned.
-     * @param permissionList The list of permissions for the player.
-     * @param grave The grave associated with the player.
+     * Applies temporary potion effects if the grave's lived time is within the configured limit.
+     * Executed one tick after respawn on the respawn location region.
      */
-    private void scheduleRespawnFunction(Player player, List<String> permissionList, Grave grave) {
-        plugin.getGravesXScheduler().runTaskLater(() -> {
-            plugin.getEntityManager().runFunction(
-                    player,
-                    plugin.getConfig("respawn.function", player, permissionList)
-                            .getString("respawn.function", "none"),
-                    grave
-            );
-        }, 1L);
+    private void applyPotionEffectIfWithinTime(Player player, List<String> permissionList, Grave grave, Location respawnLoc) {
+        plugin.getGravesXScheduler().runTaskLater(() ->
+                        plugin.getGravesXScheduler().execute(respawnLoc, () -> {
+                            boolean enabled = plugin.getConfig("respawn.potion-effect", player, permissionList)
+                                    .getBoolean("respawn.potion-effect");
+                            boolean hasPerm = plugin.hasGrantedPermission("graves.potion-effect", player);
+                            if (!enabled || !hasPerm) return;
+
+                            long limitMs = plugin.getConfig("respawn.potion-effect-time-limit", player, permissionList)
+                                    .getInt("respawn.potion-effect-time-limit") * 1000L;
+                            if (grave.getLivedTime() > limitMs) return;
+
+                            int durationTicks = plugin.getConfig("respawn.potion-effect-duration", player, permissionList)
+                                    .getInt("respawn.potion-effect-duration") * 20;
+
+                            PotionEffect resist = new PotionEffect(
+                                    plugin.getVersionManager().getPotionEffectTypeFromVersion("RESISTANCE"),
+                                    durationTicks, 4
+                            );
+                            PotionEffect fireResist = new PotionEffect(
+                                    plugin.getVersionManager().getPotionEffectTypeFromVersion("FIRE_RESISTANCE"),
+                                    durationTicks, 0
+                            );
+                            player.addPotionEffect(resist);
+                            player.addPotionEffect(fireResist);
+                        })
+                , 1L);
     }
 
     /**
-     * Checks if a compass should be given to the player based on the respawn time and configuration settings.
-     *
-     * @param player The player who respawned.
-     * @param permissionList The list of permissions for the player.
-     * @param grave The grave associated with the player.
-     * @return True if a compass should be given, false otherwise.
+     * Returns true if a compass should be given: compass feature available, enabled,
+     * and within the configured time window relative to the grave's lived time.
      */
     private boolean shouldGiveCompass(Player player, List<String> permissionList, Grave grave) {
         return plugin.getVersionManager().hasCompassMeta()
@@ -135,21 +113,23 @@ public class PlayerRespawnListener implements Listener {
     }
 
     /**
-     * Gives a compass to the player that points to the location of their grave.
-     *
-     * @param event The PlayerRespawnEvent.
-     * @param player The player who respawned.
-     * @param grave The grave associated with the player.
+     * Creates and gives the grave compass one tick after respawn, executing on the respawn
+     * location region to safely read locations and modify the player's inventory.
      */
-    private void giveCompassToPlayer(PlayerRespawnEvent event, Player player, Grave grave) {
-        List<Location> locationList = plugin.getGraveManager()
-                .getGraveLocationList(event.getRespawnLocation(), grave);
+    private void giveCompassToPlayer(PlayerRespawnEvent event, Player player, Grave grave, Location respawnLoc) {
+        plugin.getGravesXScheduler().runTaskLater(() ->
+                        plugin.getGravesXScheduler().execute(respawnLoc, () -> {
+                            List<Location> targets = plugin.getGraveManager().getGraveLocationList(
+                                    event.getRespawnLocation(), grave
+                            );
 
-        if (!locationList.isEmpty()) {
-            ItemStack itemStack = plugin.getEntityManager().createGraveCompass(player, locationList.get(0), grave);
-            if (itemStack != null) {
-                player.getInventory().addItem(itemStack);
-            }
-        }
+                            if (targets.isEmpty()) return;
+
+                            ItemStack compass = plugin.getEntityManager().createGraveCompass(player, targets.get(0), grave);
+                            if (compass != null) {
+                                player.getInventory().addItem(compass);
+                            }
+                        })
+                , 1L);
     }
 }

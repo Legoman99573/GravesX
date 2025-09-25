@@ -10,10 +10,15 @@ import me.jay.GravesX.util.SkinTextureUtil;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.block.Skull;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -255,50 +260,67 @@ public final class BlockManager {
                 }
             }
 
-            if (gx != null && !gx.isEmpty() && location.getBlock().getState() instanceof Skull) {
-                Skull skull = (Skull) location.getBlock().getState();
-
-                String tx = null, on = null, ou = null, nm = null;
+            BlockState state = location.getBlock().getState();
+            if (gx != null && !gx.isEmpty() && state instanceof Skull skull) {
+                String tx = null;
+                String on = null;
+                String ou = null;
+                String nm = null;
                 try {
                     Pattern p = Pattern.compile("\\\"(tx|on|ou|nm)\\\"\\s*:\\s*\\\"(.*?)\\\"");
                     Matcher m = p.matcher(gx);
-                    Map<String,String> map = new HashMap<>();
-                    while (m.find()) map.put(m.group(1), m.group(2).replace("\\\"", "\"").replace("\\\\", "\\"));
+                    Map<String, String> map = new HashMap<>();
+                    while (m.find()) {
+                        map.put(m.group(1), m.group(2).replace("\\\"", "\"").replace("\\\\", "\\"));
+                    }
                     tx = map.get("tx");
                     on = map.get("on");
                     ou = map.get("ou");
                     nm = map.get("nm");
-                } catch (Throwable ignored) {}
+                } catch (Throwable ignored) {
+                    // ignore malformed marker payload
+                }
 
                 try {
                     if (tx != null && !tx.isEmpty()) {
                         SkinTextureUtil.setSkullBlockTexture(skull, (on != null && !on.isEmpty()) ? on : "gravesx", tx);
                     } else if (ou != null && !ou.isEmpty()) {
-                        try { skull.setOwningPlayer(plugin.getServer().getOfflinePlayer(UUID.fromString(ou))); } catch (Throwable ignored) {}
+                        try {
+                            skull.setOwningPlayer(plugin.getServer().getOfflinePlayer(UUID.fromString(ou)));
+                        } catch (Throwable ignored) {
+                        }
                     } else if (on != null && !on.isEmpty()) {
-                        try { skull.setOwningPlayer(plugin.getServer().getOfflinePlayer(on)); } catch (Throwable ignored) {}
+                        try {
+                            skull.setOwningPlayer(plugin.getServer().getOfflinePlayer(on));
+                        } catch (Throwable ignored) {
+                        }
                     }
-                } catch (Throwable ignored) {}
+                } catch (Throwable ignored) {
+                }
 
                 if (nm != null && !nm.isEmpty()) {
                     String rawName = getRawName(nm);
                     try {
                         if (plugin.getIntegrationManager().hasMiniMessage()) {
-                            if (!rawName.isEmpty()) skull.setOwner(MiniMessage.parseString(rawName));
+                            if (!rawName.isEmpty()) {
+                                skull.setOwner(MiniMessage.parseString(rawName));
+                            }
                         } else {
 
                         }
                     } catch (Throwable adventureMissing) {
                         try {
-                            if (!rawName.isEmpty()) skull.setOwner(rawName);
-                        } catch (Throwable ignored) {}
+                            if (!rawName.isEmpty()) {
+                                skull.setOwner(rawName);
+                            }
+                        } catch (Throwable ignored) {
+                        }
                     }
                 }
 
                 try {
                     skull.update(true, false);
                 } catch (Throwable ignored) {
-
                 }
             }
 

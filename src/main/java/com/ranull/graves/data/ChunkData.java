@@ -73,6 +73,25 @@ public class ChunkData implements Serializable {
     }
 
     /**
+     * Constructs a new ChunkData instance using a world name and chunk coordinates (Folia-safe).
+     * <p>
+     * This constructor avoids calling methods that might trigger synchronous chunk loads on Folia.
+     * It resolves the {@link org.bukkit.World} by name without touching chunk APIs.
+     * </p>
+     *
+     * @param worldName the name of the world containing the chunk
+     * @param chunkX    the chunk X coordinate
+     * @param chunkZ    the chunk Z coordinate
+     */
+    public ChunkData(String worldName, int chunkX, int chunkZ) {
+        this.world = org.bukkit.Bukkit.getWorld(worldName);
+        this.x = chunkX;
+        this.z = chunkZ;
+        this.blockDataMap = new java.util.HashMap<>();
+        this.entityDataMap = new java.util.HashMap<>();
+    }
+
+    /**
      * Gets the world of the chunk.
      *
      * @return The world of the chunk.

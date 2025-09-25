@@ -7,7 +7,6 @@ import com.ranull.graves.util.ColorUtil;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
 import java.util.HashMap;
@@ -27,55 +26,73 @@ public class ParticleManager {
     }
 
     /**
-     * Plays a particle trail to the end destination.
-     * @param startLocation The start location.
-     * @param endLocation   The end location.
-     * @param particleType  The particle to spawn.
-     * @param count         How many particles should spawn.
-     * @param speed         The speed the particles take in the direction from startLocation to endLocation.
-     * @param durationTicks The duration, in ticks, that the particle trail will last for.
-     * @param playerUUID    The UUID of the player triggering the effect.
+     * Plays a particle trail from start to end, stepping one block/tick (or as configured).
+     * Each step is executed on the owning region of the current step location so that
+     * trails can cross region/chunk boundaries safely.
+     *
+     * @param startLocation start anchor (not mutated)
+     * @param endLocation   end anchor (not mutated)
+     * @param particleType  particle type to spawn
+     * @param count         particle count per step
+     * @param speed         step length in blocks per tick (e.g., 0.5 = half a block/tick)
+     * @param durationTicks maximum lifetime of the trail in ticks
+     * @param playerUUID    who triggered the trail (used for cooldown)
      */
     public void startCompassParticleTrail(Location startLocation, Location endLocation, Particle particleType, int count, double speed, long durationTicks, UUID playerUUID) {
-        long currentTime = System.currentTimeMillis();
-        if (cooldowns.containsKey(playerUUID)) {
-            long lastUsed = cooldowns.get(playerUUID);
-            if (currentTime - lastUsed < durationTicks) {
-                return;
+        if (startLocation == null || endLocation == null) return;
+        if (startLocation.getWorld() == null || endLocation.getWorld() == null) return;
+        if (!startLocation.getWorld().equals(endLocation.getWorld())) return;
+        if (speed <= 0.0D || durationTicks <= 0L) return;
+
+        final long now = System.currentTimeMillis();
+        final long cooldownMs = Math.max(1L, durationTicks) * 50L;
+        final Long last = cooldowns.putIfAbsent(playerUUID, now);
+        if (last != null && (now - last) < cooldownMs) return;
+        cooldowns.put(playerUUID, now);
+
+        final Location start = startLocation.clone().add(0.0, 2.0, 0.0);
+        final Location end   = endLocation.clone().add(0.5, 0.3, 0.5);
+
+        final Vector dir = end.clone().subtract(start).toVector();
+        if (dir.lengthSquared() == 0.0) return;
+        dir.normalize();
+
+        final double totalDist = start.distance(end);
+        final long maxStepsByDistance = (long)Math.ceil(totalDist / Math.max(1e-6, speed));
+        final long maxSteps = Math.min(durationTicks, Math.max(1L, maxStepsByDistance));
+
+        class TrailTask {
+            long step = 0;
+            final Location cur = start.clone();
+
+            void scheduleNext() {
+                plugin.getGravesXScheduler().runTaskLater(() ->
+                                plugin.getGravesXScheduler().execute(cur, this::tick),
+                        1L);
+            }
+
+            void tick() {
+                try {
+                    if (step >= maxSteps) return;
+
+                    World w = cur.getWorld();
+                    if (w == null) return;
+
+                    w.spawnParticle(particleType, cur, count, 0, 0, 0, 0);
+
+                    // advance
+                    cur.add(dir.clone().multiply(speed));
+                    step++;
+
+                    if (cur.distanceSquared(end) <= (speed * speed)) return;
+
+                    scheduleNext();
+                } catch (Throwable ignored) {
+                }
             }
         }
 
-        cooldowns.put(playerUUID, currentTime);
-
-        try {
-            startLocation.add(0.0, 2.0, 0.0);
-            endLocation.add(0.5, 0.3, 0.5);
-            Vector direction = endLocation.clone().subtract(startLocation).toVector().normalize();
-
-            new BukkitRunnable() {
-                long ticksElapsed = 0;
-
-                @Override
-                public void run() {
-                    try {
-                        if (ticksElapsed >= durationTicks || startLocation.distance(endLocation) < speed) {
-                            cancel();
-                            return;
-                        }
-
-                        Objects.requireNonNull(startLocation.getWorld()).spawnParticle(particleType, startLocation, count, 0, 0, 0, 0);
-
-                        startLocation.add(direction.clone().multiply(speed));
-
-                        ticksElapsed++;
-                    } catch (Exception e) {
-                        cancel();
-                    }
-                }
-            }.runTaskTimer(plugin, 0L, 1L);
-        } catch (IllegalArgumentException | NullPointerException ignored) {
-            // ignored
-        }
+        new TrailTask().scheduleNext();
     }
 
     /**
@@ -106,8 +123,7 @@ public class ParticleManager {
             if (v instanceof java.util.UUID) gid = (java.util.UUID) v;
         } catch (Throwable ignored) {}
 
-        return new com.ranull.graves.data.BlockData(loc, gid, mat, data
-        );
+        return new com.ranull.graves.data.BlockData(loc, gid, mat, data);
     }
 
     /**
@@ -124,7 +140,7 @@ public class ParticleManager {
                 return Bukkit.createBlockData(data);
             }
         } catch (IllegalArgumentException ex) {
-            plugin.debugMessage("Invalid replaceData for particle: " + data, 1);
+            plugin.debugMessage("Invalid replaceData for particle: " + data + " (using material fallback)", 1);
         }
 
         Material m = Material.matchMaterial(matName.isEmpty() ? "STONE" : matName);
@@ -189,8 +205,7 @@ public class ParticleManager {
      * Build a Vibration instance from config, using block or entity destination.
      * Falls back to a block destination at the origin if parsing fails.
      */
-    public void spawnVibrationBounce(Graves plugin, Location graveLoc, Grave grave,
-                                            Particle particle, int count) {
+    public void spawnVibrationBounce(Graves plugin, Location graveLoc, Grave grave, Particle particle, int count) {
         if (graveLoc == null || graveLoc.getWorld() == null) return;
         World world = graveLoc.getWorld();
 
@@ -220,15 +235,15 @@ public class ParticleManager {
             world.spawnParticle(particle, originNow, count, forward);
 
             Player backFrom = destEntity;
-            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            plugin.getGravesXScheduler().runTaskLater(() -> {
                 Location backOrigin = backFrom.getLocation();
-                var back = new org.bukkit.Vibration(
+                var back = new Vibration(
                         backOrigin,
-                        new org.bukkit.Vibration.Destination.EntityDestination(source),
+                        new Vibration.Destination.EntityDestination(source),
                         5
                 );
                 world.spawnParticle(particle, backOrigin, count, back);
-            }, 5);
+            }, 5L);
 
         } else {
             var forward = new Vibration(
@@ -239,14 +254,14 @@ public class ParticleManager {
             world.spawnParticle(particle, originNow, count, forward);
 
             Location playerBlockCenter = center(originNow);
-            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                var back = new org.bukkit.Vibration(
+            plugin.getGravesXScheduler().runTaskLater(() -> {
+                var back = new Vibration(
                         graveCenter,
-                        new org.bukkit.Vibration.Destination.BlockDestination(playerBlockCenter),
+                        new Vibration.Destination.BlockDestination(playerBlockCenter),
                         5
                 );
                 world.spawnParticle(particle, graveCenter, count, back);
-            }, 5);
+            }, 5L);
         }
     }
 
@@ -262,8 +277,8 @@ public class ParticleManager {
 
         try {
             Class<?> trailClass = Class.forName("org.bukkit.Particle$Trail");
-            for (java.lang.reflect.Constructor<?> c : trailClass.getConstructors()) {
-                Class<?>[] p = c.getParameterTypes();
+            for (var c : trailClass.getConstructors()) {
+                var p = c.getParameterTypes();
                 if (p.length == 2 && p[0] == int.class && p[1] == double.class) {
                     return c.newInstance(duration, spread);
                 }
@@ -296,10 +311,10 @@ public class ParticleManager {
     }
 
     private static Player pickRandomNearbyPlayer(World world, Location center, int radius) {
-        java.util.List<Player> candidates = world.getPlayers().stream()
+        var candidates = world.getPlayers().stream()
                 .filter(Player::isOnline)
                 .filter(p -> p.getLocation().distanceSquared(center) <= radius * (double) radius)
-                .collect(java.util.stream.Collectors.toList());
+                .toList();
         if (candidates.isEmpty()) return null;
         return candidates.get(java.util.concurrent.ThreadLocalRandom.current().nextInt(candidates.size()));
     }
@@ -328,7 +343,6 @@ public class ParticleManager {
     private static Location center(Location l) {
         return new Location(l.getWorld(), l.getBlockX() + 0.5, l.getBlockY() + 0.5, l.getBlockZ() + 0.5);
     }
-
 
     private static String safe(String s) { return s == null ? "" : s.trim(); }
 }

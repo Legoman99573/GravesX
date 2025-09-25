@@ -19,6 +19,8 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import java.util.StringJoiner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * The {@code IntegrationManager} class is responsible for managing the integration of various external plugins with the Graves plugin.
@@ -397,7 +399,7 @@ public final class IntegrationManager {
 
     /**
      * @deprecated Use Nexo instead. Unmaintained and will be for the forseeable future.
-     * 
+     *
      * Returns the instance of the Oraxen integration, if it is loaded.
      *
      * @return The {@code Oraxen} integration instance, or null if not loaded.
@@ -604,7 +606,6 @@ public final class IntegrationManager {
 
     /**
      * @deprecated Use Nexo instead. Unmaintained and will be for the forseeable future.
-     * 
      * Checks if Oraxen integration is loaded.
      *
      * @return {@code true} if Oraxen integration is loaded, {@code false} otherwise.
@@ -922,7 +923,7 @@ public final class IntegrationManager {
 
     /**
      * @deprecated Use Nexo instead. Unmaintained and will be for the forseeable future.
-     * 
+     *
      * Loads the Oraxen integration if enabled in the configuration.
      */
     @Deprecated
@@ -1370,7 +1371,7 @@ public final class IntegrationManager {
      * @return a sanitized version string with only digits and dots
      */
     private static String extractNumericVersion(String input) {
-        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("(\\d+(\\.\\d+)*)").matcher(input);
+        Matcher matcher = Pattern.compile("(\\d+(\\.\\d+)*)").matcher(input);
         return matcher.find() ? matcher.group(1) : "0";
     }
 

@@ -19,6 +19,7 @@ import org.bukkit.inventory.ItemStack;
 
 import java.io.File;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,6 +38,15 @@ public final class ImportManager {
      */
     private static final Pattern FILENAME_PATTERN = Pattern.compile(
             "^(.+?)_(.+?)_(-?\\d+)_(-?\\d+)_(-?\\d+)\\.ya?ml$", Pattern.CASE_INSENSITIVE);
+
+    /**
+     * Creates a new importer bound to the given plugin instance.
+     *
+     * @param plugin the GravesX plugin instance
+     */
+    public ImportManager(Graves plugin) {
+        this.plugin = plugin;
+    }
 
     /**
      * Counts AngelChest graves that will import successfully
@@ -80,15 +90,6 @@ public final class ImportManager {
     }
 
     /**
-     * Creates a new importer bound to the given plugin instance.
-     *
-     * @param plugin the GravesX plugin instance
-     */
-    public ImportManager(Graves plugin) {
-        this.plugin = plugin;
-    }
-
-    /**
      * Imports all AngelChest graves found on disk.
      *
      * @return a list of converted {@link Grave} objects
@@ -117,11 +118,15 @@ public final class ImportManager {
 
         for (File f : files) {
             FileConfiguration ac = loadFile(f);
-            if (ac == null) { invalid++; continue; }
+            if (ac == null) {
+                invalid++;
+                continue;
+            }
             valid++;
 
             World world = resolveWorldForScan(ac, f.getName());
-            if (world != null) importable++; else missingWorld++;
+            if (world != null) importable++;
+            else missingWorld++;
         }
 
         StringBuilder sb = new StringBuilder(256);
@@ -180,7 +185,11 @@ public final class ImportManager {
             if (z == null && ac.isInt("customblock.location.z")) z = ac.getInt("customblock.location.z");
             if (x == null || y == null || z == null) {
                 int[] coords = parseCoordsFromFilename(f.getName());
-                if (coords != null) { if (x == null) x = coords[0]; if (y == null) y = coords[1]; if (z == null) z = coords[2]; }
+                if (coords != null) {
+                    if (x == null) x = coords[0];
+                    if (y == null) y = coords[1];
+                    if (z == null) z = coords[2];
+                }
             }
 
             if (rows == 0) {
@@ -205,7 +214,9 @@ public final class ImportManager {
         return sb.toString();
     }
 
-    private static String nullOr(Object o) { return o == null ? "-" : String.valueOf(o); }
+    private static String nullOr(Object o) {
+        return o == null ? "-" : String.valueOf(o);
+    }
 
     /**
      * Scans the AngelChest data directory and converts each file into a {@link Grave}.
@@ -225,7 +236,7 @@ public final class ImportManager {
             String lower = name.toLowerCase(Locale.ROOT);
             return (lower.endsWith(".yml") || lower.endsWith(".yaml")) && !name.startsWith(".");
         });
-        if (files == null || files.length == 0) return graveList;
+        if (files == null) return graveList;
 
         for (File file : files) {
             Grave grave = convertAngelChestToGrave(file);
@@ -255,21 +266,32 @@ public final class ImportManager {
             grave.setOwnerName(ownerNameFromFile);
         } else {
             String logfile = ac.getString("logfile", "");
-            String[] split = logfile != null ? logfile.split("_") : new String[0];
+            String[] split = logfile.split("_");
             if (split.length > 0 && split[0] != null && !split[0].isEmpty()) {
                 grave.setOwnerName(split[0]);
             }
         }
 
         if (ownerUUID != null) {
-            Player player = plugin.getServer().getPlayer(ownerUUID);
+            Player player = null;
+            try {
+                player = plugin.getGravesXScheduler().callSyncMethod(() -> plugin.getServer().getPlayer(ownerUUID)).get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
             if (player != null) {
-                try { grave.setOwnerTexture(SkinTextureUtil.getTexture(player)); } catch (Throwable ignored) {}
-                try { grave.setOwnerTextureSignature(SkinSignatureUtil.getSignature(player)); } catch (Throwable ignored) {}
+                try {
+                    grave.setOwnerTexture(SkinTextureUtil.getTexture(player));
+                } catch (Throwable ignored) {
+                }
+                try {
+                    grave.setOwnerTextureSignature(SkinSignatureUtil.getSignature(player));
+                } catch (Throwable ignored) {
+                }
             }
         }
 
-        World world = resolveWorldForScan(ac, file.getName()); // reuse logic
+        World world = resolveWorldForScan(ac, file.getName()); // reuse logic (already Folia-safe)
         Integer x = ac.isInt("x") ? ac.getInt("x") : null;
         Integer y = ac.isInt("y") ? ac.getInt("y") : null;
         Integer z = ac.isInt("z") ? ac.getInt("z") : null;
@@ -295,8 +317,9 @@ public final class ImportManager {
         if (ac.getBoolean("infinite", false)) {
             grave.setTimeAlive(-1);
         } else {
-            grave.setTimeAlive(resolveTimeAliveMillis(ac, grave));
-            grave.setTimeAliveRemaining(resolveTimeAliveMillis(ac, grave));
+            long alive = resolveTimeAliveMillis(ac, grave);
+            grave.setTimeAlive(alive);
+            grave.setTimeAliveRemaining(alive);
         }
 
         grave.setProtection(ac.getBoolean("isProtected", false));
@@ -332,10 +355,10 @@ public final class ImportManager {
         grave.setEquipmentMap(equip);
 
         List<ItemStack> itemStackList = new ArrayList<>();
-        if (armor != null && !armor.isEmpty()) itemStackList.addAll(armor);
-        if (storage != null && !storage.isEmpty()) itemStackList.addAll(storage);
-        if (extra != null && !extra.isEmpty()) itemStackList.addAll(extra);
-        if (overflow != null && !overflow.isEmpty()) itemStackList.addAll(overflow);
+        if (!armor.isEmpty()) itemStackList.addAll(armor);
+        if (!storage.isEmpty()) itemStackList.addAll(storage);
+        if (!extra.isEmpty()) itemStackList.addAll(extra);
+        if (!overflow.isEmpty()) itemStackList.addAll(overflow);
 
         if (!itemStackList.isEmpty() && grave.getLocationDeath() != null) {
             String title = StringUtil.parseString(
@@ -346,9 +369,17 @@ public final class ImportManager {
             Grave.StorageMode storageMode = plugin.getGraveManager()
                     .getStorageMode(plugin.getConfig("storage.mode", grave).getString("storage.mode", "INVENTORY"));
 
-            Inventory inventory = plugin.getGraveManager().createGraveInventory(
-                    grave, grave.getLocationDeath(), itemStackList, title, storageMode
-            );
+            Inventory inventory = null;
+            try {
+                inventory = plugin.getGravesXScheduler().callSyncMethod(() ->
+                        plugin.getGraveManager().createGraveInventory(
+                                grave, grave.getLocationDeath(), itemStackList, title, storageMode
+                        )
+                ).get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+
             grave.setInventory(inventory);
         }
 
@@ -380,13 +411,11 @@ public final class ImportManager {
         Object raw = cfg.get(path);
         List<ItemStack> out = new ArrayList<>();
 
-        if (raw instanceof List) {
-            List<?> list = (List<?>) raw;
-
+        if (raw instanceof List<?> list) {
             boolean anyStacks = false;
             for (Object o : list) {
-                if (o instanceof ItemStack) {
-                    out.add((ItemStack) o);
+                if (o instanceof ItemStack is) {
+                    out.add(is);
                     anyStacks = true;
                 }
             }
@@ -396,15 +425,14 @@ public final class ImportManager {
             }
 
             for (Object o : list) {
-                if (o instanceof Map) {
+                if (o instanceof Map<?, ?> map) {
                     try {
-                        Map<?, ?> map = (Map<?, ?>) o;
                         Map<String, Object> m = new LinkedHashMap<>();
                         for (Map.Entry<?, ?> e : map.entrySet()) {
                             if (e.getKey() != null) m.put(String.valueOf(e.getKey()), e.getValue());
                         }
                         ItemStack is = ItemStack.deserialize(m);
-                        if (is != null) out.add(is);
+                        out.add(is);
                     } catch (Throwable ignored) {
                     }
                 }
@@ -418,23 +446,48 @@ public final class ImportManager {
      * Returns null if the world is not present on this server.
      */
     private World resolveWorldForScan(FileConfiguration ac, String fileName) {
-        World world = null;
-
         UUID worldUUID = UUIDUtil.getUUID(ac.getString("worldid", null));
-        if (worldUUID != null) world = plugin.getServer().getWorld(worldUUID);
+        World world = null;
+        try {
+            world = worldUUID != null
+                    ? plugin.getGravesXScheduler().callSyncMethod(() -> plugin.getServer().getWorld(worldUUID)).get()
+                    : null;
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
 
         if (world == null) {
             UUID worldUUID2 = UUIDUtil.getUUID(ac.getString("customblock.location.worldid", null));
-            if (worldUUID2 != null) world = plugin.getServer().getWorld(worldUUID2);
+            try {
+                world = worldUUID2 != null
+                        ? plugin.getGravesXScheduler().callSyncMethod(() -> plugin.getServer().getWorld(worldUUID2)).get()
+                        : null;
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
         }
         if (world == null) {
             String worldNameFromFile = parseWorldFromFilename(fileName);
-            if (worldNameFromFile != null) world = plugin.getServer().getWorld(worldNameFromFile);
+            if (worldNameFromFile != null) {
+                String name = worldNameFromFile;
+                try {
+                    world = plugin.getGravesXScheduler().callSyncMethod(() -> plugin.getServer().getWorld(name)).get();
+                } catch (InterruptedException | ExecutionException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
         if (world == null) {
             String logfile = ac.getString("logfile", "");
-            String[] split = logfile != null ? logfile.split("_") : new String[0];
-            if (split.length > 1) world = plugin.getServer().getWorld(split[1]);
+            String[] split = logfile.split("_");
+            if (split.length > 1) {
+                String name = split[1];
+                try {
+                    world = plugin.getGravesXScheduler().callSyncMethod(() -> plugin.getServer().getWorld(name)).get();
+                } catch (InterruptedException | ExecutionException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
         return world;
     }
