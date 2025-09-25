@@ -14,8 +14,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public final class GxModulesCommand implements CommandExecutor, TabCompleter {
     private final ModuleManager manager;
@@ -28,7 +26,7 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String label, String[] args) {
-        if (sender instanceof Player && !plugin.hasGrantedPermission("graves.command.modules", ((Player) sender).getPlayer())) {
+        if (sender instanceof Player player && !plugin.hasGrantedPermission("graves.command.modules", player.getPlayer())) {
             sender.sendMessage(ChatColor.RED + "☠ " + ChatColor.RESET + "You don't have permission.");
             return true;
         }
@@ -46,7 +44,7 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
         Set<String> pend = manager.pending();
 
         switch (sub) {
-            case "list": {
+            case "list" -> {
                 sender.sendMessage(ChatColor.RED + "☠ " + ChatColor.GOLD + "Modules (" + order.size() + "):");
                 for (String name : order) {
                     ModuleManager.LoadedModule lm = manager.get(name).orElse(null);
@@ -56,7 +54,6 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
                             ? ChatColor.GREEN + "ENABLED"
                             : (pend.contains(name) ? ChatColor.YELLOW + "PENDING" : ChatColor.RED + "DISABLED");
 
-                    // Description preview (optional)
                     String desc = (lm.info.description() == null) ? "" : lm.info.description().trim();
                     String descPreview = desc.isEmpty()
                             ? ""
@@ -71,7 +68,7 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
                 return true;
             }
 
-            case "info": {
+            case "info" -> {
                 if (args.length < 2) {
                     sender.sendMessage(ChatColor.RED + "☠ " + ChatColor.RED + "Usage: /" + label + " info <name>");
                     return true;
@@ -88,7 +85,7 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
                         ? ChatColor.GREEN + "ENABLED"
                         : (pend.contains(lm.info.name()) ? ChatColor.YELLOW + "PENDING" : ChatColor.RED + "DISABLED");
 
-                Function<String, String> fmtPluginReq = (dep) -> {
+                java.util.function.Function<String, String> fmtPluginReq = (dep) -> {
                     org.bukkit.plugin.Plugin p = org.bukkit.Bukkit.getPluginManager().getPlugin(dep);
                     if (p == null) {
                         return dep + ChatColor.DARK_GRAY + " [" + ChatColor.RED + "MISSING" + ChatColor.DARK_GRAY + "]";
@@ -99,7 +96,7 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
                     }
                 };
 
-                Function<String, String> fmtModuleReq = (dep) -> {
+                java.util.function.Function<String, String> fmtModuleReq = (dep) -> {
                     ModuleManager.LoadedModule d = manager.get(dep).orElse(null);
                     if (d == null) {
                         return dep + ChatColor.DARK_GRAY + " [" + ChatColor.RED + "MISSING" + ChatColor.DARK_GRAY + "]";
@@ -165,9 +162,9 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
                 return true;
             }
 
-            case "reload": {
+            case "reload" -> {
                 if (args.length < 2 || !"confirm".equalsIgnoreCase(args[1])) {
-                    sender.sendMessage(ChatColor.RED + "☠ " + ChatColor.DARK_RED + ChatColor.BOLD + "WARNING:"
+                    sender.sendMessage(ChatColor.RED + "☠ " + ChatColor.DARK_RED + "" + ChatColor.BOLD + "WARNING:"
                             + ChatColor.RESET + " " + ChatColor.RED + "Reloading modules is NOT supported and may break things, leak memory, or corrupt state.");
                     sender.sendMessage(ChatColor.GRAY + "If you still want to proceed, run: "
                             + ChatColor.YELLOW + "/" + label + " reload confirm");
@@ -186,20 +183,22 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
                 }
                 return true;
             }
-        }
 
-        return false;
+            default -> {
+                return false;
+            }
+        }
     }
 
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String alias, String[] args) {
         if (!(sender instanceof Player) || !sender.hasPermission("gravesx.modules")) return List.of();
         if (args.length == 1) {
-            return prefix(List.of("help","list","info","reload"), args[0]);
+            return prefix(List.of("help", "list", "info", "reload"), args[0]);
         }
         if (args.length == 2) {
             if ("info".equalsIgnoreCase(args[0])) {
-                List<String> names = manager.modules().stream().map(lm -> lm.info.name()).collect(Collectors.toList());
+                List<String> names = manager.modules().stream().map(lm -> lm.info.name()).toList();
                 return prefix(names, args[1]);
             }
         }
@@ -209,7 +208,9 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
     private static List<String> prefix(List<String> items, String token) {
         String t = token.toLowerCase(Locale.ROOT);
         List<String> out = new ArrayList<>();
-        for (String s : items) if (s.toLowerCase(Locale.ROOT).startsWith(t)) out.add(s);
+        for (String s : items) {
+            if (s.toLowerCase(Locale.ROOT).startsWith(t)) out.add(s);
+        }
         return out;
     }
 
