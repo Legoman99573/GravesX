@@ -8,17 +8,12 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.ServicePriority;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.Writer;
+import java.io.*;
 import java.net.JarURLConnection;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
@@ -53,6 +48,7 @@ public final class ModuleContext {
     private static final class ServiceReg {
         final Class<?> type;
         final Object provider;
+
         ServiceReg(Class<?> type, Object provider) {
             this.type = type;
             this.provider = provider;
@@ -134,97 +130,96 @@ public final class ModuleContext {
      * exists (copy or stub), then reloads the config.
      */
     public void saveDefaultConfig() {
-        final File baseDir = configFile.getParentFile();
-        if (!baseDir.exists()) baseDir.mkdirs();
-
-        java.util.jar.JarFile jarFile = null;
         try {
-            try {
-                URL marker = moduleClassLoader.getResource("module.yml");
-                if (marker != null && "jar".equalsIgnoreCase(marker.getProtocol())) {
-                    java.net.JarURLConnection juc = (JarURLConnection) marker.openConnection();
-                    jarFile = juc.getJarFile();
-                }
-            } catch (Throwable ignored) {}
+            Path baseDir = configFile.getParentFile().toPath();
+            Files.createDirectories(baseDir);
 
-            if (jarFile == null && moduleClassLoader instanceof URLClassLoader urlCl) {
-                for (URL u : urlCl.getURLs()) {
-                    try {
-                        File f = new File(u.toURI());
-                        if (f.isFile() && f.getName().toLowerCase(java.util.Locale.ROOT).endsWith(".jar")) {
-                            jarFile = new JarFile(f);
-                            break;
-                        }
-                    } catch (Exception ignored) {}
-                }
-            }
-
+            JarFile jarFile = findModuleJar();
             if (jarFile != null) {
-                Enumeration<JarEntry> entries = jarFile.entries();
-                while (entries.hasMoreElements()) {
-                    JarEntry e = entries.nextElement();
-                    if (e.isDirectory()) continue;
-
-                    String name = e.getName();
-                    String lower = name.toLowerCase(java.util.Locale.ROOT);
-                    if (!lower.endsWith(".yml")) continue;
-
-                    String last = name.substring(name.lastIndexOf('/') + 1);
-                    if ("module.yml".equalsIgnoreCase(last)) continue;
-
-                    File outFile = new File(baseDir, name);
-
-                    String basePath = baseDir.getCanonicalPath();
-                    String outPath  = outFile.getCanonicalFile().getParentFile().getCanonicalPath();
-                    if (!outPath.startsWith(basePath)) {
-                        logger.warning("[Modules] Skipping suspicious path in JAR: " + name);
-                        continue;
-                    }
-
-                    if (outFile.exists()) continue;
-
-                    File parent = outFile.getParentFile();
-                    if (parent != null && !parent.exists()) parent.mkdirs();
-
-                    try (InputStream in = jarFile.getInputStream(e);
-                         OutputStream out = new FileOutputStream(outFile)) {
-                        byte[] buf = new byte[8192];
-                        int r;
-                        while ((r = in.read(buf)) != -1) out.write(buf, 0, r);
-                    } catch (Exception copyEx) {
-                        logger.warning("[Modules] Failed to write default file " + name + " for " + moduleName + ": " + copyEx.getMessage());
-                    }
-                }
+                extractYamlEntries(jarFile, baseDir);
+                try { jarFile.close(); } catch (IOException ignored) {}
             } else {
+                // Fallback: copy a top-level config.yml resource if present
                 if (!configFile.exists()) {
                     try (InputStream in = moduleClassLoader.getResourceAsStream("config.yml")) {
                         if (in != null) {
-                            try (OutputStream out = new FileOutputStream(configFile)) {
-                                byte[] buffer = new byte[8192];
-                                int r;
-                                while ((r = in.read(buffer)) != -1) out.write(buffer, 0, r);
-                            }
+                            Files.copy(in, configFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
                         }
-                    } catch (Exception ioe) {
-                        logger.warning("[Modules] Failed to write default config for " + moduleName + ": " + ioe.getMessage());
                     }
                 }
             }
         } catch (Exception ex) {
             logger.warning("[Modules] Failed extracting default YAMLs for " + moduleName + ": " + ex.getMessage());
-        } finally {
-            try { if (jarFile != null) jarFile.close(); } catch (Exception ignored) {}
         }
 
         if (!configFile.exists()) {
             try {
-                saveString(configFile, "# Auto-generated config for " + moduleName + System.lineSeparator());
+                saveString(configFile.toPath(), "# Auto-generated config for " + moduleName + System.lineSeparator());
             } catch (Exception ioe) {
                 logger.warning("[Modules] Failed to write default config for " + moduleName + ": " + ioe.getMessage());
             }
         }
 
         reloadConfig();
+    }
+
+    private JarFile findModuleJar() {
+        try {
+            URL marker = moduleClassLoader.getResource("module.yml");
+            if (marker != null && "jar".equalsIgnoreCase(marker.getProtocol())) {
+                JarURLConnection juc = (JarURLConnection) marker.openConnection();
+                return juc.getJarFile();
+            }
+        } catch (Throwable ignored) {
+        }
+
+        if (moduleClassLoader instanceof URLClassLoader urlCl) {
+            for (URL u : urlCl.getURLs()) {
+                try {
+                    Path p = Paths.get(u.toURI());
+                    if (Files.isRegularFile(p) && p.getFileName().toString().toLowerCase().endsWith(".jar")) {
+                        return new JarFile(p.toFile());
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        }
+        return null;
+    }
+
+    private void extractYamlEntries(JarFile jarFile, Path baseDir) {
+        Enumeration<JarEntry> entries = jarFile.entries();
+        while (entries.hasMoreElements()) {
+            JarEntry e = entries.nextElement();
+            if (e.isDirectory()) continue;
+
+            String name = e.getName();
+            String lower = name.toLowerCase(java.util.Locale.ROOT);
+            if (!lower.endsWith(".yml")) continue;
+
+            String last = name.substring(name.lastIndexOf('/') + 1);
+            if ("module.yml".equalsIgnoreCase(last)) continue;
+
+            Path outPath = baseDir.resolve(name);
+            try {
+                Path parent = outPath.getParent();
+                if (parent != null) Files.createDirectories(parent);
+
+                // Security: ensure resolved path is inside baseDir
+                if (!outPath.toRealPath().startsWith(baseDir.toRealPath())) {
+                    logger.warning("[Modules] Skipping suspicious path in JAR: " + name);
+                    continue;
+                }
+
+                if (Files.exists(outPath)) continue;
+
+                try (InputStream in = jarFile.getInputStream(e)) {
+                    Files.copy(in, outPath);
+                }
+            } catch (Exception copyEx) {
+                logger.warning("[Modules] Failed to write default file " + name + " for " + moduleName + ": " + copyEx.getMessage());
+            }
+        }
     }
 
     /**
@@ -269,21 +264,18 @@ public final class ModuleContext {
      * @param replace If true, overwrites an existing file.
      */
     public void saveResource(String path, boolean replace) {
-        File outFile = new File(dataFolder, path);
-        if (outFile.exists() && !replace) return;
-        File parent = outFile.getParentFile();
-        if (parent != null) parent.mkdirs();
-        try (InputStream in = moduleClassLoader.getResourceAsStream(path)) {
-            if (in == null) {
-                logger.warning("[Modules] Resource not found in module JAR: " + path);
-                return;
-            }
-            try (OutputStream out = new FileOutputStream(outFile)) {
-                byte[] buffer = new byte[8192];
-                int r;
-                while ((r = in.read(buffer)) != -1) {
-                    out.write(buffer, 0, r);
+        Path outPath = dataFolder.toPath().resolve(path);
+        if (Files.exists(outPath) && !replace) return;
+        try {
+            Path parent = outPath.getParent();
+            if (parent != null) Files.createDirectories(parent);
+
+            try (InputStream in = moduleClassLoader.getResourceAsStream(path)) {
+                if (in == null) {
+                    logger.warning("[Modules] Resource not found in module JAR: " + path);
+                    return;
                 }
+                Files.copy(in, outPath, StandardCopyOption.REPLACE_EXISTING);
             }
         } catch (Exception e) {
             logger.warning("[Modules] Failed saving resource " + path + " for " + moduleName + ": " + e.getMessage());
@@ -457,9 +449,8 @@ public final class ModuleContext {
         }
     }
 
-    private static void saveString(File file, String contents) throws Exception {
-        try (Writer w = new FileWriter(file, StandardCharsets.UTF_8)) {
-            w.write(contents);
-        }
+    private static void saveString(Path file, String contents) throws IOException {
+        Files.createDirectories(file.getParent());
+        Files.writeString(file, contents, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
     }
 }

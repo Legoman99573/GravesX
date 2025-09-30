@@ -5,10 +5,7 @@ import dev.cwhead.GravesX.module.ModuleManager.LoadedModule;
 import dev.cwhead.GravesX.module.command.GravesXModuleCommand;
 import dev.cwhead.GravesX.module.command.GravesXModuleTabCompleter;
 import org.bukkit.Bukkit;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
-import org.bukkit.command.PluginCommand;
-import org.bukkit.command.SimpleCommandMap;
+import org.bukkit.command.*;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.permissions.Permission;
@@ -29,23 +26,14 @@ final class ModuleCommandRegistrar {
     private final Map<String, List<PluginCommand>> cmds = new LinkedHashMap<>();
     private final Map<String, List<Permission>> perms = new LinkedHashMap<>();
 
-    /**
-     * Creates a registrar bound to the owning plugin.
-     *
-     * @param plugin Owning Graves plugin.
-     */
     ModuleCommandRegistrar(Graves plugin) {
         this.plugin = plugin;
     }
 
-    /**
-     * Registers permissions and commands declared by a loaded module.
-     *
-     * @param lm Loaded module container.
-     */
     void registerFor(LoadedModule lm) {
-        YamlConfiguration yml = loadModuleYaml(lm);
+        var yml = loadModuleYaml(lm);
         if (yml == null) return;
+
         registerPermissions(lm, yml.getConfigurationSection("permissions"));
         registerCommands(lm, yml.getConfigurationSection("commands"));
     }
@@ -56,20 +44,19 @@ final class ModuleCommandRegistrar {
      * @param lm Loaded module container.
      */
     void unregisterFor(LoadedModule lm) {
-        List<PluginCommand> list = cmds.remove(lm.info.name());
-        if (list != null) {
-            for (PluginCommand pc : list) {
-                CommandExecutor ex = pc.getExecutor();
-                if (ex instanceof GravesXModuleCommand) {}
-                if (pc.getTabCompleter() instanceof GravesXModuleTabCompleter gmtc) {
-                    gmtc.onUnregister();
+        var cmdList = cmds.remove(lm.info.name());
+        if (cmdList != null) {
+            for (var pc : cmdList) {
+                if (pc.getTabCompleter() instanceof GravesXModuleTabCompleter tab) {
+                    tab.onUnregister();
                 }
                 unregister(pc);
             }
         }
-        List<Permission> ps = perms.remove(lm.info.name());
-        if (ps != null) {
-            for (Permission p : ps) {
+
+        var permList = perms.remove(lm.info.name());
+        if (permList != null) {
+            for (var p : permList) {
                 try { Bukkit.getPluginManager().removePermission(p); } catch (Throwable ignored) {}
             }
         }
@@ -85,7 +72,7 @@ final class ModuleCommandRegistrar {
         try (InputStream in = lm.cl.getResourceAsStream("module.yml")) {
             if (in == null) return null;
             return YamlConfiguration.loadConfiguration(new InputStreamReader(in, StandardCharsets.UTF_8));
-        } catch (Exception e) {
+        } catch (Exception ignored) {
             return null;
         }
     }
@@ -98,22 +85,23 @@ final class ModuleCommandRegistrar {
      */
     private void registerPermissions(LoadedModule lm, ConfigurationSection sec) {
         if (sec == null) return;
-        List<Permission> out = new ArrayList<>();
-        for (String node : sec.getKeys(false)) {
-            ConfigurationSection psec = sec.getConfigurationSection(node);
+        var out = new ArrayList<Permission>();
+
+        for (var node : sec.getKeys(false)) {
+            var psec = sec.getConfigurationSection(node);
             if (psec == null) continue;
+
             String desc = psec.getString("description", "");
-            String defStr = psec.getString("default", "FALSE").toUpperCase(Locale.ROOT);
-            PermissionDefault def;
-            try { def = PermissionDefault.valueOf(defStr); } catch (Exception ex) { def = PermissionDefault.FALSE; }
-            Map<String, Boolean> children = new LinkedHashMap<>();
-            ConfigurationSection csec = psec.getConfigurationSection("children");
+            var def = PermissionDefault.FALSE;
+            try { def = PermissionDefault.valueOf(psec.getString("default", "FALSE").toUpperCase(Locale.ROOT)); } catch (Exception ignored) {}
+
+            var children = new LinkedHashMap<String, Boolean>();
+            var csec = psec.getConfigurationSection("children");
             if (csec != null) {
-                for (String child : csec.getKeys(false)) children.put(child, csec.getBoolean(child, true));
+                for (var child : csec.getKeys(false)) children.put(child, csec.getBoolean(child, true));
             }
-            Permission perm;
-            if (children.isEmpty()) perm = new Permission(node, desc, def);
-            else perm = new Permission(node, desc, def, children);
+
+            var perm = children.isEmpty() ? new Permission(node, desc, def) : new Permission(node, desc, def, children);
             if (Bukkit.getPluginManager().getPermission(perm.getName()) == null) {
                 Bukkit.getPluginManager().addPermission(perm);
                 try { Bukkit.getPluginManager().recalculatePermissionDefaults(perm); } catch (Throwable ignored) {}
@@ -131,40 +119,34 @@ final class ModuleCommandRegistrar {
      */
     private void registerCommands(LoadedModule lm, ConfigurationSection sec) {
         if (sec == null) return;
-        SimpleCommandMap map = commandMap();
+        var map = commandMap();
         if (map == null) return;
-        List<PluginCommand> out = new ArrayList<>();
-        for (String name : sec.getKeys(false)) {
-            ConfigurationSection c = sec.getConfigurationSection(name);
+
+        var out = new ArrayList<PluginCommand>();
+
+        for (var name : sec.getKeys(false)) {
+            var c = sec.getConfigurationSection(name);
             if (c == null) continue;
 
-            PluginCommand pc = newPluginCommand(name, plugin);
+            var pc = newPluginCommand(name, plugin);
             if (pc == null) continue;
 
-            String yamlDesc = c.getString("description", "");
-            String yamlUsage = c.getString("usage", "/" + name);
-            String yamlPerm = c.getString("permission", "");
-            List<String> yamlAliases = readAliases(c.get("aliases"));
+            var yamlDesc = c.getString("description", "");
+            var yamlUsage = c.getString("usage", "/" + name);
+            var yamlPerm = c.getString("permission", "");
+            var yamlAliases = readAliases(c.get("aliases"));
 
-            String execClass = c.getString("executor", null);
-            String tabClass = c.getString("tab-completer", null);
+            CommandExecutor exec = execInstance(c.getString("executor"), lm, pc);
+            GravesXModuleTabCompleter tab = tabInstance(c.getString("tab-completer"), lm, pc);
 
-            CommandExecutor exec = null;
-            GravesXModuleTabCompleter tab = null;
-
-            if (execClass != null && !execClass.isEmpty()) exec = newExecutor(execClass, lm, pc);
-            if (tabClass != null && !tabClass.isEmpty()) tab = newTabCompleter(tabClass, lm, pc);
             if (tab == null && exec instanceof GravesXModuleTabCompleter gmtc) tab = gmtc;
 
             if (exec instanceof GravesXModuleCommand g) {
-                String d = g.getDescription();
-                String u = g.getUsage();
-                String p = g.getPermission();
-                List<String> a = g.getAliases();
-                if (yamlDesc.isEmpty() && d != null) yamlDesc = d;
-                if (yamlUsage.isEmpty() && u != null) yamlUsage = u;
-                if (yamlPerm.isEmpty() && p != null) yamlPerm = p;
-                if ((yamlAliases == null || yamlAliases.isEmpty()) && a != null && !a.isEmpty()) yamlAliases = a;
+                if (yamlDesc.isEmpty() && g.getDescription() != null) yamlDesc = g.getDescription();
+                if (yamlUsage.isEmpty() && g.getUsage() != null) yamlUsage = g.getUsage();
+                if (yamlPerm.isEmpty() && g.getPermission() != null) yamlPerm = g.getPermission();
+                if ((yamlAliases == null || yamlAliases.isEmpty()) && g.getAliases() != null) yamlAliases = g.getAliases();
+
                 String providedName = g.getName();
                 if (providedName != null && !providedName.isEmpty() && !providedName.equalsIgnoreCase(name)) {
                     if (yamlAliases == null) yamlAliases = new ArrayList<>();
@@ -183,8 +165,7 @@ final class ModuleCommandRegistrar {
                 tab.onRegister(lm.context, pc);
             }
 
-            boolean ok = map.register(plugin.getName().toLowerCase(Locale.ROOT), pc);
-            if (ok) out.add(pc);
+            if (map.register(plugin.getName().toLowerCase(Locale.ROOT), pc)) out.add(pc);
         }
         if (!out.isEmpty()) cmds.put(lm.info.name(), out);
     }
@@ -198,19 +179,18 @@ final class ModuleCommandRegistrar {
     private List<String> readAliases(Object val) {
         if (val == null) return Collections.emptyList();
         if (val instanceof List<?> raw) {
-            List<String> out = new ArrayList<>(raw.size());
-            for (Object o : raw) if (o != null) out.add(String.valueOf(o));
+            var out = new ArrayList<String>();
+            for (var o : raw) if (o != null) out.add(String.valueOf(o));
             return out;
         }
-        String s = String.valueOf(val);
-        if (s.indexOf(',') >= 0) {
-            String[] parts = s.split(",");
-            List<String> out = new ArrayList<>(parts.length);
-            for (String p : parts) if (!p.trim().isEmpty()) out.add(p.trim());
+
+        var s = String.valueOf(val);
+        if (s.contains(",")) {
+            var out = new ArrayList<String>();
+            for (var part : s.split(",")) if (!part.trim().isEmpty()) out.add(part.trim());
             return out;
         }
-        if (s.isEmpty()) return Collections.emptyList();
-        return Collections.singletonList(s);
+        return s.isEmpty() ? Collections.emptyList() : Collections.singletonList(s);
     }
 
     /**
@@ -222,18 +202,12 @@ final class ModuleCommandRegistrar {
      * @param cmd Command being registered.
      * @return Executor instance or {@code null} if incompatible or failed.
      */
-    private CommandExecutor newExecutor(String fqcn, LoadedModule lm, Command cmd) {
+    private CommandExecutor execInstance(String fqcn, LoadedModule lm, Command cmd) {
+        if (fqcn == null || fqcn.isEmpty()) return null;
         try {
-            Class<?> c = Class.forName(fqcn, true, lm.cl);
+            var c = Class.forName(fqcn, true, lm.cl);
             if (!CommandExecutor.class.isAssignableFrom(c)) return null;
-            try {
-                Constructor<?> k = c.getDeclaredConstructor(ModuleContext.class);
-                k.setAccessible(true);
-                return (CommandExecutor) k.newInstance(lm.context);
-            } catch (NoSuchMethodException ignored) {}
-            Constructor<?> k2 = c.getDeclaredConstructor();
-            k2.setAccessible(true);
-            return (CommandExecutor) k2.newInstance();
+            return instantiate(c, lm.context, CommandExecutor.class);
         } catch (Throwable t) {
             plugin.getLogger().severe("Executor load failed for " + fqcn + ": " + t.getMessage());
             return null;
@@ -249,21 +223,28 @@ final class ModuleCommandRegistrar {
      * @param cmd Command being registered.
      * @return Tab completer instance or {@code null} if incompatible or failed.
      */
-    private GravesXModuleTabCompleter newTabCompleter(String fqcn, LoadedModule lm, Command cmd) {
+    private GravesXModuleTabCompleter tabInstance(String fqcn, LoadedModule lm, Command cmd) {
+        if (fqcn == null || fqcn.isEmpty()) return null;
         try {
-            Class<?> c = Class.forName(fqcn, true, lm.cl);
+            var c = Class.forName(fqcn, true, lm.cl);
             if (!GravesXModuleTabCompleter.class.isAssignableFrom(c)) return null;
-            try {
-                Constructor<?> k = c.getDeclaredConstructor(ModuleContext.class);
-                k.setAccessible(true);
-                return (GravesXModuleTabCompleter) k.newInstance(lm.context);
-            } catch (NoSuchMethodException ignored) {}
-            Constructor<?> k2 = c.getDeclaredConstructor();
-            k2.setAccessible(true);
-            return (GravesXModuleTabCompleter) k2.newInstance();
+            return instantiate(c, lm.context, GravesXModuleTabCompleter.class);
         } catch (Throwable t) {
             plugin.getLogger().severe("TabCompleter load failed for " + fqcn + ": " + t.getMessage());
             return null;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T instantiate(Class<?> c, ModuleContext ctx, Class<T> type) throws Exception {
+        try {
+            var cons = c.getDeclaredConstructor(ModuleContext.class);
+            cons.setAccessible(true);
+            return (T) cons.newInstance(ctx);
+        } catch (NoSuchMethodException ignored) {
+            var cons = c.getDeclaredConstructor();
+            cons.setAccessible(true);
+            return (T) cons.newInstance();
         }
     }
 
@@ -274,13 +255,10 @@ final class ModuleCommandRegistrar {
      */
     private SimpleCommandMap commandMap() {
         try {
-            Object server = Bukkit.getServer();
-            Field f = server.getClass().getDeclaredField("commandMap");
+            var f = Bukkit.getServer().getClass().getDeclaredField("commandMap");
             f.setAccessible(true);
-            return (SimpleCommandMap) f.get(server);
-        } catch (Throwable t) {
-            return null;
-        }
+            return (SimpleCommandMap) f.get(Bukkit.getServer());
+        } catch (Throwable ignored) { return null; }
     }
 
     /**
@@ -292,12 +270,10 @@ final class ModuleCommandRegistrar {
      */
     private PluginCommand newPluginCommand(String name, Graves owner) {
         try {
-            Constructor<PluginCommand> c = PluginCommand.class.getDeclaredConstructor(String.class, org.bukkit.plugin.Plugin.class);
+            var c = PluginCommand.class.getDeclaredConstructor(String.class, org.bukkit.plugin.Plugin.class);
             c.setAccessible(true);
             return c.newInstance(name, owner);
-        } catch (Throwable t) {
-            return null;
-        }
+        } catch (Throwable ignored) { return null; }
     }
 
     /**
@@ -307,13 +283,13 @@ final class ModuleCommandRegistrar {
      */
     private void unregister(PluginCommand pc) {
         try {
-            SimpleCommandMap map = commandMap();
+            var map = commandMap();
             if (map == null) return;
             try { pc.unregister(map); } catch (Throwable ignored) {}
-            Field f = SimpleCommandMap.class.getDeclaredField("knownCommands");
+
+            var f = SimpleCommandMap.class.getDeclaredField("knownCommands");
             f.setAccessible(true);
-            @SuppressWarnings("unchecked")
-            Map<String, Command> known = (Map<String, Command>) f.get(map);
+            var known = (Map<String, Command>) f.get(map);
             known.values().removeIf(cmd -> cmd == pc);
         } catch (Throwable ignored) {}
     }

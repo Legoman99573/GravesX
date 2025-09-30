@@ -14,6 +14,7 @@ import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
  */
 public final class ModuleManager {
     private final Graves plugin;
+    private final Logger logger;
     private final File modulesDir;
 
     private LibraryImporter importer;
@@ -281,6 +283,7 @@ public final class ModuleManager {
      */
     public ModuleManager(Graves plugin) {
         this.plugin = plugin;
+        this.logger = plugin.getLogger();
         this.modulesDir = new File(plugin.getDataFolder(), "modules");
         if (!modulesDir.exists()) modulesDir.mkdirs();
         this.commandRegistrar = new ModuleCommandRegistrar(plugin);
@@ -339,7 +342,7 @@ public final class ModuleManager {
     public void loadAll() {
         File[] jars = modulesDir.listFiles((d, n) -> n.toLowerCase(Locale.ROOT).endsWith(".jar"));
         if (jars == null || jars.length == 0) {
-            plugin.getLogger().info("[Modules] No module jars found in " + modulesDir.getPath());
+            logger.info("[Modules] No module jars found in " + modulesDir.getPath());
             return;
         }
         Arrays.sort(jars);
@@ -372,11 +375,7 @@ public final class ModuleManager {
                 ctx.saveDefaultConfig();
 
                 LoadedModule lm = new LoadedModule(info, cl, instance, ctx);
-                try {
-                    ctx._internalAttachController(new ControllerImpl(lm));
-                } catch (Throwable ignored) {
-                    throw new Throwable("Failed to load internalAttachController");
-                }
+                ctx._internalAttachController(new ControllerImpl(lm));
 
                 instance.onModuleLoad(ctx);
 
@@ -489,7 +488,10 @@ public final class ModuleManager {
     public void disableAll() {
         ListIterator<String> it = new ArrayList<>(topoOrder).listIterator(topoOrder.size());
         while (it.hasPrevious()) disable(it.previous());
+
         topoOrder = List.of();
+        pending.clear();
+        loaded.clear();
     }
 
     /**
@@ -641,14 +643,19 @@ public final class ModuleManager {
      *
      * @param m Message to log.
      */
-    private void info(String m) { plugin.getLogger().info("[Modules] " + m); }
+    private void info(String m) {
+        logger.info("[Modules] " + m);
+    }
 
     /**
      * Logs an info-level message with the modules name as the prefix.
      *
+     * @param mi  The module info
      * @param m Message to log.
      */
-    private void info(ModuleInfo mi, String m) { plugin.getLogger().info("[" + mi.name() + "] " + m); }
+    private void info(ModuleInfo mi, String m) {
+        logger.info("[" + mi.name() + "] " + m);
+    }
 
 
     /**
@@ -656,14 +663,19 @@ public final class ModuleManager {
      *
      * @param m Message to log.
      */
-    private void warn(String m) { plugin.getLogger().warning("[Modules] " + m); }
+    private void warn(String m) {
+        logger.warning("[Modules] " + m);
+    }
 
     /**
      * Logs a warning-level message with the modules name as the prefix.
      *
+     * @param mi  The module info
      * @param m Message to log.
      */
-    private void warn(ModuleInfo mi, String m) { plugin.getLogger().warning("[" + mi.name() + "] " + m); }
+    private void warn(ModuleInfo mi, String m) {
+        logger.warning("[" + mi.name() + "] " + m);
+    }
 
     /**
      * Logs a severe-level message with a modules prefix and a throwable.
@@ -671,13 +683,39 @@ public final class ModuleManager {
      * @param m Message to log.
      * @param t Throwable to include.
      */
-    private void severe(String m, Throwable t) { plugin.getLogger().log(Level.SEVERE, "[Modules] " + m, t); }
+    private void severe(String m, Throwable t) {
+        logger.log(Level.SEVERE, "[Modules] " + m, t);
+    }
 
     /**
      * Logs a severe-level message with the modules name as the prefix and a throwable.
      *
+     * @param mi  The module info
      * @param m Message to log.
      * @param t Throwable to include.
      */
-    private void severe(ModuleInfo mi, String m, Throwable t) { plugin.getLogger().log(Level.SEVERE, "[" + mi.name() + "] " + m, t); }
+    private void severe(ModuleInfo mi, String m, Throwable t) {
+        logger.log(Level.SEVERE, "[" + mi.name() + "] " + m, t);
+    }
+
+    /**
+     * Logs a debug-level message with a modules prefix and a debug type.
+     *
+     * @param m   Message to log.
+     * @param num Debug number (1 info, 2 error/failure).
+     */
+    private void debug(String m, int num) {
+        plugin.debugMessage("[Modules] " + m, num);
+    }
+
+    /**
+     * Logs a debug-level message with the modules name as the prefix and a debug type.
+     *
+     * @param mi  The module info
+     * @param m   Message to log.
+     * @param num Debug number (1 info, 2 error/failure).
+     */
+    private void debug(ModuleInfo mi, String m, int num) {
+        logger.log(Level.SEVERE, "[" + mi.name() + "] " + m, num);
+    }
 }
