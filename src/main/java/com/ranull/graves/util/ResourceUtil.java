@@ -9,6 +9,8 @@ import java.io.OutputStream;
 import java.net.JarURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -63,14 +65,20 @@ public final class ResourceUtil {
             try {
                 JarURLConnection connection = (JarURLConnection) url.openConnection();
                 try (JarFile jarFile = connection.getJarFile()) {
+                    Path basePath = Paths.get(path).normalize();
+
                     Enumeration<JarEntry> entries = jarFile.entries();
                     while (entries.hasMoreElements()) {
                         JarEntry jarEntry = entries.nextElement();
-                        if (!jarEntry.isDirectory() && jarEntry.getName().startsWith(path)) {
-                            InputStream is = plugin.getResource(jarEntry.getName());
-                            if (is != null) {
-                                inputStreamMap.put(jarEntry.getName(), is);
-                            }
+                        if (jarEntry.isDirectory()) continue;
+
+                        Path entryPath = Paths.get(jarEntry.getName()).normalize();
+
+                        if (!entryPath.startsWith(basePath)) continue;
+
+                        InputStream is = plugin.getResource(jarEntry.getName());
+                        if (is != null) {
+                            inputStreamMap.put(jarEntry.getName(), is);
                         }
                     }
                 }

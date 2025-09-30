@@ -8,6 +8,8 @@ import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Enumeration;
 import java.util.Objects;
 import java.util.logging.Level;
@@ -61,7 +63,7 @@ public class GravesXAddon {
      * Copies all *.yml files found in resources at:
      *   addon/'addonName'/...
      * into:
-     *   plugins/GravesX/addon/'addonName'>'/'file'.yml
+     *   plugins/GravesX/addon/'addonName'/'file'.yml
      *
      * Skips files that already exist (set replaceIfExists=true to overwrite).
      *
@@ -72,7 +74,8 @@ public class GravesXAddon {
         Objects.requireNonNull(addonName, "addonName");
 
         File destDir = ensureAddonFolder(plugin, addonName);
-        final String resourcePrefix = "addon/" + addonName + "/"; // resource path (not sanitized)
+        Path destAbs = destDir.toPath().toAbsolutePath().normalize(); // base path
+        final String resourcePrefix = "addon/" + addonName + "/";
         int written = 0;
 
         try {
@@ -91,9 +94,28 @@ public class GravesXAddon {
                         String fileName = name.substring(resourcePrefix.length());
                         if (fileName.contains("/")) continue;
 
-                        if (copyResourceIfNeeded(plugin, name, new File(destDir, fileName), replaceIfExists)) {
-                            written++;
+                        Path target = destAbs.resolve(fileName).normalize();
+                        if (!target.startsWith(destAbs)) {
+                            plugin.getLogger().warning("Skipping suspicious path in JAR: " + name);
+                            continue;
                         }
+
+                        if (Files.exists(target) && !replaceIfExists) continue;
+
+                        Path parent = target.getParent();
+                        if (parent != null) Files.createDirectories(parent);
+
+                        try (InputStream in = jar.getInputStream(entry)) {
+                            Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
+                        }
+
+                        if (Files.isSymbolicLink(target)) {
+                            Files.delete(target);
+                            plugin.getLogger().warning("Skipped symlink file: " + name);
+                            continue;
+                        }
+
+                        written++;
                     }
                 }
             } else if (codeFile.isDirectory()) {
@@ -102,10 +124,16 @@ public class GravesXAddon {
                     File[] files = resFolder.listFiles((dir, n) -> n.endsWith(".yml"));
                     if (files != null) {
                         for (File f : files) {
-                            File target = new File(destDir, f.getName());
-                            if (target.exists() && !replaceIfExists) continue;
-                            Files.createDirectories(target.getParentFile().toPath());
-                            Files.copy(f.toPath(), target.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                            Path target = destAbs.resolve(f.getName()).normalize();
+                            if (!target.startsWith(destAbs)) {
+                                plugin.getLogger().warning("Skipping suspicious dev file: " + f.getPath());
+                                continue;
+                            }
+                            if (Files.exists(target) && !replaceIfExists) continue;
+
+                            Path parent = target.getParent();
+                            if (parent != null) Files.createDirectories(parent);
+                            Files.copy(f.toPath(), target, StandardCopyOption.REPLACE_EXISTING);
                             written++;
                         }
                     }

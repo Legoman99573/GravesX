@@ -14,10 +14,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -188,36 +185,44 @@ public final class ModuleContext {
     }
 
     private void extractYamlEntries(JarFile jarFile, Path baseDir) {
+        Path baseAbs = baseDir.toAbsolutePath().normalize();
+
         Enumeration<JarEntry> entries = jarFile.entries();
         while (entries.hasMoreElements()) {
             JarEntry e = entries.nextElement();
             if (e.isDirectory()) continue;
 
             String name = e.getName();
-            String lower = name.toLowerCase(java.util.Locale.ROOT);
+            String lower = name.toLowerCase(Locale.ROOT);
             if (!lower.endsWith(".yml")) continue;
 
             String last = name.substring(name.lastIndexOf('/') + 1);
             if ("module.yml".equalsIgnoreCase(last)) continue;
 
-            Path outPath = baseDir.resolve(name);
             try {
-                Path parent = outPath.getParent();
-                if (parent != null) Files.createDirectories(parent);
+                Path target = baseAbs.resolve(name).normalize();
 
-                // Security: ensure resolved path is inside baseDir
-                if (!outPath.toRealPath().startsWith(baseDir.toRealPath())) {
+                if (!target.startsWith(baseAbs)) {
                     logger.warning("[Modules] Skipping suspicious path in JAR: " + name);
                     continue;
                 }
 
-                if (Files.exists(outPath)) continue;
+                if (Files.exists(target)) continue;
+
+                Path parent = target.getParent();
+                if (parent != null) Files.createDirectories(parent);
 
                 try (InputStream in = jarFile.getInputStream(e)) {
-                    Files.copy(in, outPath);
+                    Files.copy(in, target);
                 }
-            } catch (Exception copyEx) {
-                logger.warning("[Modules] Failed to write default file " + name + " for " + moduleName + ": " + copyEx.getMessage());
+
+                if (Files.isSymbolicLink(target)) {
+                    Files.delete(target);
+                    logger.warning("[Modules] Skipped symlink file: " + name);
+                }
+
+            } catch (Exception ex) {
+                logger.warning("[Modules] Failed to write default file " + name + " for " + moduleName + ": " + ex.getMessage());
             }
         }
     }
