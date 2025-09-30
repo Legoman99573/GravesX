@@ -462,7 +462,7 @@
         <dependency>
             <groupId>com.mojang</groupId>
             <artifactId>authlib</artifactId>
-            <version>7.0.60-graves</version>
+            <version>7.0.61-graves</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
