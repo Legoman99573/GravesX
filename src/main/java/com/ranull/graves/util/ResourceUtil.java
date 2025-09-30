@@ -99,10 +99,18 @@ public final class ResourceUtil {
      */
     private static void saveResources(Map<String, InputStream> inputStreamMap, String inputPath, String outputPath,
                                       boolean overwrite) {
+        Path outputBasePath = Paths.get(outputPath).toAbsolutePath().normalize();
         for (Map.Entry<String, InputStream> entry : inputStreamMap.entrySet()) {
-            String path = entry.getKey();
+            String resourcePath = entry.getKey();
             InputStream inputStream = entry.getValue();
-            File outputFile = new File(outputPath + File.separator + path.replaceFirst(inputPath, ""));
+            String relativeResourcePath = resourcePath.replaceFirst("^" + java.util.regex.Pattern.quote(inputPath), "");
+            Path outputFilePath = outputBasePath.resolve(relativeResourcePath).normalize();
+
+            if (!outputFilePath.startsWith(outputBasePath)) {
+                continue;
+            }
+
+            File outputFile = outputFilePath.toFile();
 
             if (!outputFile.exists() || overwrite) {
                 if (createDirectories(outputFile)) {
