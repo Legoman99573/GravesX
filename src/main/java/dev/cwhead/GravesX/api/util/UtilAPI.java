@@ -5,6 +5,7 @@ import com.ranull.graves.util.*;
 import dev.cwhead.GravesX.api.world.LocationAPI;
 import dev.cwhead.GravesX.util.LibraryLoaderUtil;
 import dev.cwhead.GravesX.util.MclogsUtil;
+import dev.cwhead.GravesX.util.SkinTextureUtil_post_1_21_9;
 import me.jay.GravesX.util.SkinSignatureUtil;
 import me.jay.GravesX.util.SkinTextureUtil;
 import org.bukkit.Color;
@@ -267,7 +268,13 @@ public final class UtilAPI {
 
     /** Shortcuts used during creation (texture/signature). */
     public String skinSignature(@NotNull Entity entity) { return SkinSignatureUtil.getSignature(entity); }
-    public String skinTexture(@NotNull Entity entity) { return SkinTextureUtil.getTexture(entity); }
+    public String skinTexture(@NotNull Entity entity) {
+        try {
+            return SkinTextureUtil.getTexture(entity);
+        } catch (Throwable t) {
+            return SkinTextureUtil_post_1_21_9.getTexture(entity);
+        }
+    }
 
     /**
      * Converts a string to a UUID.

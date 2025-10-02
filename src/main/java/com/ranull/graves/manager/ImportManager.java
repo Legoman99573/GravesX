@@ -5,6 +5,7 @@ import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.StringUtil;
 import com.ranull.graves.util.UUIDUtil;
 import com.ranull.graves.util.YAMLUtil;
+import dev.cwhead.GravesX.util.SkinTextureUtil_post_1_21_9;
 import me.jay.GravesX.util.SkinSignatureUtil;
 import me.jay.GravesX.util.SkinTextureUtil;
 import org.bukkit.Location;
@@ -281,7 +282,12 @@ public final class ImportManager {
             }
             if (player != null) {
                 try {
-                    grave.setOwnerTexture(SkinTextureUtil.getTexture(player));
+                    if (plugin.getVersionManager().isPost1_21_9()) {
+                        grave.setOwnerTexture(SkinTextureUtil_post_1_21_9.getTexture(player));
+                    } else {
+                        grave.setOwnerTexture(SkinTextureUtil.getTexture(player));
+                    }
+
                 } catch (Throwable ignored) {
                 }
                 try {

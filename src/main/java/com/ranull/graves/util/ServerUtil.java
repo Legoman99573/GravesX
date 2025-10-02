@@ -8,18 +8,12 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.configuration.file.FileConfiguration;
-import oshi.SystemInfo;
-import oshi.hardware.CentralProcessor;
-import oshi.hardware.GlobalMemory;
-import oshi.hardware.HardwareAbstractionLayer;
-import oshi.hardware.PhysicalMemory;
-import oshi.software.os.OSFileStore;
-import oshi.software.os.OperatingSystem;
 
 import java.io.*;
+import java.lang.management.ManagementFactory;
+import java.lang.management.OperatingSystemMXBean;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.*;
 
 /**
@@ -43,133 +37,48 @@ public final class ServerUtil {
         stringList.add("=================");
         stringList.add("Java Version: " + getSystemProperty("java.version"));
         stringList.add("Java Vendor: " + getSystemProperty("java.vendor"));
-        stringList.add("Java Vendor URL: " + getSystemProperty("java.vendor.url"));
         stringList.add("Java Home: " + getSystemProperty("java.home"));
-        stringList.add("Java VM Specification Version: " + getSystemProperty("java.vm.specification.version"));
-        stringList.add("Java VM Specification Vendor: " + getSystemProperty("java.vm.specification.vendor"));
-        stringList.add("Java VM Specification Name: " + getSystemProperty("java.vm.specification.name"));
-        stringList.add("Java VM Version: " + getSystemProperty("java.vm.version"));
-        stringList.add("Java VM Vendor: " + getSystemProperty("java.vm.vendor"));
         stringList.add("Java VM Name: " + getSystemProperty("java.vm.name"));
         stringList.add("");
 
-        OperatingSystem os = new SystemInfo().getOperatingSystem();
-        CentralProcessor processor = new SystemInfo().getHardware().getProcessor();
-
+        // OS Info
         stringList.add("=============================");
         stringList.add("Operating System Information:");
         stringList.add("=============================");
-        stringList.add("OS Name: " + os);
-        stringList.add("OS Family: " + os.getFamily());
-        stringList.add("OS Version: " + os.getVersionInfo().getVersion());
-        stringList.add("OS Build Number: " + os.getVersionInfo().getBuildNumber());
-        stringList.add("OS Code Name: " + os.getVersionInfo().getCodeName());
-        stringList.add("Bitness: " + os.getBitness() + "-bit");
-        stringList.add("Booted Since: " + Instant.ofEpochSecond(os.getSystemBootTime()));
-        stringList.add("Uptime: " + formatDuration(os.getSystemUptime()));
-        stringList.add("Running Processes: " + os.getProcessCount());
-        stringList.add("Running Threads: " + os.getThreadCount());
+        stringList.add("OS Name: " + getSystemProperty("os.name"));
+        stringList.add("OS Version: " + getSystemProperty("os.version"));
+        stringList.add("OS Architecture: " + getSystemProperty("os.arch"));
+        stringList.add("Available Processors: " + Runtime.getRuntime().availableProcessors());
+        stringList.add("Total Memory (JVM max): " + formatBytes(Runtime.getRuntime().maxMemory()));
+        stringList.add("Free Memory (JVM): " + formatBytes(Runtime.getRuntime().freeMemory()));
         stringList.add("Docker Container: " + isRunningInDocker());
-        if (isRunningInDocker()) {
-            stringList.add("Rootless Container: " + isRootlessDocker());
-            stringList.add("Running with Panel: " + isRunningWithPanel());
-        }
-        if (isRunningAsRoot()) {
-            stringList.add("WARNING: This " + plugin.getServer().getName() + " server is running with top-level access (root/administrator)");
-            plugin.getLogger().warning("This server is running with top-level access (root/administrator), which is unsafe and can lead to security vulnerabilities. We recommend creating a user account or running the server in a rootless Docker container.");
-        }
+        stringList.add("Running as root: " + isRunningAsRoot());
         stringList.add("");
 
-        SystemInfo systemInfo = new SystemInfo();
-        String cpuName = processor.getProcessorIdentifier().getName();
-        String vendorName = processor.getProcessorIdentifier().getVendor();
-        CentralProcessor.ProcessorIdentifier identifier = processor.getProcessorIdentifier();
-
+        // CPU Info
         stringList.add("================");
         stringList.add("CPU Information:");
         stringList.add("================");
-        stringList.add("CPU: " + (cpuName != null ? cpuName : "Not available"));
-        stringList.add("CPU Vendor: " + (vendorName != null ? vendorName : "Not available"));
-        stringList.add("CPU Identifier: " + (identifier.getIdentifier() != null ? identifier.getIdentifier() : "Not available"));
+        stringList.add("CPU Cores: " + Runtime.getRuntime().availableProcessors());
+        stringList.add("CPU Load (System Average, 1 min): " + getSystemLoad());
 
-        long[] currentFreqs = processor.getCurrentFreq();
-        long maxFreq = processor.getMaxFreq();
-
-        if (currentFreqs != null && currentFreqs.length > 0) {
-            stringList.add("CPU Frequencies:");
-            for (int i = 0; i < currentFreqs.length; i++) {
-                String current = formatFrequency(currentFreqs[i]);
-                String max = (maxFreq > 0) ? formatFrequency(maxFreq) : "Unknown Frequency";
-                stringList.add(" - Core " + i + ":");
-                stringList.add("   Current: " + current);
-                stringList.add("   Max: " + max);
-            }
-        } else {
-            stringList.add("CPU Frequencies: Not available");
-        }
-        stringList.add("CPU Architecture: " + identifier.getMicroarchitecture());
-        stringList.add("CPU Stepping: " + identifier.getStepping());
-
-        try {
-            List<CentralProcessor.ProcessorCache> cacheSizes = processor.getProcessorCaches();
-            if (cacheSizes != null && !cacheSizes.isEmpty()) {
-                stringList.add("CPU Cache Sizes: ");
-                for (CentralProcessor.ProcessorCache cache : cacheSizes) {
-                    stringList.add(" - " + cache.getCacheSize() + " bytes, Level: " + cache.getLevel());
-                }
-            } else {
-                stringList.add("CPU Cache Sizes: Not available");
-            }
-        } catch (Exception e) {
-            stringList.add("CPU Cache Sizes: Not available");
-        }
-
-        HardwareAbstractionLayer hal = systemInfo.getHardware();
-        List<PhysicalMemory> ramList = hal.getMemory().getPhysicalMemory();
-
+        // Disk info
         stringList.add("");
-        stringList.add("=======================");
-        stringList.add("System RAM Information:");
-        stringList.add("=======================");
-        stringList.add("Number of RAM Sticks: " + ramList.size());
-
-        long memoryCount = 0;
-
-        for (PhysicalMemory ram : ramList) {
-            memoryCount += 1;
-            String vendor = ram.getManufacturer();
-            stringList.add("- " + memoryCount);
-            stringList.add("  Vendor: " + (vendor != null ? vendor : "Unknown Vendor"));
-            stringList.add("  Memory Size: " + formatBytes(ram.getCapacity()));
-            stringList.add("  Speed: " + formatFrequency(ram.getClockSpeed()));
-            stringList.add("  Memory Type: " + ram.getMemoryType());
-        }
-
-        GlobalMemory memory = hal.getMemory();
-        long totalMemory = memory.getTotal();
-        long availableMemory = memory.getAvailable();
-        long usedMemory = totalMemory - availableMemory;
-
-        stringList.add("Total Memory: " + formatBytes(totalMemory));
-        stringList.add("Free Memory: " + formatBytes(availableMemory));
-        stringList.add("Used Memory: " + formatBytes(usedMemory));
-        stringList.add("");
-
         stringList.add("==============================");
-        stringList.add("System Disk Space Information:");
+        stringList.add("Disk Space Information:");
         stringList.add("==============================");
-        for (OSFileStore fs : os.getFileSystem().getFileStores()) {
-            stringList.add("Mount Point: " + fs.getMount());
-            stringList.add("Name: " + fs.getName());
-            stringList.add("Type: " + (fs.getType().isEmpty() ? "Unknown" : fs.getType()));
-            stringList.add("Total Space: " + formatBytes(fs.getTotalSpace()));
-            stringList.add("Usable Space: " + formatBytes(fs.getUsableSpace()));
-            stringList.add("Free Space: " + formatBytes(fs.getFreeSpace()));
-            stringList.add("");
+        File[] roots = File.listRoots();
+        if (roots != null) {
+            for (File root : roots) {
+                stringList.add("Mount Point: " + root.getAbsolutePath());
+                stringList.add("Total Space: " + formatBytes(root.getTotalSpace()));
+                stringList.add("Free Space: " + formatBytes(root.getFreeSpace()));
+                stringList.add("Usable Space: " + formatBytes(root.getUsableSpace()));
+                stringList.add("");
+            }
         }
 
-        stringList.add("");
-
+        // Minecraft server info
         stringList.add("=============================");
         stringList.add("Minecraft Server Information:");
         stringList.add("=============================");
@@ -183,42 +92,20 @@ public final class ServerUtil {
         }
         stringList.add("Plugin Count: " + plugin.getServer().getPluginManager().getPlugins().length);
         stringList.add("Plugin List: " + getPluginList());
+
+        // Worlds
         stringList.add("Worlds:");
         for (World world : plugin.getServer().getWorlds()) {
-            stringList.add("- " + world.getName() + ":");
-            stringList.add("  Type: " + world.getEnvironment());
-            long ticks = world.getTime();
-            long dayTime = ticks % 24000;
-
-            int hours24 = (int) ((dayTime / 1000 + 6) % 24);
-            int minutes = (int) ((dayTime % 1000) * 60 / 1000);
-
-            String formattedTime24 = String.format("%02d:%02d", hours24, minutes);
-
-            int hours12 = hours24 % 12;
-            hours12 = (hours12 == 0) ? 12 : hours12;
-            String amPm = (hours24 < 12) ? "AM" : "PM";
-            String formattedTime12 = String.format("%02d:%02d %s", hours12, minutes, amPm);
-
-            stringList.add("  Time: " + formattedTime24 + " (24-hour), " + formattedTime12 + " (12-hour)");
-            stringList.add("  keepInventory: " + (hasKeepInventory(world) ? "true" : "false"));
+            stringList.add("- " + world.getName() + " (keepInventory=" + hasKeepInventory(world) + ")");
         }
-        double tps = plugin.getServer().getServerTickManager().getTickRate();
-        stringList.add("Server TPS: " + tps);
+
+        // Players
         stringList.add("Players Online: " + plugin.getServer().getOnlinePlayers().size() + "/" + plugin.getServer().getMaxPlayers());
         for (Player player : plugin.getServer().getOnlinePlayers()) {
-            int ping;
-            try {
-                ping = Objects.requireNonNull(player.getPlayer()).getPing();
-            } catch (Exception ignored) {
-                ping = -1;
-            }
-            stringList.add("- " + player.getName());
-            stringList.add("  Display Name: " + player.getDisplayName());
-            stringList.add("  UUID: " + player.getUniqueId());
-            stringList.add("  Ping: " + (ping != -1 ? ping + "ms" : "0ms"));
-            stringList.add("  Current World: " + player.getWorld().getName());
+            int ping = getPlayerPing(player);
+            stringList.add("- " + player.getName() + " UUID: " + player.getUniqueId() + " Ping: " + ping + "ms");
         }
+
         stringList.add("");
 
         stringList.add("===================");
@@ -292,17 +179,13 @@ public final class ServerUtil {
         return joinLines(stringList);
     }
 
-    private static String formatFrequency(double frequency) {
-        if (frequency >= 1_000_000_000_000.0) {
-            return String.format("%.2f THz", frequency / 1_000_000_000_000.0);
-        } else if (frequency >= 1_000_000_000) {
-            return String.format("%.2f GHz", frequency / 1_000_000_000.0);
-        } else if (frequency >= 1_000_000) {
-            return String.format("%.2f MHz", frequency / 1_000_000.0);
-        } else if (frequency >= 1_000) {
-            return String.format("%.2f kHz", frequency / 1_000.0);
-        } else {
-            return frequency + " Hz";
+    private static double getSystemLoad() {
+        try {
+            OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
+            Method loadMethod = osBean.getClass().getMethod("getSystemLoadAverage");
+            return (double) loadMethod.invoke(osBean);
+        } catch (Exception e) {
+            return -1.0;
         }
     }
 
@@ -320,16 +203,6 @@ public final class ServerUtil {
             if (read < 0) return "";
             return new String(data, 0, read, StandardCharsets.UTF_8);
         }
-    }
-
-    private static String formatDuration(long seconds) {
-        long days = seconds / 86400;
-        seconds %= 86400;
-        long hours = seconds / 3600;
-        seconds %= 3600;
-        long minutes = seconds / 60;
-        seconds %= 60;
-        return String.format("%d days, %02d:%02d:%02d", days, hours, minutes, seconds);
     }
 
     /**
@@ -352,26 +225,13 @@ public final class ServerUtil {
      * @return A string with the byte count formatted in B, KB, MB, GB, TB, or PB.
      */
     private static String formatBytes(long bytes) {
-        boolean isNegative = bytes < 0;
-        long absoluteBytes = Math.abs(bytes);
-
-        StringBuilder result = new StringBuilder();
-        if (absoluteBytes < 1024) {
-            result.append(absoluteBytes).append(" B");
-        } else {
-            int exp = (int) (Math.log(absoluteBytes) / Math.log(1024));
-            String pre = ("KMGTPE").charAt(exp - 1) + "";
-            result.append(String.format("%.1f %sB", absoluteBytes / Math.pow(1024, exp), pre));
-        }
-
-        if (isNegative) {
-            result.insert(0, "-");
-        }
-
-        return result.toString();
+        if (bytes < 1024) return bytes + " B";
+        int exp = (int) (Math.log(bytes) / Math.log(1024));
+        char pre = "KMGTPE".charAt(exp - 1);
+        return String.format("%.1f %sB", bytes / Math.pow(1024, exp), pre);
     }
 
-    public static boolean hasKeepInventory(World world) {
+    private static boolean hasKeepInventory(World world) {
         return Boolean.TRUE.equals(world.getGameRuleValue(GameRule.KEEP_INVENTORY));
     }
 
@@ -416,35 +276,13 @@ public final class ServerUtil {
      */
     private static boolean isRunningInDocker() {
         File cgroupFile = new File("/proc/self/cgroup");
-        try (BufferedReader reader = new BufferedReader(new FileReader(cgroupFile, StandardCharsets.UTF_8))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(cgroupFile))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                if (line.contains("/docker/")) {
-                    return true;
-                }
+                if (line.contains("/docker/")) return true;
             }
-        } catch (IOException ignored) {
-        }
+        } catch (IOException ignored) {}
         return false;
-    }
-
-    /**
-     * Checks if the server is running in a rootless Docker container.
-     *
-     * @return True if running in a rootless Docker container, otherwise false.
-     */
-    private static boolean isRootlessDocker() {
-        File uidFile = new File("/proc/self/uid_map");
-        return uidFile.exists();
-    }
-
-    /**
-     * Checks if the server is running with a panel (e.g., hosting panel).
-     *
-     * @return True if running with a panel, otherwise false.
-     */
-    private static boolean isRunningWithPanel() {
-        return new File("/.panel").exists();
     }
 
     /**
@@ -453,8 +291,7 @@ public final class ServerUtil {
      * @return True if running as root, otherwise false.
      */
     private static boolean isRunningAsRoot() {
-        String user = System.getProperty("user.name");
-        return "root".equals(user);
+        return "root".equals(System.getProperty("user.name"));
     }
 
     /**
@@ -497,11 +334,7 @@ public final class ServerUtil {
      * @return A single string with lines joined by new lines.
      */
     private static String joinLines(List<String> lines) {
-        StringBuilder sb = new StringBuilder();
-        for (String line : lines) {
-            sb.append(line).append('\n');
-        }
-        return sb.toString();
+        return String.join("\n", lines);
     }
 
     /**
@@ -517,17 +350,12 @@ public final class ServerUtil {
         return new String(chars);
     }
 
-    /**
-     * Gets a list of online players' names.
-     *
-     * @return A comma-separated string of online player names.
-     */
-    private static String getPlayerList() {
-        StringBuilder sb = new StringBuilder();
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            sb.append(player.getName()).append(", ");
+    private static int getPlayerPing(Player player) {
+        try {
+            return player.getPing();
+        } catch (Exception ignored) {
+            return -1;
         }
-        return !sb.isEmpty() ? sb.substring(0, sb.length() - 2) : "";
     }
 
     /**
@@ -540,6 +368,6 @@ public final class ServerUtil {
         for (Plugin plugin : Bukkit.getPluginManager().getPlugins()) {
             sb.append(plugin.getName()).append(' ').append(plugin.getDescription().getVersion()).append(", ");
         }
-        return !sb.isEmpty() ? sb.substring(0, sb.length() - 2) : "";
+        return sb.length() > 2 ? sb.substring(0, sb.length() - 2) : "";
     }
 }

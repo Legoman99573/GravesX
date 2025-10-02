@@ -8,6 +8,7 @@ import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.BlockFaceUtil;
 import com.ranull.graves.util.MaterialUtil;
 import dev.cwhead.GravesX.util.PlayerHeadUtil;
+import dev.cwhead.GravesX.util.SkinTextureUtil_post_1_21_9;
 import me.jay.GravesX.util.SkinTextureUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -199,12 +200,25 @@ public final class CompatibilityBlockData implements Compatibility {
                     skull.setOwner(grave.getOwnerName());
                 }
             } else if (grave.getOwnerTexture() != null) {
-                SkinTextureUtil.setSkullBlockTexture(skull, grave.getOwnerName(), grave.getOwnerTexture());
+                if (plugin.getVersionManager().isPost1_21_9()) {
+                    SkinTextureUtil_post_1_21_9.setSkullBlockTexture(skull, grave.getOwnerName(), grave.getOwnerTexture());
+                } else {
+                    SkinTextureUtil.setSkullBlockTexture(skull, grave.getOwnerName(), grave.getOwnerTexture());
+                }
             } else if (headBase64 != null && !headBase64.isEmpty()) {
-                SkinTextureUtil.setSkullBlockTexture(skull, grave.getOwnerName(), headBase64);
+                if (plugin.getVersionManager().isPost1_21_9()) {
+                    SkinTextureUtil_post_1_21_9.setSkullBlockTexture(skull, grave.getOwnerName(), headBase64);
+                } else {
+                    SkinTextureUtil.setSkullBlockTexture(skull, grave.getOwnerName(), headBase64);
+                }
             }
         } else if (headType == 1 && headBase64 != null && !headBase64.isEmpty()) {
-            SkinTextureUtil.setSkullBlockTexture(skull, grave.getOwnerName(), headBase64);
+            if (plugin.getVersionManager().isPost1_21_9()) {
+                SkinTextureUtil_post_1_21_9.setSkullBlockTexture(skull, grave.getOwnerName(), headBase64);
+            } else {
+                SkinTextureUtil.setSkullBlockTexture(skull, grave.getOwnerName(), headBase64);
+            }
+
         } else if (headType == 2 && headName != null && headName.length() <= 16) {
             try {
                 skull.setOwningPlayer(plugin.getServer().getOfflinePlayer(headName));
@@ -235,7 +249,11 @@ public final class CompatibilityBlockData implements Compatibility {
             } else if (grave.getOwnerType() != null) {
                 String entityTexture = getEntityTexture(grave.getOwnerType());
                 if (entityTexture != null) {
-                    SkinTextureUtil.setSkullBlockTexture(skullMeta, grave.getOwnerName(), entityTexture);
+                    if (plugin.getVersionManager().isPost1_21_9()) {
+                        SkinTextureUtil_post_1_21_9.setSkullBlockTexture(skullMeta, grave.getOwnerName(), entityTexture);
+                    } else {
+                        SkinTextureUtil.setSkullBlockTexture(skullMeta, grave.getOwnerName(), entityTexture);
+                    }
                 }
             }
 

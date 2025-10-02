@@ -11,6 +11,7 @@ import dev.cwhead.GravesX.event.GraveCreateEvent;
 import dev.cwhead.GravesX.event.GraveObituaryAddEvent;
 import dev.cwhead.GravesX.event.GravePlayerHeadDropEvent;
 import dev.cwhead.GravesX.event.GraveProtectionCreateEvent;
+import dev.cwhead.GravesX.util.SkinTextureUtil_post_1_21_9;
 import me.jay.GravesX.util.SkinSignatureUtil;
 import me.jay.GravesX.util.SkinTextureUtil;
 import org.bukkit.GameRule;
@@ -523,7 +524,11 @@ public class EntityDeathListener implements Listener {
         grave.setPitch(livingEntity.getLocation().getPitch());
         grave.setTimeAlive(plugin.getConfig("grave.time", grave).getInt("grave.time") * 1000L);
         if (!plugin.getVersionManager().is_v1_7()) {
-            grave.setOwnerTexture(SkinTextureUtil.getTexture(livingEntity));
+            if (plugin.getVersionManager().isPost1_21_9()) {
+                grave.setOwnerTexture(SkinTextureUtil_post_1_21_9.getTexture(livingEntity));
+            } else {
+                grave.setOwnerTexture(SkinTextureUtil.getTexture(livingEntity));
+            }
             grave.setOwnerTextureSignature(SkinSignatureUtil.getSignature(livingEntity));
         }
     }

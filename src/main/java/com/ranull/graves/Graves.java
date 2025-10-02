@@ -271,7 +271,7 @@ public class Graves extends JavaPlugin {
             libraryLoaderUtil.loadLibrary("com{}google{}guava", "guava", "33.4.8-jre", false);
         }
 
-        libraryLoaderUtil.loadLibrary("com{}github{}oshi", "oshi-core", "6.8.2", false);
+        //libraryLoaderUtil.loadLibrary("com{}github{}oshi", "oshi-core", "6.9.0", false);
 
         String storageType = Objects.requireNonNull(getConfig().getString("settings.storage.type")).toUpperCase();
 

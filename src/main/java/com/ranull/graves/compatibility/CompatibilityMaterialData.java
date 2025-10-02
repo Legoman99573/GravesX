@@ -6,6 +6,7 @@ import com.ranull.graves.Graves;
 import com.ranull.graves.data.BlockData;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.BlockFaceUtil;
+import dev.cwhead.GravesX.util.SkinTextureUtil_post_1_21_9;
 import me.jay.GravesX.util.SkinTextureUtil;
 import org.bukkit.*;
 import org.bukkit.block.*;
@@ -210,7 +211,12 @@ public final class CompatibilityMaterialData implements Compatibility {
             if (headType == 0) {
                 if (grave.getOwnerType() == EntityType.PLAYER) {
                     if (!useFallback && headBase64 != null && !headBase64.isEmpty()) {
-                        SkinTextureUtil.setSkullBlockTexture(skull, grave.getOwnerName(), headBase64);
+                        if (plugin.getVersionManager().isPost1_21_9()) {
+                            SkinTextureUtil_post_1_21_9.setSkullBlockTexture(skull, grave.getOwnerName(), headBase64);
+
+                        } else {
+                            SkinTextureUtil.setSkullBlockTexture(skull, grave.getOwnerName(), headBase64);
+                        }
                     } else {
                         OfflinePlayer player = Bukkit.getOfflinePlayer(grave.getOwnerName());
                         try {
@@ -229,7 +235,11 @@ public final class CompatibilityMaterialData implements Compatibility {
 
             } else if (headType == 1 && headBase64 != null && !headBase64.isEmpty()) {
                 if (!useFallback) {
-                    SkinTextureUtil.setSkullBlockTexture(skull, grave.getOwnerName(), headBase64);
+                    if (plugin.getVersionManager().isPost1_21_9()) {
+                        SkinTextureUtil_post_1_21_9.setSkullBlockTexture(skull, grave.getOwnerName(), headBase64);
+                    } else {
+                        SkinTextureUtil.setSkullBlockTexture(skull, grave.getOwnerName(), headBase64);
+                    }
                 } else {
                     try {
                         skull.setOwningPlayer(plugin.getServer().getOfflinePlayer(grave.getOwnerName()));
@@ -288,7 +298,11 @@ public final class CompatibilityMaterialData implements Compatibility {
             } else {
                 String texture = grave.getOwnerTexture();
                 if (texture != null && !texture.isEmpty()) {
-                    SkinTextureUtil.setSkullBlockTexture(skullMeta, grave.getOwnerName(), texture);
+                    if (plugin.getVersionManager().isPost1_21_9()) {
+                        SkinTextureUtil_post_1_21_9.setSkullBlockTexture(skullMeta, grave.getOwnerName(), texture);
+                    } else {
+                        SkinTextureUtil.setSkullBlockTexture(skullMeta, grave.getOwnerName(), texture);
+                    }
                 }
             }
             itemStack.setItemMeta(skullMeta);

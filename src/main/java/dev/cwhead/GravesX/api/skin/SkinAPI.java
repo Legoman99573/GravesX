@@ -1,12 +1,14 @@
 package dev.cwhead.GravesX.api.skin;
 
 import com.mojang.authlib.GameProfile;
+import dev.cwhead.GravesX.util.SkinTextureUtil_post_1_21_9;
 import me.jay.GravesX.util.SkinSignatureUtil;
 import me.jay.GravesX.util.SkinTextureUtil;
 import org.bukkit.block.Skull;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.profile.PlayerProfile;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,7 +38,11 @@ public final class SkinAPI {
      * @param base64 The Base64 encoded texture.
      */
     public static void setSkullTexture(@NotNull Skull skull, @NotNull String name, @NotNull String base64) {
-        SkinTextureUtil.setSkullBlockTexture(skull, name, base64);
+        try {
+            SkinTextureUtil.setSkullBlockTexture(skull, name, base64);
+        } catch (Exception e) {
+            SkinTextureUtil_post_1_21_9.setSkullBlockTexture(skull, name, base64);
+        }
     }
 
     /**
@@ -47,7 +53,11 @@ public final class SkinAPI {
      * @param base64    The Base64 encoded texture.
      */
     public static void setSkullTexture(@NotNull SkullMeta skullMeta, @NotNull String name, @NotNull String base64) {
-        SkinTextureUtil.setSkullBlockTexture(skullMeta, name, base64);
+        try {
+            SkinTextureUtil.setSkullBlockTexture(skullMeta, name, base64);
+        } catch (Exception e) {
+            SkinTextureUtil_post_1_21_9.setSkullBlockTexture(skullMeta, name, base64);
+        }
     }
 
     /**
@@ -57,7 +67,11 @@ public final class SkinAPI {
      * @return The Base64 encoded texture string, or null if not found.
      */
     public static @Nullable String getTexture(@NotNull Entity entity) {
-        return SkinTextureUtil.getTexture(entity);
+        try {
+            return SkinTextureUtil.getTexture(entity);
+        } catch (Exception e) {
+            return SkinTextureUtil_post_1_21_9.getTexture(entity);
+        }
     }
 
     /**
@@ -68,5 +82,15 @@ public final class SkinAPI {
      */
     public static @Nullable GameProfile getPlayerGameProfile(@NotNull Player player) {
         return SkinTextureUtil.getPlayerGameProfile(player);
+    }
+
+    /**
+     * Retrieves the PlauerProfile of the specified player.
+     *
+     * @param player The player from which to get the GameProfile.
+     * @return The PlayerProfile of the player, or null if not found.
+     */
+    public static @Nullable PlayerProfile getPlayerProfile(@NotNull Player player) {
+        return SkinTextureUtil_post_1_21_9.getPlayerProfile(player);
     }
 }

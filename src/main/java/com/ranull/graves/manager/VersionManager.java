@@ -131,11 +131,37 @@ public final class VersionManager {
      */
     private boolean isMohist;
 
+    /**
+     * Indicates whether the server or plugin is based on Paper.
+     * <p>
+     * This {@code boolean} flag shows if the server or plugin is using Paper.
+     * </p>
+     */
     private boolean isPaper;
 
+    /**
+     * Indicates whether the server or plugin is based on Folia.
+     * <p>
+     * This {@code boolean} flag shows if the server or plugin is using Folia.
+     * </p>
+     */
     private boolean isFolia;
 
+    /**
+     * Indicates whether the plugin is running post 1.20.5.
+     * <p>
+     * This {@code boolean} flag shows if the plugin is running on post 1.20.5.
+     * </p>
+     */
     private final boolean isPost1_20_5;
+
+    /**
+     * Indicates whether the plugin is running post 1.20.9.
+     * <p>
+     * This {@code boolean} flag shows if the plugin is running on post 1.20.9.
+     * </p>
+     */
+    private final boolean isPost1_21_9;
 
     /**
      * Indicates whether the server is older than 1.20.5/1.20.6.
@@ -170,6 +196,8 @@ public final class VersionManager {
         this.hasParticle = !is_v1_7() && !is_v1_8();
         this.isPost1_20_5 = !is_v1_7() && !is_v1_8() && !is_v1_9() && !is_v1_10() && !is_v1_11() && !is_v1_12()
                 && !is_v1_13() && !is_v1_14() && !is_v1_15() && !is_v1_16() && !is_v1_17() && !is_v1_18() && !is_v1_19() && !is_v1_20();
+        this.isPost1_21_9 = !is_v1_7() && !is_v1_8() && !is_v1_9() && !is_v1_10() && !is_v1_11() && !is_v1_12()
+                && !is_v1_13() && !is_v1_14() && !is_v1_15() && !is_v1_16() && !is_v1_17() && !is_v1_18() && !is_v1_19() && !is_v1_20() && !is_v1_21();
 
         try {
             Class.forName("org.spigotmc.SpigotConfig", false, getClass().getClassLoader());
@@ -523,11 +551,19 @@ public final class VersionManager {
      * @return True if the server version is 1.21/1.21.1, otherwise false.
      */
     public boolean is_v1_21() {
-        return version.matches("(?i)v1_21_R1");
+        return version.matches("(?i)v1_21_R1|(?i)v1_21_R2|(?i)v1_21_R3|(?i)v1_21_R4");
     }
 
     public boolean isPost1_20_5() {
         return isPost1_20_5;
+    }
+
+    public boolean is_v1_21_R5() {
+        return version.matches("(?i)v1_21_R5");
+    }
+
+    public boolean isPost1_21_9() {
+        return isPost1_21_9;
     }
 
     /**

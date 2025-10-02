@@ -6,6 +6,7 @@ import com.ranull.graves.data.ChunkData;
 import com.ranull.graves.integration.MiniMessage;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.LocationUtil;
+import dev.cwhead.GravesX.util.SkinTextureUtil_post_1_21_9;
 import me.jay.GravesX.util.SkinTextureUtil;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -283,7 +284,11 @@ public final class BlockManager {
 
                 try {
                     if (tx != null && !tx.isEmpty()) {
-                        SkinTextureUtil.setSkullBlockTexture(skull, (on != null && !on.isEmpty()) ? on : "gravesx", tx);
+                        if (plugin.getVersionManager().isPost1_21_9()) {
+                            SkinTextureUtil_post_1_21_9.setSkullBlockTexture(skull, (on != null && !on.isEmpty()) ? on : "gravesx", tx);
+                        } else {
+                            SkinTextureUtil.setSkullBlockTexture(skull, (on != null && !on.isEmpty()) ? on : "gravesx", tx);
+                        }
                     } else if (ou != null && !ou.isEmpty()) {
                         try {
                             skull.setOwningPlayer(plugin.getServer().getOfflinePlayer(UUID.fromString(ou)));
