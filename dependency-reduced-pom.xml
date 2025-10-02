@@ -45,6 +45,7 @@
         <version>3.6.0</version>
         <executions>
           <execution>
+            <id>shade-main</id>
             <phase>package</phase>
             <goals>
               <goal>shade</goal>
@@ -60,6 +61,46 @@
                 </filter>
               </filters>
               <minimizeJar>false</minimizeJar>
+            </configuration>
+          </execution>
+          <execution>
+            <id>shade-sources</id>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <shadedArtifactAttached>true</shadedArtifactAttached>
+              <shadedClassifierName>api-sources</shadedClassifierName>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/**</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+            </configuration>
+          </execution>
+          <execution>
+            <id>shade-javadoc</id>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <shadedArtifactAttached>true</shadedArtifactAttached>
+              <shadedClassifierName>api-javadoc</shadedClassifierName>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/**</exclude>
+                  </excludes>
+                </filter>
+              </filters>
             </configuration>
           </execution>
         </executions>
@@ -150,12 +191,13 @@
             <configuration>
               <classifier>api</classifier>
               <includes>
-                <include>**/**</include>
+                <include>**/*.class</include>
               </includes>
               <excludes>
-                <exclude>config</exclude>
-                <exclude>data</exclude>
-                <exclude>plugin.yml</exclude>
+                <exclude>**/*.yml</exclude>
+                <exclude>**/*.json</exclude>
+                <exclude>config/**</exclude>
+                <exclude>data/**</exclude>
               </excludes>
             </configuration>
           </execution>
@@ -170,17 +212,13 @@
             <goals>
               <goal>jar</goal>
             </goals>
+            <configuration>
+              <classifier>api-javadoc</classifier>
+              <sourcepath>${project.build.sourceDirectory}</sourcepath>
+              <excludePackageNames>config,data</excludePackageNames>
+            </configuration>
           </execution>
         </executions>
-        <configuration>
-          <classifier>api-javadoc</classifier>
-          <show>private</show>
-          <nohelp>true</nohelp>
-        </configuration>
-      </plugin>
-      <plugin>
-        <artifactId>maven-site-plugin</artifactId>
-        <version>4.0.0-M16</version>
       </plugin>
       <plugin>
         <artifactId>maven-source-plugin</artifactId>
@@ -194,9 +232,22 @@
             </goals>
             <configuration>
               <classifier>api-sources</classifier>
+              <includes>
+                <include>**/*.java</include>
+              </includes>
+              <excludes>
+                <exclude>**/*.yml</exclude>
+                <exclude>**/*.json</exclude>
+                <exclude>config/**</exclude>
+                <exclude>data/**</exclude>
+              </excludes>
             </configuration>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-site-plugin</artifactId>
+        <version>4.0.0-M16</version>
       </plugin>
     </plugins>
   </build>
@@ -688,6 +739,18 @@
       <plugin>
         <artifactId>maven-project-info-reports-plugin</artifactId>
         <version>3.9.0</version>
+        <configuration>
+          <dependencyLocationsEnabled>true</dependencyLocationsEnabled>
+          <includePlugins>true</includePlugins>
+          <includeDependencies>true</includeDependencies>
+          <includeTransitiveDependencies>true</includeTransitiveDependencies>
+          <includeManagedDependencies>true</includeManagedDependencies>
+          <dependencyArtifactFilter>
+            <includes>
+              <include>*:*</include>
+            </includes>
+          </dependencyArtifactFilter>
+        </configuration>
       </plugin>
       <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>

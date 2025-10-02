@@ -28,7 +28,7 @@
     </contributors>
 
     <properties>
-        <java.version>17</java.version>
+        <java.version>17</java.version> <!-- As of 4.9.9.1 -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -36,6 +36,7 @@
         <defaultGoal>clean package</defaultGoal>
         <finalName>${project.name}-${project.version}</finalName>
         <plugins>
+            <!-- Compiler -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -45,6 +46,8 @@
                     <target>${java.version}</target>
                 </configuration>
             </plugin>
+
+            <!-- Shade Plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -115,11 +118,11 @@
                     </relocations>
                 </configuration>
                 <executions>
+                    <!-- Main shaded jar -->
                     <execution>
+                        <id>shade-main</id>
                         <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
+                        <goals><goal>shade</goal></goals>
                         <configuration>
                             <createDependencyReducedPom>true</createDependencyReducedPom>
                             <filters>
@@ -133,8 +136,50 @@
                             <minimizeJar>false</minimizeJar>
                         </configuration>
                     </execution>
+
+                    <!-- Sources jar-->
+                    <execution>
+                        <id>shade-sources</id>
+                        <phase>package</phase>
+                        <goals><goal>shade</goal></goals>
+                        <configuration>
+                            <shadedArtifactAttached>true</shadedArtifactAttached>
+                            <shadedClassifierName>api-sources</shadedClassifierName>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/**</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+
+                    <!-- Javadocs jar -->
+                    <execution>
+                        <id>shade-javadoc</id>
+                        <phase>package</phase>
+                        <goals><goal>shade</goal></goals>
+                        <configuration>
+                            <shadedArtifactAttached>true</shadedArtifactAttached>
+                            <shadedClassifierName>api-javadoc</shadedClassifierName>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/**</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
+
+            <!-- Resources -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
@@ -146,6 +191,8 @@
                     </nonFilteredFileExtensions>
                 </configuration>
             </plugin>
+
+            <!-- API jar -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -158,17 +205,20 @@
                         <configuration>
                             <classifier>api</classifier>
                             <includes>
-                                <include>**/**</include>
+                                <include>**/*.class</include>
                             </includes>
                             <excludes>
-                                <exclude>config</exclude>
-                                <exclude>data</exclude>
-                                <exclude>plugin.yml</exclude>
+                                <exclude>**/*.yml</exclude>
+                                <exclude>**/*.json</exclude>
+                                <exclude>config/**</exclude>
+                                <exclude>data/**</exclude>
                             </excludes>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- Javadocs plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
@@ -179,19 +229,16 @@
                         <goals>
                             <goal>jar</goal>
                         </goals>
+                        <configuration>
+                            <classifier>api-javadoc</classifier>
+                            <sourcepath>${project.build.sourceDirectory}</sourcepath>
+                            <excludePackageNames>config,data</excludePackageNames>
+                        </configuration>
                     </execution>
                 </executions>
-                <configuration>
-                    <classifier>api-javadoc</classifier>
-                    <show>private</show>
-                    <nohelp>true</nohelp>
-                </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-site-plugin</artifactId>
-                <version>4.0.0-M16</version>
-            </plugin>
+
+            <!-- Sources plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
@@ -205,11 +252,28 @@
                         </goals>
                         <configuration>
                             <classifier>api-sources</classifier>
+                            <includes>
+                                <include>**/*.java</include>
+                            </includes>
+                            <excludes>
+                                <exclude>**/*.yml</exclude>
+                                <exclude>**/*.json</exclude>
+                                <exclude>config/**</exclude>
+                                <exclude>data/**</exclude>
+                            </excludes>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- Site plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-site-plugin</artifactId>
+                <version>4.0.0-M16</version>
+            </plugin>
         </plugins>
+
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
@@ -247,6 +311,18 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-project-info-reports-plugin</artifactId>
                 <version>3.9.0</version>
+                <configuration>
+                    <dependencyLocationsEnabled>true</dependencyLocationsEnabled>
+                    <includePlugins>true</includePlugins>
+                    <includeDependencies>true</includeDependencies>
+                    <includeTransitiveDependencies>true</includeTransitiveDependencies>
+                    <includeManagedDependencies>true</includeManagedDependencies>
+                    <dependencyArtifactFilter>
+                        <includes>
+                            <include>*:*</include>
+                        </includes>
+                    </dependencyArtifactFilter>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
