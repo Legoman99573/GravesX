@@ -84,17 +84,21 @@ public final class GraveManager {
         final List<EntityData> entityDataRemoveList = new ArrayList<>();
         final List<BlockData> blockDataRemoveList = new ArrayList<>();
 
+        plugin.getHologramManager().purgeLingeringHolograms();
+
         processGraves(graveRemoveList);
 
-        if (plugin.getConfig("grave.check-missing-graves", graveRemoveList.get(0)).getBoolean("grave.check-missing-graves", false)) {
+        if (graveRemoveList.isEmpty()) {
+            return;
+        }
+
+        if (plugin.getConfig("grave.check-missing-graves", graveRemoveList).getBoolean("grave.check-missing-graves", false)) {
             restoreMissingGraves();
         }
 
         processChunks(entityDataRemoveList, blockDataRemoveList);
 
         removeExpiredElements(graveRemoveList, entityDataRemoveList, blockDataRemoveList);
-
-        plugin.getHologramManager().purgeLingeringHolograms();
     }
 
     /**

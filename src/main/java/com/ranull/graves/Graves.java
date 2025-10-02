@@ -48,6 +48,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.sql.CallableStatement;
 import java.util.*;
 import java.util.concurrent.Callable;
 
@@ -1036,6 +1037,26 @@ public class Graves extends JavaPlugin {
      */
     public ConfigurationSection getConfig(String config, Grave grave) {
         return getConfig(config, grave.getOwnerType(), grave.getPermissionList());
+    }
+
+    /**
+     * Gets a configuration section for a list of graves.
+     * Returns the first matching config found, or the default if none match.
+     *
+     * @param config the config key.
+     * @param graveList the list of graves.
+     * @return the matching configuration section, or default if none match.
+     */
+    public ConfigurationSection getConfig(String config, List<Grave> graveList) {
+        if (graveList == null) return null;
+
+        for (Grave grave : graveList) {
+            ConfigurationSection section = getConfig(config, grave.getOwnerType(), grave.getPermissionList());
+            if (section != null) {
+                return section;
+            }
+        }
+        return null;
     }
 
     /**
