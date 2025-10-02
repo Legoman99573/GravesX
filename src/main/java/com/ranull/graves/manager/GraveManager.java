@@ -86,7 +86,7 @@ public final class GraveManager {
 
         processGraves(graveRemoveList);
 
-        if (plugin.getConfig("grave.check-missing-graves", graveRemoveList.getFirst()).getBoolean("grave.check-missing-graves", false)) {
+        if (plugin.getConfig("grave.check-missing-graves", graveRemoveList.get(0)).getBoolean("grave.check-missing-graves", false)) {
             restoreMissingGraves();
         }
 
