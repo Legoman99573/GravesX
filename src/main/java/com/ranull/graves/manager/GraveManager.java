@@ -2455,13 +2455,9 @@ public final class GraveManager {
 
         for (Enchantment ench : itemStack.getEnchantments().keySet()) {
             NamespacedKey k;
-            try {
-                k = ench.getKeyOrThrow();
-                addKey.accept(k, out);
-            } catch (NoSuchMethodError ignored) {
-                k = ench.getKey();
-                addKey.accept(k, out);
-            }
+            k = ench.getKey();
+            if (k.getKey().isEmpty()) continue;
+            addKey.accept(k, out);
         }
 
         ItemMeta meta = itemStack.getItemMeta();
@@ -2469,13 +2465,9 @@ public final class GraveManager {
         if (meta instanceof EnchantmentStorageMeta esm) {
             for (Enchantment ench : esm.getStoredEnchants().keySet()) {
                 NamespacedKey k;
-                try {
-                    k = ench.getKeyOrThrow();
-                    addKey.accept(k, out);
-                } catch (NoSuchMethodError ignored) {
-                    k = ench.getKey();
-                    addKey.accept(k, out);
-                }
+                k = ench.getKey();
+                if (k.getKey().isEmpty()) continue;
+                addKey.accept(k, out);
             }
         }
 
