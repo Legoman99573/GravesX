@@ -32,6 +32,8 @@ settings:
         smite-death-location: true
         # Should we actually smite a death location? Keep note enabling this will hurt entities or destroy ground items if items are ignored. Retained as some use it.
         actually-smite-death-location: false
+        # Should we run a task to check for missing graves? NOTE THAT THIS CAN CAUSE TPS TO DROP
+        check-missing-graves: false
 
       #############
       # Placement #
