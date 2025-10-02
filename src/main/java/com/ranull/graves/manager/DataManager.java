@@ -10,6 +10,8 @@ import dev.cwhead.GravesX.api.provider.GraveProvider;
 import dev.cwhead.GravesX.api.provider.RegisterGraveProviders;
 import org.apache.commons.lang3.StringUtils;
 import org.bukkit.Location;
+import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.entity.EntityType;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
