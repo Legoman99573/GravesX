@@ -22,8 +22,6 @@ import java.sql.Date;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
 /**
  * Manages data storage and retrieval for the Graves plugin.
@@ -2380,9 +2378,16 @@ public final class DataManager {
             String locationDeath = resultSet.getString("location_death");
 
             graveLocation = (locationDeath != null) ? LocationUtil.stringToLocation(locationDeath) : null;
-            if (graveLocation == null || graveLocation.getWorld() == null) {
+            if (graveLocation == null) {
                 plugin.getLogger().warning("Skipping grave " + uuidString + " at row " + resultSet.getRow()
-                        + " because parsed location doesn't have a valid world assigned.");
+                        + " because location is null.");
+                return null;
+            }
+
+            World world = graveLocation.getWorld();
+            if (world == null || Bukkit.getWorld(world.getName()) == null) {
+                plugin.getLogger().warning("Skipping grave " + uuidString + " at row " + resultSet.getRow()
+                        + " because the world '" + (world != null ? world.getName() : "null") + "' does not exist or is not loaded.");
                 return null;
             }
             grave.setLocationDeath(graveLocation);
