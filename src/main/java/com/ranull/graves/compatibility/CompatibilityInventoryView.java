@@ -60,7 +60,7 @@ public final class CompatibilityInventoryView {
      * @param inventoryView The InventoryView to inspect.
      * @return The top Inventory object from the event's InventoryView.
      */
-    public static Inventory getTopInventory(InventoryView inventoryView) {
+    public static Inventory getTopInventory(Object inventoryView) {
         try {
             Method getTopInventory = inventoryView.getClass().getMethod("getTopInventory");
             getTopInventory.setAccessible(true);
@@ -78,7 +78,7 @@ public final class CompatibilityInventoryView {
      * @param inventoryView The InventoryView to inspect.
      * @return The bottom Inventory object from the event's InventoryView.
      */
-    public static Inventory getBottomInventory(InventoryView inventoryView) {
+    public static Inventory getBottomInventory(Object inventoryView) {
         try {
             Method getBottomInventory = inventoryView.getClass().getMethod("getBottomInventory");
             getBottomInventory.setAccessible(true);
