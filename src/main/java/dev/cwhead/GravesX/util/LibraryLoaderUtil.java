@@ -7,7 +7,6 @@ import com.ranull.graves.Graves;
 import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Objects;
 
 /**
  * Utility class for loading external libraries dynamically using BukkitLibraryManager.
@@ -16,7 +15,7 @@ import java.util.Objects;
  * relocation and isolation of the loaded libraries.
  * </p>
  */
-public final class LibraryLoaderUtil {
+public class LibraryLoaderUtil {
     private final Graves plugin;
 
     /**
@@ -25,7 +24,7 @@ public final class LibraryLoaderUtil {
      * @param plugin The plugin instance to associate with the library manager.
      */
     public LibraryLoaderUtil(Graves plugin) {
-        this.plugin = Objects.requireNonNull(plugin, "plugin");
+        this.plugin = plugin;
     }
 
     /**
@@ -132,6 +131,7 @@ public final class LibraryLoaderUtil {
         loadLibrary(groupID, artifactID, version, null, relocatePattern, relocateRelocatedPattern, isIsolated, libraryURL, resolveTransitiveDependencies);
     }
 
+
     /**
      * Loads a library into the runtime using the BukkitLibraryManager.
      *
@@ -172,11 +172,7 @@ public final class LibraryLoaderUtil {
         if (artifactID == null || artifactID.isBlank()) {
             throw new IllegalArgumentException("artifactID is required and cannot be blank.");
         }
-        if (version == null || version.isBlank()) {
-            throw new IllegalArgumentException("version is required and cannot be blank.");
-        }
-
-        final boolean doRelocate = isDoRelocate(relocatePattern, relocateRelocatedPattern);
+        final boolean doRelocate = isDoRelocate(version, relocatePattern, relocateRelocatedPattern);
 
         final String groupPretty = groupID.replace("{}", ".");
         final String libLabel = groupPretty + "." + artifactID + ":" + version;
@@ -194,10 +190,18 @@ public final class LibraryLoaderUtil {
                     .resolveTransitiveDependencies(resolveTransitiveDependencies);
 
             switch (caseKey) {
-                case "ID+RELOC" -> builder.loaderId(ID).relocate(relocatePattern, relocateRelocatedPattern);
-                case "ID"       -> builder.loaderId(ID);
-                case "PLAIN+RELOC" -> builder.relocate(relocatePattern, relocateRelocatedPattern);
-                default -> { /* PLAIN */ }
+                case "ID+RELOC":
+                    builder.loaderId(ID).relocate(relocatePattern, relocateRelocatedPattern);
+                    break;
+                case "ID":
+                    builder.loaderId(ID);
+                    break;
+                case "PLAIN+RELOC":
+                    builder.relocate(relocatePattern, relocateRelocatedPattern);
+                    break;
+                case "PLAIN":
+                default:
+                    break;
             }
 
             if (isIsolated) {
@@ -208,13 +212,10 @@ public final class LibraryLoaderUtil {
             }
 
             final Library lib = builder.build();
-            plugin.debugMessage(
-                    "Loading library " + libLabel +
-                            (isIsolated ? " [isolated]" : "") +
-                            (doRelocate ? " [relocated]" : "") +
-                            ((hasId || isIsolated) ? " (loaderId=" + lib.getLoaderId() + ")" : ""),
-                    1
-            );
+            plugin.debugMessage("Loading library " + libLabel +
+                    (isIsolated ? " [isolated]" : "") +
+                    (doRelocate ? " [relocated]" : "") +
+                    ((hasId || isIsolated) ? " (loaderId=" + lib.getLoaderId() + ")" : ""), 1);
 
             libraryManager.loadLibrary(lib);
 
@@ -224,7 +225,8 @@ public final class LibraryLoaderUtil {
                     Class.forName(probe, false, Thread.currentThread().getContextClassLoader());
                     plugin.debugMessage("Verified shaded library " + libLabel + ".", 1);
                 } catch (Exception e) {
-                    Bukkit.getLogger().severe("Shaded verification failed for " + libLabel + ": " + e.getClass().getSimpleName());
+                    Bukkit.getLogger().severe("Shaded verification failed for " + libLabel + ": " +
+                            e.getClass().getSimpleName());
                     plugin.logStackTrace(e);
                     plugin.getServer().getPluginManager().disablePlugin(plugin);
                 }
@@ -233,7 +235,8 @@ public final class LibraryLoaderUtil {
             }
 
         } catch (Exception e) {
-            plugin.getLogger().severe("Failed to load " + libLabel + ": " + e.getClass().getSimpleName());
+            plugin.getLogger().severe("Failed to load " + libLabel + ": " +
+                    e.getClass().getSimpleName());
             plugin.logStackTrace(e);
             plugin.getServer().getPluginManager().disablePlugin(plugin);
         }
@@ -251,13 +254,19 @@ public final class LibraryLoaderUtil {
         return libraryManager;
     }
 
-    private static boolean isDoRelocate(String relocatePattern, String relocateRelocatedPattern) {
+    private static boolean isDoRelocate(String version, String relocatePattern, String relocateRelocatedPattern) {
+        if (version == null || version.isBlank()) {
+            throw new IllegalArgumentException("version is required and cannot be blank.");
+        }
+
         final boolean hasRelocatePattern = relocatePattern != null && !relocatePattern.isBlank();
-        final boolean hasRelocateTarget  = relocateRelocatedPattern != null && !relocateRelocatedPattern.isBlank();
+        final boolean hasRelocateTarget = relocateRelocatedPattern != null && !relocateRelocatedPattern.isBlank();
 
         if (hasRelocatePattern ^ hasRelocateTarget) {
             throw new IllegalArgumentException("If relocation is used, both relocatePattern and relocateRelocatedPattern must be provided.");
         }
+
         return hasRelocatePattern;
     }
+
 }
