@@ -32,7 +32,6 @@ public class PlayerRespawnListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerRespawn(PlayerRespawnEvent event) {
-        plugin.getLogger().severe("fired respawn event");
         final Player player = event.getPlayer();
         final List<String> permissionList = plugin.getPermissionList(player);
         final List<Grave> graveList = plugin.getGraveManager().getGraveList(player);
