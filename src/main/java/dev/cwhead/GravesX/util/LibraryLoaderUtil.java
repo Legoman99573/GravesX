@@ -7,6 +7,7 @@ import com.ranull.graves.Graves;
 import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Objects;
 
 /**
  * Utility class for loading external libraries dynamically using BukkitLibraryManager.
@@ -24,7 +25,7 @@ public class LibraryLoaderUtil {
      * @param plugin The plugin instance to associate with the library manager.
      */
     public LibraryLoaderUtil(Graves plugin) {
-        this.plugin = plugin;
+        this.plugin = Objects.requireNonNull(plugin, "plugin");
     }
 
     /**
@@ -131,7 +132,6 @@ public class LibraryLoaderUtil {
         loadLibrary(groupID, artifactID, version, null, relocatePattern, relocateRelocatedPattern, isIsolated, libraryURL, resolveTransitiveDependencies);
     }
 
-
     /**
      * Loads a library into the runtime using the BukkitLibraryManager.
      *
@@ -172,7 +172,11 @@ public class LibraryLoaderUtil {
         if (artifactID == null || artifactID.isBlank()) {
             throw new IllegalArgumentException("artifactID is required and cannot be blank.");
         }
-        final boolean doRelocate = isDoRelocate(version, relocatePattern, relocateRelocatedPattern);
+        if (version == null || version.isBlank()) {
+            throw new IllegalArgumentException("version is required and cannot be blank.");
+        }
+
+        final boolean doRelocate = isDoRelocate(relocatePattern, relocateRelocatedPattern);
 
         final String groupPretty = groupID.replace("{}", ".");
         final String libLabel = groupPretty + "." + artifactID + ":" + version;
@@ -180,9 +184,20 @@ public class LibraryLoaderUtil {
         final boolean hasId = ID != null && !ID.isBlank();
         final String caseKey = (hasId ? "ID" : "PLAIN") + (doRelocate ? "+RELOC" : "");
 
+        LibraryManager libraryManager;
         try {
-            final LibraryManager libraryManager = getLibraryManager(libraryURL, plugin);
+            libraryManager = getLibraryManager(libraryURL, plugin);
+        } catch (Exception e) {
+            plugin.getLogger().severe("Failed to construct LibraryManager for " + libLabel + ": " + e.getClass().getSimpleName());
+            plugin.logStackTrace(e);
+            return;
+        }
+        if (libraryManager == null) {
+            plugin.getLogger().severe("LibraryManager was null for " + libLabel + " — aborting this library load.");
+            return;
+        }
 
+        try {
             Library.Builder builder = Library.builder()
                     .groupId(groupID)
                     .artifactId(artifactID)
@@ -190,18 +205,10 @@ public class LibraryLoaderUtil {
                     .resolveTransitiveDependencies(resolveTransitiveDependencies);
 
             switch (caseKey) {
-                case "ID+RELOC":
-                    builder.loaderId(ID).relocate(relocatePattern, relocateRelocatedPattern);
-                    break;
-                case "ID":
-                    builder.loaderId(ID);
-                    break;
-                case "PLAIN+RELOC":
-                    builder.relocate(relocatePattern, relocateRelocatedPattern);
-                    break;
-                case "PLAIN":
-                default:
-                    break;
+                case "ID+RELOC" -> builder.loaderId(ID).relocate(relocatePattern, relocateRelocatedPattern);
+                case "ID"       -> builder.loaderId(ID);
+                case "PLAIN+RELOC" -> builder.relocate(relocatePattern, relocateRelocatedPattern);
+                default -> { /* PLAIN */ }
             }
 
             if (isIsolated) {
@@ -211,62 +218,127 @@ public class LibraryLoaderUtil {
                 builder.isolatedLoad(true);
             }
 
-            final Library lib = builder.build();
-            plugin.debugMessage("Loading library " + libLabel +
-                    (isIsolated ? " [isolated]" : "") +
-                    (doRelocate ? " [relocated]" : "") +
-                    ((hasId || isIsolated) ? " (loaderId=" + lib.getLoaderId() + ")" : ""), 1);
+            final Library lib;
+            try {
+                lib = builder.build();
+            } catch (Exception e) {
+                plugin.getLogger().severe("Library.builder().build() failed for " + libLabel + ": " + e.getClass().getSimpleName());
+                plugin.logStackTrace(e);
+                return;
+            }
 
-            libraryManager.loadLibrary(lib);
+            if (lib == null) {
+                plugin.getLogger().severe("Builder returned null Library for " + libLabel + " — skipping.");
+                return;
+            }
+
+            String loaderId = null;
+            try {
+                loaderId = lib.getLoaderId();
+            } catch (Throwable t) {
+                plugin.getLogger().warning("Could not read loaderId for " + libLabel + ": " + t.getClass().getSimpleName());
+            }
+
+            plugin.debugMessage(
+                    "Loading library " + libLabel +
+                            (isIsolated ? " [isolated]" : "") +
+                            (doRelocate ? " [relocated]" : "") +
+                            ((hasId || isIsolated) ? " (loaderId=" + (loaderId == null ? "null" : loaderId) + ")" : ""),
+                    1
+            );
+
+            try {
+                libraryManager.loadLibrary(lib);
+            } catch (NullPointerException npe) {
+                plugin.getLogger().severe("NullPointerException while loading library " + libLabel + ". Likely cause: missing repository, malformed library descriptor, or resolver returned null objects.");
+                plugin.logStackTrace(npe);
+                return;
+            } catch (Exception ex) {
+                plugin.getLogger().severe("Exception while loading library " + libLabel + ": " + ex.getClass().getSimpleName());
+                plugin.logStackTrace(ex);
+                return;
+            }
 
             if (isIsolated && doRelocate) {
                 try {
-                    final String probe = relocateRelocatedPattern.replace("{}", ".");
-                    Class.forName(probe, false, Thread.currentThread().getContextClassLoader());
-                    plugin.debugMessage("Verified shaded library " + libLabel + ".", 1);
-                } catch (Exception e) {
-                    Bukkit.getLogger().severe("Shaded verification failed for " + libLabel + ": " +
-                            e.getClass().getSimpleName());
-                    plugin.logStackTrace(e);
+                    if (relocateRelocatedPattern == null || relocateRelocatedPattern.isBlank()) {
+                        plugin.getLogger().warning("Relocation target pattern is blank for " + libLabel + " — skipping verification.");
+                    } else {
+                        final String probe = relocateRelocatedPattern.replace("{}", ".");
+                        if (probe.indexOf('.') < 0) {
+                            plugin.getLogger().warning("Relocation verification probe '" + probe + "' looks invalid for " + libLabel + " — skipping verification.");
+                        } else {
+                            try {
+                                Class.forName(probe, false, Thread.currentThread().getContextClassLoader());
+                                plugin.debugMessage("Verified shaded library " + libLabel + ".", 1);
+                            } catch (ClassNotFoundException cnfe) {
+                                plugin.getLogger().severe("Shaded verification failed for " + libLabel + ": ClassNotFoundException");
+                                plugin.logStackTrace(cnfe);
+                                plugin.getServer().getPluginManager().disablePlugin(plugin);
+                            } catch (Throwable th) {
+                                plugin.getLogger().severe("Shaded verification failed for " + libLabel + ": " + th.getClass().getSimpleName());
+                                plugin.logStackTrace(th);
+                                plugin.getServer().getPluginManager().disablePlugin(plugin);
+                            }
+                        }
+                    }
+                } catch (Throwable t) {
+                    plugin.getLogger().severe("Unexpected error during shaded verification for " + libLabel + ": " + t.getClass().getSimpleName());
+                    plugin.logStackTrace(t);
                     plugin.getServer().getPluginManager().disablePlugin(plugin);
                 }
             } else {
                 plugin.debugMessage("Loaded library " + libLabel + ".", 1);
             }
 
+        } catch (IllegalArgumentException iae) {
+            plugin.getLogger().severe("Invalid arguments while preparing to load " + libLabel + ": " + iae.getMessage());
+            plugin.logStackTrace(iae);
         } catch (Exception e) {
-            plugin.getLogger().severe("Failed to load " + libLabel + ": " +
-                    e.getClass().getSimpleName());
+            plugin.getLogger().severe("Failed to load " + libLabel + ": " + e.getClass().getSimpleName());
             plugin.logStackTrace(e);
-            plugin.getServer().getPluginManager().disablePlugin(plugin);
         }
     }
 
     private static @NotNull LibraryManager getLibraryManager(String libraryURL, Graves plugin) {
         final LibraryManager libraryManager = new BukkitLibraryManager(plugin);
         if (libraryURL != null && !libraryURL.isBlank()) {
-            libraryManager.addRepository(libraryURL);
+            try {
+                libraryManager.addRepository(libraryURL);
+            } catch (Exception e) {
+                plugin.getLogger().warning("Failed to add custom repository '" + libraryURL + "': " + e.getClass().getSimpleName());
+            }
         }
-        libraryManager.addMavenCentral();
-        libraryManager.addSonatype();
-        libraryManager.addJCenter();
-        libraryManager.addJitPack();
+        try {
+            libraryManager.addMavenCentral();
+        } catch (Throwable t) {
+            plugin.getLogger().warning("addMavenCentral failed: " + t.getClass().getSimpleName());
+        }
+        try {
+            libraryManager.addSonatype();
+        } catch (Throwable t) {
+            plugin.getLogger().warning("addSonatype failed: " + t.getClass().getSimpleName());
+        }
+        try {
+            libraryManager.addJCenter();
+        } catch (Throwable t) {
+            Bukkit.getLogger().warning("addJCenter failed: " + t.getClass().getSimpleName());
+        }
+        try {
+            libraryManager.addJitPack();
+        } catch (Throwable t) {
+            Bukkit.getLogger().warning("addJitPack failed: " + t.getClass().getSimpleName());
+        }
         return libraryManager;
     }
 
-    private static boolean isDoRelocate(String version, String relocatePattern, String relocateRelocatedPattern) {
-        if (version == null || version.isBlank()) {
-            throw new IllegalArgumentException("version is required and cannot be blank.");
-        }
-
+    private static boolean isDoRelocate(String relocatePattern, String relocateRelocatedPattern) {
         final boolean hasRelocatePattern = relocatePattern != null && !relocatePattern.isBlank();
-        final boolean hasRelocateTarget = relocateRelocatedPattern != null && !relocateRelocatedPattern.isBlank();
+        final boolean hasRelocateTarget  = relocateRelocatedPattern != null && !relocateRelocatedPattern.isBlank();
 
         if (hasRelocatePattern ^ hasRelocateTarget) {
             throw new IllegalArgumentException("If relocation is used, both relocatePattern and relocateRelocatedPattern must be provided.");
         }
-
         return hasRelocatePattern;
     }
-
 }
