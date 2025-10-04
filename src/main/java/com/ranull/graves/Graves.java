@@ -251,7 +251,7 @@ public class Graves extends JavaPlugin {
 
         getLogger().warning(getServer().getName() + " v." + getServer().getVersion() + " detected. Using BukkitLibraryManager to download and load libraries.");
 
-        libraryLoaderUtil.loadLibrary("com{}zaxxer", "HikariCP", "6.3.0", "com{}zaxxer{}hikari", "com{}ranull{}graves{}libraries{}hikari", false);
+        libraryLoaderUtil.loadLibrary("com{}zaxxer", "HikariCP", "6.3.3", "com{}zaxxer{}hikari", "com{}ranull{}graves{}libraries{}hikari", false);
         libraryLoaderUtil.loadLibrary("org{}xerial", "sqlite-jdbc", "3.50.3.0", false);
 
         try {
@@ -263,37 +263,36 @@ public class Graves extends JavaPlugin {
         try {
             Class.forName("com.google.gson.Gson");
         } catch (ClassNotFoundException e) {
-            libraryLoaderUtil.loadLibrary("com{}google{}code{}gson", "gson", "2.13.1", false);
+            libraryLoaderUtil.loadLibrary("com{}google{}code{}gson", "gson", "2.13.2", false);
         }
 
         try {
             Class.forName("com.google.common.collect.ImmutableList");
         } catch (ClassNotFoundException e) {
-            libraryLoaderUtil.loadLibrary("com{}google{}guava", "guava", "33.4.8-jre", false);
+            libraryLoaderUtil.loadLibrary("com{}google{}guava", "guava", "33.5.0-jre", false);
         }
 
-        //libraryLoaderUtil.loadLibrary("com{}github{}oshi", "oshi-core", "6.9.0", false);
+        //libraryLoaderUtil.loadLibrary("com{}github{}oshi", "oshi-core", "6.8.2", false);
 
         String storageType = Objects.requireNonNull(getConfig().getString("settings.storage.type")).toUpperCase();
 
         switch (storageType) {
-            case "POSTGRESQL" -> libraryLoaderUtil.loadLibrary("org{}postgresql", "postgresql", "42.7.7", "org{}postgresql", "com{}ranull{}graves{}libraries{}postgresql", false);
-            case "MARIADB" -> {
+            case "POSTGRESQL":
+                libraryLoaderUtil.loadLibrary("org{}postgresql", "postgresql", "42.7.8", "org{}postgresql", "com{}ranull{}graves{}libraries{}postgresql", false);
+                break;
+            case "MARIADB":
                 libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.4.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
-                libraryLoaderUtil.loadLibrary("org{}mariadb{}jdbc", "mariadb-java-client", "3.5.4", "org{}mariadb", "com{}ranull{}graves{}libraries{}mariadb", false);
-            }
-            case "MYSQL" -> libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.4.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
-            case "H2" -> libraryLoaderUtil.loadLibrary("com{}h2database", "h2", "2.3.232", "org{}h2", "com{}ranull{}graves{}libraries{}h2", false, "https://repo1.maven.org/maven2/");
-            case "MSSQL" -> {
-                String jdbcVersion;
-                try {
-                    Class.forName("java.nio.file.Files");
-                    jdbcVersion = "13.1.1.jre11-preview";
-                } catch (ClassNotFoundException e) {
-                    jdbcVersion = "13.1.1.jre8-preview";
-                }
-                libraryLoaderUtil.loadLibrary("com{}microsoft{}sqlserver", "mssql-jdbc", jdbcVersion, "com{}microsoft", "com{}ranull{}graves{}libraries{}microsoft", false);
-            }
+                libraryLoaderUtil.loadLibrary("org{}mariadb{}jdbc", "mariadb-java-client", "3.5.6", "org{}mariadb", "com{}ranull{}graves{}libraries{}mariadb", false);
+                break;
+            case "MYSQL":
+                libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.4.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
+                break;
+            case "H2":
+                libraryLoaderUtil.loadLibrary("com{}h2database", "h2", "2.4.240", "org{}h2", "com{}ranull{}graves{}libraries{}h2", false, "https://repo1.maven.org/maven2/");
+                break;
+            case "MSSQL":
+                libraryLoaderUtil.loadLibrary("com{}microsoft{}sqlserver", "mssql-jdbc", "13.2.0.jre11", "com{}microsoft", "com{}ranull{}graves{}libraries{}microsoft", false);
+                break;
         }
         libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-api", "4.24.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
         libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-minimessage", "4.24.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
