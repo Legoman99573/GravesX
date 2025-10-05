@@ -48,7 +48,6 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.sql.CallableStatement;
 import java.util.*;
 import java.util.concurrent.Callable;
 
@@ -114,7 +113,6 @@ public class Graves extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        saveDefaultConfig();
         versionManager = new VersionManager();
         loadLibraries();
 
