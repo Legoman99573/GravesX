@@ -114,6 +114,7 @@ public class Graves extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        saveDefaultConfig();
         versionManager = new VersionManager();
         loadLibraries();
 
@@ -134,8 +135,6 @@ public class Graves extends JavaPlugin {
         locationManager = new LocationManager(this);
         graveManager = new GraveManager(this);
         particleManager = new ParticleManager(this);
-
-        saveDefaultConfig();
 
         this.moduleManager = new ModuleManager(this);
         this.moduleManager.setLibraryImporter(new LibbyImporter(this));
