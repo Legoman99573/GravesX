@@ -7,7 +7,6 @@ import com.ranull.graves.integration.MiniMessage;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.LocationUtil;
 import com.ranull.graves.util.StringUtil;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.ArmorStand;
@@ -102,50 +101,7 @@ public final class HologramManager extends EntityDataManager {
      * Removes all holograms associated with a grave.
      */
     public void removeHologram(Grave grave) {
-        List<EntityData> list = getLoadedEntityDataList(grave);
-        plugin.debugMessage("[Holograms] removeHologram(grave=" + grave.getUUID() + ") loaded entities: " + list.size(), 1);
-
-        Map<EntityData, Entity> map = getEntityDataMap(list);
-        if (!plugin.getVersionManager().hasScoreboardTags()) {
-            removeHologram(map);
-            return;
-        }
-
-        String expectedKey = toLocKey(grave.getLocationDeath());
-
-        Map<EntityData, Entity> toRemove = new LinkedHashMap<>();
-        Map<EntityData, Entity> skipped  = new LinkedHashMap<>();
-
-        for (Map.Entry<EntityData, Entity> e : map.entrySet()) {
-            Entity entity = e.getValue();
-
-            UUID tagUuid = extractGraveUUIDFromTags(entity);
-            String tagLocKey = extractGraveLocationKeyFromTags(entity);
-
-            boolean uuidMatches = grave.getUUID().equals(tagUuid);
-            boolean locMatches  = locKeysMatch(expectedKey, tagLocKey);
-
-            if (uuidMatches || locMatches) {
-                toRemove.put(e.getKey(), e.getValue());
-            } else {
-                skipped.put(e.getKey(), e.getValue());
-            }
-
-            plugin.debugMessage(
-                    "[Holograms] check entity=" + entity.getUniqueId()
-                            + " tagUUID=" + tagUuid
-                            + " tagLocKey=" + (tagLocKey == null ? "null" : tagLocKey)
-                            + " expectedUUID=" + grave.getUUID()
-                            + " expectedLocKey=" + expectedKey
-                            + " -> " + (uuidMatches || locMatches ? "REMOVE" : "SKIP"),
-                    3
-            );
-        }
-
-        if (!skipped.isEmpty()) {
-            plugin.debugMessage("[Holograms] Skipped " + skipped.size() + " non-matching hologram entities for grave " + grave.getUUID(), 2);
-        }
-        removeHologram(toRemove);
+        removeHologram(getEntityDataMap(getLoadedEntityDataList(grave)));
     }
 
     /**
@@ -160,32 +116,46 @@ public final class HologramManager extends EntityDataManager {
      * Removes multiple holograms associated with a map of entity data to entities.
      * Entity removals are executed on the entity's region thread.
      */
-    private void removeHologram(Map<EntityData, Entity> entityDataMap) {
+    public void removeHologram(Map<EntityData, Entity> entityDataMap) {
         List<EntityData> entityDataList = new ArrayList<>();
-        Set<UUID> affectedGraves = new LinkedHashSet<>();
 
         for (Map.Entry<EntityData, Entity> entry : entityDataMap.entrySet()) {
             Entity entity = entry.getValue();
+            EntityData data = entry.getKey();
+            entityDataList.add(data);
 
-            UUID graveUUIDFromTag = extractGraveUUIDFromTags(entity);
-            if (graveUUIDFromTag != null) affectedGraves.add(graveUUIDFromTag);
-
-            String locKey = extractGraveLocationKeyFromTags(entity);
-            if (locKey != null) {
-                plugin.debugMessage("[Holograms] Removing hologram entity=" + entity.getUniqueId()
-                        + " tagGraveUUID=" + graveUUIDFromTag
-                        + " tagDeathLocKey=" + locKey, 2);
+            if (entity != null && entity.isValid()) {
+                entity.remove();
             }
 
-            executeRegion(entity, entity::remove);
-            entityDataList.add(entry.getKey());
+            Location graveLocation = data.getLocation();
+            if (graveLocation == null || graveLocation.getWorld() == null) continue;
+
+            final Location exactLoc = graveLocation;
+            final String locTag = "graveHologramGraveLocation:" + toLocKey(graveLocation);
+
+            executeRegion(exactLoc, () -> {
+                try {
+                    for (Entity e : exactLoc.getWorld().getEntities()) {
+                        if (!(e instanceof ArmorStand)) continue;
+                        if (!e.isValid()) continue;
+                        if (!e.getLocation().equals(exactLoc)) continue;
+
+                        try {
+                            Set<String> tags = e.getScoreboardTags();
+                            if (tags.contains(locTag)) {
+                                e.remove();
+                            }
+                        } catch (NoSuchMethodError ignored) {}
+                    }
+                } catch (Throwable t) {
+                    plugin.getLogger().severe("Failed removing holograms at world: " + exactLoc.getWorld().getName() + ", x: " + exactLoc.getBlockX() + ", y: " + exactLoc.getBlockY() + ", z: " + exactLoc.getBlockZ() + ".");
+                    plugin.logStackTrace(t);
+                }
+            });
         }
 
         plugin.getDataManager().removeEntityData(entityDataList);
-
-        if (!affectedGraves.isEmpty()) {
-            plugin.debugMessage("Removed hologram entities for graves: " + affectedGraves, 2);
-        }
     }
 
     /**

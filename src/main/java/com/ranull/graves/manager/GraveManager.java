@@ -84,8 +84,6 @@ public final class GraveManager {
         final List<EntityData> entityDataRemoveList = new ArrayList<>();
         final List<BlockData> blockDataRemoveList = new ArrayList<>();
 
-        plugin.getHologramManager().purgeLingeringHolograms();
-
         processGraves(graveRemoveList);
 
         if (graveRemoveList.isEmpty()) {
@@ -93,6 +91,7 @@ public final class GraveManager {
         }
 
         if (plugin.getConfig("grave.check-missing-graves", graveRemoveList).getBoolean("grave.check-missing-graves", false)) {
+            plugin.getHologramManager().purgeLingeringHolograms();
             restoreMissingGraves();
         }
 
