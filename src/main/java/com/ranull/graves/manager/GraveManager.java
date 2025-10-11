@@ -374,7 +374,7 @@ public final class GraveManager {
                 boolean hasGrave = entityData.getUUIDGrave() != null && plugin.getCacheManager().getGraveMap().containsKey(entityData.getUUIDGrave());
 
                 if (hasGrave) {
-                    if (plugin.isEnabled() && entityData instanceof HologramData hologramData) {
+                    if (entityData instanceof HologramData hologramData) {
                         processHologramData(hologramData, location, entityDataRemoveList);
                     }
                 } else {
@@ -396,41 +396,32 @@ public final class GraveManager {
     private void processHologramData(HologramData hologramData, Location location, List<EntityData> entityDataRemoveList) {
         try {
             Grave grave = plugin.getCacheManager().getGraveMap().get(hologramData.getUUIDGrave());
+            if (grave == null) return;
 
-            if (grave == null) {
-                return;
-            }
-
-            List<String> configured = plugin.getConfig("hologram.line", grave).getStringList("hologram.line");
-            List<String> lineList = new ArrayList<>(configured);
+            List<String> lineList = plugin.getConfig("hologram.line", grave).getStringList("hologram.line");
             Collections.reverse(lineList);
 
-            Location holoLoc = hologramData.getLocation();
-            if (holoLoc == null || holoLoc.getWorld() == null) {
-                entityDataRemoveList.add(hologramData);
-                return;
-            }
-
-            Chunk chunk = holoLoc.getChunk();
+            Chunk chunk = hologramData.getLocation().getChunk();
             for (Entity entity : chunk.getEntities()) {
                 if (!entity.getUniqueId().equals(hologramData.getUUIDEntity())) {
                     continue;
                 }
 
-                int index = hologramData.getLine();
-                if (index < lineList.size()) {
-                    String parsed = StringUtil.parseString(lineList.get(index), location, grave, plugin);
+                int lineIndex = hologramData.getLine();
+                if (lineIndex < lineList.size()) {
+                    String lineText = StringUtil.parseString(lineList.get(lineIndex), location, grave, plugin);
+
                     if (plugin.getIntegrationManager().hasMiniMessage()) {
-                        entity.setCustomName(MiniMessage.parseString(parsed));
+                        entity.setCustomName(MiniMessage.parseString(lineText));
                     } else {
-                        entity.setCustomName(parsed);
+                        entity.setCustomName(lineText);
                     }
                 } else {
                     entityDataRemoveList.add(hologramData);
                 }
             }
         } catch (ArrayIndexOutOfBoundsException | IllegalStateException ignored) {
-            // ignored
+            // safely ignore
         }
     }
 
