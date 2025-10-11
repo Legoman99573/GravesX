@@ -86,6 +86,8 @@ public final class GraveManager {
 
         processGraves(graveRemoveList);
 
+        if (graveRemoveList.isEmpty()) return;
+
         if (plugin.getConfig("grave.check-missing-graves", graveRemoveList).getBoolean("grave.check-missing-graves", false)) {
             plugin.getHologramManager().purgeLingeringHolograms();
             restoreMissingGraves();
