@@ -86,16 +86,14 @@ public final class GraveManager {
 
         processGraves(graveRemoveList);
 
-        if (graveRemoveList.isEmpty()) return;
-
-        if (plugin.getConfig("grave.check-missing-graves", graveRemoveList).getBoolean("grave.check-missing-graves", false)) {
-            plugin.getHologramManager().purgeLingeringHolograms();
-            restoreMissingGraves();
-        }
-
         processChunks(entityDataRemoveList, blockDataRemoveList);
 
         removeExpiredElements(graveRemoveList, entityDataRemoveList, blockDataRemoveList);
+
+        if (!graveRemoveList.isEmpty() && plugin.getConfig("grave.check-missing-graves", graveRemoveList.getFirst()).getBoolean("grave.check-missing-graves", false)) {
+            restoreMissingGraves();
+            plugin.getHologramManager().purgeLingeringHolograms();
+        }
     }
 
     /**
@@ -263,15 +261,10 @@ public final class GraveManager {
         Collection<ChunkData> chunks = plugin.getCacheManager().getChunkMap().values();
         for (ChunkData chunkData : chunks) {
             Location anchor = new Location(chunkData.getWorld(), chunkData.getX() << 4, 0.0D, chunkData.getZ() << 4);
-            if (plugin.getVersionManager().isFolia()) {
-                plugin.getGravesXScheduler().execute(anchor, () -> {
-                    processEntityData(chunkData, entityDataRemoveList, anchor);
-                    processBlockData(chunkData, blockDataRemoveList);
-                });
-            } else {
+            plugin.getGravesXScheduler().execute(anchor, () -> {
                 processEntityData(chunkData, entityDataRemoveList, anchor);
                 processBlockData(chunkData, blockDataRemoveList);
-            }
+            });
         }
     }
 
@@ -283,10 +276,6 @@ public final class GraveManager {
      * @param blockDataRemoveList   the list of block data to be removed.
      */
     private void removeExpiredElements(List<Grave> graveRemoveList, List<EntityData> entityDataRemoveList, List<BlockData> blockDataRemoveList) {
-        if (!plugin.isEnabled()) {
-            return;
-        }
-
         List<Grave> gravesSnapshot = new ArrayList<>(graveRemoveList);
         List<EntityData> entitySnapshot = new ArrayList<>(entityDataRemoveList);
         List<BlockData> blockSnapshot = new ArrayList<>(blockDataRemoveList);
