@@ -261,10 +261,19 @@ public final class GraveManager {
         Collection<ChunkData> chunks = plugin.getCacheManager().getChunkMap().values();
         for (ChunkData chunkData : chunks) {
             Location anchor = new Location(chunkData.getWorld(), chunkData.getX() << 4, 0.0D, chunkData.getZ() << 4);
-            plugin.getGravesXScheduler().execute(anchor, () -> {
+            if (plugin.getVersionManager().isFolia()) {
+                plugin.getGravesXScheduler().execute(anchor, () -> {
+                    if (!chunkData.isLoaded()) return;
+
+                    processEntityData(chunkData, entityDataRemoveList, anchor);
+                    processBlockData(chunkData, blockDataRemoveList);
+                });
+            } else {
+                if (!chunkData.isLoaded()) return;
+
                 processEntityData(chunkData, entityDataRemoveList, anchor);
                 processBlockData(chunkData, blockDataRemoveList);
-            });
+            }
         }
     }
 
@@ -387,27 +396,48 @@ public final class GraveManager {
             List<String> lineList = plugin.getConfig("hologram.line", grave).getStringList("hologram.line");
             Collections.reverse(lineList);
 
-            Chunk chunk = hologramData.getLocation().getChunk();
-            for (Entity entity : chunk.getEntities()) {
-                if (!entity.getUniqueId().equals(hologramData.getUUIDEntity())) {
-                    continue;
-                }
+            if (plugin.getVersionManager().isFolia()) {
+                plugin.getGravesXScheduler().execute(location, () -> {
+                    Chunk chunk = hologramData.getLocation().getChunk();
+                    for (Entity entity : chunk.getEntities()) {
+                        if (!entity.getUniqueId().equals(hologramData.getUUIDEntity())) continue;
 
-                int lineIndex = hologramData.getLine();
-                if (lineIndex < lineList.size()) {
-                    String lineText = StringUtil.parseString(lineList.get(lineIndex), location, grave, plugin);
+                        int lineIndex = hologramData.getLine();
+                        if (lineIndex < lineList.size()) {
+                            String lineText = StringUtil.parseString(lineList.get(lineIndex), location, grave, plugin);
 
-                    if (plugin.getIntegrationManager().hasMiniMessage()) {
-                        entity.setCustomName(MiniMessage.parseString(lineText));
-                    } else {
-                        entity.setCustomName(lineText);
+                            if (plugin.getIntegrationManager().hasMiniMessage()) {
+                                entity.setCustomName(MiniMessage.parseString(lineText));
+                            } else {
+                                entity.setCustomName(lineText);
+                            }
+                        } else {
+                            entityDataRemoveList.add(hologramData);
+                        }
                     }
-                } else {
-                    entityDataRemoveList.add(hologramData);
+                });
+            } else {
+                Chunk chunk = hologramData.getLocation().getChunk();
+                for (Entity entity : chunk.getEntities()) {
+                    if (!entity.getUniqueId().equals(hologramData.getUUIDEntity())) continue;
+
+                    int lineIndex = hologramData.getLine();
+                    if (lineIndex < lineList.size()) {
+                        String lineText = StringUtil.parseString(lineList.get(lineIndex), location, grave, plugin);
+
+                        if (plugin.getIntegrationManager().hasMiniMessage()) {
+                            entity.setCustomName(MiniMessage.parseString(lineText));
+                        } else {
+                            entity.setCustomName(lineText);
+                        }
+                    } else {
+                        entityDataRemoveList.add(hologramData);
+                    }
                 }
             }
+
         } catch (ArrayIndexOutOfBoundsException | IllegalStateException ignored) {
-            // safely ignore
+
         }
     }
 
