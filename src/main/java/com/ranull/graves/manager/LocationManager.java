@@ -115,25 +115,28 @@ public final class LocationManager {
             return getVoid(location, livingEntity, grave);
         }
 
-        final Block block = location.getBlock();
-
         if (isLocationSafeGrave(location)) {
             return getGround(location, livingEntity, grave);
         }
 
+        final Block block = location.getBlock();
         int attempts = 10;
+
         while (attempts > 0) {
             final int randomX = ThreadLocalRandom.current().nextInt(3) - 1; // -1, 0, 1
             final int randomZ = ThreadLocalRandom.current().nextInt(3) - 1;
 
-            if (randomX != 0 || randomZ != 0) {
-                Location newLocation = location.clone().add(randomX, 0, randomZ);
-                newLocation = LocationUtil.roundLocation(newLocation);
-                newLocation = findGround(newLocation);
+            if (randomX == 0 && randomZ == 0) {
+                attempts--;
+                continue;
+            }
 
-                if (isLocationSafeGrave(newLocation)) {
-                    return newLocation;
-                }
+            Location newLocation = location.clone().add(randomX, 0, randomZ);
+            newLocation = LocationUtil.roundLocation(newLocation);
+            newLocation = findGround(newLocation);
+
+            if (isLocationSafeGrave(newLocation)) {
+                return newLocation;
             }
 
             attempts--;
@@ -627,6 +630,11 @@ public final class LocationManager {
     public boolean isLocationSafeGrave(Location location) {
         location = LocationUtil.roundLocation(location);
         final Block block = location.getBlock();
+
+        // TODO Put in own method in 4.9.10.1
+        if (block.getType() == Material.BEDROCK) return false;
+        Block below = block.getRelative(BlockFace.DOWN);
+        if (below.getType() == Material.BEDROCK) return false;
 
         return isInsideBorder(location) && MaterialUtil.isSafeNotSolid(block.getType())
                 && MaterialUtil.isSafeSolid(block.getRelative(BlockFace.DOWN).getType());
