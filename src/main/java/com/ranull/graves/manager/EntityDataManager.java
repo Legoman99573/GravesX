@@ -1,5 +1,6 @@
 package com.ranull.graves.manager;
 
+import com.github.Anon8281.universalScheduler.scheduling.schedulers.TaskScheduler;
 import com.ranull.graves.Graves;
 import com.ranull.graves.data.ChunkData;
 import com.ranull.graves.data.EntityData;
@@ -11,6 +12,7 @@ import org.bukkit.entity.Entity;
 
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -248,44 +250,27 @@ public class EntityDataManager {
      * If not (legacy servers), we fall back to a direct on-thread scan (original behavior).
      */
     private Entity scanChunkForEntityRegionSafe(World world, int cx, int cz, UUID uuid, Location anchor) {
-        // If we have a region-aware scheduler, use it to do the scan safely.
-        var sched = plugin.getGravesXScheduler();
-        if (sched != null) {
+        if (plugin.getVersionManager().isFolia()) {
             final AtomicReference<Entity> ref = new AtomicReference<>(null);
-            final CountDownLatch latch = new CountDownLatch(1);
 
-            sched.execute(anchor, () -> {
-                try {
-                    Chunk chunk = world.getChunkAt(cx, cz);
-                    for (Entity e : chunk.getEntities()) {
-                        if (uuid.equals(e.getUniqueId())) {
-                            ref.set(e);
-                            break;
-                        }
+            plugin.getGravesXScheduler().execute(anchor, () -> {
+                Chunk chunk = world.getChunkAt(cx, cz);
+                for (Entity e : chunk.getEntities()) {
+                    if (uuid.equals(e.getUniqueId())) {
+                        ref.set(e);
+                        break;
                     }
-                } catch (Throwable ignored) {
-                } finally {
-                    latch.countDown();
                 }
             });
 
-            try {
-                latch.await(200, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException ignored) {
-                Thread.currentThread().interrupt();
-            }
             return ref.get();
         }
 
-        try {
-            Chunk chunk = world.getChunkAt(cx, cz);
-            for (Entity e : chunk.getEntities()) {
-                if (uuid.equals(e.getUniqueId())) {
-                    return e;
-                }
+        Chunk chunk = world.getChunkAt(cx, cz);
+        for (Entity e : chunk.getEntities()) {
+            if (uuid.equals(e.getUniqueId())) {
+                return e;
             }
-        } catch (Throwable ignored) {
-            // Keep legacy behavior forgiving.
         }
         return null;
     }
