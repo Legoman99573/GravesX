@@ -262,19 +262,16 @@ public final class GraveManager {
     private void processChunks(List<EntityData> entityDataRemoveList, List<BlockData> blockDataRemoveList) {
         Collection<ChunkData> chunks = plugin.getCacheManager().getChunkMap().values();
         for (ChunkData chunkData : chunks) {
-            if (!chunkData.isLoaded()) {
-                continue;
-            }
-
             Location anchor = new Location(chunkData.getWorld(), chunkData.getX() << 4, 0.0D, chunkData.getZ() << 4);
-            plugin.getGravesXScheduler().execute(anchor, () -> {
-                if (!chunkData.isLoaded()) {
-                    return;
-                }
-
+            if (plugin.getVersionManager().isFolia()) {
+                plugin.getGravesXScheduler().execute(anchor, () -> {
+                    processEntityData(chunkData, entityDataRemoveList, anchor);
+                    processBlockData(chunkData, blockDataRemoveList);
+                });
+            } else {
                 processEntityData(chunkData, entityDataRemoveList, anchor);
                 processBlockData(chunkData, blockDataRemoveList);
-            });
+            }
         }
     }
 
