@@ -2,18 +2,21 @@ package dev.cwhead.GravesX.command;
 
 import com.ranull.graves.Graves;
 import dev.cwhead.GravesX.module.ModuleManager;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.function.Function;
 
 public final class GxModulesCommand implements CommandExecutor, TabCompleter {
     private final ModuleManager manager;
@@ -85,8 +88,8 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
                         ? ChatColor.GREEN + "ENABLED"
                         : (pend.contains(lm.info.name()) ? ChatColor.YELLOW + "PENDING" : ChatColor.RED + "DISABLED");
 
-                java.util.function.Function<String, String> fmtPluginReq = (dep) -> {
-                    org.bukkit.plugin.Plugin p = org.bukkit.Bukkit.getPluginManager().getPlugin(dep);
+                Function<String, String> fmtPluginReq = (dep) -> {
+                    Plugin p = Bukkit.getPluginManager().getPlugin(dep);
                     if (p == null) {
                         return dep + ChatColor.DARK_GRAY + " [" + ChatColor.RED + "MISSING" + ChatColor.DARK_GRAY + "]";
                     } else if (!p.isEnabled()) {
@@ -96,7 +99,7 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
                     }
                 };
 
-                java.util.function.Function<String, String> fmtModuleReq = (dep) -> {
+                Function<String, String> fmtModuleReq = (dep) -> {
                     ModuleManager.LoadedModule d = manager.get(dep).orElse(null);
                     if (d == null) {
                         return dep + ChatColor.DARK_GRAY + " [" + ChatColor.RED + "MISSING" + ChatColor.DARK_GRAY + "]";

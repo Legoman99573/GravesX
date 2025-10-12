@@ -29,7 +29,7 @@ public class LocationManager {
      * to the plugin's functionality, configuration, and other services.
      * </p>
      */
-    private Graves plugin;
+    private final Graves plugin;
 
     /**
      * Initializes a new instance of the LocationManager class.
