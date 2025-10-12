@@ -15,14 +15,19 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.scoreboard.Team;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.lang.reflect.*;
 import java.util.*;
 
 /**
+ * @deprecated Use FancyNpcs instead. API is always removing methods with little to no deprecation notice. Last need a large ass reflection class to keep up with their destructive changes.
+ *
  * Manages NPC interactions and corpse creation/removal related to player graves using Citizens2.
  * Utilizes reflection to remain compatible across multiple Citizens versions.
  */
+@Deprecated (since = "4.9.9.4", forRemoval = true)
+@ApiStatus.ScheduledForRemoval (inVersion = "4.9.10.1")
 public final class CitizensNPC extends EntityDataManager {
     private final Graves plugin;
     private final CitizensNPCInteractListener citizensNPCInteractListener;
@@ -43,6 +48,8 @@ public final class CitizensNPC extends EntityDataManager {
      *
      * @param plugin The main Graves plugin instance.
      */
+    @Deprecated (since = "4.9.9.4", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval (inVersion = "4.9.10.1")
     public CitizensNPC(Graves plugin) {
         super(plugin);
         this.plugin = plugin;
@@ -86,6 +93,8 @@ public final class CitizensNPC extends EntityDataManager {
         registerListeners();
     }
 
+    @Deprecated (since = "4.9.9.4", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval (inVersion = "4.9.10.1")
     private Class<?> findClass(String[] names, ClassLoader loader) {
         for (String name : names) {
             try {
@@ -98,10 +107,14 @@ public final class CitizensNPC extends EntityDataManager {
     /**
      * Registers the NPC interaction listeners.
      */
+    @Deprecated (since = "4.9.9.4", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval (inVersion = "4.9.10.1")
     public void registerListeners() {
         plugin.getServer().getPluginManager().registerEvents(citizensNPCInteractListener, plugin);
     }
 
+    @Deprecated (since = "4.9.9.4", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval (inVersion = "4.9.10.1")
     public void unregisterListeners() {
         if (citizensNPCInteractListener != null) {
             HandlerList.unregisterAll(citizensNPCInteractListener);
@@ -111,6 +124,8 @@ public final class CitizensNPC extends EntityDataManager {
     /**
      * Creates NPC corpses based on the cached entity data.
      */
+    @Deprecated (since = "4.9.9.4", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval (inVersion = "4.9.10.1")
     public void createCorpses() {
         for (ChunkData chunkData : plugin.getCacheManager().getChunkMap().values()) {
             for (EntityData data : chunkData.getEntityDataMap().values()) {
@@ -130,6 +145,8 @@ public final class CitizensNPC extends EntityDataManager {
      * @param location The location to spawn the NPC.
      * @param grave    The grave data for the NPC.
      */
+    @Deprecated (since = "4.9.9.4", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval (inVersion = "4.9.10.1")
     public void createCorpse(Location location, Grave grave) {
         createCorpse(UUID.randomUUID(), location, grave, true);
     }
@@ -142,6 +159,8 @@ public final class CitizensNPC extends EntityDataManager {
      * @param grave             The grave data for the NPC.
      * @param createEntityData  Whether to create entity data for the NPC.
      */
+    @Deprecated (since = "4.9.9.4", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval (inVersion = "4.9.10.1")
     public void createCorpse(UUID uuid, Location location, Grave grave, boolean createEntityData) {
         plugin.getGravesXScheduler().runTask(() -> {
             if (!plugin.getConfig("citizens.corpse.enabled", grave).getBoolean("citizens.corpse.enabled")
@@ -207,6 +226,8 @@ public final class CitizensNPC extends EntityDataManager {
     /**
      * Removes the NPC corpse for the given grave.
      */
+    @Deprecated (since = "4.9.9.4", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval (inVersion = "4.9.10.1")
     public void removeCorpse(Grave grave) {
         Location loc = grave.getLocationDeath();
         if (loc == null) return;
@@ -229,6 +250,8 @@ public final class CitizensNPC extends EntityDataManager {
     /**
      * Removes a specific corpse entity and its data.
      */
+    @Deprecated (since = "4.9.9.4", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval (inVersion = "4.9.10.1")
     public void removeCorpse(EntityData entityData) {
         Location loc = entityData.getLocation();
         if (loc != null) {
@@ -250,6 +273,8 @@ public final class CitizensNPC extends EntityDataManager {
     /**
      * Bulk removal using reflection.
      */
+    @Deprecated (since = "4.9.9.4", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval (inVersion = "4.9.10.1")
     public void removeCorpse(Map<EntityData, Object> entityDataMap) {
         List<EntityData> toRemove = new ArrayList<>();
         try {
@@ -266,6 +291,8 @@ public final class CitizensNPC extends EntityDataManager {
         plugin.getDataManager().removeEntityData(toRemove);
     }
 
+    @Deprecated (since = "4.9.9.4", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval (inVersion = "4.9.10.1")
     private String getNPCNameFromLocation(Location location) {
         if (location.getWorld() != null) {
             return (location.getWorld().getName() + "_" + location.getBlockX() + "_"
@@ -277,6 +304,8 @@ public final class CitizensNPC extends EntityDataManager {
     /**
      * Finds all matching EntityData and NPCs.
      */
+    @Deprecated (since = "4.9.9.4", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval (inVersion = "4.9.10.1")
     private Map<EntityData, Object> getEntityDataNPCMap(List<EntityData> list) {
         Map<EntityData, Object> map = new HashMap<>();
         for (EntityData d : list) {
@@ -290,6 +319,8 @@ public final class CitizensNPC extends EntityDataManager {
     /**
      * Locates an NPC by name via registry iteration.
      */
+    @Deprecated (since = "4.9.9.4", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval (inVersion = "4.9.10.1")
     @SuppressWarnings("unchecked")
     private Object getNPCByName(String name) {
         try {
@@ -306,6 +337,8 @@ public final class CitizensNPC extends EntityDataManager {
     /**
      * Checks if a corpse exists for the grave.
      */
+    @Deprecated (since = "4.9.9.4", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval (inVersion = "4.9.10.1")
     public boolean hasNPCCorpse(Grave grave) {
         Location loc = grave.getLocationDeath();
         if (loc != null) {
