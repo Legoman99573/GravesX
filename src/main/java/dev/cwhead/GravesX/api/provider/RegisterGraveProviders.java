@@ -15,7 +15,7 @@ import java.util.*;
  *
  * @since 4.9.9.1
  */
-public final class RegisterGraveProviders {
+public class RegisterGraveProviders {
     /**
      * Static-only utility; prevent instantiation.
      */

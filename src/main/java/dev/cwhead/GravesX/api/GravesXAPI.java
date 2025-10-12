@@ -16,7 +16,7 @@ import java.util.Objects;
  * Facade exposing the modular GravesX APIs.
  * Obtain from your plugin on enable and keep a reference.
  */
-public final class GravesXAPI {
+public class GravesXAPI {
     private final Graves plugin;
 
     /** Grave creation operations. */

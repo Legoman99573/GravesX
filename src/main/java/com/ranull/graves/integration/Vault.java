@@ -8,7 +8,7 @@ import org.bukkit.entity.Player;
 /**
  * Provides an integration with Vault's permission system to manage player permissions.
  */
-public final class Vault {
+public class Vault {
     private final Permission permission;
 
     /**

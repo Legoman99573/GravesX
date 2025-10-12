@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * Utility class for handling player permissions.
  */
-public final class PermissionUtil {
+public class PermissionUtil {
 
     private PermissionUtil() {}
 

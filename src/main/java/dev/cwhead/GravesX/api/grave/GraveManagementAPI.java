@@ -16,7 +16,7 @@ import java.util.Objects;
 /**
  * API for managing existing graves.
  */
-public final class GraveManagementAPI {
+public class GraveManagementAPI {
     private final Graves plugin;
 
     public GraveManagementAPI(Graves plugin) {

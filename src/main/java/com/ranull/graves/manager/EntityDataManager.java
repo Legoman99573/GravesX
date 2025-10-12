@@ -1,6 +1,5 @@
 package com.ranull.graves.manager;
 
-import com.github.Anon8281.universalScheduler.scheduling.schedulers.TaskScheduler;
 import com.ranull.graves.Graves;
 import com.ranull.graves.data.ChunkData;
 import com.ranull.graves.data.EntityData;
@@ -12,9 +11,6 @@ import org.bukkit.entity.Entity;
 
 import java.lang.reflect.Method;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**

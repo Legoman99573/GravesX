@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
 /**
  * Imports graves from external plugins (currently AngelChest) and converts them to GravesX {@link Grave} objects.
  */
-public final class ImportManager {
+public class ImportManager {
 
     /**
      * Main plugin instance.

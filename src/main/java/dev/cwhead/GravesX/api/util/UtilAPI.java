@@ -23,7 +23,7 @@ import java.util.UUID;
 /**
  * General utilities (permissions, XP, colors, files, YAML, paste, etc.).
  */
-public final class UtilAPI {
+public class UtilAPI {
     private final Graves plugin;
     private final LocationAPI world;
 

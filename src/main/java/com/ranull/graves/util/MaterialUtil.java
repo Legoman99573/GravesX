@@ -10,7 +10,7 @@ import java.util.Set;
  * Uses string-name checks so it can be compiled against any one API version while
  * recognizing legacy and modern material names at runtime.
  */
-public final class MaterialUtil {
+public class MaterialUtil {
 
     private MaterialUtil() {
     }

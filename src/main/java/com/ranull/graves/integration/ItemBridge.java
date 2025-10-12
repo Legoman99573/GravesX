@@ -11,7 +11,7 @@ import java.util.Locale;
 /**
  * Integration with the ItemBridge plugin for handling custom items related to graves.
  */
-public final class ItemBridge implements ItemBridgeListener {
+public class ItemBridge implements ItemBridgeListener {
     private final Graves plugin;
     private com.jojodmo.itembridge.ItemBridge itemBridge;
 

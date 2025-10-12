@@ -3,7 +3,7 @@ package com.ranull.graves.util;
 /**
  * Utility class for handling class loading operations.
  */
-public final class ClassUtil {
+public class ClassUtil {
 
     private ClassUtil() {}
 

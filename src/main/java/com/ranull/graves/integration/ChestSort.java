@@ -8,7 +8,7 @@ import org.bukkit.inventory.Inventory;
  * Provides integration with the ChestSort plugin to sort inventories.
  */
 @Deprecated(since = "4.9.9.1")
-public final class ChestSort {
+public class ChestSort {
 
     /**
      * @deprecated Since 4.9.9.1 — Unmaintained by author. Read here: https://www.spigotmc.org/profile-posts/239137/

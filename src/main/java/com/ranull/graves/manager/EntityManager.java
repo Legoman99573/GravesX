@@ -35,7 +35,7 @@ import java.util.*;
 /**
  * Manages the operations and lifecycle of entities within the Graves plugin.
  */
-public final class EntityManager extends EntityDataManager {
+public class EntityManager extends EntityDataManager {
     /**
      * The main plugin instance associated with Graves.
      * <p>
@@ -243,7 +243,7 @@ public final class EntityManager extends EntityDataManager {
             }
         }
 
-        final long delaySeconds = plugin.getConfig("teleport.delay", grave).getLong("teleport.delay");
+        long delaySeconds = plugin.getConfig("teleport.delay", grave).getLong("teleport.delay");
 
         if (target == null || target.getWorld() == null) {
             plugin.getEntityManager().sendMessage("message.teleport-failure", entity, base, grave);
@@ -251,7 +251,7 @@ public final class EntityManager extends EntityDataManager {
         }
 
         if (entity instanceof Player player) {
-            final Location initialLocation = player.getLocation().clone();
+            Location initialLocation = player.getLocation().clone();
 
             GraveTeleportEvent modern = new GraveTeleportEvent(grave, player);
             plugin.getServer().getPluginManager().callEvent(modern);
@@ -261,12 +261,12 @@ public final class EntityManager extends EntityDataManager {
             plugin.getServer().getPluginManager().callEvent(legacy);
 
             if (!modern.isCancelled() && !modern.isAddon() && !legacy.isCancelled() && !legacy.isAddon()) {
-                final boolean bypass = plugin.hasGrantedPermission("graves.teleport.delay-bypass", player);
+                boolean bypass = plugin.hasGrantedPermission("graves.teleport.delay-bypass", player);
 
                 if (!bypass && delaySeconds > 0L) {
-                    final Location finalTarget = target.clone();
+                    Location finalTarget = target.clone();
 
-                    final BossBar bossBar;
+                    BossBar bossBar;
                     if (plugin.getIntegrationManager().hasMiniMessage()) {
                         String mmText = StringUtil.parseString(
                                 plugin.getConfig("message.teleport-waiting", grave).getString("message.teleport-waiting"),
@@ -287,8 +287,8 @@ public final class EntityManager extends EntityDataManager {
                     }
                     bossBar.addPlayer(player);
 
-                    final int[] secondsLeft = { (int) Math.min(Integer.MAX_VALUE, Math.max(0L, delaySeconds)) };
-                    final Object[] cancelRef = new Object[1];
+                    int[] secondsLeft = { (int) Math.min(Integer.MAX_VALUE, Math.max(0L, delaySeconds)) };
+                    Object[] cancelRef = new Object[1];
 
                     Runnable tick = () -> {
                         if (!player.isOnline()) {
@@ -329,12 +329,12 @@ public final class EntityManager extends EntityDataManager {
                         }
                     };
 
-                    final MyScheduledTask task = plugin.getGravesXScheduler().runTaskTimer(
+                    MyScheduledTask task = plugin.getGravesXScheduler().runTaskTimer(
                             () -> executeRegion(player, tick), 0L, 20L);
                     cancelRef[0] = (Runnable) task::cancel;
 
                 } else {
-                    final Location finalTarget = target.clone();
+                    Location finalTarget = target.clone();
                     boolean strict = plugin.getConfig().getBoolean("teleport.strict");
                     boolean samePos = strict ? player.getLocation().equals(initialLocation)
                             : player.getLocation().getBlock().equals(initialLocation.getBlock());
@@ -363,7 +363,7 @@ public final class EntityManager extends EntityDataManager {
             plugin.getServer().getPluginManager().callEvent(legacy);
 
             if (!modern.isCancelled() && !modern.isAddon() && !legacy.isCancelled() && !legacy.isAddon()) {
-                final Location finalTarget = target.clone();
+                Location finalTarget = target.clone();
 
                 Runnable doTeleport = () -> executeRegion(entity, () -> {
                     if (entity.isValid()) {
@@ -431,7 +431,7 @@ public final class EntityManager extends EntityDataManager {
 
             if (string != null && !string.isEmpty()) {
                 try {
-                    final Location locCopy = location.clone();
+                    Location locCopy = location.clone();
                     String finalString = string;
                     executeRegion(locCopy, () -> {
                         World w = locCopy.getWorld();
@@ -507,7 +507,7 @@ public final class EntityManager extends EntityDataManager {
 
             if (string != null && !string.isEmpty()) {
                 try {
-                    final Location locCopy = location.clone();
+                    Location locCopy = location.clone();
                     String finalString = string;
                     executeRegion(player, () -> player.playSound(locCopy, CompatibilitySoundEnum.valueOf(finalString.toUpperCase()), volume, pitch));
                 } catch (IllegalArgumentException exception) {
@@ -997,7 +997,7 @@ public final class EntityManager extends EntityDataManager {
 
         if (!modern.isCancelled() || !modern.isAddon() || !legacy.isCancelled() || !legacy.isAddon()) {
 
-            final Location locCopy = location.clone();
+            Location locCopy = location.clone();
             executeRegion(locCopy, () -> {
                 String zombieType = plugin.getConfig("zombie.type", grave)
                         .getString("zombie.type", "ZOMBIE").toUpperCase();
@@ -1262,7 +1262,7 @@ public final class EntityManager extends EntityDataManager {
             if (entry.getKey().getType() == EntityData.Type.ARMOR_STAND
                     || entry.getKey().getType() == EntityData.Type.ITEM_FRAME
                     || entry.getKey().getType() == EntityData.Type.HOLOGRAM) {
-                final Entity e = entry.getValue();
+                Entity e = entry.getValue();
                 executeRegion(e, e::remove);
                 entityDataList.add(entry.getKey());
             }

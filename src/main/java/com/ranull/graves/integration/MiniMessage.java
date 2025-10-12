@@ -20,7 +20,7 @@ import java.util.List;
 /**
  * Utility class for parsing MiniMessage formatted strings into legacy text format.
  */
-public final class MiniMessage {
+public class MiniMessage {
     public static net.kyori.adventure.text.minimessage.MiniMessage miniMessage;
     private static BukkitAudiences audiences;
     private static LegacyComponentSerializer legacyComponentSerializer;

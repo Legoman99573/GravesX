@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
 /**
  * The BlockManager class is responsible for managing block data and operations related to graves.
  */
-public final class BlockManager {
+public class BlockManager {
     private final Graves plugin;
 
     /**
@@ -243,7 +243,7 @@ public final class BlockManager {
             String raw = blockData.getReplaceData();
             String bd = raw;
             String gx = null;
-            final String MARKER = "||GXHEAD||";
+            String MARKER = "||GXHEAD||";
 
             if (raw != null) {
                 int idx = raw.lastIndexOf(MARKER);

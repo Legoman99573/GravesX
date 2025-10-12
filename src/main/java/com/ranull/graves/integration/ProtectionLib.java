@@ -11,7 +11,7 @@ import java.lang.reflect.Method;
 /**
  * Provides integration with ProtectionLib to check if a player can build at a specific location.
  */
-public final class ProtectionLib {
+public class ProtectionLib {
     private final Graves plugin;
     private final Plugin protectionLibPlugin;
 

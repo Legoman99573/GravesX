@@ -5,7 +5,7 @@ import org.bukkit.entity.Player;
 /**
  * Utility class for handling experience-related operations for players.
  */
-public final class ExperienceUtil {
+public class ExperienceUtil {
 
     private ExperienceUtil() {}
 

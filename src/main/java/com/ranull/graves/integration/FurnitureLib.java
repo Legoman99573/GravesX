@@ -29,7 +29,7 @@ import java.util.UUID;
 /**
  * Manages integration with the FurnitureLib plugin for creating, removing, and interacting with furniture.
  */
-public final class FurnitureLib extends EntityDataManager {
+public class FurnitureLib extends EntityDataManager {
 
     private final Graves plugin;
     private final de.Ste3et_C0st.FurnitureLib.main.FurnitureLib furnitureLib;

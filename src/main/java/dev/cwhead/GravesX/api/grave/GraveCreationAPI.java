@@ -23,7 +23,7 @@ import java.util.*;
 /**
  * API for creating graves and firing appropriate events.
  */
-public final class GraveCreationAPI {
+public class GraveCreationAPI {
     private final Graves plugin;
     private final LocationAPI world;
     private final UtilAPI util;

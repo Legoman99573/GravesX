@@ -15,7 +15,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Skin/texture/profile helper API.
  */
-public final class SkinAPI {
+public class SkinAPI {
 
     /** Utility class; prevent instantiation. */
     public SkinAPI() {}

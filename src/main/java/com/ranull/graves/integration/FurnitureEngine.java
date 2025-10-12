@@ -24,7 +24,7 @@ import java.util.Map;
  * @deprecated Plugin no longer exists externally
  * Manages FurnitureEngine integration for creating, removing, and interacting with furniture.
  */
-public final class FurnitureEngine extends EntityDataManager {
+public class FurnitureEngine extends EntityDataManager {
 
     private final Graves plugin;
     private final FurnitureInteractListener furnitureInteractListener;

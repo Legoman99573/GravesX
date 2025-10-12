@@ -26,7 +26,7 @@ import java.util.Map;
 /**6
  * Manages custom recipes for the Graves plugin.
  */
-public final class RecipeManager {
+public class RecipeManager {
     /**
      * The main plugin instance associated with Graves.
      * <p>
@@ -50,7 +50,7 @@ public final class RecipeManager {
      *
      * @param plugin The plugin instance.
      */
-    public RecipeManager(final Graves plugin) {
+    public RecipeManager(Graves plugin) {
         this.plugin = plugin;
         this.namespacedKeyList = new ArrayList<>();
         reload();
@@ -68,10 +68,10 @@ public final class RecipeManager {
      * Loads the recipes from the configuration.
      */
     public void load() {
-        final ConfigurationSection configurationSection = plugin.getConfig().getConfigurationSection("settings.token");
+        ConfigurationSection configurationSection = plugin.getConfig().getConfigurationSection("settings.token");
 
         if (configurationSection != null) {
-            for (final String key : configurationSection.getKeys(false)) {
+            for (String key : configurationSection.getKeys(false)) {
                 if (plugin.getConfig().getBoolean("settings.token." + key + ".craft")) {
                     addTokenRecipe(key, getToken(key));
                     plugin.debugMessage("Added recipe " + key, 1);
@@ -85,12 +85,12 @@ public final class RecipeManager {
      */
     public void unload() {
         try {
-            final Iterator<Recipe> iterator = Bukkit.recipeIterator();
+            Iterator<Recipe> iterator = Bukkit.recipeIterator();
             while (iterator.hasNext()) {
-                final Recipe recipe = iterator.next();
+                Recipe recipe = iterator.next();
 
                 if (recipe != null) {
-                    final ItemStack itemStack = recipe.getResult();
+                    ItemStack itemStack = recipe.getResult();
 
                     if (itemStack.hasItemMeta() && isToken(itemStack)) {
                         iterator.remove();
@@ -108,22 +108,22 @@ public final class RecipeManager {
      * @param token The token identifier.
      * @return The token item.
      */
-    public ItemStack getToken(final String token) {
+    public ItemStack getToken(String token) {
         if (plugin.getConfig().isConfigurationSection("settings.token." + token)) {
-            final Material material = Material.matchMaterial(
+            Material material = Material.matchMaterial(
                     plugin.getConfig().getString("settings.token." + token + ".material", "SUNFLOWER")
             );
-            final ItemStack itemStack = new ItemStack(material != null ? material : Material.CHEST);
+            ItemStack itemStack = new ItemStack(material != null ? material : Material.CHEST);
 
             setRecipeData(token, itemStack);
 
             if (itemStack.hasItemMeta()) {
-                final ItemMeta itemMeta = itemStack.getItemMeta();
+                ItemMeta itemMeta = itemStack.getItemMeta();
 
                 if (itemMeta != null) {
-                    final String name;
+                    String name;
                     if (plugin.getIntegrationManager().hasMiniMessage()) {
-                        final String newName = StringUtil.parseString(
+                        String newName = StringUtil.parseString(
                                 "&f" + plugin.getConfig().getString("settings.token." + token + ".name"),
                                 plugin
                         );
@@ -135,13 +135,13 @@ public final class RecipeManager {
                         );
                     }
 
-                    final List<String> loreList = new ArrayList<>();
-                    final int customModelData = plugin.getConfig()
+                    List<String> loreList = new ArrayList<>();
+                    int customModelData = plugin.getConfig()
                             .getInt("settings.token." + token + ".model-data", -1);
 
-                    for (final String string : plugin.getConfig().getStringList("settings.token." + token + ".lore")) {
+                    for (String string : plugin.getConfig().getStringList("settings.token." + token + ".lore")) {
                         if (plugin.getIntegrationManager().hasMiniMessage()) {
-                            final String newLine = StringUtil.parseString("&7" + string, plugin);
+                            String newLine = StringUtil.parseString("&7" + string, plugin);
                             loreList.add(MiniMessage.parseString(newLine));
                         } else {
                             loreList.add(ChatColor.GRAY + StringUtil.parseString(string, plugin));
@@ -155,7 +155,7 @@ public final class RecipeManager {
 
                     if (customModelData > -1) {
                         try {
-                            final CustomModelDataComponent cmdComponent = itemMeta.getCustomModelDataComponent();
+                            CustomModelDataComponent cmdComponent = itemMeta.getCustomModelDataComponent();
                             cmdComponent.setFloats(Collections.singletonList((float) customModelData));
                             itemMeta.setCustomModelDataComponent(cmdComponent);
                         } catch (Exception e) {
@@ -181,8 +181,8 @@ public final class RecipeManager {
      * @return The list of token identifiers.
      */
     public List<String> getTokenList() {
-        final List<String> stringList = new ArrayList<>();
-        final ConfigurationSection configurationSection = plugin.getConfig().getConfigurationSection("settings.token");
+        List<String> stringList = new ArrayList<>();
+        ConfigurationSection configurationSection = plugin.getConfig().getConfigurationSection("settings.token");
 
         if (configurationSection != null) {
             stringList.addAll(configurationSection.getKeys(false));
@@ -197,30 +197,30 @@ public final class RecipeManager {
      * @param token     The token identifier.
      * @param itemStack The item stack representing the token.
      */
-    public void addTokenRecipe(final String token, final ItemStack itemStack) {
-        final NamespacedKey namespacedKey = new NamespacedKey(plugin, token + "GraveToken");
+    public void addTokenRecipe(String token, ItemStack itemStack) {
+        NamespacedKey namespacedKey = new NamespacedKey(plugin, token + "GraveToken");
 
         if (namespacedKeyList.contains(namespacedKey)) return;
 
         try {
-            final List<String> lineList = plugin.getConfig().getStringList("settings.token." + token + ".recipe");
+            List<String> lineList = plugin.getConfig().getStringList("settings.token." + token + ".recipe");
             if (lineList.size() < 3) {
                 plugin.getLogger().warning("Invalid recipe format for token " + token + ", expected 3 lines.");
                 return;
             }
 
-            final Map<Character, Material> ingredients = new HashMap<>();
-            final StringBuilder[] shapeLines = new StringBuilder[]{
+            Map<Character, Material> ingredients = new HashMap<>();
+            StringBuilder[] shapeLines = new StringBuilder[]{
                     new StringBuilder(), new StringBuilder(), new StringBuilder()
             };
 
             int recipeKey = 1;
 
             for (int row = 0; row < 3; row++) {
-                final String[] parts = lineList.get(row).split(" ");
-                for (final String part : parts) {
-                    final char ingredientChar = getChar(recipeKey);
-                    final Material mat = Material.matchMaterial(part);
+                String[] parts = lineList.get(row).split(" ");
+                for (String part : parts) {
+                    char ingredientChar = getChar(recipeKey);
+                    Material mat = Material.matchMaterial(part);
 
                     if (mat != null && mat != Material.AIR) {
                         ingredients.put(ingredientChar, mat);
@@ -233,10 +233,10 @@ public final class RecipeManager {
                 }
             }
 
-            final ShapedRecipe shapedRecipe = new ShapedRecipe(namespacedKey, itemStack);
+            ShapedRecipe shapedRecipe = new ShapedRecipe(namespacedKey, itemStack);
             shapedRecipe.shape(shapeLines[0].toString(), shapeLines[1].toString(), shapeLines[2].toString());
 
-            for (final Map.Entry<Character, Material> entry : ingredients.entrySet()) {
+            for (Map.Entry<Character, Material> entry : ingredients.entrySet()) {
                 shapedRecipe.setIngredient(entry.getKey(), entry.getValue());
             }
 
@@ -261,8 +261,8 @@ public final class RecipeManager {
      * @param itemStackList The list of item stacks in the player's inventory.
      * @return The token item stack, or null if not found.
      */
-    public ItemStack getGraveTokenFromPlayer(final String token, final List<ItemStack> itemStackList) {
-        for (final ItemStack itemStack : itemStackList) {
+    public ItemStack getGraveTokenFromPlayer(String token, List<ItemStack> itemStackList) {
+        for (ItemStack itemStack : itemStackList) {
             if (itemStack != null && isToken(token, itemStack)) {
                 return itemStack;
             }
@@ -277,9 +277,9 @@ public final class RecipeManager {
      * @param token     The token identifier.
      * @param itemStack The item stack.
      */
-    public void setRecipeData(final String token, final ItemStack itemStack) {
+    public void setRecipeData(String token, ItemStack itemStack) {
         if (plugin.getVersionManager().hasPersistentData()) {
-            final ItemMeta itemMeta = itemStack.getItemMeta();
+            ItemMeta itemMeta = itemStack.getItemMeta();
 
             if (itemMeta != null) {
                 itemMeta.getPersistentDataContainer().set(
@@ -299,21 +299,21 @@ public final class RecipeManager {
      * @param itemStack The item stack.
      * @return True if the item stack is a token of the specified type, otherwise false.
      */
-    public boolean isToken(final String token, final ItemStack itemStack) {
+    public boolean isToken(String token, ItemStack itemStack) {
         if (plugin.getVersionManager().hasPersistentData()) {
             if (itemStack.getItemMeta() != null && itemStack.getItemMeta().getPersistentDataContainer()
                     .has(new NamespacedKey(plugin, "token"), PersistentDataType.STRING)) {
-                final String string = itemStack.getItemMeta().getPersistentDataContainer()
+                String string = itemStack.getItemMeta().getPersistentDataContainer()
                         .get(new NamespacedKey(plugin, "token"), PersistentDataType.STRING);
 
                 return string != null && string.equals(token);
             }
         } else {
-            final ItemMeta meta = itemStack.getItemMeta();
+            ItemMeta meta = itemStack.getItemMeta();
             if (meta != null && meta.hasLore()) {
-                final List<String> lore = meta.getLore();
+                List<String> lore = meta.getLore();
                 if (lore != null) {
-                    for (final String loreEntry : lore) {
+                    for (String loreEntry : lore) {
                         if (loreEntry.equals(token)) {
                             return true;
                         }
@@ -331,7 +331,7 @@ public final class RecipeManager {
      * @param itemStack The item stack.
      * @return The token name, or null if not found.
      */
-    public String getTokenName(final ItemStack itemStack) {
+    public String getTokenName(ItemStack itemStack) {
         if (plugin.getVersionManager().hasPersistentData()) {
             if (itemStack.getItemMeta() != null && itemStack.getItemMeta().getPersistentDataContainer()
                     .has(new NamespacedKey(plugin, "token"), PersistentDataType.STRING)) {
@@ -349,7 +349,7 @@ public final class RecipeManager {
      * @param itemStack The item stack.
      * @return True if the item stack is a token, otherwise false.
      */
-    public boolean isToken(final ItemStack itemStack) {
+    public boolean isToken(ItemStack itemStack) {
         return plugin.getVersionManager().hasPersistentData()
                 && itemStack.getItemMeta() != null
                 && itemStack.getItemMeta().getPersistentDataContainer()
@@ -362,7 +362,7 @@ public final class RecipeManager {
      * @param count The count.
      * @return The character for the recipe slot.
      */
-    private char getChar(final int count) {
+    private char getChar(int count) {
         return switch (count) {
             case 1 -> 'A';
             case 2 -> 'B';

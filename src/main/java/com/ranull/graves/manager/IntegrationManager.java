@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
  * The {@code IntegrationManager} class is responsible for managing the integration of various external plugins with the Graves plugin.
  * This class handles loading, unloading, and checking the availability of these integrations, allowing the Graves plugin to interact with other plugins.
  */
-public final class IntegrationManager {
+public class IntegrationManager {
     /**
      * The main plugin instance associated with Graves.
      * <p>
@@ -34,7 +34,7 @@ public final class IntegrationManager {
      * to the plugin's functionality, configuration, and other services.
      * </p>
      */
-    private final Graves plugin;
+    private Graves plugin;
 
     /**
      * Integration with MultiPaper, a server software or library.

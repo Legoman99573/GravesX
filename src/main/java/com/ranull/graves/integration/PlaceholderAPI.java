@@ -20,7 +20,7 @@ import java.util.function.Function;
  * Integration class for PlaceholderAPI to provide custom placeholders for the Graves plugin.
  * Extends PlaceholderExpansion and implements Relational for placeholder handling.
  */
-public final class PlaceholderAPI extends PlaceholderExpansion implements Relational {
+public class PlaceholderAPI extends PlaceholderExpansion implements Relational {
     private final Graves plugin;
     private final Map<String, Function<String, String>> placeholderHandlers;
 

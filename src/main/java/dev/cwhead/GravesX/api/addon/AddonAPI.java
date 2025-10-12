@@ -17,7 +17,7 @@ import java.util.Objects;
  *
  * @since 4.9
  */
-public final class AddonAPI {
+public class AddonAPI {
     private final Graves plugin;
 
     /**

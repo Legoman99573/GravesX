@@ -13,7 +13,7 @@ import java.util.Objects;
 /**
  * Inventory helper API.
  */
-public final class InventoryAPI {
+public class InventoryAPI {
     private final Graves plugin;
     private final UtilAPI util;
 

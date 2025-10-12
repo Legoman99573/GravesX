@@ -5,7 +5,7 @@ import java.io.File;
 /**
  * Utility class for handling YAML file operations.
  */
-public final class YAMLUtil {
+public class YAMLUtil {
 
     private YAMLUtil() {}
 

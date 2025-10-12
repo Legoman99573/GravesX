@@ -22,15 +22,8 @@ public final class LocationUtil {
      */
     @Nullable
     public static Location roundLocation(@Nullable Location location) {
-        if (location == null) return null;
-        World w = location.getWorld();
-        if (w == null) return null;
-
-        double x = Math.round(location.getX());
-        double y = Math.round(location.getY());
-        double z = Math.round(location.getZ());
-
-        return new Location(w, x, y, z);
+        return new Location(location.getWorld(), Math.round(location.getBlockX()), Math.round(location.getY()),
+                Math.round(location.getBlockZ()));
     }
 
     /**
@@ -40,10 +33,8 @@ public final class LocationUtil {
      * @return A string representation of the location in the format "world|x|y|z".
      */
     public static String locationToString(Location location) {
-        return location.getWorld() != null
-                ? location.getWorld().getName() + "|" + location.getBlockX()
-                + "|" + location.getBlockY() + "|" + location.getBlockZ()
-                : null;
+        return location.getWorld() != null ? location.getWorld().getName() + "|" + location.getBlockX()
+                + "|" + location.getBlockY() + "|" + location.getBlockZ() : null;
     }
 
     /**
@@ -53,10 +44,8 @@ public final class LocationUtil {
      * @return A string representation of the chunk in the format "world|chunkX|chunkZ".
      */
     public static String chunkToString(Location location) {
-        return location.getWorld() != null
-                ? location.getWorld().getName() + "|" + (location.getBlockX() >> 4)
-                + "|" + (location.getBlockZ() >> 4)
-                : null;
+        return location.getWorld() != null ? location.getWorld().getName() + "|" + (location.getBlockX() >> 4)
+                + "|" + (location.getBlockZ() >> 4) : null;
     }
 
     /**
@@ -67,12 +56,9 @@ public final class LocationUtil {
      */
     public static Location chunkStringToLocation(String string) {
         String[] strings = string.split("\\|");
-        return new Location(
-                Bukkit.getServer().getWorld(strings[0]),
-                Integer.parseInt(strings[1]) << 4,
-                0,
-                Integer.parseInt(strings[2]) << 4
-        );
+
+        return new Location(Bukkit.getServer().getWorld(strings[0]), Integer.parseInt(strings[1]) << 4,
+                0, Integer.parseInt(strings[2]) << 4);
     }
 
     /**
@@ -83,12 +69,9 @@ public final class LocationUtil {
      */
     public static Location stringToLocation(String string) {
         String[] strings = string.split("\\|");
-        return new Location(
-                Bukkit.getServer().getWorld(strings[0]),
-                Integer.parseInt(strings[1]),
-                Integer.parseInt(strings[2]),
-                Integer.parseInt(strings[3])
-        );
+
+        return new Location(Bukkit.getServer().getWorld(strings[0]), Integer.parseInt(strings[1]),
+                Integer.parseInt(strings[2]), Integer.parseInt(strings[3]));
     }
 
     /**

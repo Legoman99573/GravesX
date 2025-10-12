@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
 /**
  * Utility class for handling and formatting strings, including placeholders and color codes.
  */
-public final class StringUtil {
+public class StringUtil {
 
     private StringUtil() {}
 

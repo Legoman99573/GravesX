@@ -10,7 +10,7 @@ import org.bukkit.potion.PotionEffectType;
 /**
  * Manages version-specific functionality for the Graves plugin.
  */
-public final class VersionManager {
+public class VersionManager {
     /**
      * The version of the server or plugin.
      * <p>
@@ -572,7 +572,7 @@ public final class VersionManager {
      * @param particle The particle name.
      * @return The Particle enum corresponding to the given particle name.
      */
-    public Particle getParticleForVersion(final String particle) {
+    public Particle getParticleForVersion(String particle) {
         return switch (particle) {
             case "REDSTONE", "REDDUST" -> {
                 try {
@@ -978,7 +978,7 @@ public final class VersionManager {
      * @param enchantment The enchantment name.
      * @return The Enchantment enum corresponding to the given enchantment name.
      */
-    public Enchantment getEnchantmentForVersion(final String enchantment) {
+    public Enchantment getEnchantmentForVersion(String enchantment) {
         Enchantment toReturn = switch (enchantment) {
             case "DURABILITY" -> {
                 try {
@@ -1006,7 +1006,7 @@ public final class VersionManager {
      * @param material The enchantment name.
      * @return The Material enum corresponding to the given material name.
      */
-    public Material getMaterialForVersion(final String material) {
+    public Material getMaterialForVersion(String material) {
         Material toReturn = switch (material) {
             case "RECOVERY_COMPASS" -> {
                 try {
@@ -1026,7 +1026,7 @@ public final class VersionManager {
         return toReturn;
     }
 
-    public PotionEffectType getPotionEffectTypeFromVersion(final String potionEffect) {
+    public PotionEffectType getPotionEffectTypeFromVersion(String potionEffect) {
         PotionEffectType toReturn = switch (potionEffect) {
             case "RESISTANCE" -> {
                 try {

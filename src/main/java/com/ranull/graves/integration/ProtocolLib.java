@@ -18,7 +18,7 @@ import java.util.Objects;
 /**
  * Provides integration with ProtocolLib to manage block changes and updates.
  */
-public final class ProtocolLib {
+public class ProtocolLib {
     private final Graves plugin;
     private final ProtocolManager protocolManager;
 

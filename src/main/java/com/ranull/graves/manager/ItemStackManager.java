@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 /**
  * Manages the creation and manipulation of ItemStacks related to graves.
  */
-public final class ItemStackManager extends EntityDataManager {
+public class ItemStackManager extends EntityDataManager {
     /**
      * The main plugin instance associated with Graves.
      * <p>
@@ -39,7 +39,7 @@ public final class ItemStackManager extends EntityDataManager {
      *
      * @param plugin The plugin instance.
      */
-    public ItemStackManager(final Graves plugin) {
+    public ItemStackManager(Graves plugin) {
         super(plugin);
         this.plugin = plugin;
     }
@@ -50,32 +50,32 @@ public final class ItemStackManager extends EntityDataManager {
      * @param grave The grave to create an obituary for.
      * @return The created ItemStack.
      */
-    public ItemStack getGraveObituary(final Grave grave) {
-        final ItemStack itemStack = new ItemStack(Material.WRITTEN_BOOK, 1);
-        final BookMeta bookMeta = (BookMeta) itemStack.getItemMeta();
-        final Enchantment durability = plugin.getVersionManager().getEnchantmentForVersion("DURABILITY");
+    public ItemStack getGraveObituary(Grave grave) {
+        ItemStack itemStack = new ItemStack(Material.WRITTEN_BOOK, 1);
+        BookMeta bookMeta = (BookMeta) itemStack.getItemMeta();
+        Enchantment durability = plugin.getVersionManager().getEnchantmentForVersion("DURABILITY");
 
         if (bookMeta == null) {
             return itemStack;
         }
 
         if (plugin.getIntegrationManager().hasMiniMessage()) {
-            final List<String> lineList = new ArrayList<>();
-            final List<String> loreList = new ArrayList<>();
+            List<String> lineList = new ArrayList<>();
+            List<String> loreList = new ArrayList<>();
 
-            for (final String lore : plugin.getConfig("obituary.line", grave).getStringList("obituary.line")) {
+            for (String lore : plugin.getConfig("obituary.line", grave).getStringList("obituary.line")) {
                 lineList.add(MiniMessage.convertLegacyToMiniMessage(
                         StringUtil.parseString(lore, grave.getLocationDeath(), grave, plugin)));
             }
 
-            for (final String string : plugin.getConfig("obituary.lore", grave).getStringList("obituary.lore")) {
+            for (String string : plugin.getConfig("obituary.lore", grave).getStringList("obituary.lore")) {
                 loreList.add(MiniMessage.convertLegacyToMiniMessage(
                         StringUtil.parseString(string, grave.getLocationDeath(), grave, plugin)));
             }
 
-            final List<List<String>> pages = splitIntoPages(lineList, 13);
+            List<List<String>> pages = splitIntoPages(lineList, 13);
 
-            final int customModelData = plugin.getConfig("obituary.model-data", grave)
+            int customModelData = plugin.getConfig("obituary.model-data", grave)
                     .getInt("obituary.model-data", -1);
             applyCustomModelData(bookMeta, customModelData);
 
@@ -92,20 +92,20 @@ public final class ItemStackManager extends EntityDataManager {
                 bookMeta.setGeneration(null);
             }
 
-            final String title = plugin.getConfig("obituary.title", grave).getString("obituary.title");
-            final String author = plugin.getConfig("obituary.author", grave).getString("obituary.author");
+            String title = plugin.getConfig("obituary.title", grave).getString("obituary.title");
+            String author = plugin.getConfig("obituary.author", grave).getString("obituary.author");
 
-            final String titleOriginal = StringUtil.parseString(title, grave, plugin);
-            final String authorOriginal = StringUtil.parseString(author, grave, plugin);
+            String titleOriginal = StringUtil.parseString(title, grave, plugin);
+            String authorOriginal = StringUtil.parseString(author, grave, plugin);
 
-            final Component titleConverted = MiniMessage.convertLegacyToComponent(titleOriginal);
-            final Component authorConverted = MiniMessage.convertLegacyToComponent(authorOriginal);
+            Component titleConverted = MiniMessage.convertLegacyToComponent(titleOriginal);
+            Component authorConverted = MiniMessage.convertLegacyToComponent(authorOriginal);
 
-            final List<Component> componentPages = pages.stream()
+            List<Component> componentPages = pages.stream()
                     .map(page -> MiniMessage.convertLegacyToComponent(String.join("\n", page)))
                     .collect(Collectors.toList());
 
-            final List<Component> componentLore = loreList.stream()
+            List<Component> componentLore = loreList.stream()
                     .map(MiniMessage::convertLegacyToComponent)
                     .collect(Collectors.toList());
 
@@ -119,20 +119,20 @@ public final class ItemStackManager extends EntityDataManager {
                     componentLore
             );
         } else {
-            final List<String> lineList = new ArrayList<>();
-            final List<String> loreList = new ArrayList<>();
+            List<String> lineList = new ArrayList<>();
+            List<String> loreList = new ArrayList<>();
 
-            for (final String lore : plugin.getConfig("obituary.line", grave).getStringList("obituary.line")) {
+            for (String lore : plugin.getConfig("obituary.line", grave).getStringList("obituary.line")) {
                 lineList.add(StringUtil.parseString(lore, grave.getLocationDeath(), grave, plugin));
             }
 
-            for (final String string : plugin.getConfig("obituary.lore", grave).getStringList("obituary.lore")) {
+            for (String string : plugin.getConfig("obituary.lore", grave).getStringList("obituary.lore")) {
                 loreList.add(StringUtil.parseString(string, grave.getLocationDeath(), grave, plugin));
             }
 
-            final List<List<String>> pages = splitIntoPages(lineList, 13);
+            List<List<String>> pages = splitIntoPages(lineList, 13);
 
-            final int customModelData = plugin.getConfig("obituary.model-data", grave)
+            int customModelData = plugin.getConfig("obituary.model-data", grave)
                     .getInt("obituary.model-data", -1);
             applyCustomModelData(bookMeta, customModelData);
 
@@ -149,7 +149,7 @@ public final class ItemStackManager extends EntityDataManager {
                 bookMeta.setGeneration(null);
             }
 
-            final List<String> stringPages = pages.stream()
+            List<String> stringPages = pages.stream()
                     .map(page -> String.join("\n", page))
                     .collect(Collectors.toList());
 
@@ -172,8 +172,8 @@ public final class ItemStackManager extends EntityDataManager {
      * @param maxLinesPerPage The maximum number of lines per page.
      * @return A list of pages, where each page is a list of strings.
      */
-    private List<List<String>> splitIntoPages(final List<String> lines, final int maxLinesPerPage) {
-        final List<List<String>> pages = new ArrayList<>();
+    private List<List<String>> splitIntoPages(List<String> lines, int maxLinesPerPage) {
+        List<List<String>> pages = new ArrayList<>();
         for (int i = 0; i < lines.size(); i += maxLinesPerPage) {
             pages.add(new ArrayList<>(lines.subList(i, Math.min(i + maxLinesPerPage, lines.size()))));
         }
@@ -186,32 +186,32 @@ public final class ItemStackManager extends EntityDataManager {
      * @param grave The grave to create a head for.
      * @return The created ItemStack.
      */
-    public ItemStack getGraveHead(final Grave grave) {
+    public ItemStack getGraveHead(Grave grave) {
         ItemStack itemStack = plugin.getCompatibility().getSkullItemStack(grave, plugin);
-        final ItemMeta itemMeta = itemStack.getItemMeta();
+        ItemMeta itemMeta = itemStack.getItemMeta();
 
         if (itemMeta == null) return itemStack;
 
-        final List<String> loreList = new ArrayList<>();
+        List<String> loreList = new ArrayList<>();
 
-        for (final String string : plugin.getConfig("head.lore", grave).getStringList("head.lore")) {
+        for (String string : plugin.getConfig("head.lore", grave).getStringList("head.lore")) {
             if (plugin.getIntegrationManager().hasMiniMessage()) {
-                final String loreNew = StringUtil.parseString("&7" + string, grave.getLocationDeath(), grave, plugin);
+                String loreNew = StringUtil.parseString("&7" + string, grave.getLocationDeath(), grave, plugin);
                 loreList.add(MiniMessage.parseString(loreNew));
             } else {
                 loreList.add(ChatColor.GRAY + StringUtil.parseString(string, grave.getLocationDeath(), grave, plugin));
             }
         }
 
-        final int customModelData = plugin.getConfig("head.model-data", grave)
+        int customModelData = plugin.getConfig("head.model-data", grave)
                 .getInt("head.model-data", -1);
         applyCustomModelData(itemMeta, customModelData);
 
         itemMeta.setLore(loreList);
 
-        final String displayName;
+        String displayName;
         if (plugin.getIntegrationManager().hasMiniMessage()) {
-            final String displayNameNew = StringUtil.parseString("&f" + plugin.getConfig("head.name", grave)
+            String displayNameNew = StringUtil.parseString("&f" + plugin.getConfig("head.name", grave)
                     .getString("head.name"), grave, plugin);
             displayName = MiniMessage.parseString(displayNameNew);
         } else {
@@ -232,10 +232,10 @@ public final class ItemStackManager extends EntityDataManager {
      * @param grave  The grave to create the ItemStack for.
      * @return The created ItemStack.
      */
-    public ItemStack createGraveListItemStack(final int number, final Grave grave) {
-        final Enchantment durability = plugin.getVersionManager().getEnchantmentForVersion("DURABILITY");
+    public ItemStack createGraveListItemStack(int number, Grave grave) {
+        Enchantment durability = plugin.getVersionManager().getEnchantmentForVersion("DURABILITY");
 
-        final Material material;
+        Material material;
         if (plugin.getConfig("gui.menu.list.item.block", grave).getBoolean("gui.menu.list.item.block")) {
             String materialString = plugin.getConfig("block.material", grave)
                     .getString("block.material", "CHEST");
@@ -256,12 +256,12 @@ public final class ItemStackManager extends EntityDataManager {
             itemStack = plugin.getCompatibility().getSkullItemStack(grave, plugin);
         }
 
-        final ItemMeta itemMeta = itemStack.getItemMeta();
+        ItemMeta itemMeta = itemStack.getItemMeta();
         if (itemMeta == null) return itemStack;
 
-        final String name;
+        String name;
         if (plugin.getIntegrationManager().hasMiniMessage()) {
-            final String newName = StringUtil.parseString("&f" + plugin.getConfig("gui.menu.list.name", grave)
+            String newName = StringUtil.parseString("&f" + plugin.getConfig("gui.menu.list.name", grave)
                             .getString("gui.menu.list.name"),
                     grave, plugin).replace("%number%", String.valueOf(number));
             name = MiniMessage.parseString(newName);
@@ -271,14 +271,14 @@ public final class ItemStackManager extends EntityDataManager {
                     grave, plugin).replace("%number%", String.valueOf(number));
         }
 
-        final List<String> loreList = new ArrayList<>();
-        final int customModelData = plugin.getConfig("gui.menu.list.model-data", grave)
+        List<String> loreList = new ArrayList<>();
+        int customModelData = plugin.getConfig("gui.menu.list.model-data", grave)
                 .getInt("gui.menu.list.model-data", -1);
 
-        for (final String string : plugin.getConfig("gui.menu.list.lore", grave).getStringList("gui.menu.list.lore")) {
-            final Entity ownerEntity = Bukkit.getEntity(grave.getOwnerUUID());
+        for (String string : plugin.getConfig("gui.menu.list.lore", grave).getStringList("gui.menu.list.lore")) {
+            Entity ownerEntity = Bukkit.getEntity(grave.getOwnerUUID());
             if (plugin.getIntegrationManager().hasMiniMessage()) {
-                final String loreOriginal = StringUtil.parseString("&7" + string, ownerEntity,
+                String loreOriginal = StringUtil.parseString("&7" + string, ownerEntity,
                         grave.getLocationDeath(), grave, plugin);
                 loreList.add(MiniMessage.parseString(loreOriginal));
             } else {
@@ -308,24 +308,24 @@ public final class ItemStackManager extends EntityDataManager {
      * @param grave The grave to create the ItemStack for.
      * @return The created ItemStack.
      */
-    public ItemStack createGraveMenuItemStack(final int slot, final Grave grave) {
-        final String materialString = plugin.getConfig("gui.menu.grave.slot." + slot + ".material", grave)
+    public ItemStack createGraveMenuItemStack(int slot, Grave grave) {
+        String materialString = plugin.getConfig("gui.menu.grave.slot." + slot + ".material", grave)
                 .getString("gui.menu.grave.slot." + slot + ".material", "PAPER");
         Material material = Material.matchMaterial(materialString);
-        final Enchantment durability = plugin.getVersionManager().getEnchantmentForVersion("DURABILITY");
+        Enchantment durability = plugin.getVersionManager().getEnchantmentForVersion("DURABILITY");
 
         if (material == null) {
             material = Material.PAPER;
             plugin.debugMessage(materialString.toUpperCase() + " is not a Material ENUM", 1);
         }
 
-        final ItemStack itemStack = new ItemStack(material);
-        final ItemMeta itemMeta = itemStack.getItemMeta();
+        ItemStack itemStack = new ItemStack(material);
+        ItemMeta itemMeta = itemStack.getItemMeta();
         if (itemMeta == null) return itemStack;
 
-        final String name;
+        String name;
         if (plugin.getIntegrationManager().hasMiniMessage()) {
-            final String newName = StringUtil.parseString("&f" +
+            String newName = StringUtil.parseString("&f" +
                     plugin.getConfig("gui.menu.grave.slot." + slot + ".name", grave)
                             .getString("gui.menu.grave.slot." + slot + ".name"), grave, plugin);
             name = MiniMessage.parseString(newName);
@@ -335,15 +335,15 @@ public final class ItemStackManager extends EntityDataManager {
                             .getString("gui.menu.grave.slot." + slot + ".name"), grave, plugin);
         }
 
-        final List<String> loreList = new ArrayList<>();
-        final int customModelData = plugin.getConfig("gui.menu.grave.slot." + slot + ".model-data", grave)
+        List<String> loreList = new ArrayList<>();
+        int customModelData = plugin.getConfig("gui.menu.grave.slot." + slot + ".model-data", grave)
                 .getInt("gui.menu.grave.slot." + slot + ".model-data", -1);
 
-        for (final String string : plugin.getConfig("gui.menu.grave.slot." + slot + ".lore", grave)
+        for (String string : plugin.getConfig("gui.menu.grave.slot." + slot + ".lore", grave)
                 .getStringList("gui.menu.grave.slot." + slot + ".lore")) {
-            final Entity ownerEntity = Bukkit.getEntity(grave.getOwnerUUID());
+            Entity ownerEntity = Bukkit.getEntity(grave.getOwnerUUID());
             if (plugin.getIntegrationManager().hasMiniMessage()) {
-                final String newLore = StringUtil.parseString("&7" + string, ownerEntity,
+                String newLore = StringUtil.parseString("&7" + string, ownerEntity,
                         grave.getLocationDeath(), grave, plugin);
                 loreList.add(MiniMessage.parseString(newLore));
             } else {
@@ -373,17 +373,17 @@ public final class ItemStackManager extends EntityDataManager {
      * @param meta            the item meta (book meta or item meta)
      * @param customModelData the model data id; ignored if &lt; 0
      */
-    private void applyCustomModelData(final ItemMeta meta, final int customModelData) {
+    private void applyCustomModelData(ItemMeta meta, int customModelData) {
         if (customModelData <= -1 || meta == null) return;
 
         try {
-            final CustomModelDataComponent cmdComponent = meta.getCustomModelDataComponent();
+            CustomModelDataComponent cmdComponent = meta.getCustomModelDataComponent();
             cmdComponent.setFloats(Collections.singletonList((float) customModelData));
             meta.setCustomModelDataComponent(cmdComponent);
-        } catch (final Throwable ignored) {
+        } catch (Throwable ignored) {
             try {
                 meta.setCustomModelData(customModelData);
-            } catch (final Throwable ignoreAgain) {
+            } catch (Throwable ignoreAgain) {
             }
         }
     }

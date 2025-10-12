@@ -9,7 +9,7 @@ import java.util.Scanner;
 /**
  * Utility class for checking the latest version of a resource from SpigotMC.
  */
-public final class UpdateUtil {
+public class UpdateUtil {
 
     private UpdateUtil() {}
 

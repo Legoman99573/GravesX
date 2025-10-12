@@ -3,7 +3,7 @@ package com.ranull.graves.integration;
 /**
  * Utility class for parsing strings with MineDown formatting.
  */
-public final class MineDown {
+public class MineDown {
 
     public MineDown() {}
 

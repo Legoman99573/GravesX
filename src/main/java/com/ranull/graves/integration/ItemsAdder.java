@@ -25,7 +25,7 @@ import java.util.Map;
  * Integration with the ItemsAdder plugin for handling custom furniture and blocks.
  */
 @Deprecated(since = "4.9.9.1", forRemoval = true)
-public final class ItemsAdder extends EntityDataManager {
+public class ItemsAdder extends EntityDataManager {
     private final Graves plugin;
     private final Plugin itemsAdderPlugin;
 

@@ -7,7 +7,7 @@ import org.bukkit.entity.LivingEntity;
 /**
  * Utility class for handling BlockFace related operations.
  */
-public final class BlockFaceUtil {
+public class BlockFaceUtil {
 
     private BlockFaceUtil() {}
 

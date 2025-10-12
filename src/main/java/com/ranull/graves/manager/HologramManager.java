@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
 /**
  * The HologramManager class is responsible for managing holograms associated with graves.
  */
-public final class HologramManager extends EntityDataManager {
+public class HologramManager extends EntityDataManager {
     private final Graves plugin;
 
     public HologramManager(Graves plugin) {
@@ -50,7 +50,7 @@ public final class HologramManager extends EntityDataManager {
 
             for (String line : lineList) {
                 Location lineLoc = base.clone().add(0, (lineNumber + 1) * lineHeight, 0);
-                final int finalLineNumber = lineNumber;
+                int finalLineNumber = lineNumber;
 
                 executeRegion(lineLoc, () -> {
                     if (lineLoc.getWorld() == null) return;
@@ -131,8 +131,8 @@ public final class HologramManager extends EntityDataManager {
             Location graveLocation = data.getLocation();
             if (graveLocation == null || graveLocation.getWorld() == null) continue;
 
-            final Location exactLoc = graveLocation;
-            final String locTag = "graveHologramGraveLocation:" + toLocKey(graveLocation);
+            Location exactLoc = graveLocation;
+            String locTag = "graveHologramGraveLocation:" + toLocKey(graveLocation);
 
             executeRegion(exactLoc, () -> {
                 try {

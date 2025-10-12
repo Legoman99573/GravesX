@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Manages data storage and retrieval for the Graves plugin.
  */
-public final class DataManager {
+public class DataManager {
     /**
      * The main plugin instance associated with Graves.
      * <p>
@@ -257,7 +257,7 @@ public final class DataManager {
      * @return true if enabled, false otherwise.
      */
     private boolean isIntegrationEnabled(String integration) {
-        final String key = sanitizeKey(integration);
+        String key = sanitizeKey(integration);
         return switch (key) {
             case "furniturelib" -> plugin.getIntegrationManager().hasFurnitureLib();
             case "furnitureengine" -> plugin.getIntegrationManager().hasFurnitureEngine();
@@ -787,7 +787,7 @@ public final class DataManager {
 
         boolean isFolia = plugin.getVersionManager().isFolia();
 
-        final String key;
+        String key;
         if (isFolia) {
             int cx = location.getBlockX() >> 4;
             int cz = location.getBlockZ() >> 4;
@@ -842,7 +842,7 @@ public final class DataManager {
 
         boolean isFolia = plugin.getVersionManager().isFolia();
 
-        final String key;
+        String key;
         if (isFolia) {
             String worldName = chunkData.getWorld() != null ? chunkData.getWorld().getName() : null;
             if (worldName == null) {
@@ -1506,17 +1506,17 @@ public final class DataManager {
      *   using plugin.getGravesXScheduler().execute(anchorLocation, ...).
      */
     public void loadBlockMap() {
-        final String query = "SELECT * FROM " + getStoragePrefix() + "block;";
+        String query = "SELECT * FROM " + getStoragePrefix() + "block;";
 
         plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
             plugin.getLogger().info("Loading Block Map cache...");
 
             class BlockWork {
-                final Location loc;
-                final BlockData data;
+                Location loc;
+                BlockData data;
                 BlockWork(Location loc, BlockData data) { this.loc = loc; this.data = data; }
             }
-            final Map<String, List<BlockWork>> byChunk = new HashMap<>();
+            Map<String, List<BlockWork>> byChunk = new HashMap<>();
             int scheduledCount = 0;
 
             try (Connection connection = getConnection();
@@ -1525,33 +1525,33 @@ public final class DataManager {
 
                 while (resultSet.next()) {
                     try {
-                        final Location location = LocationUtil.stringToLocation(resultSet.getString("location"));
-                        final UUID uuidGrave = UUID.fromString(resultSet.getString("uuid_grave"));
-                        final String replaceMaterial = resultSet.getString("replace_material");
-                        final String replaceData = resultSet.getString("replace_data");
+                        Location location = LocationUtil.stringToLocation(resultSet.getString("location"));
+                        UUID uuidGrave = UUID.fromString(resultSet.getString("uuid_grave"));
+                        String replaceMaterial = resultSet.getString("replace_material");
+                        String replaceData = resultSet.getString("replace_data");
 
                         if (location.getWorld() == null) {
                             plugin.getLogger().warning("Skipping block entry with invalid/missing location for Grave " + uuidGrave);
                             continue;
                         }
 
-                        final BlockData bd;
+                        BlockData bd;
                         if (replaceMaterial != null && replaceData != null) {
                             bd = new BlockData(location, uuidGrave, replaceMaterial, replaceData);
                         } else {
                             bd = new BlockData(location, uuidGrave, "AIR", "minecraft:air");
                         }
 
-                        final int cx = location.getBlockX() >> 4;
-                        final int cz = location.getBlockZ() >> 4;
-                        final String key = location.getWorld().getUID() + ":" + cx + ":" + cz;
+                        int cx = location.getBlockX() >> 4;
+                        int cz = location.getBlockZ() >> 4;
+                        String key = location.getWorld().getUID() + ":" + cx + ":" + cz;
 
                         byChunk.computeIfAbsent(key, k -> new java.util.ArrayList<>())
                                 .add(new BlockWork(location, bd));
 
                         scheduledCount++;
                     } catch (Exception e) {
-                        final String uuidGraveStr = resultSet.getString("uuid_grave");
+                        String uuidGraveStr = resultSet.getString("uuid_grave");
                         plugin.getLogger().warning("Failed to process a block entry for Grave " + uuidGraveStr);
                         plugin.logStackTrace(e);
                     }
@@ -1560,7 +1560,7 @@ public final class DataManager {
                 for (List<BlockWork> group : byChunk.values()) {
                     if (group.isEmpty()) continue;
 
-                    final Location anchor = group.get(0).loc.clone();
+                    Location anchor = group.get(0).loc.clone();
 
                     plugin.getGravesXScheduler().execute(anchor, () -> {
                         for (BlockWork w : group) {
@@ -1576,8 +1576,8 @@ public final class DataManager {
                 plugin.getLogger().info("Queued " + scheduledCount + " Blocks into the Block Map Cache (batched by chunk).");
 
             } catch (SQLException exception) {
-                final String sqlState = exception.getSQLState();
-                final String message = exception.getMessage() != null
+                String sqlState = exception.getSQLState();
+                String message = exception.getMessage() != null
                         ? exception.getMessage().toLowerCase(java.util.Locale.ROOT)
                         : "";
 
@@ -1723,7 +1723,7 @@ public final class DataManager {
      * @param name the name of the table.
      */
     private void createEntityDataMapTable(String name) {
-        final String physicalTable = getStoragePrefix() + name;
+        String physicalTable = getStoragePrefix() + name;
 
         String createTableQuery = switch (type) {
             case MYSQL, MARIADB, POSTGRESQL, H2 ->
@@ -1784,8 +1784,8 @@ public final class DataManager {
      * @param type  the type of entity data.
      */
     private void loadEntityDataMap(String table, EntityData.Type type) {
-        final String physicalTable = getStoragePrefix() + table;
-        final String query = "SELECT location, uuid_entity, uuid_grave FROM " + physicalTable + ";";
+        String physicalTable = getStoragePrefix() + table;
+        String query = "SELECT location, uuid_entity, uuid_grave FROM " + physicalTable + ";";
 
         plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
             plugin.getLogger().info("Loading Entity Data Map Cache for " + physicalTable + "...");
@@ -1844,7 +1844,7 @@ public final class DataManager {
      * @param blockData the block data to add.
      */
     public void addBlockData(BlockData blockData) {
-        final Location loc = blockData.getLocation();
+        Location loc = blockData.getLocation();
 
         if (loc != null && loc.getWorld() != null
                 && plugin.getVersionManager().isFolia()) {
@@ -1854,11 +1854,11 @@ public final class DataManager {
             Objects.requireNonNull(getChunkData(loc)).addBlockData(blockData);
         }
 
-        final String query =
+        String query =
                 "INSERT INTO " + getStoragePrefix()
                         + "block (location, uuid_grave, replace_material, replace_data) VALUES (?, ?, ?, ?)";
 
-        final Object[] parameters = new Object[] {
+        Object[] parameters = new Object[] {
                 LocationUtil.locationToString(blockData.getLocation()),
                 blockData.getGraveUUID() != null ? blockData.getGraveUUID().toString() : null,
                 blockData.getReplaceMaterial(),
@@ -1900,8 +1900,8 @@ public final class DataManager {
             }
         });
 
-        final String query = "DELETE FROM " + getStoragePrefix() + "block WHERE location = ?";
-        final Object[] parameters = new Object[] { LocationUtil.locationToString(location) };
+        String query = "DELETE FROM " + getStoragePrefix() + "block WHERE location = ?";
+        Object[] parameters = new Object[] { LocationUtil.locationToString(location) };
 
         plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
             try {
@@ -1922,7 +1922,7 @@ public final class DataManager {
      * @param hologramData the hologram data to add.
      */
     public void addHologramData(HologramData hologramData) {
-        final Location loc = hologramData.getLocation();
+        Location loc = hologramData.getLocation();
 
         if (loc != null && loc.getWorld() != null) {
             plugin.getGravesXScheduler().execute(loc, () -> getChunkData(loc).addEntityData(hologramData));
@@ -1930,11 +1930,11 @@ public final class DataManager {
             Objects.requireNonNull(getChunkData(loc)).addEntityData(hologramData);
         }
 
-        final String query =
+        String query =
                 "INSERT INTO " + getStoragePrefix()
                         + "hologram (uuid_entity, uuid_grave, line, location) VALUES (?, ?, ?, ?)";
 
-        final Object[] parameters = new Object[] {
+        Object[] parameters = new Object[] {
                 hologramData.getUUIDEntity().toString(),
                 hologramData.getUUIDGrave().toString(),
                 hologramData.getLine(),
@@ -1959,8 +1959,8 @@ public final class DataManager {
      */
     public void removeHologramData(Grave grave) {
         plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
-            final String selectSql = "SELECT uuid_entity, location FROM " + getStoragePrefix() + "hologram WHERE uuid_grave = ?";
-            final String deleteSql = "DELETE FROM " + getStoragePrefix() + "hologram WHERE uuid_grave = ?";
+            String selectSql = "SELECT uuid_entity, location FROM " + getStoragePrefix() + "hologram WHERE uuid_grave = ?";
+            String deleteSql = "DELETE FROM " + getStoragePrefix() + "hologram WHERE uuid_grave = ?";
 
             int scheduledRemovals = 0;
 
@@ -2023,7 +2023,7 @@ public final class DataManager {
      * @param entityData the entity data to add.
      */
     public void addEntityData(EntityData entityData) {
-        final Location loc = entityData.getLocation();
+        Location loc = entityData.getLocation();
 
         if (loc != null && loc.getWorld() != null) {
             plugin.getGravesXScheduler().execute(loc, () -> getChunkData(loc).addEntityData(entityData));
@@ -2031,11 +2031,11 @@ public final class DataManager {
             Objects.requireNonNull(getChunkData(loc)).addEntityData(entityData);
         }
 
-        final String table = entityDataTypeTable(entityData.getType());
-        final String query = "INSERT INTO " + getStoragePrefix() + table + " (location, uuid_entity, uuid_grave) VALUES (?, ?, ?)";
+        String table = entityDataTypeTable(entityData.getType());
+        String query = "INSERT INTO " + getStoragePrefix() + table + " (location, uuid_entity, uuid_grave) VALUES (?, ?, ?)";
 
-        final String locationString = LocationUtil.locationToString(entityData.getLocation());
-        final Object[] parameters = new Object[] {
+        String locationString = LocationUtil.locationToString(entityData.getLocation());
+        Object[] parameters = new Object[] {
                 locationString,
                 entityData.getUUIDEntity(),
                 entityData.getUUIDGrave()
@@ -2237,8 +2237,8 @@ public final class DataManager {
             removeHologramData(grave);
         }
 
-        final String deleteQuery = "DELETE FROM " + getStoragePrefix() + "grave WHERE uuid = ?";
-        final Object[] deleteParams = new Object[] { uuid };
+        String deleteQuery = "DELETE FROM " + getStoragePrefix() + "grave WHERE uuid = ?";
+        Object[] deleteParams = new Object[] { uuid };
 
         plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
             try {
@@ -2260,8 +2260,8 @@ public final class DataManager {
      * @param integer the new integer value for the column.
      */
     public void updateGrave(Grave grave, String column, int integer) {
-        final String query = "UPDATE " + getStoragePrefix() + "grave SET " + column + " = ? WHERE uuid = ?";
-        final Object[] parameters = new Object[] { integer, grave.getUUID() };
+        String query = "UPDATE " + getStoragePrefix() + "grave SET " + column + " = ? WHERE uuid = ?";
+        Object[] parameters = new Object[] { integer, grave.getUUID() };
 
         plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
             try {
@@ -2281,8 +2281,8 @@ public final class DataManager {
      * @param string the new value for the column.
      */
     public void updateGrave(Grave grave, String column, String string) {
-        final String query = "UPDATE " + getStoragePrefix() + "grave SET " + column + " = ? WHERE uuid = ?";
-        final Object[] parameters = new Object[] { string, grave.getUUID() };
+        String query = "UPDATE " + getStoragePrefix() + "grave SET " + column + " = ? WHERE uuid = ?";
+        Object[] parameters = new Object[] { string, grave.getUUID() };
 
         plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
             try {
@@ -2303,8 +2303,8 @@ public final class DataManager {
      */
     @ApiStatus.Experimental
     public void updateGraveMainThread(Grave grave, String column, String string) {
-        final String query = "UPDATE " + getStoragePrefix() + "grave SET " + column + " = ? WHERE uuid = ?";
-        final Object[] parameters = new Object[] { string, grave.getUUID() };
+        String query = "UPDATE " + getStoragePrefix() + "grave SET " + column + " = ? WHERE uuid = ?";
+        Object[] parameters = new Object[] { string, grave.getUUID() };
 
         try {
             executeUpdateMainThread(query, parameters);
@@ -3138,7 +3138,7 @@ public final class DataManager {
      * Checks if the Database is locked and attempts to unlock the database.
      */
     private void checkAndUnlockDatabase() {
-        final String checkQuery = "SELECT 1";
+        String checkQuery = "SELECT 1";
 
         try (Connection connection = getConnection();
              Statement statement = (connection != null) ? connection.createStatement() : null) {

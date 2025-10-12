@@ -14,7 +14,7 @@ import java.util.Objects;
 /**
  * World/location helper API.
  */
-public final class LocationAPI {
+public class LocationAPI {
     private final Graves plugin;
 
     public LocationAPI(Graves plugin) {

@@ -8,7 +8,7 @@ import java.util.Locale;
 /**
  * Utility class for handling color operations, including particle dust colors.
  */
-public final class ColorUtil {
+public class ColorUtil {
 
     private ColorUtil() {}
 

@@ -10,7 +10,7 @@ import java.lang.reflect.Method;
 /**
  * Handles Compatibility for InventoryView to prevent runtime errors on versions older than 1.21. Thanks to <a href="https://www.spigotmc.org/threads/inventoryview-changed-to-interface-backwards-compatibility.651754/#post-4747875">Rumsfield's code</a>
  */
-public final class CompatibilityInventoryView {
+public class CompatibilityInventoryView {
 
     private CompatibilityInventoryView() {}
 

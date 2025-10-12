@@ -25,7 +25,7 @@ import java.util.Collection;
 /**
  * An implementation of the Compatibility interface for handling material data.
  */
-public final class CompatibilityMaterialData implements Compatibility {
+public class CompatibilityMaterialData implements Compatibility {
 
     /**
      * Sets the block data for a given location and material, associating it with a grave.

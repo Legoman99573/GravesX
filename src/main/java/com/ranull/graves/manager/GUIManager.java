@@ -20,7 +20,7 @@ import java.util.UUID;
 /**
  * The GUIManager class is responsible for managing the graphical user interfaces related to graves.
  */
-public final class GUIManager {
+public class GUIManager {
     private final Graves plugin;
 
     /**

@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public final class CacheManager {
+public class CacheManager {
     /**
      * A map of grave UUIDs to their corresponding {@link Grave} objects.
      * <p>

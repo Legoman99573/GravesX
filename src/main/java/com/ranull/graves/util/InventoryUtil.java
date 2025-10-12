@@ -16,7 +16,7 @@ import java.util.*;
 /**
  * Utility class for inventory-related operations.
  */
-public final class InventoryUtil {
+public class InventoryUtil {
 
     private InventoryUtil() {}
 

@@ -32,7 +32,7 @@ import java.util.UUID;
  * @deprecated since 4.9.9.1 — Unmaintained. Use {@link me.jay.GravesX.integration.FancyNPCs} instead.
  */
 @Deprecated(since = "4.9.9.1")
-public final class PlayerNPC extends EntityDataManager {
+public class PlayerNPC extends EntityDataManager {
     private final Graves plugin;
     private final NPCLib npcLib;
     private final NPCInteractListener npcInteractListener;

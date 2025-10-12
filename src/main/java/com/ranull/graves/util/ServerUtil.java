@@ -20,7 +20,7 @@ import java.util.*;
  * Utility class for gathering server information and generating server dumps.
  * This class includes methods for retrieving various system and server-related information.
  */
-public final class ServerUtil {
+public class ServerUtil {
 
     private ServerUtil() {}
 

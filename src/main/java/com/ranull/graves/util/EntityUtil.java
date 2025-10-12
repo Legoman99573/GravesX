@@ -5,7 +5,7 @@ import org.bukkit.entity.Entity;
 /**
  * Utility class for handling entity-related operations.
  */
-public final class EntityUtil {
+public class EntityUtil {
 
     private EntityUtil() {}
 

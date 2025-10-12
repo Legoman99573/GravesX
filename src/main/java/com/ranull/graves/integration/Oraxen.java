@@ -37,7 +37,7 @@ import java.util.Map;
  * Manages creation, removal, and verification of Oraxen furniture and blocks.
  */
 @Deprecated
-public final class Oraxen extends EntityDataManager {
+public class Oraxen extends EntityDataManager {
     private final Graves plugin;
     private final Plugin oraxenPlugin;
     private final PlayerInteractEntityListener playerInteractEntityListener;

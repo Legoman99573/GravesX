@@ -17,7 +17,7 @@ import java.util.UUID;
 /**
  * Integration class for handling communication with the MultiLib plugin.
  */
-public final class MultiPaper {
+public class MultiPaper {
     private final Graves plugin;
 
     /**

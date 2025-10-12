@@ -8,7 +8,7 @@ import java.nio.file.Path;
 /**
  * Utility class for file operations.
  */
-public final class FileUtil {
+public class FileUtil {
 
     private FileUtil() {}
 

@@ -15,7 +15,7 @@ import java.util.Base64;
 /**
  * Utility class for serializing and deserializing objects to and from Base64 strings.
  */
-public final class Base64Util {
+public class Base64Util {
 
     private Base64Util() {
     }

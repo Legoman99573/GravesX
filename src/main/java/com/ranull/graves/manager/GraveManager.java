@@ -43,7 +43,7 @@ import java.util.logging.Level;
 /**
  * Manages the operations and lifecycle of graves within the Graves plugin.
  */
-public final class GraveManager {
+public class GraveManager {
 
     /**
      * The main plugin instance associated with Graves.
@@ -80,9 +80,9 @@ public final class GraveManager {
      * Checks and updates graves, entities, and blocks, removing expired elements and triggering necessary events.
      */
     private void checkAndUpdateGraves() {
-        final List<Grave> graveRemoveList = new ArrayList<>();
-        final List<EntityData> entityDataRemoveList = new ArrayList<>();
-        final List<BlockData> blockDataRemoveList = new ArrayList<>();
+        List<Grave> graveRemoveList = new ArrayList<>();
+        List<EntityData> entityDataRemoveList = new ArrayList<>();
+        List<BlockData> blockDataRemoveList = new ArrayList<>();
 
         processGraves(graveRemoveList);
 
@@ -1125,8 +1125,8 @@ public final class GraveManager {
             if (!placed) {
                 plugin.debugMessage("Grave " + id + " missing from world. Scheduling placement.", 1);
 
-                final Location scheduleAnchor = loc;
-                final Grave scheduleGrave = grave;
+                Location scheduleAnchor = loc;
+                Grave scheduleGrave = grave;
 
                 plugin.getGravesXScheduler().execute(scheduleAnchor, () -> {
                     try {
@@ -1252,7 +1252,7 @@ public final class GraveManager {
     }
 
     private boolean isHeadBlock(Block block) {
-        final String n = block.getType().name();
+        String n = block.getType().name();
         return "PLAYER_HEAD".equals(n)
                 || "PLAYER_WALL_HEAD".equals(n)
                 || "SKULL".equals(n)
@@ -2181,7 +2181,7 @@ public final class GraveManager {
             return;
         }
 
-        final String resolved = effectName;
+        String resolved = effectName;
         plugin.getGravesXScheduler().execute(location, () -> {
             World world = location.getWorld();
             if (world == null) {

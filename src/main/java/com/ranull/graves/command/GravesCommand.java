@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * Handles command execution and tab completion for the Graves plugin.
  */
-public final class GravesCommand implements CommandExecutor, TabCompleter {
+public class GravesCommand implements CommandExecutor, TabCompleter {
     private final Graves plugin;
     private final Set<UUID> pendingImports = new HashSet<>();
     private boolean consolePendingImport = false;

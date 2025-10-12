@@ -60,7 +60,7 @@ import java.util.UUID;
  * </ul>
  */
 @Deprecated(forRemoval = true, since = "4.9.9.1")
-public final class GravesXAPI {
+public class GravesXAPI {
 
     private final Graves plugin;
     private final dev.cwhead.GravesX.api.GravesXAPI api;

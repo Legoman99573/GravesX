@@ -9,7 +9,7 @@ import java.lang.reflect.Method;
 /**
  * Utility class for handling reflection operations related to Bukkit and Minecraft server classes.
  */
-public final class ReflectionUtil {
+public class ReflectionUtil {
 
     private ReflectionUtil() {}
 
