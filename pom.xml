@@ -814,7 +814,7 @@
         <dependency>
             <groupId>com.nexomc</groupId>
             <artifactId>nexo</artifactId>
-            <version>1.10.0</version>
+            <version>1.13.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>net.byteflux</groupId>
