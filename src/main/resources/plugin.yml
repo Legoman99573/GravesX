@@ -34,7 +34,6 @@ softdepend:
   - ItemBridge
   - PlayerNPC
   - Skript
-  - Citizens
   - FancyNpcs
   - Geyser-Spigot
   - floodgate

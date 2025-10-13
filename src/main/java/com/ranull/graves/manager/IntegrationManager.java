@@ -34,7 +34,7 @@ public class IntegrationManager {
      * to the plugin's functionality, configuration, and other services.
      * </p>
      */
-    private Graves plugin;
+    private final Graves plugin;
 
     /**
      * Integration with MultiPaper, a server software or library.
@@ -166,14 +166,6 @@ public class IntegrationManager {
     private PlayerNPC playerNPC;
 
     /**
-     * Integration with CitizensNPC, a plugin for creating NPCs.
-     * <p>
-     * This {@link CitizensNPC} instance represents the integration with the Citizens plugin, used for creating and managing NPCs in the game.
-     * </p>
-     */
-    private CitizensNPC citizensNPC;
-
-    /**
      * Integration with PlaceholderAPI, a plugin for managing placeholders.
      * <p>
      * This {@link PlaceholderAPI} instance represents the integration with the PlaceholderAPI plugin, used for managing and resolving placeholders.
@@ -258,7 +250,6 @@ public class IntegrationManager {
         loadMineDown();
         loadChestSort();
         loadPlayerNPC();
-        loadCitizensNPC();
         loadItemBridge();
         loadPlaceholderAPI();
         loadCompatibilityWarnings();
@@ -312,10 +303,6 @@ public class IntegrationManager {
 
         if (playerNPC != null) {
             playerNPC.unregisterListeners();
-        }
-
-        if (citizensNPC != null) {
-            citizensNPC.unregisterListeners();
         }
     }
 
@@ -500,15 +487,6 @@ public class IntegrationManager {
     }
 
     /**
-     * Returns the instance of the CitizensNPC integration, if it is loaded.
-     *
-     * @return The {@code CitizensNPC} integration instance, or null if not loaded.
-     */
-    public CitizensNPC getCitizensNPC() {
-        return citizensNPC;
-    }
-
-    /**
      * Returns the instance of the LuckPermsHandler, if it is loaded.
      *
      * @return The {@code LuckPermsHandler} instance, or null if not loaded.
@@ -658,15 +636,6 @@ public class IntegrationManager {
      */
     public boolean hasPlayerNPC() {
         return playerNPC != null;
-    }
-
-    /**
-     * Checks if CitizensNPC integration is loaded.
-     *
-     * @return {@code true} if CitizensNPC integration is loaded, {@code false} otherwise.
-     */
-    public boolean hasCitizensNPC() {
-        return citizensNPC != null;
     }
 
     /**
@@ -1051,23 +1020,6 @@ public class IntegrationManager {
             }
         } else {
             fancyNpcs = null;
-        }
-    }
-
-    /**
-     * Loads the CitizensNPC integration if enabled in the configuration.
-     */
-    private void loadCitizensNPC() {
-        if (plugin.getConfig().getBoolean("settings.integration.citizens.enabled", true)) {
-            Plugin citizensPlugin = plugin.getServer().getPluginManager().getPlugin("Citizens");
-
-            if (citizensPlugin != null && citizensPlugin.isEnabled()) {
-                citizensNPC = new CitizensNPC(plugin);
-
-                plugin.integrationMessage("Hooked into " + citizensPlugin.getName() + " " + citizensPlugin.getDescription().getVersion() + ".");
-            }
-        } else {
-            citizensNPC = null;
         }
     }
 

@@ -316,10 +316,6 @@
       <url>https://repo.oraxen.com/releases</url>
     </repository>
     <repository>
-      <id>citizens-repo</id>
-      <url>https://maven.citizensnpcs.co/repo</url>
-    </repository>
-    <repository>
       <id>clojars-repo</id>
       <url>https://repo.clojars.org/</url>
     </repository>
@@ -537,12 +533,6 @@
       <groupId>com.github.Ste3et</groupId>
       <artifactId>FurnitureLib</artifactId>
       <version>3.2.8</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>net.citizensnpcs</groupId>
-      <artifactId>citizens-main</artifactId>
-      <version>2.0.39-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>

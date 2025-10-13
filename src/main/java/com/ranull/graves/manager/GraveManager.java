@@ -863,9 +863,6 @@ public class GraveManager {
                 if (plugin.getIntegrationManager().hasFancyNpcs()) {
                     plugin.getIntegrationManager().getFancyNpcs().removeCorpse(grave);
                 }
-                if (plugin.getIntegrationManager().hasCitizensNPC()) {
-                    plugin.getIntegrationManager().getCitizensNPC().removeCorpse(grave);
-                }
 
                 plugin.getCacheManager().getGraveMap().remove(grave.getUUID());
                 plugin.debugMessage("Grave " + grave.getUUID() + " removed from cache", 1);
@@ -926,10 +923,6 @@ public class GraveManager {
                 }
                 case PLAYERNPC: {
                     plugin.getIntegrationManager().getPlayerNPC().removeEntityData(entityData);
-                    break;
-                }
-                case CITIZENSNPC: {
-                    plugin.getIntegrationManager().getCitizensNPC().removeEntityData(entityData);
                     break;
                 }
                 case CUSTOM: {
@@ -1187,9 +1180,6 @@ public class GraveManager {
             if (im.hasFancyNpcs() && im.getFancyNpcs().hasCorpse(grave)) {
                 knownGraves.add(id); return true;
             }
-            if (im.hasCitizensNPC() && im.getCitizensNPC().hasNPCCorpse(grave)) {
-                knownGraves.add(id); return true;
-            }
             if (im.hasItemsAdder() && (im.getItemsAdder().hasBlock(grave) || im.getItemsAdder().hasFurniture(grave))) {
                 knownGraves.add(id); return true;
             }
@@ -1338,9 +1328,6 @@ public class GraveManager {
                 }
                 if (plugin.getIntegrationManager().hasPlayerNPC()) {
                     plugin.getIntegrationManager().getPlayerNPC().createCorpse(anchor, grave);
-                }
-                if (plugin.getIntegrationManager().hasCitizensNPC()) {
-                    plugin.getIntegrationManager().getCitizensNPC().createCorpse(anchor, grave);
                 }
                 if (plugin.getIntegrationManager().hasFancyNpcs() && !plugin.getIntegrationManager().hasFloodgate()) {
                     plugin.getIntegrationManager().getFancyNpcs().createCorpse(grave.getUUID(), grave.getLocationDeath(), grave);

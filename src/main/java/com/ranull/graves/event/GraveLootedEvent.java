@@ -10,7 +10,7 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * @deprecated Use {@link dev.cwhead.GravesX.event.GraveLootedEvent} instead. Will be removed in 4.9.10.1.
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveLootedEvent} instead. Will be removed in 4.9.15.1.
  * Represents an event that occurs when an inventory associated with a grave is completely looted.
  * <p>
  * This event extends {@link dev.cwhead.GravesX.event.graveevent.GravePlayerEvent} and provides information about the grave
@@ -18,7 +18,7 @@ import org.jetbrains.annotations.NotNull;
  * </p>
  */
 @Deprecated(since = "4.9.9.1", forRemoval = true)
-@ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
+@ApiStatus.ScheduledForRemoval(inVersion = "4.9.15.1")
 public class GraveLootedEvent extends dev.cwhead.GravesX.event.GraveLootedEvent {
 
     /**
@@ -39,7 +39,7 @@ public class GraveLootedEvent extends dev.cwhead.GravesX.event.GraveLootedEvent 
      * @param player        The player who is closing the inventory.
      */
     @Deprecated(since = "4.9.9.1", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.15.1")
     public GraveLootedEvent(@NotNull InventoryView inventoryView,
                             @NotNull Grave grave,
                             @NotNull Player player) {
@@ -55,7 +55,7 @@ public class GraveLootedEvent extends dev.cwhead.GravesX.event.GraveLootedEvent 
      * @param entity        The entity who is closing the inventory.
      */
     @Deprecated(since = "4.9.9.1", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.15.1")
     public GraveLootedEvent(@NotNull Grave grave, @NotNull InventoryView inventoryView, @NotNull Entity entity) {
         super(inventoryView, grave, requirePlayer(entity));
     }

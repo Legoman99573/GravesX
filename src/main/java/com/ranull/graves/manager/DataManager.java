@@ -207,7 +207,6 @@ public class DataManager {
             integrationMap.put("oraxen", EntityData.Type.ORAXEN);
             integrationMap.put("nexo", EntityData.Type.NEXO);
             integrationMap.put("playernpc", EntityData.Type.PLAYERNPC);
-            integrationMap.put("citizensnpc", EntityData.Type.CITIZENSNPC);
 
             for (Map.Entry<String, EntityData.Type> entry : integrationMap.entrySet()) {
                 String integration = entry.getKey();
@@ -218,8 +217,6 @@ public class DataManager {
                     loadEntityDataMap(integration, type);
                     if (integration.equals("playernpc")) {
                         plugin.getIntegrationManager().getPlayerNPC().createCorpses();
-                    } else if (integration.equals("citizensnpc")) {
-                        plugin.getIntegrationManager().getCitizensNPC().createCorpses();
                     }
                 }
             }
@@ -265,7 +262,6 @@ public class DataManager {
             case "oraxen" -> plugin.getIntegrationManager().hasOraxen();
             case "nexo" -> plugin.getIntegrationManager().hasNexo();
             case "playernpc" -> plugin.getIntegrationManager().hasPlayerNPC();
-            case "citizensnpc" -> plugin.getIntegrationManager().hasCitizensNPC();
             default -> {
                 if (key.startsWith("custom_")) {
                     String expected = key.substring("custom_".length());
@@ -317,7 +313,6 @@ public class DataManager {
         integrationMap.put("oraxen", plugin.getIntegrationManager().hasOraxen());
         integrationMap.put("nexo", plugin.getIntegrationManager().hasNexo());
         integrationMap.put("playernpc", plugin.getIntegrationManager().hasPlayerNPC());
-        integrationMap.put("citizensnpc", plugin.getIntegrationManager().hasCitizensNPC());
 
         for (Map.Entry<String, Boolean> entry : integrationMap.entrySet()) {
             if (entry.getValue()) {
@@ -2145,7 +2140,6 @@ public class DataManager {
             case ORAXEN         -> "oraxen";
             case NEXO           -> "nexo";
             case PLAYERNPC      -> "playernpc";
-            case CITIZENSNPC    -> "citizensnpc";
             default             -> type.name().toLowerCase(java.util.Locale.ROOT).replace("_", "");
         };
     }

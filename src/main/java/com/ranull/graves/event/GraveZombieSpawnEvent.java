@@ -8,7 +8,7 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * @deprecated Use {@link dev.cwhead.GravesX.event.GraveZombieSpawnEvent} instead. Will be removed in 4.9.10.1.
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveZombieSpawnEvent} instead. Will be removed in 4.9.15.1.
  * Represents an event that occurs when a zombie spawns at a grave.
  * <p>
  * This event extends {@link dev.cwhead.GravesX.event.graveevent.GraveEvent} and provides details about the location of the spawn
@@ -16,7 +16,7 @@ import org.jetbrains.annotations.NotNull;
  * </p>
  */
 @Deprecated(since = "4.9.9.1", forRemoval = true)
-@ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
+@ApiStatus.ScheduledForRemoval(inVersion = "4.9.15.1")
 public class GraveZombieSpawnEvent extends dev.cwhead.GravesX.event.GraveZombieSpawnEvent {
 
     /**
@@ -37,7 +37,7 @@ public class GraveZombieSpawnEvent extends dev.cwhead.GravesX.event.GraveZombieS
      * </p>
      */
     @Deprecated(since = "4.9.9.1", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.15.1")
     public GraveZombieSpawnEvent(@NotNull Location location, @NotNull LivingEntity targetEntity, @NotNull Grave grave) {
         super(location, targetEntity, grave);
     }

@@ -10,7 +10,7 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * @deprecated Use {@link dev.cwhead.GravesX.event.GraveOpenEvent} instead. Will be removed in 4.9.10.1.
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveOpenEvent} instead. Will be removed in 4.9.15.1.
  * Represents an event that occurs when a player opens an inventory associated
  * with a grave.
  * <p>
@@ -19,7 +19,7 @@ import org.jetbrains.annotations.NotNull;
  * </p>
  */
 @Deprecated(since = "4.9.9.1", forRemoval = true)
-@ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
+@ApiStatus.ScheduledForRemoval(inVersion = "4.9.15.1")
 public class GraveOpenEvent extends dev.cwhead.GravesX.event.GraveOpenEvent {
 
     /**
@@ -40,7 +40,7 @@ public class GraveOpenEvent extends dev.cwhead.GravesX.event.GraveOpenEvent {
      * @param player        The player who is opening the inventory.
      */
     @Deprecated(since = "4.9.9.1", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.15.1")
     public GraveOpenEvent(@NotNull InventoryView inventoryView, @NotNull Grave grave, @NotNull Player player) {
         super(inventoryView, grave, player);
     }
@@ -54,7 +54,7 @@ public class GraveOpenEvent extends dev.cwhead.GravesX.event.GraveOpenEvent {
      * @param entity        The entity who is opening the inventory.
      */
     @Deprecated(since = "4.9.9.1", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.15.1")
     public GraveOpenEvent(@NotNull InventoryView inventoryView, @NotNull Grave grave, @NotNull Entity entity) {
         super(inventoryView, grave, requirePlayer(entity));
     }

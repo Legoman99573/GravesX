@@ -9,7 +9,7 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * @deprecated Use {@link dev.cwhead.GravesX.event.GraveCompassUseEvent} instead. Will be removed in 4.9.10.1.
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveCompassUseEvent} instead. Will be removed in 4.9.15.1.
  * Represents an event that occurs when a grave compass is used.
  * <p>
  * This event extends {@link dev.cwhead.GravesX.event.graveevent.GravePlayerEvent} and is cancellable, allowing event listeners
@@ -17,7 +17,7 @@ import org.jetbrains.annotations.NotNull;
  * </p>
  */
 @Deprecated(since = "4.9.9.1", forRemoval = true)
-@ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
+@ApiStatus.ScheduledForRemoval(inVersion = "4.9.15.1")
 public class GraveCompassUseEvent extends dev.cwhead.GravesX.event.GraveCompassUseEvent {
 
     /**
@@ -37,7 +37,7 @@ public class GraveCompassUseEvent extends dev.cwhead.GravesX.event.GraveCompassU
      * @param grave  The grave being created.
      */
     @Deprecated(since = "4.9.9.1", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.15.1")
     public GraveCompassUseEvent(@NotNull Player player, @NotNull Grave grave) {
         super(player, grave);
     }
@@ -49,7 +49,7 @@ public class GraveCompassUseEvent extends dev.cwhead.GravesX.event.GraveCompassU
      * @param grave  The grave being created.
      */
     @Deprecated(since = "4.9.9.1", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.15.1")
     public GraveCompassUseEvent(@NotNull Entity entity, @NotNull Grave grave) {
         super(requirePlayer(entity), grave);
     }

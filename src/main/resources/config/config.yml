@@ -350,14 +350,6 @@ settings:
       enabled: false
 
     ###############
-    # CitizensNPC #
-    ###############
-    # Source: https://www.spigotmc.org/resources/citizens.13811/
-    citizensnpc:
-      # Should Citizens integration be enabled. Experimental
-      enabled: false
-
-    ###############
     # FancyNpcs #
     ###############
     # Source: https://www.spigotmc.org/resources/fancy-npcs.107306/

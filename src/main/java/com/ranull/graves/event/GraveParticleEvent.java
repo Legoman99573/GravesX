@@ -10,7 +10,7 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * @deprecated Use {@link dev.cwhead.GravesX.event.GraveParticleEvent} instead. Will be removed in 4.9.10.1.
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveParticleEvent} instead. Will be removed in 4.9.15.1.
  * Represents an event that occurs when a particle is spawned to a grave location.
  * <p>
  * This event extends {@link GravePlayerEvent} and is cancellable, allowing event listeners
@@ -18,7 +18,7 @@ import org.jetbrains.annotations.NotNull;
  * </p>
  */
 @Deprecated(since = "4.9.9.1", forRemoval = true)
-@ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
+@ApiStatus.ScheduledForRemoval(inVersion = "4.9.15.1")
 public class GraveParticleEvent extends dev.cwhead.GravesX.event.GraveParticleEvent {
 
     /**
@@ -38,7 +38,7 @@ public class GraveParticleEvent extends dev.cwhead.GravesX.event.GraveParticleEv
      * @param grave  The grave being created.
      */
     @Deprecated(since = "4.9.9.1", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.15.1")
     public GraveParticleEvent(@NotNull Player player, @NotNull Grave grave) {
         super(player, grave);
     }
@@ -51,7 +51,7 @@ public class GraveParticleEvent extends dev.cwhead.GravesX.event.GraveParticleEv
      * @param grave  The grave being created.
      */
     @Deprecated(since = "4.9.9.1", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.15.1")
     public GraveParticleEvent(@NotNull Entity entity, @NotNull Grave grave) {
         super(requirePlayer(entity), grave);
     }

@@ -10,13 +10,13 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * @deprecated Use {@link dev.cwhead.GravesX.event.GraveBreakEvent} instead. Will be removed in 4.9.10.1.
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveBreakEvent} instead. Will be removed in 4.9.15.1.
  * The GraveBreakEvent class represents an event where a grave block is broken
  * by a player. This event extends the GraveEvent and includes additional
  * information about the grave and whether items should drop upon breaking the grave block.
  */
 @Deprecated(since = "4.9.9.1", forRemoval = true)
-@ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
+@ApiStatus.ScheduledForRemoval(inVersion = "4.9.15.1")
 public class GraveBreakEvent extends dev.cwhead.GravesX.event.GraveBreakEvent {
 
     /**
@@ -37,7 +37,7 @@ public class GraveBreakEvent extends dev.cwhead.GravesX.event.GraveBreakEvent {
      * @param grave   The grave associated with the block being broken.
      */
     @Deprecated(since = "4.9.9.1", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.15.1")
     public GraveBreakEvent(@NotNull Block block, @NotNull Player player, @NotNull Grave grave) {
         super(block, player, grave);
     }
@@ -51,7 +51,7 @@ public class GraveBreakEvent extends dev.cwhead.GravesX.event.GraveBreakEvent {
      * @param blockType The block type if already known (nullable). If null, it will be resolved from the block.
      */
     @Deprecated(since = "4.9.9.1", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.10.1")
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.15.1")
     public GraveBreakEvent(@NotNull Block block, @NotNull Player player, @NotNull Grave grave, @Nullable BlockData.BlockType blockType) {
         super(block, player, grave, blockType);
     }
