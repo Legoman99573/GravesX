@@ -87,7 +87,7 @@ public class BlockBreakListener implements Listener {
         boolean cfgDrop = plugin.getConfig("drop.break", grave).getBoolean("drop.break");
 
         GraveBreakEvent modern = new GraveBreakEvent(block, player, grave);
-        modern.setDropItems(false);
+        modern.setDropItems(cfgDrop);
         plugin.getServer().getPluginManager().callEvent(modern);
 
         com.ranull.graves.event.GraveBreakEvent legacy = new com.ranull.graves.event.GraveBreakEvent(block, player, grave);
