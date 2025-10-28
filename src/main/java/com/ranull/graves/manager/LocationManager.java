@@ -195,7 +195,7 @@ public class LocationManager {
      * @return The roof location.
      */
     public Location getRoof(Location location, Entity entity, Grave grave) {
-        return findLocationUpFromY(location, entity, location.getBlockY(), grave);
+        return findLocationUpFromY(location, entity, location.getBlockY() + 1, grave);
     }
 
     /**
@@ -273,9 +273,13 @@ public class LocationManager {
             Material blockType = checkLoc.getBlock().getType();
 
             if (MaterialUtil.isLava(blockType)) {
-                return getLavaTop(checkLoc, entity, grave);
+                Location above = checkLoc.clone().add(0, 1, 0);
+                Location lavaTop = getLavaTop(above, entity, grave);
+                if (lavaTop != null) return lavaTop;
             } else if (MaterialUtil.isWater(blockType)) {
-                return getWaterTop(checkLoc, entity, grave);
+                Location above = checkLoc.clone().add(0, 1, 0);
+                Location waterTop = getWaterTop(above, entity, grave);
+                if (waterTop != null) return waterTop;
             } else if (isLocationSafeGrave(checkLoc) && !hasGrave(checkLoc)) {
                 return checkLoc;
             }
@@ -447,9 +451,13 @@ public class LocationManager {
     public Location getLavaTop(Location location, Entity entity, Grave grave) {
         if (plugin.getConfig("placement.lava-smart", grave).getBoolean("placement.lava-smart")) {
             Location solidLocation = plugin.getLocationManager().getLastSolidLocation(entity);
-
             if (solidLocation != null) {
-                return !hasGrave(solidLocation) ? solidLocation : getRoof(solidLocation, entity, grave);
+                if (!hasGrave(solidLocation)) {
+                    return solidLocation;
+                } else {
+                    Location up = solidLocation.clone().add(0, 1, 0);
+                    if (isLocationSafeGrave(up) && !hasGrave(up)) return up;
+                }
             }
         }
 
@@ -489,9 +497,13 @@ public class LocationManager {
     public Location getWaterTop(Location location, Entity entity, Grave grave) {
         if (plugin.getConfig("placement.water-smart", grave).getBoolean("placement.water-smart")) {
             Location solidLocation = plugin.getLocationManager().getLastSolidLocation(entity);
-
             if (solidLocation != null) {
-                return !hasGrave(solidLocation) ? solidLocation : getRoof(solidLocation, entity, grave);
+                if (!hasGrave(solidLocation)) {
+                    return solidLocation;
+                } else {
+                    Location up = solidLocation.clone().add(0, 1, 0);
+                    if (isLocationSafeGrave(up) && !hasGrave(up)) return up;
+                }
             }
         }
 
@@ -501,17 +513,15 @@ public class LocationManager {
             if (checkLoc.getWorld() != null) {
                 int maxHeight = checkLoc.getWorld().getMaxHeight();
 
-                // Search upwards until we reach a block that is no longer water
                 while (checkLoc.getBlock().getType() == Material.WATER && checkLoc.getY() < maxHeight) {
                     checkLoc.add(0, 1, 0);
                 }
 
-                // Once we exit the water, check if the space above is air and suitable for placement
                 while (checkLoc.getY() < maxHeight) {
                     Block block = checkLoc.getBlock();
 
                     if (MaterialUtil.isAir(block.getType()) && !plugin.getCompatibility().hasTitleData(block)) {
-                        return checkLoc; // Return the valid air location above the water
+                        return checkLoc;
                     }
 
                     checkLoc.add(0, 1, 0);
@@ -519,7 +529,7 @@ public class LocationManager {
             }
         }
 
-        return null; // Return null if no valid location is found
+        return null;
     }
 
     /**
@@ -584,16 +594,58 @@ public class LocationManager {
      * @return True if the location is safe, otherwise false.
      */
     public boolean isLocationSafeGrave(Location location) {
+        if (location == null) return false;
         location = LocationUtil.roundLocation(location);
+
+        World world = location.getWorld();
+        if (world == null) return false;
+        if (!isInsideBorder(location)) return false;
+
         Block block = location.getBlock();
-
-        // TODO Put in own method in 4.9.10.1
-        if (block.getType() == Material.BEDROCK) return false;
         Block below = block.getRelative(BlockFace.DOWN);
-        if (below.getType() == Material.BEDROCK) return false;
+        Block above = block.getRelative(BlockFace.UP);
 
-        return isInsideBorder(location) && MaterialUtil.isSafeNotSolid(block.getType())
-                && MaterialUtil.isSafeSolid(block.getRelative(BlockFace.DOWN).getType());
+        if (isBedrockRelated(block, below)) return false;
+
+        Material type = block.getType();
+        Material belowType = below.getType();
+        Material aboveType = above.getType();
+
+        if (MaterialUtil.isLava(type) || MaterialUtil.isLava(aboveType)
+                || MaterialUtil.isWater(type) || MaterialUtil.isWater(aboveType)) {
+            return false;
+        }
+
+        if (plugin.getCompatibility().hasTitleData(block)
+                || plugin.getCompatibility().hasTitleData(above)) {
+            return false;
+        }
+
+        return MaterialUtil.isSafeNotSolid(type) && MaterialUtil.isSafeSolid(belowType);
+    }
+
+    /**
+     * Checks whether the given blocks are bedrock or the block below is surrounded by bedrock.
+     *
+     * @param block The main block at the grave location.
+     * @param below The block directly below the grave location.
+     * @return True if the block or its surroundings are bedrock-related; otherwise false.
+     */
+    private boolean isBedrockRelated(Block block, Block below) {
+        if (block.getType() == Material.BEDROCK
+                || below.getType() == Material.BEDROCK
+                || block.getRelative(BlockFace.UP).getType() == Material.BEDROCK) {
+            return true;
+        }
+
+        int bedrockCount = 0;
+        for (BlockFace face : new BlockFace[]{
+                BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST, BlockFace.DOWN}) {
+            Block adjacent = below.getRelative(face);
+            if (adjacent.getType() == Material.BEDROCK) bedrockCount++;
+        }
+
+        return bedrockCount >= 3;
     }
 
     /**
