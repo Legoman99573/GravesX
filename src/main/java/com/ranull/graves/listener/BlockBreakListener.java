@@ -7,6 +7,7 @@ import dev.cwhead.GravesX.compatibility.CompatibilitySoundEnum;
 import dev.cwhead.GravesX.event.GraveAutoLootEvent;
 import dev.cwhead.GravesX.event.GraveBreakEvent;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -86,7 +87,7 @@ public class BlockBreakListener implements Listener {
         boolean cfgDrop = plugin.getConfig("drop.break", grave).getBoolean("drop.break");
 
         GraveBreakEvent modern = new GraveBreakEvent(block, player, grave);
-        modern.setDropItems(cfgDrop);
+        modern.setDropItems(false);
         plugin.getServer().getPluginManager().callEvent(modern);
 
         com.ranull.graves.event.GraveBreakEvent legacy = new com.ranull.graves.event.GraveBreakEvent(block, player, grave);
@@ -95,6 +96,8 @@ public class BlockBreakListener implements Listener {
 
         boolean cancelled = modern.isCancelled() || legacy.isCancelled();
         boolean addon = modern.isAddon() || legacy.isAddon();
+
+        event.setDropItems(false);
 
         if (!cancelled && !addon) {
             boolean dropItemsFinal = modern.isDropItems() && legacy.isDropItems();
