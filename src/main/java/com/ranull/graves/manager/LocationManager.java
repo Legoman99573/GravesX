@@ -632,20 +632,7 @@ public class LocationManager {
      * @return True if the block or its surroundings are bedrock-related; otherwise false.
      */
     private boolean isBedrockRelated(Block block, Block below) {
-        if (block.getType() == Material.BEDROCK
-                || below.getType() == Material.BEDROCK
-                || block.getRelative(BlockFace.UP).getType() == Material.BEDROCK) {
-            return true;
-        }
-
-        int bedrockCount = 0;
-        for (BlockFace face : new BlockFace[]{
-                BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST, BlockFace.DOWN}) {
-            Block adjacent = below.getRelative(face);
-            if (adjacent.getType() == Material.BEDROCK) bedrockCount++;
-        }
-
-        return bedrockCount >= 3;
+        return block.getType() == Material.BEDROCK || below.getType() == Material.BEDROCK;
     }
 
     /**
