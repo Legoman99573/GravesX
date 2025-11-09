@@ -542,7 +542,6 @@ public class EntityDeathListener implements Listener {
      */
     private void setGraveExperience(Grave grave, EntityDeathEvent event, LivingEntity livingEntity, PlayerDeathEvent pde) {
         float pct = (float) plugin.getConfig("experience.store", grave).getDouble("experience.store");
-        pct = Math.max(0f, Math.min(1f, pct));
         plugin.debugMessage("Experience Percentage for " + grave.getUUID() + ": " + pct, 2);
 
         if (pct >= 0) {
