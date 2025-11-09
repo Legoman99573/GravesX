@@ -35,6 +35,7 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.metadata.MetadataValue;
 
 import java.util.*;
@@ -477,7 +478,12 @@ public class EntityDeathListener implements Listener {
                     plugin.debugMessage("Grave created for " + entityName + " even though they reached the maximum graves cap", 2);
                 } else {
                     plugin.getEntityManager().sendMessage("message.max", livingEntity, livingEntity.getLocation(), permissionList);
-                    plugin.debugMessage("Grave not created for " + entityName + " because they reached maximum graves", 2);
+                    if (plugin.getConfig("placement.failure-keep-inventory", livingEntity, permissionList).getBoolean("placement.failure-keep-inventory")) {
+                        plugin.debugMessage("Grave not created for " + entityName + " because they reached maximum graves. Treating as placement failure and keeping in players inventory.", 1);
+                        pde.setKeepInventory(true);
+                    } else {
+                        plugin.debugMessage("Grave not created for " + entityName + " because they reached maximum graves.", 2);
+                    }
                     return;
                 }
             }
@@ -670,7 +676,6 @@ public class EntityDeathListener implements Listener {
         if (plugin.getConfig("obituary.enabled", grave).getBoolean("obituary.enabled")) {
             double pct = plugin.getConfig("obituary.percent", grave).getDouble("obituary.percent");
             boolean drop = plugin.getConfig("obituary.drop", grave).getBoolean("obituary.drop");
-            pct = Math.max(0d, Math.min(1d, pct));
 
             if (Math.random() <= pct) {
                 GraveObituaryAddEvent modern = new GraveObituaryAddEvent(grave, location, livingEntity);
