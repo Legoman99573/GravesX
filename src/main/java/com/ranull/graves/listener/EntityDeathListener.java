@@ -35,7 +35,6 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.metadata.MetadataValue;
 
 import java.util.*;
@@ -140,6 +139,9 @@ public class EntityDeathListener implements Listener {
             }
         }
 
+        // Prevent duplication of items
+        event.getDrops().clear();
+
         createGrave(event, livingEntity, entityName, permissionList, removedItemStackList, graveItemStackList, location, pde, player);
     }
 
@@ -224,7 +226,6 @@ public class EntityDeathListener implements Listener {
      */
     private boolean isInvalidMohistDeath(EntityDeathEvent event) {
         if (event.getEntityType() == EntityType.PLAYER && !(event instanceof PlayerDeathEvent)) {
-            event.getDrops().clear();
             event.setDroppedExp(0);
             return true;
         }
@@ -248,7 +249,6 @@ public class EntityDeathListener implements Listener {
                     ? Arrays.asList(plugin.getEntityManager().getDataString(livingEntity, "gravePermissionList").split("\\|"))
                     : null;
             if (!plugin.getConfig("zombie.drop", type, perms).getBoolean("zombie.drop")) {
-                event.getDrops().clear();
                 event.setDroppedExp(0);
             }
             return true;
@@ -478,11 +478,15 @@ public class EntityDeathListener implements Listener {
                     plugin.debugMessage("Grave created for " + entityName + " even though they reached the maximum graves cap", 2);
                 } else {
                     plugin.getEntityManager().sendMessage("message.max", livingEntity, livingEntity.getLocation(), permissionList);
-                    if (plugin.getConfig("placement.failure-keep-inventory", livingEntity, permissionList).getBoolean("placement.failure-keep-inventory")) {
-                        plugin.debugMessage("Grave not created for " + entityName + " because they reached maximum graves. Treating as placement failure and keeping in players inventory.", 1);
-                        pde.setKeepInventory(true);
-                    } else {
-                        plugin.debugMessage("Grave not created for " + entityName + " because they reached maximum graves.", 2);
+                    plugin.debugMessage("Grave not created for " + entityName + " because they reached maximum graves.", 2);
+
+                    if (!pde.getKeepInventory()) {
+                        if (removedItemStackList != null && !removedItemStackList.isEmpty()) {
+                            event.getDrops().addAll(removedItemStackList);
+                        }
+                        if (graveItemStackList != null && !graveItemStackList.isEmpty()) {
+                            event.getDrops().addAll(graveItemStackList);
+                        }
                     }
                     return;
                 }
@@ -644,7 +648,6 @@ public class EntityDeathListener implements Listener {
         Map<Location, BlockData.BlockType> locationMap = new HashMap<>();
         Location safeLocation = plugin.getLocationManager().getSafeGraveLocation(livingEntity, location, grave);
 
-        event.getDrops().clear();
         event.setDroppedExp(0);
 
         grave.setLocationDeath(safeLocation != null ? safeLocation : location);
@@ -660,9 +663,10 @@ public class EntityDeathListener implements Listener {
         grave.setEquipmentMap(!plugin.getVersionManager().is_v1_7() ? plugin.getEntityManager().getEquipmentMap(livingEntity, grave) : new HashMap<>());
 
         if (!locationMap.isEmpty()) {
-            notifyGraveCreation(event, grave, locationMap, livingEntity, permissionList, player);
+            notifyGraveCreation(event, grave, locationMap, livingEntity, permissionList, player,
+                    location, removedItemStackList, graveItemStackList);
         } else {
-            handleFailedGravePlacement(event, grave, location, livingEntity);
+            handleFailedGravePlacement(event, grave, location, livingEntity, removedItemStackList, graveItemStackList);
         }
     }
 
@@ -772,8 +776,7 @@ public class EntityDeathListener implements Listener {
      * @param livingEntity       The entity that died.
      * @param permissionList     The list of permissions.
      */
-    private void notifyGraveCreation(EntityDeathEvent event, Grave grave, Map<Location, BlockData.BlockType> locationMap,
-                                     LivingEntity livingEntity, List<String> permissionList, Player player) {
+    private void notifyGraveCreation(EntityDeathEvent event, Grave grave, Map<Location, BlockData.BlockType> locationMap, LivingEntity livingEntity, List<String> permissionList, Player player, Location fallbackLocation, List<ItemStack> removedItemStackList, List<ItemStack> graveItemStackList) {
         plugin.getEntityManager().sendMessage("message.death", livingEntity, grave.getLocationDeath(), grave);
         plugin.getEntityManager().runCommands("event.command.create", livingEntity, grave.getLocationDeath(), grave);
         plugin.getDataManager().addGrave(grave);
@@ -838,7 +841,11 @@ public class EntityDeathListener implements Listener {
             plugin.getIntegrationManager().getMultiPaper().notifyGraveCreation(grave);
         }
 
-        placeGraveBlocks(grave, locationMap, livingEntity);
+        boolean placed = placeGraveBlocks(grave, locationMap, livingEntity);
+
+        if (!placed) {
+            handleFailedGravePlacement(event, grave, fallbackLocation, livingEntity, removedItemStackList, graveItemStackList);
+        }
     }
 
     /**
@@ -848,7 +855,9 @@ public class EntityDeathListener implements Listener {
      * @param locationMap        The map of locations for the grave.
      * @param livingEntity       The entity that died.
      */
-    private void placeGraveBlocks(Grave grave, Map<Location, BlockData.BlockType> locationMap, LivingEntity livingEntity) {
+    private boolean placeGraveBlocks(Grave grave, Map<Location, BlockData.BlockType> locationMap, LivingEntity livingEntity) {
+        boolean placed = false;
+
         for (Map.Entry<Location, BlockData.BlockType> entry : locationMap.entrySet()) {
             Location base = entry.getKey().clone();
 
@@ -877,18 +886,23 @@ public class EntityDeathListener implements Listener {
             plugin.getGraveManager().placeGrave(effectiveLoc, grave);
             plugin.getEntityManager().sendMessage("message.block", livingEntity, effectiveLoc, grave);
             plugin.getEntityManager().runCommands("event.command.block", livingEntity, effectiveLoc, grave);
+
+            placed = true;
         }
+
+        return placed;
     }
 
     /**
      * Handles failed grave placement.
      *
-     * @param event         The entity death event.
-     * @param grave         The grave that failed to be placed.
-     * @param location      The location where the grave was to be placed.
-     * @param livingEntity  The entity that died.
+     * @param event                The entity death event.
+     * @param grave                The grave that failed to be placed.
+     * @param location             The location where the grave was to be placed.
+     * @param livingEntity         The entity that died.
+     * @param removedItemStackList The removed item stack list
      */
-    private void handleFailedGravePlacement(EntityDeathEvent event, Grave grave, Location location, LivingEntity livingEntity) {
+    private void handleFailedGravePlacement(EntityDeathEvent event, Grave grave, Location location, LivingEntity livingEntity, List<ItemStack> removedItemStackList, List<ItemStack> graveItemStackList) {
         if (event instanceof PlayerDeathEvent pde
                 && plugin.getConfig("placement.failure-keep-inventory", grave).getBoolean("placement.failure-keep-inventory")) {
             try {
@@ -898,6 +912,12 @@ public class EntityDeathListener implements Listener {
             } catch (NoSuchMethodError ignored) {}
         } else {
             plugin.getEntityManager().sendMessage("message.failure", livingEntity, location, grave);
+            if (removedItemStackList != null) {
+                event.getDrops().addAll(removedItemStackList);
+            }
+            if (graveItemStackList != null) {
+                event.getDrops().addAll(graveItemStackList);
+            }
         }
     }
 }
