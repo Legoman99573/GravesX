@@ -2,6 +2,7 @@ package com.ranull.graves.integration;
 
 import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
+import dev.cwhead.GravesX.util.CustomModelDataUtil;
 import me.imdanix.text.MiniTranslator;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.text.Component;
@@ -11,7 +12,6 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
-import org.bukkit.inventory.meta.components.CustomModelDataComponent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
@@ -178,15 +178,7 @@ public class MiniMessage {
 
         int customModelData = plugin.getConfig("obituary.model-data", grave).getInt("obituary.model-data", -1);
 
-        if (customModelData > -1) {
-            try {
-                CustomModelDataComponent cmdComponent = bookMeta.getCustomModelDataComponent();
-                cmdComponent.setFloats(List.of((float) customModelData));
-                bookMeta.setCustomModelDataComponent(cmdComponent);
-            } catch (Exception e) {
-                bookMeta.setCustomModelData(customModelData);
-            }
-        }
+        CustomModelDataUtil.applyCustomModelData(bookMeta, customModelData);
 
         itemStack.setItemMeta(bookMeta);
         return itemStack;

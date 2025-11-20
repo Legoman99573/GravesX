@@ -10,6 +10,7 @@ import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.*;
 import dev.cwhead.GravesX.compatibility.CompatibilityTeleport;
 import dev.cwhead.GravesX.event.*;
+import dev.cwhead.GravesX.util.CustomModelDataUtil;
 import org.bukkit.*;
 import org.bukkit.block.BlockFace;
 import org.bukkit.boss.BarColor;
@@ -25,7 +26,6 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.CompassMeta;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.components.CustomModelDataComponent;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.metadata.MetadataValue;
 import org.bukkit.persistence.PersistentDataType;
@@ -114,15 +114,7 @@ public class EntityManager extends EntityDataManager {
                 List<String> loreList = new ArrayList<>();
                 int customModelData = plugin.getConfig("compass.model-data", grave).getInt("compass.model-data", -1);
 
-                if (customModelData > -1) {
-                    try {
-                        CustomModelDataComponent cmdComponent = itemMeta.getCustomModelDataComponent();
-                        cmdComponent.setFloats(Collections.singletonList((float) customModelData));
-                        itemMeta.setCustomModelDataComponent(cmdComponent);
-                    } catch (Exception e) {
-                        itemMeta.setCustomModelData(customModelData);
-                    }
-                }
+                CustomModelDataUtil.applyCustomModelData(itemMeta, customModelData);
 
                 if (plugin.getConfig("compass.glow", grave).getBoolean("compass.glow")) {
                     Enchantment enchantment = plugin.getVersionManager().getEnchantmentForVersion("DURABILITY");
@@ -1109,17 +1101,7 @@ public class EntityManager extends EntityDataManager {
                                 .getInt("armor-stand.model-data", -1);
 
                         if (itemMeta != null) {
-                            if (customModelData > -1) {
-                                try {
-                                    CustomModelDataComponent cmdComponent = itemMeta.getCustomModelDataComponent();
-
-                                    cmdComponent.setFloats(Collections.singletonList((float) customModelData));
-
-                                    itemMeta.setCustomModelDataComponent(cmdComponent);
-                                } catch (Exception e) {
-                                    itemMeta.setCustomModelData(customModelData);
-                                }
-                            }
+                            CustomModelDataUtil.applyCustomModelData(itemMeta, customModelData);
 
                             itemStack.setItemMeta(itemMeta);
                             loc.getBlock().setType(Material.AIR);
@@ -1198,17 +1180,7 @@ public class EntityManager extends EntityDataManager {
                                 .getInt("item-frame.model-data", -1);
 
                         if (itemMeta != null) {
-                            if (customModelData > -1) {
-                                try {
-                                    CustomModelDataComponent cmdComponent = itemMeta.getCustomModelDataComponent();
-
-                                    cmdComponent.setFloats(Collections.singletonList((float) customModelData));
-
-                                    itemMeta.setCustomModelDataComponent(cmdComponent);
-                                } catch (Exception e) {
-                                    itemMeta.setCustomModelData(customModelData);
-                                }
-                            }
+                            CustomModelDataUtil.applyCustomModelData(itemMeta, customModelData);
 
                             itemStack.setItemMeta(itemMeta);
                             loc.getBlock().setType(Material.AIR);

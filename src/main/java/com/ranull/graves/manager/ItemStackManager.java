@@ -4,6 +4,7 @@ import com.ranull.graves.Graves;
 import com.ranull.graves.integration.MiniMessage;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.StringUtil;
+import dev.cwhead.GravesX.util.CustomModelDataUtil;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -14,10 +15,8 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.components.CustomModelDataComponent;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -77,7 +76,7 @@ public class ItemStackManager extends EntityDataManager {
 
             int customModelData = plugin.getConfig("obituary.model-data", grave)
                     .getInt("obituary.model-data", -1);
-            applyCustomModelData(bookMeta, customModelData);
+            CustomModelDataUtil.applyCustomModelData(bookMeta, customModelData);
 
             if (plugin.getConfig("obituary.glow", grave).getBoolean("obituary.glow")) {
                 bookMeta.addEnchant(durability, 1, true);
@@ -134,7 +133,7 @@ public class ItemStackManager extends EntityDataManager {
 
             int customModelData = plugin.getConfig("obituary.model-data", grave)
                     .getInt("obituary.model-data", -1);
-            applyCustomModelData(bookMeta, customModelData);
+            CustomModelDataUtil.applyCustomModelData(bookMeta, customModelData);
 
             if (plugin.getConfig("obituary.glow", grave).getBoolean("obituary.glow")) {
                 bookMeta.addEnchant(durability, 1, true);
@@ -205,7 +204,7 @@ public class ItemStackManager extends EntityDataManager {
 
         int customModelData = plugin.getConfig("head.model-data", grave)
                 .getInt("head.model-data", -1);
-        applyCustomModelData(itemMeta, customModelData);
+        CustomModelDataUtil.applyCustomModelData(itemMeta, customModelData);
 
         itemMeta.setLore(loreList);
 
@@ -292,7 +291,7 @@ public class ItemStackManager extends EntityDataManager {
             itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
         }
 
-        applyCustomModelData(itemMeta, customModelData);
+        CustomModelDataUtil.applyCustomModelData(itemMeta, customModelData);
 
         itemMeta.setDisplayName(name);
         itemMeta.setLore(loreList);
@@ -357,34 +356,12 @@ public class ItemStackManager extends EntityDataManager {
             itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
         }
 
-        applyCustomModelData(itemMeta, customModelData);
+        CustomModelDataUtil.applyCustomModelData(itemMeta, customModelData);
 
         itemMeta.setDisplayName(name);
         itemMeta.setLore(loreList);
         itemStack.setItemMeta(itemMeta);
 
         return itemStack;
-    }
-
-    /**
-     * Applies custom model data using the 1.20.5+ component API if available,
-     * falling back to legacy {@link ItemMeta#setCustomModelData(Integer)}.
-     *
-     * @param meta            the item meta (book meta or item meta)
-     * @param customModelData the model data id; ignored if &lt; 0
-     */
-    private void applyCustomModelData(ItemMeta meta, int customModelData) {
-        if (customModelData <= -1 || meta == null) return;
-
-        try {
-            CustomModelDataComponent cmdComponent = meta.getCustomModelDataComponent();
-            cmdComponent.setFloats(Collections.singletonList((float) customModelData));
-            meta.setCustomModelDataComponent(cmdComponent);
-        } catch (Throwable ignored) {
-            try {
-                meta.setCustomModelData(customModelData);
-            } catch (Throwable ignoreAgain) {
-            }
-        }
     }
 }

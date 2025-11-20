@@ -3,6 +3,7 @@ package com.ranull.graves.manager;
 import com.ranull.graves.Graves;
 import com.ranull.graves.integration.MiniMessage;
 import com.ranull.graves.util.StringUtil;
+import dev.cwhead.GravesX.util.CustomModelDataUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -13,11 +14,9 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.components.CustomModelDataComponent;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -153,15 +152,7 @@ public class RecipeManager {
                         itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
                     }
 
-                    if (customModelData > -1) {
-                        try {
-                            CustomModelDataComponent cmdComponent = itemMeta.getCustomModelDataComponent();
-                            cmdComponent.setFloats(Collections.singletonList((float) customModelData));
-                            itemMeta.setCustomModelDataComponent(cmdComponent);
-                        } catch (Exception e) {
-                            itemMeta.setCustomModelData(customModelData);
-                        }
-                    }
+                    CustomModelDataUtil.applyCustomModelData(itemMeta, customModelData);
 
                     itemMeta.setLore(loreList);
                     itemMeta.setDisplayName(name);
