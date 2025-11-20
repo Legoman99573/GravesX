@@ -144,8 +144,10 @@ public class GraveManager {
             return;
         }
 
-        boolean dropOnTimeout = plugin.getConfig("drop.timeout", grave).getBoolean("drop.timeout", true);
-        boolean abandonEnabled = plugin.getConfig("drop.abandon", grave).getBoolean("drop.abandon", false);
+        boolean dropOnTimeout = plugin.getConfig("drop.timeout", grave)
+                .getBoolean("drop.timeout", true);
+        boolean abandonEnabled = plugin.getConfig("drop.abandon", grave)
+                .getBoolean("drop.abandon", false);
 
         if (abandonEnabled && dropOnTimeout) {
             plugin.debugMessage("Config 'drop.abandon' ignored because 'drop.timeout' is enabled", 2);
@@ -155,11 +157,16 @@ public class GraveManager {
         GraveTimeoutEvent tevModern = new GraveTimeoutEvent(grave);
         plugin.getServer().getPluginManager().callEvent(tevModern);
 
-        com.ranull.graves.event.GraveTimeoutEvent tevLegacy = new com.ranull.graves.event.GraveTimeoutEvent(grave);
+        com.ranull.graves.event.GraveTimeoutEvent tevLegacy =
+                new com.ranull.graves.event.GraveTimeoutEvent(grave);
         plugin.getServer().getPluginManager().callEvent(tevLegacy);
 
-        if (tevModern.isCancelled() || tevModern.isAddon() || tevLegacy.isCancelled() || tevLegacy.isAddon()) {
-            plugin.debugMessage("GraveTimeoutEvent cancelled → infinite life for " + grave.getUUID(), 2);
+        if (tevModern.isCancelled() || tevModern.isAddon() ||
+                tevLegacy.isCancelled() || tevLegacy.isAddon()) {
+
+            plugin.debugMessage(
+                    "GraveTimeoutEvent cancelled → infinite life for " + grave.getUUID(), 2
+            );
             grave.setTimeAliveRemaining(-1L);
             return;
         }
@@ -170,70 +177,101 @@ public class GraveManager {
             return;
         }
 
-        loc.getChunk().load(true);
+        boolean abandonSnapshot = abandonEnabled;
+        Location anchor = loc.clone();
 
-        boolean abandonEnabledSnapshot = abandonEnabled;
-        plugin.getGravesXScheduler().runTask(() -> {
-            org.bukkit.Chunk chunk = loc.getChunk();
-            if (!chunk.isLoaded()) {
-                plugin.debugMessage("Chunk still not loaded at (" + chunk.getX() + "," + chunk.getZ() + ")", 2);
+        Runnable logic = () -> {
+            World world = loc.getWorld();
+            if (world == null) {
+                plugin.debugMessage("World became null for grave " + grave.getUUID(), 2);
                 return;
             }
-            chunk.setForceLoaded(true);
 
-            if (dropOnTimeout && !abandonEnabledSnapshot) {
+            Chunk chunk = world.getChunkAt(loc);
+
+            if (!chunk.isLoaded()) {
+                chunk.setForceLoaded(true);
+            }
+
+            if (dropOnTimeout && !abandonSnapshot) {
+
                 plugin.debugMessage("Dropping on timeout: " + grave.getUUID(), 2);
+
                 dropGraveItems(loc, grave);
                 dropGraveExperience(loc, grave);
+
                 sendPlayerMessage(grave, "message.timeout", loc);
+
                 graveRemoveList.add(grave);
                 removeGrave(grave);
+
                 chunk.setForceLoaded(false);
                 return;
             }
 
-            if (!dropOnTimeout && abandonEnabledSnapshot) {
+            if (!dropOnTimeout && abandonSnapshot) {
+
                 plugin.debugMessage("Abandoning grave: " + grave.getUUID(), 2);
 
                 GraveAbandonedEvent aevModern = new GraveAbandonedEvent(grave);
                 plugin.getServer().getPluginManager().callEvent(aevModern);
 
-                com.ranull.graves.event.GraveAbandonedEvent aevLegacy = new com.ranull.graves.event.GraveAbandonedEvent(grave);
+                com.ranull.graves.event.GraveAbandonedEvent aevLegacy =
+                        new com.ranull.graves.event.GraveAbandonedEvent(grave);
                 plugin.getServer().getPluginManager().callEvent(aevLegacy);
 
-                if (aevModern.isCancelled() || aevModern.isAddon() || aevLegacy.isCancelled() || aevLegacy.isAddon()) {
+                if (aevModern.isCancelled() || aevModern.isAddon() ||
+                        aevLegacy.isCancelled() || aevLegacy.isAddon()) {
+
                     plugin.debugMessage("Abandon event cancelled for " + grave.getUUID(), 2);
+
                     dropGraveItems(loc, grave);
                     dropGraveExperience(loc, grave);
                     sendPlayerMessage(grave, "message.timeout", loc);
+
                     graveRemoveList.add(grave);
                     removeGrave(grave);
+
                 } else {
-                    org.bukkit.Location abandonLoc = (aevModern.hasLocation() ? aevModern.getLocation() : aevLegacy.getLocation());
-                    sendPlayerMessage(grave, "message.grave-abandoned", abandonLoc != null ? abandonLoc : loc);
+                    Location abandonLoc = (aevModern.hasLocation() ? aevModern.getLocation()
+                            : aevLegacy.getLocation());
+                    sendPlayerMessage(grave, "message.grave-abandoned",
+                            abandonLoc != null ? abandonLoc : loc);
                     abandonGrave(grave);
                 }
+
                 chunk.setForceLoaded(false);
                 return;
             }
 
-            GraveExpiredEvent graveExpiredEvent = new GraveExpiredEvent(grave);
-            plugin.getServer().getPluginManager().callEvent(graveExpiredEvent);
+            GraveExpiredEvent expired = new GraveExpiredEvent(grave);
+            plugin.getServer().getPluginManager().callEvent(expired);
 
-            if (!graveExpiredEvent.isCancelled() || !graveExpiredEvent.isAddon()) {
-                plugin.debugMessage("Fallback drop for " + grave.getUUID() + " as drop.timeout and drop.abandon are false", 2);
+            if (!expired.isCancelled() || !expired.isAddon()) {
+
+                plugin.debugMessage("Fallback drop for " + grave.getUUID(), 2);
+
                 sendPlayerMessage(grave, "message.timeout", loc);
                 graveRemoveList.add(grave);
                 removeGrave(grave);
+
                 chunk.setForceLoaded(false);
                 return;
             }
 
-            plugin.debugMessage("Fallback drop for " + grave.getUUID() + " was cancelled. Grave will now last forever.", 2);
-            chunk.setForceLoaded(false);
-        });
-    }
+            plugin.debugMessage(
+                    "Fallback drop cancelled — grave lives forever: " + grave.getUUID(), 2
+            );
 
+            chunk.setForceLoaded(false);
+        };
+
+        if (plugin.getVersionManager().isFolia()) {
+            plugin.getGravesXScheduler().execute(anchor, logic);
+        } else {
+            plugin.getGravesXScheduler().runTask(logic);
+        }
+    }
 
     /**
      * Utility to send a message to the grave owner if they're online.
