@@ -70,11 +70,17 @@ public class ExperienceUtil {
      * Calculates the drop percentage of experience.
      *
      * @param experience The total experience.
-     * @param percent    The percentage to drop.
+     * @param percent    The percentage to drop (0.0–1.0).
      * @return The experience drop amount.
      */
     public static int getDropPercent(int experience, float percent) {
-        return experience > 0 ? (int) (experience * percent) : 0;
+        if (experience <= 0) {
+            return 0;
+        }
+
+        float clamped = Math.max(0.0f, Math.min(1.0f, percent));
+
+        return (int) (experience * clamped);
     }
 
     /**
@@ -93,6 +99,6 @@ public class ExperienceUtil {
     @Deprecated
     public static int getPlayerDropExperience(Player player, float expStorePercent) {
         int experience = getPlayerExperience(player);
-        return experience > 0 ? (int) (experience * expStorePercent) : 0;
+        return getDropPercent(experience, expStorePercent);
     }
 }
