@@ -9,6 +9,7 @@ import com.ranull.graves.integration.MiniMessage;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.*;
 import dev.cwhead.GravesX.compatibility.CompatibilityTeleport;
+import dev.cwhead.GravesX.graveutils.GraveProtectionRole;
 import dev.cwhead.GravesX.event.*;
 import dev.cwhead.GravesX.util.CustomModelDataUtil;
 import org.bukkit.*;
@@ -45,6 +46,8 @@ public class EntityManager extends EntityDataManager {
      */
     private final Graves plugin;
 
+    private final GraveProtectionRole roles;
+
     /**
      * Initializes the EntityManager with the specified plugin instance.
      *
@@ -53,6 +56,7 @@ public class EntityManager extends EntityDataManager {
     public EntityManager(Graves plugin) {
         super(plugin);
         this.plugin = plugin;
+        this.roles = new GraveProtectionRole(plugin);
     }
 
     /**
@@ -910,52 +914,31 @@ public class EntityManager extends EntityDataManager {
                 ? plugin.getIntegrationManager().getFloodgate().getNormalizedUUID(player)
                 : player.getUniqueId();
 
-        UUID ownerId = grave.getOwnerUUID();
-        UUID killerId = grave.getKillerUUID();
-
-        if (plugin.getIntegrationManager().hasFloodgate()) {
-            var floodgate = plugin.getIntegrationManager().getFloodgate();
-            if (ownerId != null && floodgate.isFloodgateId(ownerId)) {
-                ownerId = floodgate.getCorrectUniqueId(ownerId);
-            }
-            if (killerId != null && floodgate.isFloodgateId(killerId)) {
-                killerId = floodgate.getCorrectUniqueId(killerId);
-            }
+        if (!grave.getProtection() || grave.getOwnerUUID() == null) {
+            return true;
         }
 
-        if (grave.getTimeProtectionRemaining() > 0) {
+        long timeRemaining = grave.getTimeProtectionRemaining();
+
+        if (timeRemaining == 0) {
+            return true;
+        }
+
+        GraveProtectionRole.GraveRole role = roles.getRole(grave, playerId);
+
+        if (role == GraveProtectionRole.GraveRole.OWNER) {
+            return plugin.getConfig("protection.open.owner", grave).getBoolean("protection.open.owner");
+        } else if (role == GraveProtectionRole.GraveRole.KILLER) {
+            return plugin.getConfig("protection.open.killer", grave).getBoolean("protection.open.killer");
+        } else if (role == GraveProtectionRole.GraveRole.OTHER) {
+            return plugin.getConfig("protection.open.other", grave).getBoolean("protection.open.other");
+        } else if (role == GraveProtectionRole.GraveRole.MISSING_OWNER) {
+            return true;
+        } else if (role == GraveProtectionRole.GraveRole.MISSING_OTHER) {
             return false;
         }
 
-        if (!grave.getProtection() || ownerId == null) {
-            return true;
-        }
-
-        boolean isOwner = Objects.equals(ownerId, playerId);
-        boolean isKiller = killerId != null && Objects.equals(killerId, playerId);
-
-        if (isOwner && plugin.getConfig("protection.open.owner", grave)
-                .getBoolean("protection.open.owner")) {
-            return true;
-        }
-
-        if (isKiller && plugin.getConfig("protection.open.killer", grave)
-                .getBoolean("protection.open.killer")) {
-            return true;
-        }
-
-        if (killerId != null) {
-            return plugin.getConfig("protection.open.other", grave)
-                    .getBoolean("protection.open.other");
-        }
-
-        if (isOwner) {
-            return plugin.getConfig("protection.open.missing.owner", grave)
-                    .getBoolean("protection.open.missing.owner");
-        } else {
-            return plugin.getConfig("protection.open.missing.other", grave)
-                    .getBoolean("protection.open.missing.other");
-        }
+        return false;
     }
 
     /**
