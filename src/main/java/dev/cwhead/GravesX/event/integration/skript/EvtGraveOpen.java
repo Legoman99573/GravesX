@@ -33,7 +33,7 @@ public class EvtGraveOpen extends SkriptEvent {
         
         EventValues.registerEventValue(GraveOpenEvent.class, Grave.class, GraveOpenEvent::getGrave, 0);
 
-        EventValues.registerEventValue(GraveOpenEvent.class, InventoryView.class, GraveOpenEvent::getInventoryView, 0);
+        EventValues.registerEventValue(GraveOpenEvent.class, InventoryView.class, GraveOpenEvent::getView, 0);
 
     }
 
@@ -74,7 +74,7 @@ public class EvtGraveOpen extends SkriptEvent {
                 inventoryView.check(event, new Predicate<InventoryView>() {
                     @Override
                     public boolean test(InventoryView view) {
-                        return view.equals(event.getInventoryView());
+                        return view.equals(event.getView());
                     }
                 });
             }
