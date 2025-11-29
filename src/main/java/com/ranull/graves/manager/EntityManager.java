@@ -902,7 +902,7 @@ public class EntityManager extends EntityDataManager {
      * @return true if the player can open the grave, false otherwise
      */
     public boolean canOpenGrave(Player player, Grave grave) {
-        if (plugin.hasGrantedPermission("graves.bypass", player)) {
+        if (plugin.hasGrantedPermission("graves.bypass", player.getPlayer())) {
             return true;
         }
 
