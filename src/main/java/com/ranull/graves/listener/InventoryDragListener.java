@@ -6,11 +6,13 @@ import com.ranull.graves.inventory.GraveList;
 import com.ranull.graves.inventory.GraveMenu;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.StringUtil;
+import dev.cwhead.GravesX.event.GraveItemTakeEvent;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.InventoryHolder;
@@ -102,13 +104,22 @@ public class InventoryDragListener implements Listener {
      * Handles inventory drags when the inventory holder is a Grave.
      */
     private void handleGraveInventoryDrag(InventoryDragEvent event, Player player, Grave grave) {
-        if (!grave.getGravePreview()) {
-            if (plugin.getEntityManager().canOpenGrave(player, grave)) {
-                // For EXACT storage mode we generally disallow dragging into the grave.
-                event.setCancelled(true);
-            } else {
-                event.setCancelled(true);
+        if (!grave.getGravePreview() && plugin.getEntityManager().canOpenGrave(player, grave)) {
+            Map<Integer, ItemStack> draggedItems = event.getNewItems();
+            InventoryAction action = InventoryAction.MOVE_TO_OTHER_INVENTORY;
+
+            for (ItemStack item : draggedItems.values()) {
+                if (item == null) continue;
+
+                GraveItemTakeEvent takeEvent = new GraveItemTakeEvent(grave, player, item, action);
+                plugin.getServer().getPluginManager().callEvent(takeEvent);
+
+                if (takeEvent.isCancelled()) {
+                    event.setCancelled(true);
+                    return;
+                }
             }
+            event.setCancelled(true);
         } else {
             event.setCancelled(true);
         }

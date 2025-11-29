@@ -1,58 +1,81 @@
 package dev.cwhead.GravesX.event;
 
 import com.ranull.graves.type.Grave;
-import dev.cwhead.GravesX.event.graveevent.GravePlayerEvent;
+import dev.cwhead.GravesX.event.graveevent.GraveEntityEvent;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Cancellable;
 import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.InventoryView;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Represents an event that occurs when a player opens an inventory associated
- * with a grave.
+ * Event triggered when a player opens a grave inventory.
  * <p>
- * This event extends {@link GravePlayerEvent} and includes additional information
- * about the grave and the inventory view that is being opened.
+ * Now extends {@link GraveEntityEvent}, so it supports full entity functionality.
+ * Still only used for players opening graves, but can leverage entity accessors.
  * </p>
  */
-public class GraveOpenEvent extends GravePlayerEvent {
+public class GraveOpenEvent extends GraveEntityEvent implements Cancellable {
 
-    /**
-     * A static final instance of {@link HandlerList} used to manage event handlers.
-     * <p>
-     * This {@link HandlerList} is used to register and manage the handlers for events of this type.
-     * It provides the mechanism for adding, removing, and invoking event handlers.
-     * </p>
-     */
     private static final HandlerList HANDLERS = new HandlerList();
 
+    private final @NotNull InventoryView view;
+    private boolean cancelled;
+
     /**
-     * Constructs a new {@code GraveOpenEvent}.
+     * Constructs a new GraveOpenEvent for a player opening a grave.
      *
-     * @param inventoryView The inventory view that is being opened.
-     * @param grave         The grave associated with the inventory view.
-     * @param player        The player who is opening the inventory.
+     * @param view  The inventory view being opened.
+     * @param grave The grave being opened.
+     * @param player The player opening the grave.
      */
-    public GraveOpenEvent(@NotNull InventoryView inventoryView, @NotNull Grave grave, @NotNull Player player) {
-        super(grave, player, grave.getLocationDeath(), null, null, inventoryView, player, null);
+    public GraveOpenEvent(@NotNull InventoryView view, @NotNull Grave grave, @NotNull Player player) {
+        super(grave, player, grave.getLocationDeath(), null, null, null, null);
+        this.view = view;
+        this.cancelled = false;
     }
 
     /**
-     * Gets the list of handlers for this event.
+     * Gets the inventory view being opened.
      *
-     * @return The handler list for this event.
+     * @return The inventory view.
      */
+    public @NotNull InventoryView getView() {
+        return view;
+    }
+
+    @Override
+    public boolean isCancelled() {
+        return cancelled;
+    }
+
+    @Override
+    public void setCancelled(boolean cancel) {
+        this.cancelled = cancel;
+    }
+
     @Override
     public @NotNull HandlerList getHandlers() {
         return HANDLERS;
     }
 
     /**
-     * Gets the static list of handlers for this event.
+     * Returns the static handler list for Bukkit event registration.
      *
-     * @return The static handler list for this event.
+     * @return HandlerList
      */
     public static @NotNull HandlerList getHandlerList() {
         return HANDLERS;
+    }
+
+    /**
+     * Convenience getter for the player.
+     *
+     * @return The player opening the grave.
+     */
+    @NotNull
+    public Player getPlayer() {
+        return (Player) getEntity();
     }
 }

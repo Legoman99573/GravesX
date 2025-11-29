@@ -14,7 +14,9 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.inventory.InventoryView;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
 
@@ -64,6 +66,8 @@ public class SkriptImpl {
             Skript.registerExpression(ExprEventDirection.class, BlockFace.class, ExpressionType.SIMPLE, "[the] event[-]direction");
             Skript.registerExpression(ExprEventMovedBlocks.class, List.class, ExpressionType.SIMPLE, "[the] event[-]moved[-]blocks");
             Skript.registerExpression(ExprEventPlayer.class, Player.class, ExpressionType.SIMPLE, "[the] event[-]player");
+            Skript.registerExpression(ExprEventItemStack.class, ItemStack.class, ExpressionType.SIMPLE, "[the] event[-]itemstack");
+            Skript.registerExpression(ExprEventInventoryAction.class, InventoryAction.class, ExpressionType.SIMPLE, "[the] event[-]inventoryaction");
             plugin.integrationMessage("Skript integration loaded successfully.");
         } catch (Exception e) {
             plugin.getLogger().severe("Failed to load Skript implementation");
