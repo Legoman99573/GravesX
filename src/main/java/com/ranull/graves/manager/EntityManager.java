@@ -902,6 +902,10 @@ public class EntityManager extends EntityDataManager {
      * @return true if the player can open the grave, false otherwise
      */
     public boolean canOpenGrave(Player player, Grave grave) {
+        if (plugin.hasGrantedPermission("graves.bypass", player)) {
+            return true;
+        }
+
         UUID playerId = plugin.getIntegrationManager().hasFloodgate()
                 ? plugin.getIntegrationManager().getFloodgate().getNormalizedUUID(player)
                 : player.getUniqueId();
@@ -910,42 +914,47 @@ public class EntityManager extends EntityDataManager {
         UUID killerId = grave.getKillerUUID();
 
         if (plugin.getIntegrationManager().hasFloodgate()) {
-            if (ownerId != null && plugin.getIntegrationManager().getFloodgate().isFloodgateId(ownerId)) {
-                ownerId = plugin.getIntegrationManager().getFloodgate().getCorrectUniqueId(ownerId);
+            var floodgate = plugin.getIntegrationManager().getFloodgate();
+            if (ownerId != null && floodgate.isFloodgateId(ownerId)) {
+                ownerId = floodgate.getCorrectUniqueId(ownerId);
             }
-
-            if (killerId != null && plugin.getIntegrationManager().getFloodgate().isFloodgateId(killerId)) {
-                killerId = plugin.getIntegrationManager().getFloodgate().getCorrectUniqueId(killerId);
+            if (killerId != null && floodgate.isFloodgateId(killerId)) {
+                killerId = floodgate.getCorrectUniqueId(killerId);
             }
         }
 
-        if (grave.getTimeProtectionRemaining() == 0 || plugin.hasGrantedPermission("graves.bypass", player)) {
-            return true;
+        if (grave.getTimeProtectionRemaining() > 0) {
+            return false;
         }
 
         if (!grave.getProtection() || ownerId == null) {
             return true;
         }
 
-        if (ownerId.equals(playerId)
-                && plugin.getConfig("protection.open.owner", grave).getBoolean("protection.open.owner")) {
+        boolean isOwner = Objects.equals(ownerId, playerId);
+        boolean isKiller = killerId != null && Objects.equals(killerId, playerId);
+
+        if (isOwner && plugin.getConfig("protection.open.owner", grave)
+                .getBoolean("protection.open.owner")) {
+            return true;
+        }
+
+        if (isKiller && plugin.getConfig("protection.open.killer", grave)
+                .getBoolean("protection.open.killer")) {
             return true;
         }
 
         if (killerId != null) {
-            if (killerId.equals(playerId)
-                    && plugin.getConfig("protection.open.killer", grave).getBoolean("protection.open.killer")) {
-                return true;
-            } else {
-                return !ownerId.equals(playerId)
-                        && !killerId.equals(playerId)
-                        && plugin.getConfig("protection.open.other", grave).getBoolean("protection.open.other");
-            }
+            return plugin.getConfig("protection.open.other", grave)
+                    .getBoolean("protection.open.other");
+        }
+
+        if (isOwner) {
+            return plugin.getConfig("protection.open.missing.owner", grave)
+                    .getBoolean("protection.open.missing.owner");
         } else {
-            return (ownerId.equals(playerId)
-                    && plugin.getConfig("protection.open.missing.owner", grave).getBoolean("protection.open.missing.owner"))
-                    || (!ownerId.equals(playerId)
-                    && plugin.getConfig("protection.open.missing.other", grave).getBoolean("protection.open.missing.other"));
+            return plugin.getConfig("protection.open.missing.other", grave)
+                    .getBoolean("protection.open.missing.other");
         }
     }
 

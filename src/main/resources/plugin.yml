@@ -77,6 +77,10 @@ commands:
       - gxm
 
 permissions:
+  graves.bypass:
+    default: op
+    description: Can bypass grave teleportation timer and grave protections
+
   graves.place:
     default: true
     description: Can place a graves
