@@ -10,6 +10,7 @@ import de.oliver.fancynpcs.api.NpcData;
 import de.oliver.fancynpcs.api.NpcManager;
 import de.oliver.fancynpcs.api.skins.SkinData;
 import de.oliver.fancynpcs.api.utils.NpcEquipmentSlot;
+import me.jay.GravesX.listener.integration.fancynpcs.NpcInteractListener;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -28,6 +29,11 @@ public final class FancyNPCs extends EntityDataManager {
     public FancyNPCs(Graves plugin) {
         super(plugin);
         this.plugin = plugin;
+        registerListeners();
+    }
+
+    private void registerListeners() {
+        plugin.getServer().getPluginManager().registerEvents(new NpcInteractListener(plugin), plugin);
     }
 
     public void createCorpse(UUID uuid, Location location, Grave grave) {
@@ -38,13 +44,34 @@ public final class FancyNPCs extends EntityDataManager {
             location.getBlock().setType(Material.AIR);
             Location npcLocation = location.clone();
 
+            final double DESIRED_X = 1.5;
+            final double DESIRED_Y = 0.2;
+            final double DESIRED_Z = 0.5;
+
             try {
-                double x = plugin.getConfig("fancynpcs.corpse.offset.x", grave).getDouble("fancynpcs.corpse.offset.x");
-                double y = plugin.getConfig("fancynpcs.corpse.offset.y", grave).getDouble("fancynpcs.corpse.offset.y");
-                double z = plugin.getConfig("fancynpcs.corpse.offset.z", grave).getDouble("fancynpcs.corpse.offset.z");
-                npcLocation.add(x, y, z);
-            } catch (IllegalArgumentException ignored) {
-                npcLocation.add(-0.5, 0, -0.5);
+                Location base = npcLocation.clone();
+
+                double requiredX = DESIRED_X - base.getX();
+                double requiredY = DESIRED_Y - base.getY();
+                double requiredZ = DESIRED_Z - base.getZ();
+
+                double cfgX = plugin.getConfig("fancynpcs.corpse.offset.x", grave)
+                        .getDouble("fancynpcs.corpse.offset.x", Double.NaN);
+                double cfgY = plugin.getConfig("fancynpcs.corpse.offset.y", grave)
+                        .getDouble("fancynpcs.corpse.offset.y", Double.NaN);
+                double cfgZ = plugin.getConfig("fancynpcs.corpse.offset.z", grave)
+                        .getDouble("fancynpcs.corpse.offset.z", Double.NaN);
+
+                double finalX = Double.isNaN(cfgX) ? requiredX : cfgX;
+                double finalY = Double.isNaN(cfgY) ? requiredY : cfgY;
+                double finalZ = Double.isNaN(cfgZ) ? requiredZ : cfgZ;
+
+                npcLocation.add(finalX, finalY, finalZ);
+
+            } catch (Exception e) {
+                npcLocation.setX(DESIRED_X);
+                npcLocation.setY(DESIRED_Y);
+                npcLocation.setZ(DESIRED_Z);
             }
 
             String ownerIdStr = grave.getOwnerUUID().toString();
