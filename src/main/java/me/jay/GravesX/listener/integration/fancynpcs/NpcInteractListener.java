@@ -35,7 +35,7 @@ public class NpcInteractListener implements Listener {
      *
      * @param event The NpcInteractEvent to handle.
      */
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onNpcInteraction(NpcInteractEvent event) {
         if (!isRightClick(event)) {
             return;
