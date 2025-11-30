@@ -616,6 +616,11 @@ public class LocationManager {
             return false;
         }
 
+        if (type == Material.NETHER_PORTAL || type == Material.END_PORTAL
+                || aboveType == Material.NETHER_PORTAL || aboveType == Material.END_PORTAL) {
+            return false;
+        }
+
         if (plugin.getCompatibility().hasTitleData(block)
                 || plugin.getCompatibility().hasTitleData(above)) {
             return false;
