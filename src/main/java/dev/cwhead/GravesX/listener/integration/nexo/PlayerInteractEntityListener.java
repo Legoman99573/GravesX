@@ -64,7 +64,9 @@ public class PlayerInteractEntityListener implements Listener {
         Grave grave = nexo.getGrave(entity);
 
         if (grave != null) {
-            event.setCancelled(plugin.getGraveManager().openGrave(event.getPlayer(), entity.getLocation(), grave));
+            event.setCancelled(true);
+
+            plugin.getGraveManager().openGrave(event.getPlayer(), entity.getLocation(), grave);
         }
     }
 }
