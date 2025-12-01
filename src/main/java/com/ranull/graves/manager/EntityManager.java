@@ -692,6 +692,13 @@ public class EntityManager extends EntityDataManager {
     public boolean runFunction(Entity entity, String function, Grave grave) {
         switch (function.toLowerCase()) {
             case "list" -> {
+                if (entity instanceof Player player) {
+                    if (!plugin.hasGrantedPermission("graves.gui.other", player.getPlayer()))  {
+                        plugin.getEntityManager().sendMessage("message.permission-denied", entity, entity.getLocation(), grave);
+                        return false;
+                    }
+                }
+
                 UUID targetUUID = grave.getOwnerUUID();
                 if (targetUUID == null) {
                     targetUUID = entity.getUniqueId();
@@ -700,10 +707,23 @@ public class EntityManager extends EntityDataManager {
                 return true;
             }
             case "menu" -> {
+                if (entity instanceof Player player) {
+                    if (!plugin.hasGrantedPermission("graves.gui", player.getPlayer()))  {
+                        plugin.getEntityManager().sendMessage("message.permission-denied", entity, entity.getLocation(), grave);
+                        return false;
+                    }
+                }
                 plugin.getGUIManager().openGraveMenu(entity, grave);
                 return true;
             }
             case "teleport", "teleportation" -> {
+                if (entity instanceof Player player) {
+                    if (!plugin.hasGrantedPermission("graves.teleport", player.getPlayer()))  {
+                        plugin.getEntityManager().sendMessage("message.permission-denied", entity, entity.getLocation(), grave);
+                        return false;
+                    }
+                }
+
                 if (plugin.getConfig("teleport.enabled", grave).getBoolean("teleport.enabled")
                         && (plugin.hasGrantedPermission("graves.teleport", ((Player) entity).getPlayer())
                         || plugin.getConfig("teleport.enabled", grave).getBoolean("teleport.enabled")
@@ -745,6 +765,13 @@ public class EntityManager extends EntityDataManager {
                 return true;
             }
             case "protect", "protection" -> {
+                if (entity instanceof Player player) {
+                    if (!plugin.hasGrantedPermission("graves.protection", player.getPlayer()))  {
+                        plugin.getEntityManager().sendMessage("message.permission-denied", entity, entity.getLocation(), grave);
+                        return false;
+                    }
+                }
+
                 GraveProtectionCreateEvent modern = new GraveProtectionCreateEvent(entity, grave);
                 plugin.getServer().getPluginManager().callEvent(modern);
 
@@ -802,6 +829,12 @@ public class EntityManager extends EntityDataManager {
             }
             case "open", "loot", "virtual" -> {
                 if (entity.getLocation().getWorld() == grave.getLocationDeath().getWorld()) {
+                    if (entity instanceof Player player) {
+                        if (!plugin.hasGrantedPermission("graves.open", player.getPlayer()))  {
+                            plugin.getEntityManager().sendMessage("message.permission-denied", entity, entity.getLocation(), grave);
+                            return false;
+                        }
+                    }
                     double distance = plugin.getConfig("virtual.distance", grave).getDouble("virtual.distance");
                     if (distance < 0) {
                         plugin.getGraveManager().openGrave(entity, entity.getLocation(), grave);
@@ -822,6 +855,13 @@ public class EntityManager extends EntityDataManager {
             }
             case "autoloot" -> {
                 Location loc = entity.getLocation();
+
+                if (entity instanceof Player player) {
+                    if (!plugin.hasGrantedPermission("graves.autoloot", player.getPlayer()))  {
+                        plugin.getEntityManager().sendMessage("message.permission-denied", entity, entity.getLocation(), grave);
+                        return false;
+                    }
+                }
 
                 GraveAutoLootEvent modern =
                         new GraveAutoLootEvent(entity, loc, grave);
