@@ -102,13 +102,6 @@ public class Graves extends JavaPlugin {
         // Decide whether to defer module load
         deferModuleLoad = moduleManager.shouldDeferLoadOnExternalPlugins();
 
-        if (!deferModuleLoad) {
-            // Safe: no external plugins referenced (or none present). Load descriptors now.
-            moduleManager.loadAll();  // calls onModuleLoad(ctx)
-            getLogger().info("[Modules] Loaded descriptors during onLoad.");
-        } else {
-            getLogger().info("[Modules] Deferring module load to onEnable (external plugins detected).");
-        }
     }
 
     @Override
@@ -136,9 +129,7 @@ public class Graves extends JavaPlugin {
 
         this.moduleManager = new ModuleManager(this);
         this.moduleManager.setLibraryImporter(new LibbyImporter(this));
-        if (deferModuleLoad) {
-            moduleManager.loadAll();
-        }
+        moduleManager.loadAll();
         moduleManager.enableAll();
         depListener = new DependencyEnableListener(moduleManager);
         getServer().getPluginManager().registerEvents(depListener, this);

@@ -210,6 +210,7 @@ final class ModuleCommandRegistrar {
             return instantiate(c, lm.context, CommandExecutor.class);
         } catch (Throwable t) {
             plugin.getLogger().severe("Executor load failed for " + fqcn + ": " + t.getMessage());
+            plugin.logStackTrace(t);
             return null;
         }
     }
@@ -231,6 +232,7 @@ final class ModuleCommandRegistrar {
             return instantiate(c, lm.context, GravesXModuleTabCompleter.class);
         } catch (Throwable t) {
             plugin.getLogger().severe("TabCompleter load failed for " + fqcn + ": " + t.getMessage());
+            plugin.logStackTrace(t);
             return null;
         }
     }
