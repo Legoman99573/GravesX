@@ -15,6 +15,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
+import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.EquipmentSlot;
 
 import java.nio.charset.StandardCharsets;
@@ -25,15 +26,20 @@ public final class FancyNPCs extends EntityDataManager {
 
     private static final String POSE_ATTRIBUTE_NAME = "pose";
     private final Graves plugin;
+    private final NpcInteractListener npcInteractListener;
 
     public FancyNPCs(Graves plugin) {
         super(plugin);
         this.plugin = plugin;
-        registerListeners();
+        this.npcInteractListener = new NpcInteractListener(plugin);
+
+        plugin.getServer().getPluginManager().registerEvents(npcInteractListener, plugin);
     }
 
-    private void registerListeners() {
-        plugin.getServer().getPluginManager().registerEvents(new NpcInteractListener(plugin), plugin);
+    public void unregisterListeners() {
+        if (npcInteractListener != null) {
+            HandlerList.unregisterAll(npcInteractListener);
+        }
     }
 
     public void createCorpse(UUID uuid, Location location, Grave grave) {
@@ -89,8 +95,8 @@ public final class FancyNPCs extends EntityDataManager {
                 plugin.logStackTrace(ex);
             }
 
-            npc.create();
             npcManager.registerNpc(npc);
+            npc.create();
             npc.spawnForAll();
 
             NpcAttribute poseAttribute = FancyNpcsPlugin.get().getAttributeManager().getAttributeByName(EntityType.PLAYER, POSE_ATTRIBUTE_NAME);
@@ -144,8 +150,8 @@ public final class FancyNPCs extends EntityDataManager {
                 plugin.logStackTrace(ex);
             }
 
-            npc.create();
             npcManager.registerNpc(npc);
+            npc.create();
             npc.spawnForAll();
 
             NpcAttribute poseAttribute = FancyNpcsPlugin.get().getAttributeManager()

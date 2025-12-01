@@ -304,6 +304,10 @@ public class IntegrationManager {
         if (playerNPC != null) {
             playerNPC.unregisterListeners();
         }
+
+        if (fancyNpcs != null) {
+            fancyNpcs.unregisterListeners();
+        }
     }
 
     /**

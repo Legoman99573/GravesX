@@ -37,73 +37,42 @@ public class NpcInteractListener implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onNpcInteraction(NpcInteractEvent event) {
-        if (!isRightClick(event)) {
+        if (event.getInteractionType() != ActionTrigger.RIGHT_CLICK) {
+            plugin.debugMessage("Interaction for FancyNpcs npc was not a right-click.", 2);
             return;
         }
 
-        handleNpcInteraction(event);
-    }
-
-    /**
-     * Checks if the interaction is a right-click.
-     *
-     * @param event The NpcInteractEvent.
-     * @return True if the interaction is a right-click, false otherwise.
-     */
-    private boolean isRightClick(NpcInteractEvent event) {
-        return event.getInteractionType() == ActionTrigger.RIGHT_CLICK;
-    }
-
-    /**
-     * Handles the interaction with the NPC. If the NPC is associated with a grave,
-     * the event is cancelled and the grave is opened for the player.
-     *
-     * @param event The NpcInteractEvent.
-     */
-    private void handleNpcInteraction(NpcInteractEvent event) {
         Npc npc = event.getNpc();
-
-        UUID uuid = getGraveUuidFromNpc(npc);
-        if (uuid == null) {
+        if (npc.getData() == null) {
+            plugin.debugMessage("NPC Data for FancyNpcs npc returned null.", 2);
             return;
         }
 
-        openGraveIfExists(event, npc, uuid);
-    }
+        String rawId = npc.getData().getName();
+        if (rawId == null || rawId.isEmpty()) {
+            plugin.debugMessage("NPC name/id for FancyNpcs npc returned null or empty.", 2);
+            return;
+        }
 
-    /**
-     * Extracts the grave UUID from the NPC.
-     *
-     * This assumes that the NPC's data ID is set to the grave UUID string when
-     * the NPC is created. Adjust this method if you store it differently
-     * (e.g. in the name, display name, or a custom scheme).
-     *
-     * @param npc The FancyNpcs NPC.
-     * @return The parsed UUID, or null if it cannot be parsed.
-     */
-    private UUID getGraveUuidFromNpc(Npc npc) {
-        String id = npc.getData().getId(); // e.g. "550e8400-e29b-41d4-a716-446655440000"
-        return UUIDUtil.getUUID(id);
-    }
+        UUID graveUuid = UUIDUtil.getUUID(rawId);
+        if (graveUuid == null) {
+            plugin.debugMessage("NPC UUID Data for FancyNpcs npc returned null.", 2);
+            return;
+        }
 
-    /**
-     * Opens the grave if it exists in the cache.
-     *
-     * @param event The NpcInteractEvent.
-     * @param npc   The FancyNpcs NPC.
-     * @param uuid  The UUID of the grave.
-     */
-    private void openGraveIfExists(NpcInteractEvent event, Npc npc, UUID uuid) {
-        Grave grave = plugin.getCacheManager().getGraveMap().get(uuid);
+        Grave grave = plugin.getCacheManager().getGraveMap().get(graveUuid);
 
         if (grave != null) {
-            event.setCancelled(
-                    plugin.getGraveManager().openGrave(
-                            event.getPlayer(),
-                            npc.getData().getLocation(),
-                            grave
-                    )
-            );
+            if (grave.getUUID().equals(graveUuid)) {
+                plugin.getGraveManager().openGrave(event.getPlayer(), npc.getData().getLocation(), grave);
+                plugin.debugMessage("FancyNpcs npc is a grave. Opening GUI for " + event.getPlayer().getDisplayName() + ".", 2);
+                event.setCancelled(true);
+            } else {
+                plugin.debugMessage("FancyNpcs npc UUID did not match Grave UUID.", 2);
+            }
+        } else {
+            plugin.debugMessage("FancyNpcs npc is not a grave. Ignoring...", 2);
         }
     }
+
 }
