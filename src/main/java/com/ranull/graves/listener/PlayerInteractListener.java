@@ -75,13 +75,17 @@ public class PlayerInteractListener implements Listener {
     }
 
     /**
-     * Checks if the player is not in Spectator mode.
+     * Checks if the player is not in Spectator mode. If they have bypass perms, they can get around it.
      *
      * @param player The player to check.
      * @return True if the player is not in Spectator mode, false otherwise.
      */
     private boolean isNotSpectatorMode(Player player) {
-        return plugin.getVersionManager().is_v1_7() || player.getGameMode() != GameMode.SPECTATOR;
+        if (plugin.getVersionManager().is_v1_7()) return true;
+
+        if (plugin.hasGrantedPermission("graves.bypass", player.getPlayer())) return true;
+
+        return Objects.requireNonNull(player.getPlayer()).getGameMode() != GameMode.SPECTATOR;
     }
 
     /**
