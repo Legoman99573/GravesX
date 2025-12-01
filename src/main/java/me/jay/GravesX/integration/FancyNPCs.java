@@ -50,34 +50,13 @@ public final class FancyNPCs extends EntityDataManager {
             location.getBlock().setType(Material.AIR);
             Location npcLocation = location.clone();
 
-            final double DESIRED_X = 1.5;
-            final double DESIRED_Y = 0.2;
-            final double DESIRED_Z = 0.5;
-
             try {
-                Location base = npcLocation.clone();
-
-                double requiredX = DESIRED_X - base.getX();
-                double requiredY = DESIRED_Y - base.getY();
-                double requiredZ = DESIRED_Z - base.getZ();
-
-                double cfgX = plugin.getConfig("fancynpcs.corpse.offset.x", grave)
-                        .getDouble("fancynpcs.corpse.offset.x", Double.NaN);
-                double cfgY = plugin.getConfig("fancynpcs.corpse.offset.y", grave)
-                        .getDouble("fancynpcs.corpse.offset.y", Double.NaN);
-                double cfgZ = plugin.getConfig("fancynpcs.corpse.offset.z", grave)
-                        .getDouble("fancynpcs.corpse.offset.z", Double.NaN);
-
-                double finalX = Double.isNaN(cfgX) ? requiredX : cfgX;
-                double finalY = Double.isNaN(cfgY) ? requiredY : cfgY;
-                double finalZ = Double.isNaN(cfgZ) ? requiredZ : cfgZ;
-
-                npcLocation.add(finalX, finalY, finalZ);
-
-            } catch (Exception e) {
-                npcLocation.setX(DESIRED_X);
-                npcLocation.setY(DESIRED_Y);
-                npcLocation.setZ(DESIRED_Z);
+                double x = plugin.getConfig("fancynpcs.corpse.offset.x", grave).getDouble("fancynpcs.corpse.offset.x");
+                double y = plugin.getConfig("fancynpcs.corpse.offset.y", grave).getDouble("fancynpcs.corpse.offset.y");
+                double z = plugin.getConfig("fancynpcs.corpse.offset.z", grave).getDouble("fancynpcs.corpse.offset.z");
+                npcLocation.add(x, y, z);
+            } catch (IllegalArgumentException ignored) {
+                npcLocation.add(-0.5, 0, -0.5);
             }
 
             String ownerIdStr = grave.getOwnerUUID().toString();
@@ -100,7 +79,7 @@ public final class FancyNPCs extends EntityDataManager {
             npc.spawnForAll();
 
             NpcAttribute poseAttribute = FancyNpcsPlugin.get().getAttributeManager().getAttributeByName(EntityType.PLAYER, POSE_ATTRIBUTE_NAME);
-            npc.getData().getAttributes().put(poseAttribute, "sleeping");
+            npc.getData().getAttributes().put(poseAttribute, "swimming");
             npc.getData().setCollidable(false);
             npc.getData().setShowInTab(false);
             npc.getData().setDisplayName("<empty>");
@@ -156,7 +135,7 @@ public final class FancyNPCs extends EntityDataManager {
 
             NpcAttribute poseAttribute = FancyNpcsPlugin.get().getAttributeManager()
                     .getAttributeByName(EntityType.PLAYER, POSE_ATTRIBUTE_NAME);
-            npc.getData().getAttributes().put(poseAttribute, "sleeping");
+            npc.getData().getAttributes().put(poseAttribute, "swimming");
             npc.getData().setCollidable(false);
             npc.getData().setShowInTab(false);
             npc.getData().setDisplayName("<empty>");
