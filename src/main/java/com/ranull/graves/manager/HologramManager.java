@@ -7,10 +7,13 @@ import com.ranull.graves.integration.MiniMessage;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.LocationUtil;
 import com.ranull.graves.util.StringUtil;
+import dev.cwhead.GravesX.keys.GraveHologramKeys;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -61,6 +64,25 @@ public class HologramManager extends EntityDataManager {
                     armorStand.setCustomNameVisible(true);
                     armorStand.setSmall(true);
 
+                    String locKey = toLocKey(grave.getLocationDeath());
+
+                    if (plugin.getVersionManager().hasPersistentData()) {
+                        PersistentDataContainer pdc = armorStand.getPersistentDataContainer();
+
+                        pdc.set(
+                                GraveHologramKeys.GRAVE_UUID,
+                                PersistentDataType.STRING,
+                                grave.getUUID().toString()
+                        );
+
+
+                        pdc.set(
+                                GraveHologramKeys.GRAVE_LOCATION,
+                                PersistentDataType.STRING,
+                                locKey
+                        );
+                    }
+
                     if (plugin.getIntegrationManager().hasMiniMessage()) {
                         String newLine = StringUtil.parseString(line, lineLoc, grave, plugin);
                         armorStand.setCustomName(MiniMessage.parseString(newLine));
@@ -78,8 +100,6 @@ public class HologramManager extends EntityDataManager {
                     if (plugin.getVersionManager().hasScoreboardTags()) {
                         armorStand.getScoreboardTags().add("graveHologram");
                         armorStand.getScoreboardTags().add("graveHologramGraveUUID:" + grave.getUUID());
-
-                        String locKey = toLocKey(grave.getLocationDeath());
                         armorStand.getScoreboardTags().add("graveHologramGraveLocation:" + locKey);
                     }
 
@@ -131,25 +151,52 @@ public class HologramManager extends EntityDataManager {
             Location graveLocation = data.getLocation();
             if (graveLocation == null || graveLocation.getWorld() == null) continue;
 
-            Location exactLoc = graveLocation;
             String locTag = "graveHologramGraveLocation:" + toLocKey(graveLocation);
+            String locKey = toLocKey(graveLocation);
 
-            executeRegion(exactLoc, () -> {
+            executeRegion(graveLocation, () -> {
                 try {
-                    for (Entity e : exactLoc.getWorld().getEntities()) {
+                    for (Entity e : graveLocation.getWorld().getEntities()) {
                         if (!(e instanceof ArmorStand)) continue;
                         if (!e.isValid()) continue;
-                        if (!e.getLocation().equals(exactLoc)) continue;
+
+                        if (!e.getLocation().equals(graveLocation)) continue;
+
+                        boolean remove = false;
 
                         try {
                             Set<String> tags = e.getScoreboardTags();
                             if (tags.contains(locTag)) {
-                                e.remove();
+                                remove = true;
                             }
                         } catch (NoSuchMethodError ignored) {}
+
+                        try {
+                            if (plugin.getVersionManager().hasPersistentData()) {
+                                PersistentDataContainer pdc = e.getPersistentDataContainer();
+
+                                String storedLoc = pdc.get(
+                                        GraveHologramKeys.GRAVE_LOCATION,
+                                        PersistentDataType.STRING
+                                );
+
+                                if (storedLoc != null && storedLoc.equals(locKey)) {
+                                    remove = true;
+                                }
+                            }
+                        } catch (Throwable ignored) {}
+
+                        if (remove) {
+                            e.remove();
+                        }
                     }
                 } catch (Throwable t) {
-                    plugin.getLogger().severe("Failed removing holograms at world: " + exactLoc.getWorld().getName() + ", x: " + exactLoc.getBlockX() + ", y: " + exactLoc.getBlockY() + ", z: " + exactLoc.getBlockZ() + ".");
+                    plugin.getLogger().severe(
+                            "Failed removing holograms at world: " + graveLocation.getWorld().getName() +
+                                    ", x: " + graveLocation.getBlockX() +
+                                    ", y: " + graveLocation.getBlockY() +
+                                    ", z: " + graveLocation.getBlockZ() + "."
+                    );
                     plugin.logStackTrace(t);
                 }
             });
@@ -168,18 +215,51 @@ public class HologramManager extends EntityDataManager {
 
         for (World world : plugin.getServer().getWorlds()) {
             for (ArmorStand stand : world.getEntitiesByClass(ArmorStand.class)) {
-                // Do not touch tags/state here; schedule into the entity's region
+
                 executeRegion(stand, () -> {
+
+                    boolean hasHoloTag = false;
+
                     try {
-                        if (!stand.getScoreboardTags().contains("graveHologram")) return;
+                        hasHoloTag = stand.getScoreboardTags().contains("graveHologram");
                     } catch (Throwable ignored) {
+                    }
+
+                    boolean hasPdc = false;
+                    try {
+                        PersistentDataContainer pdc = stand.getPersistentDataContainer();
+                        if (pdc.has(GraveHologramKeys.GRAVE_UUID, PersistentDataType.STRING)) {
+                            hasPdc = true;
+                        }
+                    } catch (Throwable ignored) {
+                        // PDC not supported on this version
+                    }
+
+                    if (!hasHoloTag && !hasPdc) {
+                        stand.remove();
+                        plugin.debugMessage("[Cleanup] Removed hologram with no tags or PDC: " + stand.getUniqueId(), 2);
                         return;
                     }
 
-                    UUID tagUuid = extractGraveUUIDFromStand(stand);
+                    UUID tagUuid = null;
+
+                    try {
+                        tagUuid = extractGraveUUIDFromStand(stand);
+                    } catch (Throwable ignored) {}
+
+                    try {
+                        PersistentDataContainer pdc = stand.getPersistentDataContainer();
+                        String pdcUuid = pdc.get(GraveHologramKeys.GRAVE_UUID, PersistentDataType.STRING);
+                        if (pdcUuid != null) {
+                            try {
+                                tagUuid = UUID.fromString(pdcUuid);
+                            } catch (IllegalArgumentException ignored) {}
+                        }
+                    } catch (Throwable ignored) {}
+
                     if (tagUuid == null) {
                         stand.remove();
-                        plugin.debugMessage("[Cleanup] Removed hologram (missing/invalid grave UUID tag) entity=" + stand.getUniqueId(), 2);
+                        plugin.debugMessage("[Cleanup] Removed hologram missing grave UUID tag/PDC entity=" + stand.getUniqueId(), 2);
                         return;
                     }
 
@@ -203,14 +283,24 @@ public class HologramManager extends EntityDataManager {
                         return;
                     }
 
-                    String tagLocKey = extractGraveLocationKeyFromStand(stand);
-                    if (tagLocKey != null) {
-                        String expectedKey = toLocKey(dbLoc);
-                        if (!locKeysMatch(expectedKey, tagLocKey)) {
-                            stand.remove();
-                            plugin.debugMessage("[Cleanup] Removed hologram for grave " + tagUuid
-                                    + " (location mismatch tag=" + tagLocKey + " db=" + expectedKey + ")", 2);
-                        }
+                    String expectedLocKey = toLocKey(dbLoc);
+
+                    String storedLocKey = null;
+
+                    try {
+                        storedLocKey = extractGraveLocationKeyFromStand(stand);
+                    } catch (Throwable ignored) {}
+
+                    try {
+                        PersistentDataContainer pdc = stand.getPersistentDataContainer();
+                        String pdcLoc = pdc.get(GraveHologramKeys.GRAVE_LOCATION, PersistentDataType.STRING);
+                        if (pdcLoc != null) storedLocKey = pdcLoc;
+                    } catch (Throwable ignored) {}
+
+                    if (storedLocKey != null && !locKeysMatch(expectedLocKey, storedLocKey)) {
+                        stand.remove();
+                        plugin.debugMessage("[Cleanup] Removed hologram for grave " + tagUuid
+                                + " (location mismatch stored=" + storedLocKey + " db=" + expectedLocKey + ")", 2);
                     }
                 });
             }
