@@ -2,6 +2,7 @@ package dev.cwhead.GravesX.command;
 
 import com.ranull.graves.Graves;
 import dev.cwhead.GravesX.module.ModuleManager;
+import dev.cwhead.GravesX.module.util.ModuleInfo;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -12,10 +13,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 
 public final class GxModulesCommand implements CommandExecutor, TabCompleter {
@@ -37,7 +35,9 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
         if (args.length == 0 || "help".equalsIgnoreCase(args[0])) {
             sender.sendMessage(ChatColor.RED + "☠ " + ChatColor.GOLD + "GravesX Modules:");
             sender.sendMessage(ChatColor.YELLOW + "/" + label + " list" + ChatColor.GRAY + " - show modules + state");
-            sender.sendMessage(ChatColor.YELLOW + "/" + label + " info <name>" + ChatColor.GRAY + " - details");
+            sender.sendMessage(ChatColor.YELLOW + "/" + label + " info <name>" + ChatColor.GRAY + " - module details");
+            sender.sendMessage(ChatColor.YELLOW + "/" + label + " info <name> commands" + ChatColor.GRAY + " - list module commands");
+            sender.sendMessage(ChatColor.YELLOW + "/" + label + " info <name> permissions" + ChatColor.GRAY + " - list module permission nodes");
             sender.sendMessage(ChatColor.YELLOW + "/" + label + " reload" + ChatColor.GRAY + " - reload all modules (DANGEROUS; requires confirm)");
             return true;
         }
@@ -57,6 +57,12 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
                             ? ChatColor.GREEN + "ENABLED"
                             : (pend.contains(name) ? ChatColor.YELLOW + "PENDING" : ChatColor.RED + "DISABLED");
 
+                    // Folia support indicator from module.yml -> supportsFolia
+                    String foliaFlag = lm.info.supportsFolia()
+                            ? ChatColor.GREEN + "YES"
+                            : ChatColor.RED + "NO";
+
+                    // Description strictly from module.yml "description"
                     String desc = (lm.info.description() == null) ? "" : lm.info.description().trim();
                     String descPreview = desc.isEmpty()
                             ? ""
@@ -65,6 +71,7 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
                     sender.sendMessage(
                             ChatColor.AQUA + "- " + name + ChatColor.GRAY + " v" + lm.info.version()
                                     + ChatColor.DARK_GRAY + " [" + state + ChatColor.DARK_GRAY + "]"
+                                    + ChatColor.DARK_GRAY + " [Folia: " + foliaFlag + ChatColor.DARK_GRAY + "]"
                                     + descPreview
                     );
                 }
@@ -73,7 +80,7 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
 
             case "info" -> {
                 if (args.length < 2) {
-                    sender.sendMessage(ChatColor.RED + "☠ " + ChatColor.RED + "Usage: /" + label + " info <name>");
+                    sender.sendMessage(ChatColor.RED + "☠ " + ChatColor.RED + "Usage: /" + label + " info <name> [commands|permissions]");
                     return true;
                 }
 
@@ -84,9 +91,28 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
                     return true;
                 }
 
+                // Optional third argument: commands / permissions
+                String mode = (args.length >= 3) ? args[2].toLowerCase(Locale.ROOT) : "";
+
+                if ("commands".equals(mode)) {
+                    return handleModuleCommands(sender, lm);
+                } else if ("permissions".equals(mode)) {
+                    return handleModulePermissions(sender, lm);
+                }
+
+                // ---- General module info ----
                 String state = lm.enabled
                         ? ChatColor.GREEN + "ENABLED"
                         : (pend.contains(lm.info.name()) ? ChatColor.YELLOW + "PENDING" : ChatColor.RED + "DISABLED");
+
+                // Folia support + current server type
+                boolean supportsFolia = lm.info.supportsFolia();
+                boolean runningFolia = plugin.getVersionManager().isFolia();
+                String foliaSupportLine =
+                        (supportsFolia ? ChatColor.GREEN + "YES" : ChatColor.RED + "NO")
+                                + ChatColor.DARK_GRAY + " (Server: "
+                                + (runningFolia ? ChatColor.GREEN + "Folia" : ChatColor.YELLOW + "Non-Folia")
+                                + ChatColor.DARK_GRAY + ")";
 
                 Function<String, String> fmtPluginReq = (dep) -> {
                     Plugin p = Bukkit.getPluginManager().getPlugin(dep);
@@ -133,6 +159,7 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
                 String site = lm.info.website();
                 String websiteLine = (site == null || site.isBlank()) ? "-" : ChatColor.BLUE + site;
 
+                // Description strictly from module.yml description
                 String descFull = lm.info.description();
                 String descLine = (descFull == null || descFull.isBlank()) ? "-" : ChatColor.GRAY + descFull;
 
@@ -143,6 +170,7 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage(ChatColor.GRAY + "Data folder: " + lm.context.getDataFolder().getPath());
                 sender.sendMessage(ChatColor.GRAY + "Authors: " + authorsLine);
                 sender.sendMessage(ChatColor.GRAY + "Website: " + websiteLine);
+                sender.sendMessage(ChatColor.GRAY + "Folia support: " + foliaSupportLine);
 
                 sender.sendMessage(ChatColor.GRAY + "pluginDepends: " +
                         (pluginDependsLines.isEmpty() ? "-" : String.join(ChatColor.GRAY + ", ", pluginDependsLines)));
@@ -162,6 +190,12 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage(ChatColor.GRAY + "moduleLoadBefore: " +
                         (lm.info.moduleLoadBefore().isEmpty() ? "-" : String.join(ChatColor.GRAY + ", ", lm.info.moduleLoadBefore())));
 
+                sender.sendMessage(ChatColor.DARK_GRAY + "Tip: "
+                        + ChatColor.GRAY + "Use "
+                        + ChatColor.YELLOW + "/" + label + " info " + lm.info.name() + " commands"
+                        + ChatColor.GRAY + " or "
+                        + ChatColor.YELLOW + "/" + label + " info " + lm.info.name() + " permissions"
+                        + ChatColor.GRAY + " to see module commands/permissions.");
                 return true;
             }
 
@@ -193,18 +227,94 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
         }
     }
 
+    /**
+     * Handles /gxm info <module> permissions
+     */
+    private boolean handleModulePermissions(CommandSender sender, ModuleManager.LoadedModule lm) {
+        Map<String, ModuleInfo.PermissionDef> perms = lm.info.permissions();
+        sender.sendMessage(ChatColor.RED + "☠ " + ChatColor.GOLD + "Permissions for module " + ChatColor.AQUA + lm.info.name() + ChatColor.GOLD + ":");
+        if (perms == null || perms.isEmpty()) {
+            sender.sendMessage(ChatColor.GRAY + "- (No permissions defined in module.yml)");
+            return true;
+        }
+
+        for (ModuleInfo.PermissionDef def : perms.values()) {
+            String node = def.node();
+            String desc = def.description();
+            String defVal = def.defaultValue();
+
+            if (defVal == null || defVal.isBlank()) defVal = "NONE";
+
+            sender.sendMessage(ChatColor.YELLOW + node
+                    + ChatColor.GRAY + " - "
+                    + ((desc == null || desc.isBlank())
+                    ? ChatColor.DARK_GRAY + "(no description)"
+                    : ChatColor.GRAY + desc));
+            sender.sendMessage(ChatColor.DARK_GRAY + "  Default: "
+                    + ChatColor.AQUA + defVal);
+        }
+        return true;
+    }
+
+    /**
+     * Handles /gxm info <module> commands
+     */
+    private boolean handleModuleCommands(CommandSender sender, ModuleManager.LoadedModule lm) {
+        Map<String, ModuleInfo.CommandDef> commands = lm.info.commands();
+        sender.sendMessage(ChatColor.RED + "☠ " + ChatColor.GOLD + "Commands for module " + ChatColor.AQUA + lm.info.name() + ChatColor.GOLD + ":");
+        if (commands == null || commands.isEmpty()) {
+            sender.sendMessage(ChatColor.GRAY + "- (No commands defined in module.yml)");
+            return true;
+        }
+
+        for (ModuleInfo.CommandDef def : commands.values()) {
+            String name = def.name();
+            String desc = def.description();
+            String usage = def.usage();
+            String perm = def.permission();
+            List<String> aliases = def.aliases() == null ? List.of() : def.aliases();
+
+            sender.sendMessage(ChatColor.AQUA + "/" + name
+                    + ChatColor.GRAY + " - "
+                    + ((desc == null || desc.isBlank())
+                    ? ChatColor.DARK_GRAY + "(no description)"
+                    : ChatColor.GRAY + desc));
+
+            if (usage != null && !usage.isBlank()) {
+                sender.sendMessage(ChatColor.DARK_GRAY + "  Usage: "
+                        + ChatColor.GRAY + usage);
+            }
+
+            if (perm != null && !perm.isBlank()) {
+                sender.sendMessage(ChatColor.DARK_GRAY + "  Permission: "
+                        + ChatColor.YELLOW + perm);
+            }
+
+            if (!aliases.isEmpty()) {
+                sender.sendMessage(ChatColor.DARK_GRAY + "  Aliases: "
+                        + ChatColor.GRAY + String.join(", ", aliases));
+            }
+        }
+        return true;
+    }
+
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String alias, String[] args) {
         if (!(sender instanceof Player) || !sender.hasPermission("gravesx.modules")) return List.of();
+
         if (args.length == 1) {
             return prefix(List.of("help", "list", "info", "reload"), args[0]);
         }
-        if (args.length == 2) {
-            if ("info".equalsIgnoreCase(args[0])) {
-                List<String> names = manager.modules().stream().map(lm -> lm.info.name()).toList();
-                return prefix(names, args[1]);
-            }
+
+        if (args.length == 2 && "info".equalsIgnoreCase(args[0])) {
+            List<String> names = manager.modules().stream().map(lm -> lm.info.name()).toList();
+            return prefix(names, args[1]);
         }
+
+        if (args.length == 3 && "info".equalsIgnoreCase(args[0])) {
+            return prefix(List.of("commands", "permissions"), args[2]);
+        }
+
         return List.of();
     }
 

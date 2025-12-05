@@ -8,6 +8,10 @@ import java.util.List;
  *
  * <p>All getters are non-mutating. Optional fields may be {@code null}
  * or an empty list, depending on type.</p>
+ *
+ * <p>The descriptor also exposes the {@code supportsFolia} flag parsed from
+ * {@code module.yml}, which indicates whether the module declares itself safe
+ * to run on Folia-based server implementations.</p>
  */
 public interface GravesXModuleDescriptor {
     /**
@@ -95,4 +99,19 @@ public interface GravesXModuleDescriptor {
      * @return {@code true} if this module is enabled, otherwise {@code false}
      */
     boolean isEnabled();
+
+    /**
+     * Whether this module declares Folia support via {@code module.yml:supportsFolia}.
+     *
+     * <p>This is a purely declarative flag: it reflects what the module author
+     * configured in {@code module.yml}. The manager may still choose to disable
+     * the module at runtime if it detects incompatibilities, but this flag
+     * can be used by callers to understand the module's declared intent.</p>
+     *
+     * <p>If {@code supportsFolia} is omitted in {@code module.yml}, this will
+     * typically default to {@code false}.</p>
+     *
+     * @return {@code true} if the module declares Folia support; {@code false} otherwise
+     */
+    boolean supportsFolia();
 }

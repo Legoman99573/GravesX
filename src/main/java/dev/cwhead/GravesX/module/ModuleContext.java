@@ -2,6 +2,7 @@ package dev.cwhead.GravesX.module;
 
 import com.ranull.graves.Graves;
 import dev.cwhead.GravesX.module.util.LibraryImporter;
+import org.bukkit.Location;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.HandlerList;
@@ -23,6 +24,9 @@ import java.util.logging.Logger;
 /**
  * Provides services and utilities to a single module: data folder, logging,
  * config handling, resource I/O, event/task/service registration, and cleanup.
+ *
+ * <p>When running on Folia, scheduling helpers delegate to the GravesX scheduler,
+ * which is expected to provide a Folia-aware implementation (e.g. region threads).</p>
  */
 public final class ModuleContext {
     private final Graves plugin;
@@ -55,10 +59,10 @@ public final class ModuleContext {
     /**
      * Creates a context for a module and prepares its storage and config.
      *
-     * @param plugin Owning Graves plugin.
-     * @param moduleName Module name used for paths and messages.
+     * @param plugin            Owning Graves plugin.
+     * @param moduleName        Module name used for paths and messages.
      * @param moduleClassLoader Class loader that serves module resources.
-     * @param importer Library importer used by {@link #importLibrary(String)}.
+     * @param importer          Library importer used by {@link #importLibrary(String)}.
      */
     public ModuleContext(Graves plugin,
                          String moduleName,
@@ -122,6 +126,20 @@ public final class ModuleContext {
     }
 
     /**
+     * Whether this module declares Folia support in {@code module.yml} via {@code supportsFolia: true}.
+     *
+     * <p>This is a convenience that forwards to the underlying {@link GravesXModuleDescriptor}
+     * via the module controller. Returns {@code false} if the controller or descriptor is
+     * not yet attached.</p>
+     *
+     * @return {@code true} if the module descriptor reports Folia support; {@code false} otherwise
+     */
+    public boolean supportsFolia() {
+        GravesXModuleController c = controller;
+        return c != null && c.supportsFolia();
+    }
+
+    /**
      * Copies all default YAML resources (except module.yml) from the module JAR into this module's
      * data folder, preserving subfolders. Existing files are not overwritten. Ensures a config.yml
      * exists (copy or stub), then reloads the config.
@@ -134,7 +152,9 @@ public final class ModuleContext {
             JarFile jarFile = findModuleJar();
             if (jarFile != null) {
                 extractYamlEntries(jarFile, baseDir);
-                try { jarFile.close(); } catch (IOException ignored) {}
+                try {
+                    jarFile.close();
+                } catch (IOException ignored) {}
             } else {
                 // Fallback: copy a top-level config.yml resource if present
                 if (!configFile.exists()) {
@@ -242,8 +262,11 @@ public final class ModuleContext {
      */
     public void saveConfig() {
         if (config == null) return;
-        try { config.save(configFile); }
-        catch (Exception e) { logger.warning("[Modules] Failed to save config for " + moduleName + ": " + e.getMessage()); }
+        try {
+            config.save(configFile);
+        } catch (Exception e) {
+            logger.warning("[Modules] Failed to save config for " + moduleName + ": " + e.getMessage());
+        }
     }
 
     /**
@@ -265,7 +288,7 @@ public final class ModuleContext {
     /**
      * Saves an embedded resource from the module jar into the module data folder.
      *
-     * @param path Resource path inside the jar.
+     * @param path    Resource path inside the jar.
      * @param replace If true, overwrites an existing file.
      */
     public void saveResource(String path, boolean replace) {
@@ -291,7 +314,7 @@ public final class ModuleContext {
      * Registers an event listener and tracks it for automatic cleanup.
      *
      * @param listener Listener to register.
-     * @param <T> Listener type.
+     * @param <T>      Listener type.
      * @return The same listener for chaining.
      */
     public <T extends Listener> T registerListener(T listener) {
@@ -301,7 +324,9 @@ public final class ModuleContext {
     }
 
     private Runnable guard(final Runnable r) {
-        return () -> { if (!disabling) r.run(); };
+        return () -> {
+            if (!disabling) r.run();
+        };
     }
 
     /**
@@ -316,7 +341,7 @@ public final class ModuleContext {
     /**
      * Schedules a delayed synchronous task using the GravesX scheduler.
      *
-     * @param r Task to run.
+     * @param r     Task to run.
      * @param delay Delay in ticks before first run.
      */
     public void runTaskLater(Runnable r, long delay) {
@@ -326,8 +351,8 @@ public final class ModuleContext {
     /**
      * Schedules a repeating synchronous task using the GravesX scheduler.
      *
-     * @param r Task to run.
-     * @param delay Delay in ticks before first run.
+     * @param r      Task to run.
+     * @param delay  Delay in ticks before first run.
      * @param period Period in ticks between runs.
      */
     public void runTaskTimer(Runnable r, long delay, long period) {
@@ -346,8 +371,8 @@ public final class ModuleContext {
     /**
      * Schedules a repeating asynchronous task using the GravesX scheduler.
      *
-     * @param r Task to run.
-     * @param delay Delay in ticks before first run.
+     * @param r      Task to run.
+     * @param delay  Delay in ticks before first run.
      * @param period Period in ticks between runs.
      */
     public void runTaskTimerAsync(Runnable r, long delay, long period) {
@@ -355,11 +380,27 @@ public final class ModuleContext {
     }
 
     /**
+     * Executes a task on the region thread associated with the given location
+     * using the GravesX scheduler.
+     *
+     * <p>On Folia, this should run the task on the appropriate region thread.
+     * On non-Folia servers, the scheduler may fall back to the main thread or
+     * another compatible implementation.</p>
+     *
+     * @param location Location whose region thread should be used.
+     * @param r        Task to run.
+     */
+    public void executeRegion(Location location, Runnable r) {
+        if (location == null || r == null) return;
+        plugin.getGravesXScheduler().execute(location, guard(r));
+    }
+
+    /**
      * Registers a Bukkit service and tracks it for automatic unregister.
      *
-     * @param service Service interface class.
+     * @param service  Service interface class.
      * @param provider Service implementation instance.
-     * @param prio Registration priority.
+     * @param prio     Registration priority.
      */
     public <T> void registerService(Class<T> service, T provider, ServicePriority prio) {
         org.bukkit.Bukkit.getServicesManager().register(service, provider, plugin, prio);
@@ -370,7 +411,7 @@ public final class ModuleContext {
      * Registers a closeable resource to be closed during cleanup.
      *
      * @param closeable Resource to track.
-     * @param <T> Resource type.
+     * @param <T>       Resource type.
      * @return The same resource for chaining.
      */
     public <T extends AutoCloseable> T registerCloseable(T closeable) {
@@ -411,32 +452,42 @@ public final class ModuleContext {
      * Unregisters listeners/services, closes resources, and runs hooks.
      */
     void _internalCleanup() {
-        for (Runnable r : snapshot(shutdownHooks)) { safeRun(r); }
+        for (Runnable r : snapshot(shutdownHooks)) {
+            safeRun(r);
+        }
         shutdownHooks.clear();
 
-        for (Listener l : snapshot(listeners)) { HandlerList.unregisterAll(l); }
+        for (Listener l : snapshot(listeners)) {
+            HandlerList.unregisterAll(l);
+        }
         listeners.clear();
 
         for (ServiceReg reg : snapshot(services)) {
-            try { org.bukkit.Bukkit.getServicesManager().unregister(reg.type, reg.provider); } catch (Throwable ignored) {}
+            try {
+                org.bukkit.Bukkit.getServicesManager().unregister(reg.type, reg.provider);
+            } catch (Throwable ignored) {}
         }
         services.clear();
 
         for (AutoCloseable c : snapshot(closeables)) {
-            try { c.close(); } catch (Throwable ignored) {}
+            try {
+                c.close();
+            } catch (Throwable ignored) {}
         }
         closeables.clear();
     }
 
     /**
-     * Internal: attaches a per-module controller (wired by the GravesXModuleController).
+     * Internal: attaches a per-module controller (wired by the module manager).
      */
     void _internalAttachController(GravesXModuleController controller) {
         this.controller = controller;
     }
 
     /**
-     * Exposes the per-module controller for enable/disable/isEnabled access.
+     * Exposes the per-module controller for enable/disable/isEnabled/Folia access.
+     *
+     * @return controller instance, or {@code null} if not yet attached
      */
     public GravesXModuleController getGravesXModules() {
         return controller;
@@ -450,12 +501,12 @@ public final class ModuleContext {
         try {
             r.run();
         } catch (Throwable ignored) {
-
         }
     }
 
     private static void saveString(Path file, String contents) throws IOException {
         Files.createDirectories(file.getParent());
-        Files.writeString(file, contents, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        Files.writeString(file, contents, StandardCharsets.UTF_8,
+                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
     }
 }

@@ -4,6 +4,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.List;
@@ -12,19 +13,153 @@ import java.util.regex.Pattern;
 
 /**
  * Immutable descriptor of a module parsed from {@code module.yml}.
- * Holds name, description, main class, version, authors, website,
- * and plugin/module dependency lists.
+ *
+ * <p>Holds name, description, main class, version, authors, website,
+ * plugin/module dependency lists, Folia support flag, and simple
+ * permission/command metadata.</p>
  */
 public final class ModuleInfo {
+    /**
+     * Simple immutable description of a permission from module.yml:
+     *
+     * <pre>
+     * permissions:
+     *   graves.example.permission:
+     *     description: "Allows use of example action"
+     *     default: true
+     * </pre>
+     */
+    public static final class PermissionDef {
+        private final String node;
+        private final String description;
+        private final String defaultValue;
+
+        public PermissionDef(String node, String description, String defaultValue) {
+            this.node = node;
+            this.description = description;
+            this.defaultValue = defaultValue;
+        }
+
+        /** Permission node string, e.g. {@code graves.example.permission}. */
+        public String node() {
+            return node;
+        }
+
+        /** Human-friendly description, or {@code null} if not provided. */
+        public String description() {
+            return description;
+        }
+
+        /**
+         * Default value as string (e.g. {@code "true"}, {@code "false"},
+         * {@code "op"}, {@code "not op"}), or {@code null} if absent.
+         */
+        public String defaultValue() {
+            return defaultValue;
+        }
+    }
+
+    /**
+     * Simple immutable description of a command from module.yml:
+     *
+     * <pre>
+     * commands:
+     *   example:
+     *     description: "Runs example command"
+     *     usage: "/example [arg]"
+     *     permission: "graves.example.command"
+     *     aliases: ["ex"]
+     *     executor: dev.cwhead.GravesX.modules.example.command.GxCommand
+     *     tab-completer: dev.cwhead.GravesX.modules.example.command.GxTab
+     * </pre>
+     */
+    public static final class CommandDef {
+        private final String name;
+        private final String description;
+        private final String usage;
+        private final String permission;
+        private final List<String> aliases;
+        private final String executor;
+        private final String tabCompleter;
+
+        public CommandDef(
+                String name,
+                String description,
+                String usage,
+                String permission,
+                List<String> aliases,
+                String executor,
+                String tabCompleter
+        ) {
+            this.name = name;
+            this.description = description;
+            this.usage = usage;
+            this.permission = permission;
+            this.aliases = List.copyOf(aliases == null ? List.of() : aliases);
+            this.executor = executor;
+            this.tabCompleter = tabCompleter;
+        }
+
+        /** Command name (as defined under {@code commands:}). */
+        public String name() {
+            return name;
+        }
+
+        /** Command description, or {@code null} if not provided. */
+        public String description() {
+            return description;
+        }
+
+        /** Usage string, e.g. {@code "/example [arg]"} or {@code null}. */
+        public String usage() {
+            return usage;
+        }
+
+        /** Required permission node, or {@code null} if not specified. */
+        public String permission() {
+            return permission;
+        }
+
+        /** Aliases for this command (may be empty). */
+        public List<String> aliases() {
+            return aliases;
+        }
+
+        /** Executor class name (if provided). */
+        public String executor() {
+            return executor;
+        }
+
+        /** Tab completer class name (if provided). */
+        public String tabCompleter() {
+            return tabCompleter;
+        }
+    }
+
     private final String name, description, mainClass, version, website;
     private final List<String> authors;
     private final List<String> pluginDepends, pluginSoftDepends, pluginLoadBefore;
     private final List<String> moduleDepends, moduleSoftDepends, moduleLoadBefore;
+    private final boolean supportsFolia;
+    private final Map<String, PermissionDef> permissions;
+    private final Map<String, CommandDef> commands;
 
     private ModuleInfo(
-            String name, String description, String mainClass, String version, String website, List<String> authors,
-            List<String> pDep, List<String> pSoft, List<String> pBefore,
-            List<String> mDep, List<String> mSoft, List<String> mBefore
+            String name,
+            String description,
+            String mainClass,
+            String version,
+            String website,
+            List<String> authors,
+            List<String> pDep,
+            List<String> pSoft,
+            List<String> pBefore,
+            List<String> mDep,
+            List<String> mSoft,
+            List<String> mBefore,
+            boolean supportsFolia,
+            Map<String, PermissionDef> permissions,
+            Map<String, CommandDef> commands
     ) {
         this.name = name;
         this.description = nv(description);
@@ -38,122 +173,125 @@ public final class ModuleInfo {
         this.moduleDepends = List.copyOf(mDep);
         this.moduleSoftDepends = List.copyOf(mSoft);
         this.moduleLoadBefore = List.copyOf(mBefore);
+        this.supportsFolia = supportsFolia;
+        this.permissions = Map.copyOf(permissions == null ? Map.of() : permissions);
+        this.commands = Map.copyOf(commands == null ? Map.of() : commands);
     }
 
-    /**
-     * Gets the module name.
-     *
-     * @return Module name or {@code null} if not provided.
-     */
+    /** Gets the module name, or {@code null} if not provided. */
     public String name() {
         return name;
     }
 
-    /**
-     * Gets the module description.
-     *
-     * @return Description text or {@code null} if not provided.
-     */
+    /** Gets the module description (from {@code description} in module.yml). */
     public String description() {
         return description;
     }
 
-    /**
-     * Gets the fully qualified main class.
-     *
-     * @return Main class name or {@code null} if not provided.
-     */
+    /** Gets the fully qualified main class, or {@code null} if not provided. */
     public String mainClass() {
         return mainClass;
     }
 
-    /**
-     * Gets the module version.
-     *
-     * @return Version string (defaults to {@code "0.0.0"} if missing).
-     */
+    /** Gets the module version (defaults to {@code "0.0.0"} if missing). */
     public String version() {
         return version;
     }
 
-    /**
-     * Gets the website URL for this module.
-     *
-     * @return Website URL or {@code null} if not provided.
-     */
+    /** Gets the website URL for this module, or {@code null} if not provided. */
     public String website() {
         return website;
     }
 
-    /**
-     * Gets the authors of this module.
-     *
-     * @return Unmodifiable list of author names (may be empty).
-     */
+    /** Gets authors of this module (may be empty, never {@code null}). */
     public List<String> authors() {
         return authors;
     }
 
-    /**
-     * Gets required Bukkit plugin dependencies.
-     *
-     * @return Unmodifiable list of plugin names.
-     */
+    /** Required Bukkit plugin dependencies. */
     public List<String> pluginDepends() {
         return pluginDepends;
     }
 
-    /**
-     * Gets optional Bukkit plugin dependencies.
-     *
-     * @return Unmodifiable list of plugin names.
-     */
+    /** Optional Bukkit plugin dependencies. */
     public List<String> pluginSoftDepends() {
         return pluginSoftDepends;
     }
 
-    /**
-     * Gets plugins that should load after this module.
-     *
-     * @return Unmodifiable list of plugin names.
-     */
+    /** Plugins that should load after this module. */
     public List<String> pluginLoadBefore() {
         return pluginLoadBefore;
     }
 
-    /**
-     * Gets required module dependencies.
-     *
-     * @return Unmodifiable list of module names.
-     */
+    /** Required module dependencies. */
     public List<String> moduleDepends() {
         return moduleDepends;
     }
 
-    /**
-     * Gets optional module dependencies.
-     *
-     * @return Unmodifiable list of module names.
-     */
+    /** Optional module dependencies. */
     public List<String> moduleSoftDepends() {
         return moduleSoftDepends;
     }
 
-    /**
-     * Gets modules that should load after this module.
-     *
-     * @return Unmodifiable list of module names.
-     */
+    /** Modules that should load after this module. */
     public List<String> moduleLoadBefore() {
         return moduleLoadBefore;
     }
 
     /**
+     * Whether this module declares Folia support via {@code supportsFolia: true}.
+     *
+     * @return {@code true} if {@code supportsFolia} is explicitly true; otherwise {@code false}.
+     */
+    public boolean supportsFolia() {
+        return supportsFolia;
+    }
+
+    /**
+     * Returns permissions defined in {@code permissions:} in module.yml,
+     * keyed by permission node.
+     */
+    public Map<String, PermissionDef> permissions() {
+        return permissions;
+    }
+
+    /**
+     * Returns commands defined in {@code commands:} in module.yml,
+     * keyed by command name.
+     */
+    public Map<String, CommandDef> commands() {
+        return commands;
+    }
+
+    /**
      * Parses a minimal YAML-like stream into a {@link ModuleInfo}.
-     * Supports keys: {@code name}, {@code description}, {@code main}, {@code version}, {@code website},
+     *
+     * <p>Supports top-level keys:
+     * {@code name}, {@code description}, {@code main}, {@code version}, {@code website},
      * {@code author} (single) or {@code authors} (list),
      * {@code pluginDepends}, {@code pluginSoftDepends}, {@code pluginLoadBefore},
-     * {@code moduleDepends}, {@code moduleSoftDepends}, {@code moduleLoadBefore}.
+     * {@code moduleDepends}, {@code moduleSoftDepends} / {@code moduleSoftDepend},
+     * {@code moduleLoadBefore}, {@code supportsFolia},
+     * {@code permissions}, {@code commands}.</p>
+     *
+     * <p>Permissions and commands support a simple two-level structure like:</p>
+     *
+     * <pre>
+     * permissions:
+     *   node.here:
+     *     description: "text"
+     *     default: true
+     *
+     * commands:
+     *   cmd:
+     *     description: "text"
+     *     usage: "/cmd"
+     *     permission: "node"
+     *     aliases: ["a", "b"]
+     *     executor: fqcn
+     *     tab-completer: fqcn
+     * </pre>
+     *
      * <p>List values may be comma-separated on the same line or via {@code - item} lines.
      * Comments (#) and blank lines are ignored.</p>
      *
@@ -165,7 +303,30 @@ public final class ModuleInfo {
         String text = new String(in.readAllBytes());
         Map<String, List<String>> lists = new HashMap<>();
         Map<String, String> scalars = new HashMap<>();
+        Map<String, PermissionDef> permissions = new LinkedHashMap<>();
+        Map<String, CommandDef> commands = new LinkedHashMap<>();
+
         String currentList = null;
+        String currentSection = null;
+
+        class PermBuilder {
+            String node;
+            String description;
+            String defaultValue;
+        }
+        class CmdBuilder {
+            String name;
+            String description;
+            String usage;
+            String permission;
+            String executor;
+            String tabCompleter;
+            List<String> aliases = new ArrayList<>();
+        }
+
+        PermBuilder currentPerm = null;
+        CmdBuilder currentCmd = null;
+
         Pattern keyLine = Pattern.compile("^[A-Za-z][A-Za-z0-9_-]*\\s*:");
 
         Set<String> listKeys = new HashSet<>(Set.of(
@@ -175,20 +336,53 @@ public final class ModuleInfo {
                 "pluginloadbefore",
                 "moduledepends",
                 "modulesoftdepends",
+                "modulesoftdepend",
                 "moduleloadbefore"
         ));
 
         String[] lines = text.split("\\R");
         for (String raw : lines) {
-            String line = raw.trim();
-            if (line.isEmpty() || line.startsWith("#")) continue;
+            String trimmed = raw.trim();
+            if (trimmed.isEmpty() || trimmed.startsWith("#")) continue;
 
-            if (keyLine.matcher(line).find()) {
-                int idx = line.indexOf(':');
-                String key = line.substring(0, idx).trim();
-                String val = line.substring(idx + 1).trim();
+            int indent = leadingSpaces(raw);
+
+            if (indent == 0 && keyLine.matcher(trimmed).find()) {
+                if (!"permissions".equalsIgnoreCase(trimmed.split(":")[0].trim())
+                        && currentPerm != null && currentPerm.node != null) {
+                    permissions.put(currentPerm.node,
+                            new PermissionDef(currentPerm.node,
+                                    nv(currentPerm.description),
+                                    nv(currentPerm.defaultValue)));
+                    currentPerm = null;
+                }
+                if (!"commands".equalsIgnoreCase(trimmed.split(":")[0].trim())
+                        && currentCmd != null && currentCmd.name != null) {
+                    commands.put(currentCmd.name,
+                            new CommandDef(currentCmd.name,
+                                    nv(currentCmd.description),
+                                    nv(currentCmd.usage),
+                                    nv(currentCmd.permission),
+                                    currentCmd.aliases,
+                                    nv(currentCmd.executor),
+                                    nv(currentCmd.tabCompleter)));
+                    currentCmd = null;
+                }
+
+                int idx = trimmed.indexOf(':');
+                String key = trimmed.substring(0, idx).trim();
+                String val = trimmed.substring(idx + 1).trim();
                 String k = key.toLowerCase(Locale.ROOT);
                 currentList = null;
+                currentSection = null;
+
+                if ("permissions".equals(k)) {
+                    currentSection = "permissions";
+                    continue;
+                } else if ("commands".equals(k)) {
+                    currentSection = "commands";
+                    continue;
+                }
 
                 boolean isListKey = listKeys.contains(k);
 
@@ -209,20 +403,109 @@ public final class ModuleInfo {
                         }
                         lists.put(k, arr);
                     } else {
-                        if (val.startsWith("\"") && val.endsWith("\"") && val.length() >= 2)
+                        if (val.startsWith("\"") && val.endsWith("\"") && val.length() >= 2) {
                             val = val.substring(1, val.length() - 1);
+                        }
                         scalars.put(k, val);
                     }
                 }
                 continue;
             }
 
-            if (line.startsWith("-") && currentList != null) {
-                String v = line.substring(1).trim();
+            if (trimmed.startsWith("-") && currentList != null && currentSection == null) {
+                String v = trimmed.substring(1).trim();
                 if (!v.isEmpty()) lists.get(currentList).add(v);
+                continue;
             }
+
+            if ("permissions".equals(currentSection)) {
+                int idx = trimmed.indexOf(':');
+                if (idx <= 0) continue;
+                String key = trimmed.substring(0, idx).trim();
+                String val = trimmed.substring(idx + 1).trim();
+
+                if (indent == 2) {
+                    if (currentPerm != null && currentPerm.node != null) {
+                        permissions.put(currentPerm.node,
+                                new PermissionDef(currentPerm.node,
+                                        nv(currentPerm.description),
+                                        nv(currentPerm.defaultValue)));
+                    }
+                    currentPerm = new PermBuilder();
+                    currentPerm.node = key;
+                    continue;
+                }
+
+                if (indent >= 4 && currentPerm != null) {
+                    if ("description".equalsIgnoreCase(key)) {
+                        currentPerm.description = stripSimpleQuotes(val);
+                    } else if ("default".equalsIgnoreCase(key)) {
+                        currentPerm.defaultValue = stripSimpleQuotes(val);
+                    }
+                }
+                continue;
+            }
+
+            if ("commands".equals(currentSection)) {
+                int idx = trimmed.indexOf(':');
+                if (idx <= 0) continue;
+                String key = trimmed.substring(0, idx).trim();
+                String val = trimmed.substring(idx + 1).trim();
+
+                if (indent == 2) {
+                    if (currentCmd != null && currentCmd.name != null) {
+                        commands.put(currentCmd.name,
+                                new CommandDef(currentCmd.name,
+                                        nv(currentCmd.description),
+                                        nv(currentCmd.usage),
+                                        nv(currentCmd.permission),
+                                        currentCmd.aliases,
+                                        nv(currentCmd.executor),
+                                        nv(currentCmd.tabCompleter)));
+                    }
+                    currentCmd = new CmdBuilder();
+                    currentCmd.name = key; // e.g. "example"
+                    continue;
+                }
+
+                if (indent >= 4 && currentCmd != null) {
+                    String valStripped = stripSimpleQuotes(val);
+                    if ("description".equalsIgnoreCase(key)) {
+                        currentCmd.description = valStripped;
+                    } else if ("usage".equalsIgnoreCase(key)) {
+                        currentCmd.usage = valStripped;
+                    } else if ("permission".equalsIgnoreCase(key)) {
+                        currentCmd.permission = valStripped;
+                    } else if ("aliases".equalsIgnoreCase(key)) {
+                        currentCmd.aliases = parseInlineList(valStripped);
+                    } else if ("executor".equalsIgnoreCase(key)) {
+                        currentCmd.executor = valStripped;
+                    } else if ("tab-completer".equalsIgnoreCase(key) || "tabcompleter".equalsIgnoreCase(key)) {
+                        currentCmd.tabCompleter = valStripped;
+                    }
+                }
+            }
+
         }
 
+        if (currentPerm != null && currentPerm.node != null) {
+            permissions.put(currentPerm.node,
+                    new PermissionDef(currentPerm.node,
+                            nv(currentPerm.description),
+                            nv(currentPerm.defaultValue)));
+        }
+        if (currentCmd != null && currentCmd.name != null) {
+            commands.put(currentCmd.name,
+                    new CommandDef(currentCmd.name,
+                            nv(currentCmd.description),
+                            nv(currentCmd.usage),
+                            nv(currentCmd.permission),
+                            currentCmd.aliases,
+                            nv(currentCmd.executor),
+                            nv(currentCmd.tabCompleter)));
+        }
+
+        // Scalars
         String name  = nv(scalars.get("name"));
         String desc  = nv(scalars.get("description"));
         String main  = nv(scalars.get("main"));
@@ -240,18 +523,79 @@ public final class ModuleInfo {
             if (t != null && !t.isEmpty()) cleanAuthors.add(t);
         }
 
+        boolean supportsFolia = Boolean.parseBoolean(
+                scalars.getOrDefault("supportsfolia", "false")
+        );
+
+        List<String> moduleSoftDeps = new ArrayList<>(lists.getOrDefault("modulesoftdepends", List.of()));
+        moduleSoftDeps.addAll(lists.getOrDefault("modulesoftdepend", List.of()));
+
         return new ModuleInfo(
                 name, desc, main, ver, site, cleanAuthors,
                 lists.getOrDefault("plugindepends", List.of()),
                 lists.getOrDefault("pluginsoftdepends", List.of()),
                 lists.getOrDefault("pluginloadbefore", List.of()),
                 lists.getOrDefault("moduledepends", List.of()),
-                lists.getOrDefault("modulesoftdepends", List.of()),
-                lists.getOrDefault("moduleloadbefore", List.of())
+                moduleSoftDeps,
+                lists.getOrDefault("moduleloadbefore", List.of()),
+                supportsFolia,
+                permissions,
+                commands
         );
     }
 
     private static String nv(String s) {
         return (s == null || s.isBlank()) ? null : s;
+    }
+
+    private static int leadingSpaces(String s) {
+        int count = 0;
+        while (count < s.length()) {
+            char c = s.charAt(count);
+            if (c == ' ') {
+                count++;
+            } else if (c == '\t') {
+                count += 4;
+            } else {
+                break;
+            }
+        }
+        return count;
+    }
+
+    private static String stripSimpleQuotes(String s) {
+        if (s == null) return null;
+        String t = s.trim();
+        if (t.startsWith("\"") && t.endsWith("\"") && t.length() >= 2) {
+            t = t.substring(1, t.length() - 1);
+        }
+        if (t.startsWith("'") && t.endsWith("'") && t.length() >= 2) {
+            t = t.substring(1, t.length() - 1);
+        }
+        return t;
+    }
+
+    /**
+     * Parses a simple inline YAML-style list like {@code ["a", "b", c]} into
+     * {@code List.of("a", "b", "c")}. This is intentionally minimal.
+     */
+    private static List<String> parseInlineList(String s) {
+        List<String> out = new ArrayList<>();
+        if (s == null) return out;
+        String t = s.trim();
+        if (!t.startsWith("[") || !t.endsWith("]")) {
+            // fall back to a single value
+            if (!t.isEmpty()) out.add(stripSimpleQuotes(t));
+            return out;
+        }
+        String inner = t.substring(1, t.length() - 1).trim();
+        if (inner.isEmpty()) return out;
+
+        String[] parts = inner.split(",");
+        for (String p : parts) {
+            String v = stripSimpleQuotes(p.trim());
+            if (v != null && !v.isEmpty()) out.add(v);
+        }
+        return out;
     }
 }

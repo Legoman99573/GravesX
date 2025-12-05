@@ -14,13 +14,20 @@ import java.util.List;
  *   <li>Enable/disable itself (current module)</li>
  *   <li>Enable/disable another module by key (module.yml name, simple class name, or FQCN)</li>
  *   <li>Access read-only module descriptors and enumerate all modules</li>
+ *   <li>Query Folia support flags for itself or other modules</li>
  * </ul>
  *
  * <p>Unless otherwise noted, enable/disable operations are idempotent:
  * invoking them when the target is already in the requested state returns {@code true}
  * (no-op) and does not throw.</p>
+ *
+ * <p>Note: the host may choose to permanently mark a module as failed (for example,
+ * if its enable logic throws, or if it is incompatible with the current server
+ * type such as Folia vs non-Folia). In such cases, {@code enableModule(...)}
+ * may consistently return {@code false} even though no exception is thrown.</p>
  */
 public interface GravesXModuleController {
+
     /**
      * Reports whether <strong>this</strong> (current) module is enabled.
      *
@@ -65,6 +72,10 @@ public interface GravesXModuleController {
      * Enables <strong>this</strong> (current) module.
      *
      * <p>Idempotent: if already enabled, no action is taken.</p>
+     *
+     * <p>The host may choose to refuse re-enabling modules that previously
+     * failed or are incompatible with the current runtime (e.g. Folia)
+     * without throwing; in such cases, this is a no-op.</p>
      */
     void enableModule();
 
@@ -72,6 +83,10 @@ public interface GravesXModuleController {
      * Enables a target module identified by key.
      *
      * <p>Idempotent: returns {@code true} if the module becomes or was already enabled.</p>
+     *
+     * <p>The host may choose to refuse enabling modules that previously
+     * failed or are incompatible with the current runtime (e.g. Folia),
+     * in which case this returns {@code false}.</p>
      *
      * @param moduleKey identifier for the target module (module.yml name, simple class name, or FQCN)
      * @return {@code true} if state changed or the module was already enabled; {@code false} if not found
@@ -82,7 +97,7 @@ public interface GravesXModuleController {
      * Returns the descriptor for a target module identified by key.
      *
      * <p>The descriptor provides read-only metadata parsed from {@code module.yml}
-     * (name, version, authors, dependencies, etc.) plus runtime state.</p>
+     * (name, version, authors, dependencies, flags, etc.) plus runtime state.</p>
      *
      * @param moduleKey identifier for the target module (module.yml name, simple class name, or FQCN)
      * @return a descriptor, or {@code null} if the module is unknown
@@ -145,5 +160,32 @@ public interface GravesXModuleController {
     default List<String> getAuthors(String moduleKey) {
         GravesXModuleDescriptor d = getModule(moduleKey);
         return d != null ? d.getAuthors() : List.of();
+    }
+
+    /**
+     * Convenience accessor for {@code getModule(moduleKey).supportsFolia()}.
+     *
+     * <p>This reflects the {@code supportsFolia} boolean parsed from the target module's
+     * {@code module.yml}. If the module cannot be found, this returns {@code false}.</p>
+     *
+     * @param moduleKey identifier for the target module
+     * @return {@code true} if the module exists and declares Folia support; {@code false} otherwise
+     */
+    default boolean supportsFolia(String moduleKey) {
+        GravesXModuleDescriptor d = getModule(moduleKey);
+        return d != null && d.supportsFolia();
+    }
+
+    /**
+     * Convenience accessor for {@code getThisModule().supportsFolia()}.
+     *
+     * <p>This reflects the {@code supportsFolia} boolean parsed from this module's
+     * {@code module.yml}.</p>
+     *
+     * @return {@code true} if the current module declares Folia support; {@code false} otherwise
+     */
+    default boolean supportsFolia() {
+        GravesXModuleDescriptor d = getThisModule();
+        return d != null && d.supportsFolia();
     }
 }

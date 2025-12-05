@@ -19,6 +19,9 @@ import java.util.stream.Collectors;
 
 /**
  * Manages GravesX modules: discovers, loads, resolves order, and enables/disables them.
+ *
+ * <p>Module metadata is parsed from {@code module.yml} into {@link ModuleInfo}, including
+ * the {@code supportsFolia} flag, which is then exposed via {@link GravesXModuleDescriptor}.</p>
  */
 public final class ModuleManager {
     private final Graves plugin;
@@ -45,14 +48,19 @@ public final class ModuleManager {
         public final ModuleContext context;
         /** Whether the module is currently enabled. */
         public boolean enabled;
+        /**
+         * Whether the module failed during enable and is permanently disabled for this runtime.
+         * Once set, the module will not be enabled again.
+         */
+        public boolean failed;
 
         /**
          * Creates a loaded module bundle.
          *
-         * @param info Module metadata.
-         * @param cl Class loader for the module.
+         * @param info     Module metadata.
+         * @param cl       Class loader for the module.
          * @param instance Module main instance.
-         * @param ctx Module runtime context.
+         * @param ctx      Module runtime context.
          */
         LoadedModule(ModuleInfo info, ModuleClassLoader cl, GravesXModule instance, ModuleContext ctx) {
             this.info = info;
@@ -151,6 +159,17 @@ public final class ModuleManager {
         @Override
         public boolean isEnabled() {
             return lm.enabled;
+        }
+
+        /**
+         * {@inheritDoc}
+         *
+         * <p>Backed by {@link ModuleInfo#supportsFolia()} which parses the {@code supportsFolia}
+         * boolean from {@code module.yml} (default {@code false}).</p>
+         */
+        @Override
+        public boolean supportsFolia() {
+            return lm.info.supportsFolia();
         }
     }
 
@@ -349,10 +368,15 @@ public final class ModuleManager {
         for (File jar : jars) {
             try (JarFile jf = new JarFile(jar)) {
                 JarEntry entry = jf.getJarEntry("module.yml");
-                if (entry == null) { warn("Skipping " + jar.getName() + " (missing module.yml)"); continue; }
+                if (entry == null) {
+                    warn("Skipping " + jar.getName() + " (missing module.yml)");
+                    continue;
+                }
 
                 ModuleInfo info;
-                try (InputStream in = jf.getInputStream(entry)) { info = ModuleInfo.fromYaml(in); }
+                try (InputStream in = jf.getInputStream(entry)) {
+                    info = ModuleInfo.fromYaml(in);
+                }
                 if (info.name() == null || info.mainClass() == null) {
                     warn(info, "Skipping " + jar.getName() + " (missing name/main)");
                     continue;
@@ -367,7 +391,9 @@ public final class ModuleManager {
                 ModuleClassLoader cl = new ModuleClassLoader(url, plugin.getClass().getClassLoader());
                 Class<?> main = Class.forName(info.mainClass(), true, cl);
                 if (!GravesXModule.class.isAssignableFrom(main)) {
-                    cl.close(); warn(info, info.name() + " main does not implement Module"); continue;
+                    cl.close();
+                    warn(info, info.name() + " main does not implement Module");
+                    continue;
                 }
 
                 GravesXModule instance = (GravesXModule) main.getDeclaredConstructor().newInstance();
@@ -394,12 +420,17 @@ public final class ModuleManager {
     private void buildTopoOrder() {
         Map<String, Set<String>> adj = new LinkedHashMap<>();
         Map<String, Integer> indeg = new LinkedHashMap<>();
-        for (String n : loaded.keySet()) { adj.put(n, new LinkedHashSet<>()); indeg.put(n, 0); }
+        for (String n : loaded.keySet()) {
+            adj.put(n, new LinkedHashSet<>());
+            indeg.put(n, 0);
+        }
 
-        final class EdgeAdder { void add(String a, String b) {
-            if (!loaded.containsKey(a) || !loaded.containsKey(b)) return;
-            if (adj.get(a).add(b)) indeg.put(b, indeg.get(b) + 1);
-        }}
+        final class EdgeAdder {
+            void add(String a, String b) {
+                if (!loaded.containsKey(a) || !loaded.containsKey(b)) return;
+                if (adj.get(a).add(b)) indeg.put(b, indeg.get(b) + 1);
+            }
+        }
         EdgeAdder addEdge = new EdgeAdder();
 
         for (LoadedModule lm : loaded.values()) {
@@ -410,10 +441,11 @@ public final class ModuleManager {
         }
 
         PriorityQueue<String> q = new PriorityQueue<>();
-        for (Map.Entry<String,Integer> e : indeg.entrySet()) if (e.getValue() == 0) q.add(e.getKey());
+        for (Map.Entry<String, Integer> e : indeg.entrySet()) if (e.getValue() == 0) q.add(e.getKey());
         List<String> order = new ArrayList<>(loaded.size());
         while (!q.isEmpty()) {
-            String u = q.poll(); order.add(u);
+            String u = q.poll();
+            order.add(u);
             for (String v : adj.get(u)) {
                 indeg.put(v, indeg.get(v) - 1);
                 if (indeg.get(v) == 0) q.add(v);
@@ -456,7 +488,14 @@ public final class ModuleManager {
      */
     private boolean enable(String name) {
         LoadedModule lm = loaded.get(name);
-        return lm != null && (lm.enabled || attemptEnable(lm));
+        if (lm == null) {
+            return false;
+        }
+        if (lm.failed) {
+            info(lm.info, "Not enabling " + name + " because it previously failed to enable and was disabled.");
+            return false;
+        }
+        return lm.enabled || attemptEnable(lm);
     }
 
     /**
@@ -470,11 +509,27 @@ public final class ModuleManager {
         if (lm == null) return false;
         info(lm.info, "Disabling Module " + name);
 
-        try { lm.context._internalPreDisable(); } catch (Throwable ignored) {}
-        try { lm.instance.onModuleDisable(lm.context); } catch (Throwable t) { severe(lm.info, "Error in onModuleDisable for " + name, t); }
-        try { commandRegistrar.unregisterFor(lm); } catch (Throwable ignored) {}
-        try { lm.context._internalCleanup(); } catch (Throwable ignored) {}
-        try { lm.cl.close(); } catch (Throwable ignored) {}
+        try {
+            lm.context._internalPreDisable();
+        } catch (Throwable ignored) {
+        }
+        try {
+            lm.instance.onModuleDisable(lm.context);
+        } catch (Throwable t) {
+            severe(lm.info, "Error in onModuleDisable for " + name, t);
+        }
+        try {
+            commandRegistrar.unregisterFor(lm);
+        } catch (Throwable ignored) {
+        }
+        try {
+            lm.context._internalCleanup();
+        } catch (Throwable ignored) {
+        }
+        try {
+            lm.cl.close();
+        } catch (Throwable ignored) {
+        }
 
         lm.enabled = false;
         pending.remove(name);
@@ -498,13 +553,26 @@ public final class ModuleManager {
      * Attempts to enable the given loaded module, checking plugin and module dependencies.
      * On failure, it logs, cleans up, and unloads the module.
      *
+     * <p>If a module must be disabled due to an error during enable, it is marked as failed
+     * and will not be enabled again during this runtime.</p>
+     *
+     * <p>This method only concerns itself with a single module. It does not trigger
+     * cascading re-checks of pending modules; callers may invoke {@link #tryEnablePending()}
+     * at appropriate times instead.</p>
+     *
      * @param lm Loaded module bundle.
      * @return True if enabled successfully.
      */
     private boolean attemptEnable(LoadedModule lm) {
+        if (lm.failed) {
+            info(lm.info, lm.info.name() + " will not be enabled because it previously failed.");
+            return false;
+        }
+
         List<String> missingPlugins = missingRequiredPlugins(lm.info);
         if (!missingPlugins.isEmpty()) {
             warn(lm.info, lm.info.name() + ": required plugin(s) not installed: " + String.join(", ", missingPlugins));
+            lm.failed = true;
             disable(lm.info.name());
             return false;
         }
@@ -529,6 +597,17 @@ public final class ModuleManager {
             return false;
         }
 
+        if (plugin.getVersionManager().isFolia()) {
+            if (!lm.context.supportsFolia()) {
+                lm.failed = true;
+                warn(lm.info,
+                        "GravesX Module " + lm.info.name()
+                                + " is not supported on Folia. Make sure \"supportsFolia\" is set to true in module.yml.");
+                disable(lm.info.name());
+                return false;
+            }
+        }
+
         try {
             lm.instance.onModuleEnable(lm.context);
             lm.enabled = true;
@@ -536,13 +615,16 @@ public final class ModuleManager {
             try {
                 commandRegistrar.registerFor(lm);
             } catch (Throwable t) {
+                // Command registration failure is a hard error: mark failed, disable, and do not re-enable.
+                lm.failed = true;
                 severe(lm.info, "Command registration failed for " + lm.info.name(), t);
                 disable(lm.info.name());
+                return false;
             }
             info(lm.info, "Enabled Module " + lm.info.name());
-            tryEnablePending();
             return true;
         } catch (Throwable t) {
+            lm.failed = true;
             severe(lm.info, "Failed enabling " + lm.info.name() + ". Disabling Module.", t);
             disable(lm.info.name());
             return false;
@@ -569,7 +651,8 @@ public final class ModuleManager {
                     names.addAll(mi.pluginDepends());
                     names.addAll(mi.pluginSoftDepends());
                 }
-            } catch (Throwable ignored) {}
+            } catch (Throwable ignored) {
+            }
         }
         return names;
     }
@@ -650,13 +733,12 @@ public final class ModuleManager {
     /**
      * Logs an info-level message with the modules name as the prefix.
      *
-     * @param mi  The module info
-     * @param m Message to log.
+     * @param mi The module info
+     * @param m  Message to log.
      */
     private void info(ModuleInfo mi, String m) {
         logger.info("[" + mi.name() + "] " + m);
     }
-
 
     /**
      * Logs a warning-level message with a modules prefix.
@@ -670,8 +752,8 @@ public final class ModuleManager {
     /**
      * Logs a warning-level message with the modules name as the prefix.
      *
-     * @param mi  The module info
-     * @param m Message to log.
+     * @param mi The module info
+     * @param m  Message to log.
      */
     private void warn(ModuleInfo mi, String m) {
         logger.warning("[" + mi.name() + "] " + m);
@@ -690,8 +772,8 @@ public final class ModuleManager {
     /**
      * Logs a severe-level message with the modules name as the prefix and a throwable.
      *
-     * @param mi  The module info
-     * @param m Message to log.
+     * @param mi The module info
+     * @param m  Message to log.
      * @param t Throwable to include.
      */
     private void severe(ModuleInfo mi, String m, Throwable t) {

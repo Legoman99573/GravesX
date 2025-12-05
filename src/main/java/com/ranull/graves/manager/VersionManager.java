@@ -207,7 +207,7 @@ public class VersionManager {
         }
 
         try {
-            Class.forName("ca.spottedleaf.moonrise.common.util.TickThread", false, getClass().getClassLoader());
+            Class.forName("io.papermc.paper.threadedregions.RegionizedServer", false, getClass().getClassLoader());
             this.isFolia = true;
         } catch (ClassNotFoundException ignored) {
             this.isFolia = false;
