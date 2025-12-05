@@ -362,7 +362,7 @@
     <repository>
       <id>fancyplugins-releases</id>
       <name>FancyPlugins Repository</name>
-      <url>https://repo.fancyplugins.de/releases</url>
+      <url>https://repo.fancyinnovations.com/releases</url>
     </repository>
     <repository>
       <id>opencollab-snapshot</id>
