@@ -81,6 +81,10 @@ permissions:
     default: op
     description: Can bypass grave teleportation timer and grave protections
 
+  graves.spectator.bypass:
+    default: op
+    description: Can bypass spectator mode restrictions
+
   graves.place:
     default: true
     description: Can place a graves

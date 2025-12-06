@@ -74,6 +74,10 @@ public class PlayerInteractAtEntityListener implements Listener {
      * Checks if the player is not in Spectator mode.
      */
     private boolean isNotSpectatorMode(Player player) {
-        return plugin.getVersionManager().is_v1_7() || Objects.requireNonNull(player.getPlayer()).getGameMode() != GameMode.SPECTATOR;
+        if (plugin.getVersionManager().is_v1_7()) return true;
+
+        if (plugin.hasGrantedPermission("graves.spectator.bypass", player.getPlayer())) return true;
+
+        return Objects.requireNonNull(player.getPlayer()).getGameMode() != GameMode.SPECTATOR;
     }
 }

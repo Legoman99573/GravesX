@@ -12,6 +12,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.EquipmentSlot;
 
+import java.util.Objects;
+
 /**
  * Listener for handling PlayerInteractEntityEvent to interact with ItemFrame entities representing graves.
  */
@@ -72,6 +74,10 @@ public class PlayerInteractEntityListener implements Listener {
      * Checks if the player is not in Spectator mode.
      */
     private boolean isNotSpectatorMode(Player player) {
-        return plugin.getVersionManager().is_v1_7() || player.getGameMode() != GameMode.SPECTATOR;
+        if (plugin.getVersionManager().is_v1_7()) return true;
+
+        if (plugin.hasGrantedPermission("graves.spectator.bypass", player.getPlayer())) return true;
+
+        return Objects.requireNonNull(player.getPlayer()).getGameMode() != GameMode.SPECTATOR;
     }
 }
