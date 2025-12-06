@@ -1827,6 +1827,8 @@ public class GraveManager {
                 cleanupCompasses(player, grave);
 
                 if (player.isSneaking() && plugin.hasGrantedPermission("graves.autoloot", player.getPlayer())) {
+                    if (player.getGameMode() == GameMode.SPECTATOR && !plugin.hasGrantedPermission("graves.spectator.bypass", player.getPlayer())) return;
+
                     GraveAutoLootEvent modern = new GraveAutoLootEvent(player, location, grave);
                     plugin.getServer().getPluginManager().callEvent(modern);
 
@@ -2084,12 +2086,12 @@ public class GraveManager {
 
 
     /**
-     * Checks if the given location is within configured blocks of any grave.
+     * Checks if the given location is at the same block position as any grave.
      *
      * @param location The location to check.
      * @param player   Optional player to consider for additional logic.
      * @param block    Optional block to consider for additional logic.
-     * @return true if the location is within the configured protection radius of any grave; false otherwise.
+     * @return true if the location matches the block position of any grave; false otherwise.
      */
     public boolean isNearGrave(Location location, Player player, Block block) {
         if (location == null || location.getWorld() == null) {
@@ -2101,10 +2103,6 @@ public class GraveManager {
 
             for (Grave grave : new ArrayList<>(graves)) {
                 if (grave == null) {
-                    continue;
-                }
-
-                if (!plugin.getConfig("grave.should-protect-radius", grave).getBoolean("grave.should-protect-radius", false)) {
                     continue;
                 }
 
@@ -2121,14 +2119,9 @@ public class GraveManager {
                     continue;
                 }
 
-                int protectionRadius = plugin.getConfig("grave.protection-radius", grave).getInt("grave.protection-radius", 0);
-                if (protectionRadius <= 0) {
-                    continue;
-                }
-
-                if (Math.abs(graveLocation.getBlockX() - location.getBlockX()) <= protectionRadius
-                        && Math.abs(graveLocation.getBlockY() - location.getBlockY()) <= protectionRadius
-                        && Math.abs(graveLocation.getBlockZ() - location.getBlockZ()) <= protectionRadius) {
+                if (graveLocation.getBlockX() == location.getBlockX()
+                        && graveLocation.getBlockY() == location.getBlockY()
+                        && graveLocation.getBlockZ() == location.getBlockZ()) {
                     return true;
                 }
             }
