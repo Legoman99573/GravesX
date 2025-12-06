@@ -12,6 +12,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.inventory.EquipmentSlot;
 
+import java.util.Objects;
+
 /**
  * Listener for handling PlayerInteractAtEntityEvent to interact with graves represented by ArmorStands.
  */
@@ -72,6 +74,6 @@ public class PlayerInteractAtEntityListener implements Listener {
      * Checks if the player is not in Spectator mode.
      */
     private boolean isNotSpectatorMode(Player player) {
-        return plugin.getVersionManager().is_v1_7() || player.getGameMode() != GameMode.SPECTATOR;
+        return plugin.getVersionManager().is_v1_7() || Objects.requireNonNull(player.getPlayer()).getGameMode() != GameMode.SPECTATOR;
     }
 }

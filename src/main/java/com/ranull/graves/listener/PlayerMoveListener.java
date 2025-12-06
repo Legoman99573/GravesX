@@ -25,6 +25,7 @@ import org.bukkit.NamespacedKey;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -83,7 +84,7 @@ public class PlayerMoveListener implements Listener {
      * @return True if the player is not in Spectator mode, false otherwise.
      */
     private boolean isNotSpectatorMode(Player player) {
-        return plugin.getVersionManager().is_v1_7() || player.getGameMode() != GameMode.SPECTATOR;
+        return plugin.getVersionManager().is_v1_7() || Objects.requireNonNull(player.getPlayer()).getGameMode() != GameMode.SPECTATOR;
     }
 
     /**
