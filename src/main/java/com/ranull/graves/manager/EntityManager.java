@@ -854,6 +854,8 @@ public class EntityManager extends EntityDataManager {
                 return true;
             }
             case "autoloot" -> {
+                if (!plugin.getConfig("drop.auto-loot.enabled", grave).getBoolean("drop.auto-loot.enabled", true)) return false;
+
                 Location loc = entity.getLocation();
 
                 if (entity instanceof Player player) {
@@ -861,6 +863,8 @@ public class EntityManager extends EntityDataManager {
                         plugin.getEntityManager().sendMessage("message.permission-denied", entity, entity.getLocation(), grave);
                         return false;
                     }
+
+                    if (player.getGameMode() == GameMode.SPECTATOR && !plugin.hasGrantedPermission("graves.spectator.bypass", player.getPlayer())) return false;
                 }
 
                 GraveAutoLootEvent modern =

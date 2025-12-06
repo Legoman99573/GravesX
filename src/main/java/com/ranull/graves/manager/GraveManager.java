@@ -1826,7 +1826,7 @@ public class GraveManager {
             plugin.getGravesXScheduler().execute(anchor, () -> {
                 cleanupCompasses(player, grave);
 
-                if (player.isSneaking() && plugin.hasGrantedPermission("graves.autoloot", player.getPlayer())) {
+                if (plugin.getConfig("drop.auto-loot.enabled", grave).getBoolean("drop.auto-loot.enabled", true) && (player.isSneaking() && plugin.hasGrantedPermission("graves.autoloot", player.getPlayer()))) {
                     if (player.getGameMode() == GameMode.SPECTATOR && !plugin.hasGrantedPermission("graves.spectator.bypass", player.getPlayer())) return;
 
                     GraveAutoLootEvent modern = new GraveAutoLootEvent(player, location, grave);
