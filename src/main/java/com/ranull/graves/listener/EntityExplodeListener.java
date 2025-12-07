@@ -45,28 +45,11 @@ public class EntityExplodeListener implements Listener {
             Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
 
             if (grave != null) {
-                boolean shouldProtectRadius = plugin.getConfig("grave.should-protect-radius", grave).getBoolean("grave.should-protect-radius");
-                boolean explodeProtection = plugin.getConfig("grave.explode-protection", grave).getBoolean("grave.explode-protection");
-                int protectionRadius = plugin.getConfig("grave.protection-radius", grave).getInt("grave.protection-radius");
                 Location graveHeadLocation = grave.getLocationDeath();
 
-                if (graveHeadLocation.equals(block.getLocation())) {
+                if (graveHeadLocation != null && graveHeadLocation.equals(block.getLocation())) {
                     iterator.remove();
                     continue;
-                }
-
-                if (shouldProtectRadius && explodeProtection) {
-                    Iterator<Block> protectIterator = affectedBlocks.iterator();
-                    while (protectIterator.hasNext()) {
-                        Block affectedBlock = protectIterator.next();
-                        Location affectedLocation = affectedBlock.getLocation();
-
-                        if (isWithinCube(graveHeadLocation, affectedLocation, protectionRadius)) {
-                            protectIterator.remove();
-                        }
-                    }
-                    event.setCancelled(true);
-                    return;
                 }
 
                 if (shouldExplode(grave)) {
@@ -74,20 +57,6 @@ public class EntityExplodeListener implements Listener {
                 }
             }
         }
-    }
-
-    /**
-     * Checks if a given location is within a cubic protection radius.
-     *
-     * @param center The center of the cube (grave location).
-     * @param target The target location to check.
-     * @param radius The protection radius.
-     * @return True if the target is inside the cube, false otherwise.
-     */
-    private boolean isWithinCube(Location center, Location target, int radius) {
-        return Math.abs(target.getBlockX() - center.getBlockX()) <= radius
-                && Math.abs(target.getBlockY() - center.getBlockY()) <= radius
-                && Math.abs(target.getBlockZ() - center.getBlockZ()) <= radius;
     }
 
     /**
@@ -113,7 +82,8 @@ public class EntityExplodeListener implements Listener {
         GraveExplodeEvent modern = new GraveExplodeEvent(location, event.getEntity(), grave);
         plugin.getServer().getPluginManager().callEvent(modern);
 
-        com.ranull.graves.event.GraveExplodeEvent legacy = new com.ranull.graves.event.GraveExplodeEvent(location, event.getEntity(), grave);
+        com.ranull.graves.event.GraveExplodeEvent legacy =
+                new com.ranull.graves.event.GraveExplodeEvent(location, event.getEntity(), grave);
         plugin.getServer().getPluginManager().callEvent(legacy);
 
         if (modern.isCancelled() || modern.isAddon() || legacy.isCancelled() || legacy.isAddon()) {
@@ -126,21 +96,25 @@ public class EntityExplodeListener implements Listener {
             if (modern.hasLocation()) {
                 effectiveLoc = modern.getLocation();
             } else {
-                legacy.getLocation();
                 effectiveLoc = legacy.getLocation();
             }
         } catch (Throwable ignored) {
-            //ignored
+            // ignored
         }
 
         if (plugin.getConfig("drop.looted-explosion-effect", grave).getBoolean("drop.looted-explosion-effect", false)) {
             try {
                 Location deathLoc = grave.getLocationDeath();
-                Objects.requireNonNull(deathLoc.getWorld()).spawnParticle(plugin.getVersionManager().getParticleForVersion("EXPLOSION"), deathLoc, 1);
+                Objects.requireNonNull(deathLoc.getWorld())
+                        .spawnParticle(plugin.getVersionManager().getParticleForVersion("EXPLOSION"), deathLoc, 1);
                 try {
-                    deathLoc.getWorld().playSound(deathLoc, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("ENTITY_GENERIC_EXPLODE")), 1.0f, 1.0f);
+                    deathLoc.getWorld().playSound(deathLoc,
+                            Objects.requireNonNull(CompatibilitySoundEnum.valueOf("ENTITY_GENERIC_EXPLODE")),
+                            1.0f, 1.0f);
                 } catch (Exception e) {
-                    deathLoc.getWorld().playSound(deathLoc, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("EXPLODE")), 1.0f, 1.0f); // pre 1.9
+                    deathLoc.getWorld().playSound(deathLoc,
+                            Objects.requireNonNull(CompatibilitySoundEnum.valueOf("EXPLODE")),
+                            1.0f, 1.0f); // pre 1.9
                 }
             } catch (Exception ignored) {
                 // ignored

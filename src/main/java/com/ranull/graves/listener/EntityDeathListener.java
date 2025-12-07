@@ -512,7 +512,32 @@ public class EntityDeathListener implements Listener {
             placeGrave(event, grave, graveItemStackList, removedItemStackList, location,
                     livingEntity, permissionList, player);
         } else if (cancelled && !addon) {
-            if (player != null) player.getInventory().clear();
+            Location dropLoc = location != null ? location : livingEntity.getLocation();
+            World world = dropLoc.getWorld();
+
+            if (world != null) {
+                if (removedItemStackList != null) {
+                    for (ItemStack item : removedItemStackList) {
+                        if (item != null && item.getType() != Material.AIR) {
+                            world.dropItemNaturally(dropLoc, item);
+                        }
+                    }
+                }
+                if (graveItemStackList != null) {
+                    for (ItemStack item : graveItemStackList) {
+                        if (item != null && item.getType() != Material.AIR) {
+                            world.dropItemNaturally(dropLoc, item);
+                        }
+                    }
+                }
+            } else {
+                if (removedItemStackList != null) {
+                    event.getDrops().addAll(removedItemStackList);
+                }
+                if (graveItemStackList != null) {
+                    event.getDrops().addAll(graveItemStackList);
+                }
+            }
         }
     }
 

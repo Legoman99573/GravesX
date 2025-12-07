@@ -692,13 +692,6 @@ public class EntityManager extends EntityDataManager {
     public boolean runFunction(Entity entity, String function, Grave grave) {
         switch (function.toLowerCase()) {
             case "list" -> {
-                if (entity instanceof Player player) {
-                    if (!plugin.hasGrantedPermission("graves.gui.other", player.getPlayer()))  {
-                        plugin.getEntityManager().sendMessage("message.permission-denied", entity, entity.getLocation(), grave);
-                        return false;
-                    }
-                }
-
                 UUID targetUUID = grave.getOwnerUUID();
                 if (targetUUID == null) {
                     targetUUID = entity.getUniqueId();
@@ -835,18 +828,50 @@ public class EntityManager extends EntityDataManager {
                             return false;
                         }
                     }
-                    double distance = plugin.getConfig("virtual.distance", grave).getDouble("virtual.distance");
-                    if (distance < 0) {
+
+                    double configMaxDistance = plugin.getConfig("virtual.distance", grave).getDouble("virtual.distance");
+
+                    Location graveLocation = plugin.getGraveManager().getGraveLocation(entity.getLocation(), grave);
+                    if (graveLocation == null) {
+                        graveLocation = grave.getLocationDeath();
+                    }
+
+                    if (graveLocation == null || graveLocation.getWorld() == null) {
+                        plugin.getGraveManager().openGrave(entity, entity.getLocation(), grave);
+                        return true;
+                    }
+
+                    if (graveLocation.getWorld() != entity.getLocation().getWorld()) {
+                        plugin.getEntityManager().sendMessage("message.distance-virtual", entity, entity.getLocation(), grave);
+                        return true;
+                    }
+
+                    double actualDistance = entity.getLocation().distance(graveLocation);
+                    LivingEntity livingEntity = (entity instanceof LivingEntity le) ? le : null;
+
+                    GraveVirtualOpenEvent virtualEvent = new GraveVirtualOpenEvent(
+                            grave,
+                            entity,
+                            entity.getLocation(),
+                            null,
+                            null,
+                            livingEntity,
+                            null,
+                            actualDistance,
+                            configMaxDistance
+                    );
+                    plugin.getServer().getPluginManager().callEvent(virtualEvent);
+
+                    if (virtualEvent.isCancelled()) {
+                        return true;
+                    }
+
+                    double effectiveMaxDistance = virtualEvent.getMaxDistance();
+
+                    if (effectiveMaxDistance < 0 || actualDistance <= effectiveMaxDistance) {
                         plugin.getGraveManager().openGrave(entity, entity.getLocation(), grave);
                     } else {
-                        Location location = plugin.getGraveManager().getGraveLocation(entity.getLocation(), grave);
-                        if (location != null && entity.getLocation().getWorld() == grave.getLocationDeath().getWorld()) {
-                            if (entity.getLocation().distance(location) <= distance) {
-                                plugin.getGraveManager().openGrave(entity, entity.getLocation(), grave);
-                            } else {
-                                plugin.getEntityManager().sendMessage("message.distance-virtual", entity, location, grave);
-                            }
-                        }
+                        plugin.getEntityManager().sendMessage("message.distance-virtual", entity, graveLocation, grave);
                     }
                 } else {
                     plugin.getEntityManager().sendMessage("message.distance-virtual", entity, entity.getLocation(), grave);
