@@ -2,9 +2,9 @@ package com.ranull.graves.listener;
 
 import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
-import dev.cwhead.GravesX.compatibility.CompatibilitySoundEnum;
-import dev.cwhead.GravesX.event.GraveExplodeEvent;
+import dev.cwhead.GravesX.event.GravePreExplodeEvent;
 import org.bukkit.Location;
+import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -14,9 +14,21 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Listens for ExplosionPrimeEvent to handle interactions with grave blocks when an explosion is triggered.
+ * Listens for ExplosionPrimeEvent to notify when an explosion will affect graves.
+ * Fires a GravePreExplodeEvent once for each grave that will be inside the blast radius.
+ *
+ * <p>Listeners of GravePreExplodeEvent can:</p>
+ * <ul>
+ *     <li>Cancel the event to cancel the explosion entirely.</li>
+ *     <li>Modify the explosion radius.</li>
+ *     <li>Modify the explosion location/world.</li>
+ * </ul>
+ *
+ * <p>Any changes to radius/location/world are propagated back to the original
+ * ExplosionPrimeEvent and the source entity.</p>
  */
 public class ExplosionPrimeListener implements Listener {
+
     private final Graves plugin;
 
     /**
@@ -29,132 +41,66 @@ public class ExplosionPrimeListener implements Listener {
     }
 
     /**
-     * Handles ExplosionPrimeEvent to manage grave interactions when an explosion is initiated near graves.
+     * Handles ExplosionPrimeEvent to notify when an explosion will affect graves.
      *
      * @param event The ExplosionPrimeEvent to handle.
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onExplosionPrime(ExplosionPrimeEvent event) {
-        Location explosionLocation = event.getEntity().getLocation();
-        List<Grave> nearbyGraves = plugin.getGraveManager().getAllGraves();
+        Entity sourceEntity = event.getEntity();
 
-        if (nearbyGraves == null || nearbyGraves.isEmpty()) {
+        Location explosionLocation = sourceEntity.getLocation().clone();
+
+        List<Grave> allGraves = plugin.getGraveManager().getAllGraves();
+        if (allGraves == null || allGraves.isEmpty()) {
             return;
         }
 
-        for (Grave grave : nearbyGraves) {
+        float blastRadius = event.getRadius();
+        float blastRadiusSquared = blastRadius * blastRadius;
+
+        boolean cancelExplosion = false;
+
+        for (Grave grave : allGraves) {
             Location graveLocation = grave.getLocationDeath();
-            int protectionRadius = plugin.getConfig("grave.protection-radius", grave)
-                    .getInt("grave.protection-radius", 0);
-            boolean shouldProtectRadius = plugin.getConfig("grave.should-protect-radius", grave)
-                    .getBoolean("grave.should-protect-radius", false);
-
-            boolean cancelExplosion = false;
-
-            // Always protect the grave block itself
-            if (explosionLocation.getBlock().getLocation().equals(graveLocation.getBlock().getLocation())) {
-                cancelExplosion = true;
+            if (graveLocation == null) {
+                continue;
             }
 
-            // Optionally protect blocks within the cube radius
-            if (!cancelExplosion && shouldProtectRadius && isWithinCube(explosionLocation, graveLocation, protectionRadius)) {
-                cancelExplosion = true;
+            if (!Objects.equals(graveLocation.getWorld(), explosionLocation.getWorld())) {
+                continue;
             }
 
-            if (cancelExplosion) {
-                event.setCancelled(true);
-                return;
-            }
+            if (explosionLocation.distanceSquared(graveLocation) <= blastRadiusSquared) {
+                GravePreExplodeEvent preEvent = new GravePreExplodeEvent(grave, explosionLocation, sourceEntity, blastRadius);
 
-            // If grave is allowed to explode, trigger grave explosion
-            if (shouldExplode(grave)) {
-                handleGraveExplosion(event, grave, graveLocation);
-            }
-        }
-    }
+                plugin.getServer().getPluginManager().callEvent(preEvent);
 
-    /**
-     * Checks if the explosion location is within a cube around the grave location.
-     *
-     * @param loc1   The explosion location.
-     * @param loc2   The grave location.
-     * @param radius The protection radius.
-     * @return True if within the cube, false otherwise.
-     */
-    private boolean isWithinCube(Location loc1, Location loc2, int radius) {
-        int dx = Math.abs(loc1.getBlockX() - loc2.getBlockX());
-        int dy = Math.abs(loc1.getBlockY() - loc2.getBlockY());
-        int dz = Math.abs(loc1.getBlockZ() - loc2.getBlockZ());
-        return dx <= radius && dy <= radius && dz <= radius;
-    }
-
-    /**
-     * Checks if the grave should explode based on the configuration.
-     *
-     * @param grave The grave to check.
-     * @return True if the grave should explode, false otherwise.
-     */
-    private boolean shouldExplode(Grave grave) {
-        return plugin.getConfig("grave.explode", grave)
-                .getBoolean("grave.explode", false);
-    }
-
-    /**
-     * Handles the explosion of a grave.
-     *
-     * @param event         The ExplosionPrimeEvent.
-     * @param grave         The grave associated with the explosion.
-     * @param graveLocation The location of the grave.
-     */
-    private void handleGraveExplosion(ExplosionPrimeEvent event, Grave grave, Location graveLocation) {
-        GraveExplodeEvent modern = new GraveExplodeEvent(graveLocation, event.getEntity(), grave);
-        plugin.getServer().getPluginManager().callEvent(modern);
-
-        com.ranull.graves.event.GraveExplodeEvent legacy = new com.ranull.graves.event.GraveExplodeEvent(graveLocation, event.getEntity(), grave);
-        plugin.getServer().getPluginManager().callEvent(legacy);
-
-        if (modern.isCancelled() || modern.isAddon() || legacy.isCancelled() || legacy.isAddon()) {
-            event.setCancelled(true);
-            return;
-        }
-
-        Location effectiveLoc = graveLocation;
-        try {
-            if (modern.hasLocation()) {
-                effectiveLoc = modern.getLocation();
-            } else {
-                legacy.getLocation();
-                effectiveLoc = legacy.getLocation();
-            }
-        } catch (Throwable ignored) {
-            //ignored
-        }
-
-        if (plugin.getConfig("drop.looted-explosion-effect", grave).getBoolean("drop.looted-explosion-effect", false)) {
-            try {
-                Location location = grave.getLocationDeath();
-                Objects.requireNonNull(location.getWorld()).spawnParticle(plugin.getVersionManager().getParticleForVersion("EXPLOSION"), location, 1);
-                try {
-                    location.getWorld().playSound(location, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("ENTITY_GENERIC_EXPLODE")), 1.0f, 1.0f);
-                } catch (Exception e) {
-                    location.getWorld().playSound(location, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("EXPLODE")), 1.0f, 1.0f); // pre 1.9
+                if (preEvent.isCancelled()) {
+                    cancelExplosion = true;
+                    break;
                 }
-            } catch (Exception ignored) {
-                //ignored
+
+                float newRadius = preEvent.getRadius();
+                if (newRadius != blastRadius) {
+                    blastRadius = newRadius;
+                    blastRadiusSquared = newRadius * newRadius;
+                    event.setRadius(newRadius);
+                }
+
+                Location newExplosionLocation = preEvent.getExplosionLocation();
+                if (!newExplosionLocation.equals(explosionLocation)) {
+                    explosionLocation = newExplosionLocation.clone();
+
+                    if (!sourceEntity.getLocation().equals(newExplosionLocation)) {
+                        sourceEntity.teleport(newExplosionLocation);
+                    }
+                }
             }
         }
 
-        if (plugin.getConfig("drop.explode", grave).getBoolean("drop.explode", false)) {
-            plugin.getGraveManager().breakGrave(effectiveLoc, grave);
-        } else {
-            plugin.getGraveManager().removeGrave(grave);
-        }
-
-        plugin.getGraveManager().playEffect("effect.loot", effectiveLoc, grave);
-        plugin.getEntityManager().runCommands("event.command.explode", event.getEntity(), effectiveLoc, grave);
-
-        if (plugin.getConfig("zombie.explode", grave).getBoolean("zombie.explode", false)) {
-            plugin.getEntityManager().spawnZombie(effectiveLoc, grave);
+        if (cancelExplosion) {
+            event.setCancelled(true);
         }
     }
 }
