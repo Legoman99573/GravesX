@@ -578,45 +578,58 @@ public class EntityDeathListener implements Listener {
         boolean cancelled = modern.isCancelled() || legacy.isCancelled();
         boolean addon     = modern.isAddon()     || legacy.isAddon();
 
-        if (!cancelled && !addon) {
+        if (addon) {
+            plugin.debugMessage("GraveCreateEvent is handled by addon. Developers should handle it here. If not, this will do absolutely nothing at all.", 1);
+            return;
+        }
+
+        if (!cancelled) {
             placeGrave(event, grave, graveItemStackList, removedItemStackList, location,
                     livingEntity, permissionList, player);
 
             if (!effectiveIgnoredItems.isEmpty() || !effectiveIgnoredBlocks.isEmpty()) {
                 dropIgnored(livingEntity, location, event, effectiveIgnoredItems, effectiveIgnoredBlocks);
             }
-        } else if (cancelled && !addon) {
+            return;
+        }
+
+        List<ItemStack> toReturn = new ArrayList<>();
+        Set<ItemStack> identitySet = Collections.newSetFromMap(new IdentityHashMap<>());
+
+        if (graveItemStackList != null) {
+            for (ItemStack item : graveItemStackList) {
+                if (item == null || item.getType() == Material.AIR) continue;
+                if (identitySet.add(item)) {
+                    toReturn.add(item);
+                }
+            }
+        }
+
+        for (ItemStack item : effectiveIgnoredItems) {
+            if (item == null || item.getType() == Material.AIR) continue;
+            if (identitySet.add(item)) {
+                toReturn.add(item);
+            }
+        }
+
+        if (!toReturn.isEmpty()) {
+            event.getDrops().addAll(toReturn);
+        }
+
+        if (!effectiveIgnoredBlocks.isEmpty()) {
             Location dropLoc = (location != null) ? location : livingEntity.getLocation();
             World world = dropLoc.getWorld();
 
             if (world != null) {
-                if (removedItemStackList != null) {
-                    for (ItemStack item : removedItemStackList) {
-                        if (item != null && item.getType() != Material.AIR) {
-                            world.dropItemNaturally(dropLoc, item);
-                        }
-                    }
-                }
-                if (graveItemStackList != null) {
-                    for (ItemStack item : graveItemStackList) {
-                        if (item != null && item.getType() != Material.AIR) {
-                            world.dropItemNaturally(dropLoc, item);
-                        }
-                    }
-                }
+                for (Block block : effectiveIgnoredBlocks) {
+                    if (block == null) continue;
 
-                if (!effectiveIgnoredItems.isEmpty() || !effectiveIgnoredBlocks.isEmpty()) {
-                    dropIgnored(livingEntity, dropLoc, event, effectiveIgnoredItems, effectiveIgnoredBlocks);
-                }
-            } else {
-                if (removedItemStackList != null) {
-                    event.getDrops().addAll(removedItemStackList);
-                }
-                if (graveItemStackList != null) {
-                    event.getDrops().addAll(graveItemStackList);
-                }
-                if (!effectiveIgnoredItems.isEmpty()) {
-                    event.getDrops().addAll(effectiveIgnoredItems);
+                    Location blockLoc = block.getLocation();
+                    for (ItemStack drop : block.getDrops()) {
+                        if (drop != null && drop.getType() != Material.AIR) {
+                            block.getWorld().dropItemNaturally(blockLoc, drop);
+                        }
+                    }
                 }
             }
         }
