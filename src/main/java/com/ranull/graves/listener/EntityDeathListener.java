@@ -114,7 +114,10 @@ public class EntityDeathListener implements Listener {
 
         if (!hasValidToken(livingEntity, permissionList, entityName, event.getDrops())) return;
 
-        final List<ItemStack> graveItemStackList = getGraveItemStackList(event, livingEntity, permissionList);
+        final List<ItemStack> ignoredItemStackList = new ArrayList<>();
+        final List<ItemStack> graveItemStackList =
+                getGraveItemStackList(event, livingEntity, permissionList, ignoredItemStackList);
+
         if (graveItemStackList.isEmpty()) {
             plugin.debugMessage("Grave not created for " + entityName + " because they had no drops", 2);
             return;
@@ -123,7 +126,7 @@ public class EntityDeathListener implements Listener {
         final List<ItemStack> removedItemStackList = getRemovedItemStacks(livingEntity);
 
         if (isPlayer && pde != null && location.getWorld() != null) {
-           InventoryView view = player.getOpenInventory();
+            InventoryView view = player.getOpenInventory();
             if (view != null) {
                 Inventory top = CompatibilityInventoryView.getTopInventory(view);
                 if (top != null && (top.getType() == InventoryType.WORKBENCH || top.getType() == InventoryType.CRAFTING)) {
@@ -139,10 +142,11 @@ public class EntityDeathListener implements Listener {
             }
         }
 
-        // Prevent duplication of items
         event.getDrops().clear();
 
-        createGrave(event, livingEntity, entityName, permissionList, removedItemStackList, graveItemStackList, location, pde, player);
+        createGrave(event, livingEntity, entityName, permissionList,
+                removedItemStackList, graveItemStackList, ignoredItemStackList,
+                location, pde, player);
     }
 
     /**
@@ -182,7 +186,7 @@ public class EntityDeathListener implements Listener {
      * Removes player skull from the drops of the entity if it is wearing one.
      *
      * @param entity the entity whose drops are to be modified
-     * @param event the EntityDeathEvent containing the drops
+     * @param event  the EntityDeathEvent containing the drops
      */
     private void removePlayerSkullFromDrops(LivingEntity entity, EntityDeathEvent event) {
         ItemStack helmet = entity.getEquipment() != null ? entity.getEquipment().getHelmet() : null;
@@ -235,7 +239,7 @@ public class EntityDeathListener implements Listener {
     /**
      * Checks if the entity is an invalid grave zombie.
      *
-     * @param event       The entity death event.
+     * @param event        The entity death event.
      * @param livingEntity The entity to check.
      * @param entityName   The name of the entity.
      * @return True if the entity is an invalid grave zombie, false otherwise.
@@ -259,8 +263,8 @@ public class EntityDeathListener implements Listener {
     /**
      * Handles player death and checks if a grave should be created.
      *
-     * @param player      The player who died.
-     * @param entityName  The name of the player.
+     * @param player     The player who died.
+     * @param entityName The name of the player.
      * @return True if a grave should not be created, false otherwise.
      */
     private boolean handlePlayerDeath(Player player, String entityName) {
@@ -276,7 +280,7 @@ public class EntityDeathListener implements Listener {
     /**
      * Checks if graves are enabled for the specified entity.
      *
-     * @param livingEntity The entity to check.
+     * @param livingEntity  The entity to check.
      * @param permissionList The list of permissions.
      * @param entityName    The name of the entity.
      * @return True if graves are enabled, false otherwise.
@@ -407,12 +411,17 @@ public class EntityDeathListener implements Listener {
     /**
      * Retrieves the list of item stacks for the grave.
      *
-     * @param event         The entity death event.
-     * @param livingEntity  The entity that died.
-     * @param permissionList The list of permissions.
+     * @param event               The entity death event.
+     * @param livingEntity        The entity that died.
+     * @param permissionList      The list of permissions.
+     * @param ignoredItemStackList A list to populate with items that should be ignored by the grave
+     *                             (they will be dropped normally instead of stored).
      * @return The list of item stacks for the grave.
      */
-    private List<ItemStack> getGraveItemStackList(EntityDeathEvent event, LivingEntity livingEntity, List<String> permissionList) {
+    private List<ItemStack> getGraveItemStackList(EntityDeathEvent event,
+                                                  LivingEntity livingEntity,
+                                                  List<String> permissionList,
+                                                  List<ItemStack> ignoredItemStackList) {
         final List<ItemStack> graveList = new ArrayList<>();
 
         try {
@@ -433,7 +442,14 @@ public class EntityDeathListener implements Listener {
                 }
 
                 if (!plugin.getGraveManager().shouldIgnoreItemStack(item, livingEntity, permissionList)) {
+                    // Goes into the grave
                     graveList.add(item);
+                    it.remove();
+                } else {
+                    // Ignored by the grave: track it separately and remove from drops
+                    if (ignoredItemStackList != null) {
+                        ignoredItemStackList.add(item);
+                    }
                     it.remove();
                 }
             }
@@ -445,13 +461,14 @@ public class EntityDeathListener implements Listener {
     /**
      * Creates a grave for the specified entity.
      *
-     * @param event              The entity death event.
-     * @param livingEntity       The entity that died.
-     * @param entityName         The name of the entity.
-     * @param permissionList     The list of permissions.
+     * @param event                The entity death event.
+     * @param livingEntity         The entity that died.
+     * @param entityName           The name of the entity.
+     * @param permissionList       The list of permissions.
      * @param removedItemStackList The list of removed item stacks.
-     * @param graveItemStackList The list of item stacks for the grave.
-     * @param location           The location of the grave.
+     * @param graveItemStackList   The list of item stacks for the grave.
+     * @param ignoredItemStackList The list of items that were ignored for the grave and should be dropped normally.
+     * @param location             The location of the grave.
      */
     private void createGrave(EntityDeathEvent event,
                              LivingEntity livingEntity,
@@ -459,9 +476,13 @@ public class EntityDeathListener implements Listener {
                              List<String> permissionList,
                              List<ItemStack> removedItemStackList,
                              List<ItemStack> graveItemStackList,
+                             List<ItemStack> ignoredItemStackList,
                              Location location,
                              PlayerDeathEvent pde,
                              Player player) {
+
+        // Track ignored blocks associated with this grave creation.
+        List<Block> ignoredBlockList = new ArrayList<>();
 
         if (player != null) {
             int serverMax = plugin.getConfig("grave.max", livingEntity, permissionList).getInt("grave.max");
@@ -487,6 +508,9 @@ public class EntityDeathListener implements Listener {
                         if (graveItemStackList != null && !graveItemStackList.isEmpty()) {
                             event.getDrops().addAll(graveItemStackList);
                         }
+                        if (ignoredItemStackList != null && !ignoredItemStackList.isEmpty()) {
+                            event.getDrops().addAll(ignoredItemStackList);
+                        }
                     }
                     return;
                 }
@@ -500,10 +524,56 @@ public class EntityDeathListener implements Listener {
         setupGraveProtection(livingEntity, grave);
 
         GraveCreateEvent modern = new GraveCreateEvent(livingEntity, grave);
+        if (ignoredItemStackList != null && !ignoredItemStackList.isEmpty()) {
+            modern.setIgnoredItems(ignoredItemStackList);
+        }
+        modern.setIgnoredBlocks(ignoredBlockList);
+
         plugin.getServer().getPluginManager().callEvent(modern);
 
-        com.ranull.graves.event.GraveCreateEvent legacy = new com.ranull.graves.event.GraveCreateEvent(livingEntity, grave);
+        com.ranull.graves.event.GraveCreateEvent legacy = new com.ranull.graves.event.GraveCreateEvent(livingEntity, grave, ignoredItemStackList, ignoredBlockList);
         plugin.getServer().getPluginManager().callEvent(legacy);
+
+        List<ItemStack> effectiveIgnoredItems = new ArrayList<>();
+        Set<ItemStack> itemsIdentity = Collections.newSetFromMap(new IdentityHashMap<>());
+
+        if (ignoredItemStackList != null) {
+            for (ItemStack item : ignoredItemStackList) {
+                if (item != null && itemsIdentity.add(item)) {
+                    effectiveIgnoredItems.add(item);
+                }
+            }
+        }
+        for (ItemStack item : modern.getIgnoredItems()) {
+            if (item != null && itemsIdentity.add(item)) {
+                effectiveIgnoredItems.add(item);
+            }
+        }
+        for (ItemStack item : legacy.getIgnoredItems()) {
+            if (item != null && itemsIdentity.add(item)) {
+                effectiveIgnoredItems.add(item);
+            }
+        }
+
+        List<Block> effectiveIgnoredBlocks = new ArrayList<>();
+        Set<Block> blocksIdentity = Collections.newSetFromMap(new IdentityHashMap<>());
+
+        for (Block block : ignoredBlockList) {
+            if (block != null && blocksIdentity.add(block)) {
+                effectiveIgnoredBlocks.add(block);
+            }
+        }
+
+        for (Block block : modern.getIgnoredBlocks()) {
+            if (block != null && blocksIdentity.add(block)) {
+                effectiveIgnoredBlocks.add(block);
+            }
+        }
+        for (Block block : legacy.getIgnoredBlocks()) {
+            if (block != null && blocksIdentity.add(block)) {
+                effectiveIgnoredBlocks.add(block);
+            }
+        }
 
         boolean cancelled = modern.isCancelled() || legacy.isCancelled();
         boolean addon     = modern.isAddon()     || legacy.isAddon();
@@ -511,8 +581,12 @@ public class EntityDeathListener implements Listener {
         if (!cancelled && !addon) {
             placeGrave(event, grave, graveItemStackList, removedItemStackList, location,
                     livingEntity, permissionList, player);
+
+            if (!effectiveIgnoredItems.isEmpty() || !effectiveIgnoredBlocks.isEmpty()) {
+                dropIgnored(livingEntity, location, event, effectiveIgnoredItems, effectiveIgnoredBlocks);
+            }
         } else if (cancelled && !addon) {
-            Location dropLoc = location != null ? location : livingEntity.getLocation();
+            Location dropLoc = (location != null) ? location : livingEntity.getLocation();
             World world = dropLoc.getWorld();
 
             if (world != null) {
@@ -530,12 +604,19 @@ public class EntityDeathListener implements Listener {
                         }
                     }
                 }
+
+                if (!effectiveIgnoredItems.isEmpty() || !effectiveIgnoredBlocks.isEmpty()) {
+                    dropIgnored(livingEntity, dropLoc, event, effectiveIgnoredItems, effectiveIgnoredBlocks);
+                }
             } else {
                 if (removedItemStackList != null) {
                     event.getDrops().addAll(removedItemStackList);
                 }
                 if (graveItemStackList != null) {
                     event.getDrops().addAll(graveItemStackList);
+                }
+                if (!effectiveIgnoredItems.isEmpty()) {
+                    event.getDrops().addAll(effectiveIgnoredItems);
                 }
             }
         }
@@ -640,7 +721,8 @@ public class EntityDeathListener implements Listener {
             GraveProtectionCreateEvent modern = new GraveProtectionCreateEvent(livingEntity, grave);
             plugin.getServer().getPluginManager().callEvent(modern);
 
-            com.ranull.graves.event.GraveProtectionCreateEvent legacy = new com.ranull.graves.event.GraveProtectionCreateEvent(livingEntity, grave);
+            com.ranull.graves.event.GraveProtectionCreateEvent legacy =
+                    new com.ranull.graves.event.GraveProtectionCreateEvent(livingEntity, grave);
             plugin.getServer().getPluginManager().callEvent(legacy);
 
             if (!(modern.isCancelled() || modern.isAddon() || legacy.isCancelled() || legacy.isAddon())) {
@@ -653,13 +735,13 @@ public class EntityDeathListener implements Listener {
     /**
      * Places the grave at the specified location.
      *
-     * @param event               The entity death event.
-     * @param grave               The grave to place.
-     * @param graveItemStackList  The list of item stacks for the grave.
+     * @param event                The entity death event.
+     * @param grave                The grave to place.
+     * @param graveItemStackList   The list of item stacks for the grave.
      * @param removedItemStackList The list of removed item stacks.
-     * @param location            The location to place the grave.
-     * @param livingEntity        The entity that died.
-     * @param permissionList      The list of permissions.
+     * @param location             The location to place the grave.
+     * @param livingEntity         The entity that died.
+     * @param permissionList       The list of permissions.
      */
     private void placeGrave(EntityDeathEvent event,
                             Grave grave,
@@ -685,7 +767,9 @@ public class EntityDeathListener implements Listener {
         setupSkull(grave, graveItemStackList, livingEntity, location);
 
         grave.setInventory(plugin.getGraveManager().getGraveInventory(grave, livingEntity, graveItemStackList, removedItemStackList, permissionList));
-        grave.setEquipmentMap(!plugin.getVersionManager().is_v1_7() ? plugin.getEntityManager().getEquipmentMap(livingEntity, grave) : new HashMap<>());
+        grave.setEquipmentMap(!plugin.getVersionManager().is_v1_7()
+                ? plugin.getEntityManager().getEquipmentMap(livingEntity, grave)
+                : new HashMap<>());
 
         if (!locationMap.isEmpty()) {
             notifyGraveCreation(event, grave, locationMap, livingEntity, permissionList, player,
@@ -698,8 +782,8 @@ public class EntityDeathListener implements Listener {
     /**
      * Sets up the obituary item for the grave.
      *
-     * @param grave               The grave to set up.
-     * @param graveItemStackList  The list of item stacks for the grave.
+     * @param grave              The grave to set up.
+     * @param graveItemStackList The list of item stacks for the grave.
      */
     private void setupObituary(Grave grave, List<ItemStack> graveItemStackList, LivingEntity livingEntity, Location location) {
         if (plugin.getConfig("obituary.enabled", grave).getBoolean("obituary.enabled")) {
@@ -710,7 +794,8 @@ public class EntityDeathListener implements Listener {
                 GraveObituaryAddEvent modern = new GraveObituaryAddEvent(grave, location, livingEntity);
                 plugin.getServer().getPluginManager().callEvent(modern);
 
-                com.ranull.graves.event.GraveObituaryAddEvent legacy = new com.ranull.graves.event.GraveObituaryAddEvent(grave, location, livingEntity);
+                com.ranull.graves.event.GraveObituaryAddEvent legacy =
+                        new com.ranull.graves.event.GraveObituaryAddEvent(grave, location, livingEntity);
                 plugin.getServer().getPluginManager().callEvent(legacy);
 
                 if (!(modern.isCancelled() || modern.isAddon() || legacy.isCancelled() || legacy.isAddon())) {
@@ -747,8 +832,8 @@ public class EntityDeathListener implements Listener {
     /**
      * Sets up the skull item for the grave.
      *
-     * @param grave               The grave to set up.
-     * @param graveItemStackList  The list of item stacks for the grave.
+     * @param grave              The grave to set up.
+     * @param graveItemStackList The list of item stacks for the grave.
      */
     private void setupSkull(Grave grave, List<ItemStack> graveItemStackList, LivingEntity livingEntity, Location location) {
         if (plugin.getConfig("head.enabled", grave).getBoolean("head.enabled")
@@ -761,7 +846,8 @@ public class EntityDeathListener implements Listener {
             GravePlayerHeadDropEvent modern = new GravePlayerHeadDropEvent(grave, location, livingEntity);
             plugin.getServer().getPluginManager().callEvent(modern);
 
-            com.ranull.graves.event.GravePlayerHeadDropEvent legacy = new com.ranull.graves.event.GravePlayerHeadDropEvent(grave, location, livingEntity);
+            com.ranull.graves.event.GravePlayerHeadDropEvent legacy =
+                    new com.ranull.graves.event.GravePlayerHeadDropEvent(grave, location, livingEntity);
             plugin.getServer().getPluginManager().callEvent(legacy);
 
             if (!(modern.isCancelled() || modern.isAddon() || legacy.isCancelled() || legacy.isAddon())) {
@@ -795,11 +881,11 @@ public class EntityDeathListener implements Listener {
     /**
      * Notifies the creation of the grave and places the grave blocks.
      *
-     * @param event              The entity death event.
-     * @param grave              The grave that was created.
-     * @param locationMap        The map of locations for the grave.
-     * @param livingEntity       The entity that died.
-     * @param permissionList     The list of permissions.
+     * @param event               The entity death event.
+     * @param grave               The grave that was created.
+     * @param locationMap         The map of locations for the grave.
+     * @param livingEntity        The entity that died.
+     * @param permissionList      The list of permissions.
      */
     private void notifyGraveCreation(EntityDeathEvent event, Grave grave, Map<Location, BlockData.BlockType> locationMap, LivingEntity livingEntity, List<String> permissionList, Player player, Location fallbackLocation, List<ItemStack> removedItemStackList, List<ItemStack> graveItemStackList) {
         plugin.getEntityManager().sendMessage("message.death", livingEntity, grave.getLocationDeath(), grave);
@@ -876,9 +962,9 @@ public class EntityDeathListener implements Listener {
     /**
      * Places the grave blocks at the specified locations.
      *
-     * @param grave              The grave to place.
-     * @param locationMap        The map of locations for the grave.
-     * @param livingEntity       The entity that died.
+     * @param grave        The grave to place.
+     * @param locationMap  The map of locations for the grave.
+     * @param livingEntity The entity that died.
      */
     private boolean placeGraveBlocks(Grave grave, Map<Location, BlockData.BlockType> locationMap, LivingEntity livingEntity) {
         boolean placed = false;
@@ -897,7 +983,8 @@ public class EntityDeathListener implements Listener {
             GraveBlockPlaceEvent modern = new GraveBlockPlaceEvent(grave, loc, entry.getValue(), entry.getKey().getBlock(), livingEntity);
             plugin.getServer().getPluginManager().callEvent(modern);
 
-            com.ranull.graves.event.GraveBlockPlaceEvent legacy = new com.ranull.graves.event.GraveBlockPlaceEvent(grave, loc, entry.getValue(), entry.getKey().getBlock(), livingEntity);
+            com.ranull.graves.event.GraveBlockPlaceEvent legacy =
+                    new com.ranull.graves.event.GraveBlockPlaceEvent(grave, loc, entry.getValue(), entry.getKey().getBlock(), livingEntity);
             plugin.getServer().getPluginManager().callEvent(legacy);
 
             if (modern.isCancelled() || modern.isAddon() || legacy.isCancelled() || legacy.isAddon()) {
@@ -942,6 +1029,57 @@ public class EntityDeathListener implements Listener {
             }
             if (graveItemStackList != null) {
                 event.getDrops().addAll(graveItemStackList);
+            }
+        }
+    }
+
+    /**
+     * Drops ignored items and blocks regardless of grave placement outcome.
+     *
+     * @param livingEntity     The entity that died.
+     * @param fallbackLocation Fallback location to drop at if needed.
+     * @param event            The death event (used when world is null).
+     * @param ignoredItems     Items that were ignored for the grave.
+     * @param ignoredBlocks    Blocks that were ignored for the grave.
+     */
+    private void dropIgnored(LivingEntity livingEntity,
+                             Location fallbackLocation,
+                             EntityDeathEvent event,
+                             List<ItemStack> ignoredItems,
+                             List<Block> ignoredBlocks) {
+
+        if ((ignoredItems == null || ignoredItems.isEmpty())
+                && (ignoredBlocks == null || ignoredBlocks.isEmpty())) {
+            return;
+        }
+
+        Location dropLoc = (fallbackLocation != null) ? fallbackLocation : livingEntity.getLocation();
+        World world = dropLoc.getWorld();
+
+        if (world != null) {
+            if (ignoredItems != null) {
+                for (ItemStack item : ignoredItems) {
+                    if (item != null && item.getType() != Material.AIR) {
+                        world.dropItemNaturally(dropLoc, item);
+                    }
+                }
+            }
+
+            if (ignoredBlocks != null) {
+                for (Block block : ignoredBlocks) {
+                    if (block == null) continue;
+
+                    Location blockLoc = block.getLocation();
+                    for (ItemStack drop : block.getDrops()) {
+                        if (drop != null && drop.getType() != Material.AIR) {
+                            block.getWorld().dropItemNaturally(blockLoc, drop);
+                        }
+                    }
+                }
+            }
+        } else {
+            if (ignoredItems != null && !ignoredItems.isEmpty()) {
+                event.getDrops().addAll(ignoredItems);
             }
         }
     }
