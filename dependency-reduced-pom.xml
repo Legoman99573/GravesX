@@ -759,6 +759,12 @@
       </plugin>
     </plugins>
   </reporting>
+  <distributionManagement>
+    <snapshotRepository>
+      <id>cwhead-maven-snapshots</id>
+      <url>https://repo.cwhead.dev/repository/maven-snapshots/</url>
+    </snapshotRepository>
+  </distributionManagement>
   <properties>
     <java.version>17</java.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

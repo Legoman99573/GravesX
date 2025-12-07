@@ -32,6 +32,13 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+    <distributionManagement>
+        <snapshotRepository>
+            <id>cwhead-maven-snapshots</id>
+            <url>https://repo.cwhead.dev/repository/maven-snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
+
     <build>
         <defaultGoal>clean package</defaultGoal>
         <finalName>${project.name}-${project.version}</finalName>
