@@ -113,14 +113,15 @@ public class LocationManager {
 
         if (location.getWorld() != null) {
             Block block = location.getBlock();
+            Location candidate = null;
 
-            if (!hasGrave(location) && isLocationSafeGrave(location)) {
-                return location;
+            if (isLocationSafeGraveAndPlayer(location)) {
+                return LocationUtil.roundLocation(location);
             } else {
                 if (isVoid(location) || !isInsideBorder(location)) {
-                    return getVoid(location, livingEntity, grave);
+                    candidate = getVoid(location, livingEntity, grave);
                 } else if (MaterialUtil.isLava(block.getType())) {
-                    return getLavaTop(location, livingEntity, grave);
+                    candidate = getLavaTop(location, livingEntity, grave);
                 } else {
                     Location graveLocation = (MaterialUtil.isAir(block.getType())
                             || MaterialUtil.isWater(block.getType()))
@@ -129,13 +130,22 @@ public class LocationManager {
                             : getRoof(location, livingEntity, grave);
 
                     if (graveLocation != null) {
-                        return graveLocation;
+                        candidate = graveLocation;
                     }
                 }
             }
+
+            if (isLocationSafeGraveAndPlayer(candidate)) {
+                return LocationUtil.roundLocation(candidate);
+            }
         }
 
-        return getVoid(location, livingEntity, grave);
+        Location voidLocation = getVoid(location, livingEntity, grave);
+        if (isLocationSafeGraveAndPlayer(voidLocation)) {
+            return LocationUtil.roundLocation(voidLocation);
+        }
+
+        return null;
     }
 
     /**
@@ -627,6 +637,20 @@ public class LocationManager {
         }
 
         return MaterialUtil.isSafeNotSolid(type) && MaterialUtil.isSafeSolid(belowType);
+    }
+
+    /**
+     * Combined safety check: location must be safe for the grave, safe for the player,
+     * and must not already contain a grave.
+     *
+     * @param location The candidate location.
+     * @return True if the location is safe for both grave and player and has no grave.
+     */
+    private boolean isLocationSafeGraveAndPlayer(Location location) {
+        location = LocationUtil.roundLocation(location);
+        return !hasGrave(location)
+                && isLocationSafeGrave(location)
+                && isLocationSafePlayer(location);
     }
 
     /**

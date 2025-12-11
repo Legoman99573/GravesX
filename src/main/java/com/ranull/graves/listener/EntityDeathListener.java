@@ -766,11 +766,17 @@ public class EntityDeathListener implements Listener {
                             Player player) {
 
         Map<Location, BlockData.BlockType> locationMap = new HashMap<>();
-        Location safeLocation = plugin.getLocationManager().getSafeGraveLocation(livingEntity, location, grave);
+        if (plugin.getConfig("placement.safe-loation", grave).getBoolean("placement.safe-loation")) {
+            Location safeLocation = plugin.getLocationManager().getSafeGraveLocation(livingEntity, location, grave);
+            event.setDroppedExp(0);
 
-        event.setDroppedExp(0);
+            grave.setLocationDeath(safeLocation != null ? LocationUtil.roundLocation(safeLocation) : LocationUtil.roundLocation(location));
+        } else {
+            event.setDroppedExp(0);
 
-        grave.setLocationDeath(safeLocation != null ? safeLocation : location);
+            grave.setLocationDeath(LocationUtil.roundLocation(location));
+        }
+
         grave.getLocationDeath().setYaw(grave.getYaw());
         grave.getLocationDeath().setPitch(grave.getPitch());
 

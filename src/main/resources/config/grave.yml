@@ -32,6 +32,8 @@ settings:
       # Placement #
       #############
       placement:
+        # This controls all smart grave placement options. It is best to keep this enabled. If for some reason you are having issues with this feature, you can disable it.
+        safe-loation: true
         # Only create graves where the entity can build, should work with all protection plugins.
         can-build: false
         # Only create graves where the entity can build, (According to ProtectionLib).
