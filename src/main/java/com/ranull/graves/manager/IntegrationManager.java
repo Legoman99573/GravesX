@@ -1182,8 +1182,14 @@ public class IntegrationManager {
     private void loadCompatibilityWarnings() {
         if (plugin.getConfig().getBoolean("settings.compatibility.warning")) {
             for (World world : plugin.getServer().getWorlds()) {
-                if (world.getGameRuleValue("keepInventory").equals("true")) {
-                    plugin.compatibilityMessage("World \"" + world.getName() + "\" has keepInventory set to true, Graves will not be created here unless a player has the \"graves.keepinventory.bypass\" permission.");
+                try {
+                    if (world.getGameRuleValue("keepInventory").equals("true")) {
+                        plugin.compatibilityMessage("World \"" + world.getName() + "\" has keepInventory set to true, Graves will not be created here unless a player has the \"graves.keepinventory.bypass\" permission.");
+                    }
+                } catch (Exception e) {
+                    if (world.getGameRuleValue("keep_inventory").equals("true")) {
+                        plugin.compatibilityMessage("World \"" + world.getName() + "\" has keepInventory set to true, Graves will not be created here unless a player has the \"graves.keepinventory.bypass\" permission.");
+                    }
                 }
             }
 
