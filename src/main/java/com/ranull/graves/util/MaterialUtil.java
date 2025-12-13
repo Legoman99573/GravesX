@@ -49,17 +49,20 @@ public class MaterialUtil {
             "LEGACY_SKULL_ITEM"
     );
 
+    private static final Set<String> NOT_SOLID_FOR_US = Set.of(
+            "WEB",
+            "COBWEB",
+            "LEGACY_WEB",
+            "LEGACY_COBWEB"
+    );
+
     private static final Set<String> SAFE_SUPPORTS = Set.of(
             "SCAFFOLDING",
             "POWDER_SNOW",
-            "WEB",
-            "COBWEB",
             "SWEET_BERRY_BUSH",
             "HONEY_BLOCK",
             "TRIPWIRE",
             "TRIPWIRE_HOOK",
-            "LEGACY_WEB",
-            "LEGACY_COBWEB",
             "LEGACY_SWEET_BERRY_BUSH",
             "LEGACY_HONEY_BLOCK",
             "LEGACY_TRIPWIRE",
@@ -109,14 +112,35 @@ public class MaterialUtil {
     }
 
     /**
-     * Treats certain non-solid “supports” as solid for our purposes.
+     * Treats certain non-solid “supports” as solid for our purposes,
+     * but explicitly excludes slabs, carpets, and cobweb/web.
      */
     private static boolean isSolid(Material material) {
-        return material.isSolid() || isSafeSupport(material);
+        final String name = material.name();
+
+        if (isSlabName(name) || isCarpetName(name) || NOT_SOLID_FOR_US.contains(name)) {
+            return false;
+        }
+
+        return material.isSolid() || isSafeSupport(name);
     }
 
-    private static boolean isSafeSupport(Material material) {
-        return SAFE_SUPPORTS.contains(material.name());
+    private static boolean isSafeSupport(String name) {
+        return SAFE_SUPPORTS.contains(name);
+    }
+
+    private static boolean isSlabName(String name) {
+        return name.endsWith("_SLAB")
+                || name.equals("STEP")
+                || name.equals("DOUBLE_STEP")
+                || name.equals("LEGACY_STEP")
+                || name.equals("LEGACY_DOUBLE_STEP");
+    }
+
+    private static boolean isCarpetName(String name) {
+        return name.endsWith("_CARPET")
+                || name.equals("CARPET")
+                || name.equals("LEGACY_CARPET");
     }
 
     /**
