@@ -1205,6 +1205,12 @@ public class IntegrationManager {
                 plugin.compatibilityMessage(deluxeCombatPlugin.getName() + " Detected, in order to work with graves you need to set disable-drop-handling to true in " + deluxeCombatPlugin.getName() + "'s data.yml file.");
             }
 
+            Plugin clearLagPlugin = plugin.getServer().getPluginManager().getPlugin("ClearLag");
+
+            if (clearLagPlugin != null && clearLagPlugin.isEnabled()) {
+                plugin.compatibilityMessage(clearLagPlugin.getName() + " Detected. Graves will always return empty. Author insists using their own grave plugin instead. If you need server optimizations, we recommend reading up on this: https://github.com/YouHaveTrouble/minecraft-optimization");
+            }
+
             try {
                 Class.forName("ru.xezard.items.remover.ItemsRemoverPlugin");
                 plugin.compatibilityMessage("XItemsRemover Detected. Plugin is known to leave [pdd] lore on all items. It is best to not modify plugin.yml to remove the loadsbefore option.");
