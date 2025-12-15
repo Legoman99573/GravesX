@@ -384,7 +384,12 @@ public class GraveManager {
             }
         }
 
-        plugin.getGravesXScheduler().runTask(() -> plugin.getGUIManager().refreshMenus());
+        if (plugin.getVersionManager().isFolia()) {
+            plugin.getGravesXScheduler().runTask(() -> plugin.getGUIManager().refreshMenusSafely());
+
+        } else {
+            plugin.getGravesXScheduler().runTask(() -> plugin.getGUIManager().refreshMenus());
+        }
     }
 
     /**

@@ -8,12 +8,15 @@ import com.ranull.graves.inventory.GraveMenu;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.InventoryUtil;
 import com.ranull.graves.util.StringUtil;
+import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.InventoryView;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -90,6 +93,58 @@ public class GUIManager {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * This method schedules the per-player refresh on the player's region thread using an
+     * anchor at the player's current location.
+     */
+    public void refreshMenusSafely() {
+        List<Player> players = new ArrayList<>(plugin.getServer().getOnlinePlayers());
+        if (players.isEmpty()) return;
+
+        for (Player player : players) {
+            if (player == null || !player.isOnline()) continue;
+
+            Location loc;
+            try {
+                loc = player.getLocation();
+            } catch (Throwable t) {
+                continue;
+            }
+            if (loc.getWorld() == null) continue;
+
+            Location anchor = new Location(loc.getWorld(), loc.getX(), loc.getY(), loc.getZ());
+
+            plugin.getGravesXScheduler().execute(anchor, () -> {
+                if (!player.isOnline()) return;
+
+                InventoryView openInventory;
+                try {
+                    openInventory = player.getOpenInventory();
+                } catch (Throwable t) {
+                    return;
+                }
+                Inventory topInventory = CompatibilityInventoryView.getTopInventory(openInventory);
+
+                if (topInventory == null) return;
+
+                try {
+                    InventoryHolder holder = topInventory.getHolder();
+
+                    if (holder instanceof GraveList graveList) {
+                        setGraveListItems(topInventory, graveList.getUUID());
+                    } else if (holder instanceof GraveMenu graveMenu) {
+                        setGraveMenuItems(topInventory, graveMenu.getGrave());
+                    }
+                } catch (IllegalStateException threadCheck) {
+                    // Folia thread-check ("Cannot read world asynchronously") - skip this refresh.
+                    plugin.debugMessage("Skipping menu refresh for " + player.getName() + ": " + threadCheck.getMessage(), 2);
+                } catch (Throwable ignored) {
+                    // Keep menu refresh resilient; we don't want one bad inventory to break the tick.
+                }
+            });
         }
     }
 
