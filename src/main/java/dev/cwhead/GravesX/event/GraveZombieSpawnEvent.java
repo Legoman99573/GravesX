@@ -2,7 +2,7 @@ package dev.cwhead.GravesX.event;
 
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.graveevent.GraveEvent;
-import dev.cwhead.GravesX.exception.GravesXEventNullPointerException;
+import dev.cwhead.GravesX.exception.GravesXNullPointerException;
 import org.bukkit.Location;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
@@ -79,11 +79,11 @@ public class GraveZombieSpawnEvent extends GraveEvent {
      * Returns the targeted {@link Player}.
      *
      * @return the player being targeted.
-     * @throws GravesXEventNullPointerException if the target is not a player.
+     * @throws GravesXNullPointerException if the target is not a player.
      */
     public @NotNull Player getTargetPlayer() {
         if (!(targetEntity instanceof Player p)) {
-            throw new GravesXEventNullPointerException(this, "player");
+            throw new GravesXNullPointerException(this, "player");
         }
         return p;
     }
@@ -92,7 +92,7 @@ public class GraveZombieSpawnEvent extends GraveEvent {
      * Returns the targeted player's name.
      *
      * @return the player's current name.
-     * @throws GravesXEventNullPointerException if the target is not a player.
+     * @throws GravesXNullPointerException if the target is not a player.
      */
     public @NotNull String getTargetPlayerName() {
         return getTargetPlayer().getName();
@@ -102,7 +102,7 @@ public class GraveZombieSpawnEvent extends GraveEvent {
      * Returns the targeted player's UUID.
      *
      * @return the player's unique identifier.
-     * @throws GravesXEventNullPointerException if the target is not a player.
+     * @throws GravesXNullPointerException if the target is not a player.
      */
     public @NotNull UUID getTargetPlayerUniqueId() {
         return getTargetPlayer().getUniqueId();

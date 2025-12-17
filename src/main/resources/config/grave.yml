@@ -914,6 +914,7 @@ settings:
           - "&cIf the same issue occurs in %public_version%, then let us know in https://discord.ranull.com/."
         open-insufficient-balance: "You do not have a sufficient balance to open your grave."
         autoloot-insufficient-balance: "You do not have a sufficient balance to autoloot your grave."
+        grave-in-use: "&cThis grave is currently in use."
 
         # World Message Format
         # Format: WORLD_NAME: World Name

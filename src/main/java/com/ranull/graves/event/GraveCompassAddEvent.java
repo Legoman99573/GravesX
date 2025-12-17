@@ -1,7 +1,7 @@
 package com.ranull.graves.event;
 
 import com.ranull.graves.type.Grave;
-import dev.cwhead.GravesX.exception.GravesXEventIllegalArgumentException;
+import dev.cwhead.GravesX.exception.GravesXIllegalArgumentException;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
@@ -57,7 +57,7 @@ public class GraveCompassAddEvent extends dev.cwhead.GravesX.event.GraveCompassA
 
     private static @NotNull Player requirePlayer(@NotNull Entity entity) {
         if (entity instanceof Player p) return p;
-        throw new GravesXEventIllegalArgumentException("GraveCompassAddEvent requires a Player; got " + entity.getType());
+        throw new GravesXIllegalArgumentException("GraveCompassAddEvent requires a Player; got " + entity.getType());
     }
 
     /**

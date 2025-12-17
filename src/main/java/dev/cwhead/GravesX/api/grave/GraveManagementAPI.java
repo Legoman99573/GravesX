@@ -2,6 +2,7 @@ package dev.cwhead.GravesX.api.grave;
 
 import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
+import dev.cwhead.GravesX.exception.GravesXIllegalArgumentException;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
@@ -211,5 +212,63 @@ public class GraveManagementAPI {
             if (playerUUID.equals(g.getOwnerUUID())) count++;
         }
         return count;
+    }
+
+    /**
+     * Checks whether the specified grave is currently locked (being viewed) by any player.
+     *
+     * @param grave the grave to check
+     * @return {@code true} if the grave is currently locked/in-use, otherwise {@code false}
+     */
+    public boolean isGraveLocked(@NotNull Grave grave) {
+        UUID graveUUID = grave.getUUID();
+        return plugin.getCacheManager().isGraveBeingViewed(graveUUID);
+    }
+
+    /**
+     * Checks whether the specified grave is locked by someone other than the provided player.
+     *
+     * @param grave  the grave to check
+     * @param player the player attempting access
+     * @return {@code true} if the grave is locked by another player, otherwise {@code false}
+     */
+    public boolean isGraveLocked(@NotNull Grave grave, @NotNull Player player) {
+        UUID graveUUID = grave.getUUID();
+        return !plugin.getCacheManager().canAccessGrave(graveUUID, player.getUniqueId());
+    }
+
+    /**
+     * Gets the UUID of the player currently viewing (locking) the specified grave.
+     *
+     * @param grave the grave to check
+     * @return the viewer's UUID if the grave is locked, or {@code null} if not locked
+     */
+    public @Nullable UUID getGraveViewerUUID(@NotNull Grave grave) {
+        UUID graveUUID = grave.getUUID();
+        return plugin.getCacheManager().getGraveViewer(graveUUID);
+    }
+
+    /**
+     * Attempts to get the UUID of the player currently viewing (locking) a grave.
+     *
+     * <p>If the grave is locked, the viewer UUID is written to {@code outViewer[0]}
+     * and this method returns {@code true}. If the grave is not locked, this method
+     * returns {@code false} and {@code outViewer} is unchanged.</p>
+     *
+     * @param grave     the grave to check
+     * @param outViewer output array to receive the viewer UUID in {@code outViewer[0]} (length &gt;= 1)
+     * @return {@code true} if the grave is locked, otherwise {@code false}
+     * @throws GravesXIllegalArgumentException if {@code outViewer.length == 0}
+     */
+    public boolean tryGetGraveViewerUUID(@NotNull Grave grave, @NotNull UUID[] outViewer) {
+        if (outViewer.length == 0) {
+            throw new GravesXIllegalArgumentException("outViewer must have length >= 1");
+        }
+
+        UUID viewer = getGraveViewerUUID(grave);
+        if (viewer == null) return false;
+
+        outViewer[0] = viewer;
+        return true;
     }
 }

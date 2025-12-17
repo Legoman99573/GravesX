@@ -2,7 +2,7 @@ package dev.cwhead.GravesX.event;
 
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.graveevent.GraveEvent;
-import dev.cwhead.GravesX.exception.GravesXEventNullPointerException;
+import dev.cwhead.GravesX.exception.GravesXNullPointerException;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
@@ -109,14 +109,14 @@ public class GravePreExplodeEvent extends GraveEvent {
      * Gets the world of the explosion location.
      *
      * @return The world of the explosion.
-     * @throws GravesXEventNullPointerException if the world is null.
+     * @throws GravesXNullPointerException if the world is null.
      */
     public @NotNull World getWorld() {
         World world = getExplosionLocation().getWorld();
         if (world != null) {
             return world;
         }
-        throw new GravesXEventNullPointerException(this, "world");
+        throw new GravesXNullPointerException(this, "world");
     }
 
     /**

@@ -41,6 +41,12 @@ public class InventoryCloseListener implements Listener {
         if (!(topInventory.getHolder() instanceof Grave grave)) return;
         if (!(event.getPlayer() instanceof Player player)) return;
 
+        try {
+            plugin.getCacheManager().stopViewingGrave(grave.getUUID(), player.getUniqueId());
+        } catch (Throwable ignored) {
+            // If cache manager isn't available for some reason, don't break close handling.
+        }
+
         // Fire close events (modern + legacy)
         callGraveCloseEvent(event, grave, player);
 

@@ -2,8 +2,8 @@ package dev.cwhead.GravesX.event.graveevent;
 
 import com.ranull.graves.data.BlockData;
 import com.ranull.graves.type.Grave;
-import dev.cwhead.GravesX.exception.GravesXEventMethodNotSupportedException;
-import dev.cwhead.GravesX.exception.GravesXEventNullPointerException;
+import dev.cwhead.GravesX.exception.GravesXMethodNotSupportedException;
+import dev.cwhead.GravesX.exception.GravesXNullPointerException;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
@@ -100,12 +100,12 @@ public class GraveEntityEvent extends GraveEvent {
      * Gets the entity custom name in the event.
      *
      * @return The entity custom name involved in the event.
-     * @throws GravesXEventMethodNotSupportedException if the entity has no custom name
+     * @throws GravesXMethodNotSupportedException if the entity has no custom name
      */
     public @NotNull String getEntityCustomName() {
         final String custom = entity.getCustomName();
         if (custom == null) {
-            throw new GravesXEventMethodNotSupportedException("Entity has no custom name.");
+            throw new GravesXMethodNotSupportedException("Entity has no custom name.");
         }
         return custom;
     }
@@ -159,11 +159,11 @@ public class GraveEntityEvent extends GraveEvent {
      * Gets the living entity associated with the event.
      *
      * @return The living entity
-     * @throws GravesXEventNullPointerException if no living entity is present
+     * @throws GravesXNullPointerException if no living entity is present
      */
     public @NotNull LivingEntity getLivingEntity() {
         if (livingEntity == null) {
-            throw new GravesXEventNullPointerException(this, "livingEntity");
+            throw new GravesXNullPointerException(this, "livingEntity");
         }
         return livingEntity;
     }
@@ -172,11 +172,11 @@ public class GraveEntityEvent extends GraveEvent {
      * Gets the living entity victim name associated with the event.
      *
      * @return The victim name
-     * @throws GravesXEventNullPointerException if no living entity is present
+     * @throws GravesXNullPointerException if no living entity is present
      */
     public @NotNull String getLivingEntityVictim() {
         if (livingEntity == null) {
-            throw new GravesXEventNullPointerException(this, "livingEntity");
+            throw new GravesXNullPointerException(this, "livingEntity");
         }
         return livingEntity.getName();
     }
@@ -185,11 +185,11 @@ public class GraveEntityEvent extends GraveEvent {
      * Gets the living entity victim uuid associated with the event.
      *
      * @return The victim UUID
-     * @throws GravesXEventNullPointerException if no living entity is present
+     * @throws GravesXNullPointerException if no living entity is present
      */
     public @NotNull UUID getLivingEntityVictimId() {
         if (livingEntity == null) {
-            throw new GravesXEventNullPointerException(this, "livingEntity");
+            throw new GravesXNullPointerException(this, "livingEntity");
         }
         return livingEntity.getUniqueId();
     }
@@ -208,11 +208,11 @@ public class GraveEntityEvent extends GraveEvent {
      * Gets the living entity killer associated with the event.
      *
      * @return The killer as a {@link LivingEntity}
-     * @throws GravesXEventNullPointerException if no killer is present
+     * @throws GravesXNullPointerException if no killer is present
      */
     public @NotNull LivingEntity getLivingEntityKiller() {
         if (livingEntity == null || livingEntity.getKiller() == null) {
-            throw new GravesXEventNullPointerException(this, "livingEntity#getKiller()");
+            throw new GravesXNullPointerException(this, "livingEntity#getKiller()");
         }
         return livingEntity.getKiller();
     }
@@ -221,11 +221,11 @@ public class GraveEntityEvent extends GraveEvent {
      * Gets the killer's name.
      *
      * @return The killer name
-     * @throws GravesXEventNullPointerException if no killer is present
+     * @throws GravesXNullPointerException if no killer is present
      */
     public @NotNull String getLivingEntityKillerName() {
         if (livingEntity == null || livingEntity.getKiller() == null) {
-            throw new GravesXEventNullPointerException(this, "livingEntity#getKiller()");
+            throw new GravesXNullPointerException(this, "livingEntity#getKiller()");
         }
         return livingEntity.getKiller().getName();
     }
@@ -234,11 +234,11 @@ public class GraveEntityEvent extends GraveEvent {
      * Gets the killer's unique ID.
      *
      * @return The killer UUID
-     * @throws GravesXEventNullPointerException if no killer is present
+     * @throws GravesXNullPointerException if no killer is present
      */
     public @NotNull UUID getLivingEntityKillerUniqueId() {
         if (livingEntity == null || livingEntity.getKiller() == null) {
-            throw new GravesXEventNullPointerException(this, "livingEntity#getKiller()");
+            throw new GravesXNullPointerException(this, "livingEntity#getKiller()");
         }
         return livingEntity.getKiller().getUniqueId();
     }
@@ -247,11 +247,11 @@ public class GraveEntityEvent extends GraveEvent {
      * Gets the victim entity type.
      *
      * @return The victim type
-     * @throws GravesXEventNullPointerException if no living entity is present
+     * @throws GravesXNullPointerException if no living entity is present
      */
     public @NotNull EntityType getLivingEntityVictimType() {
         if (livingEntity == null) {
-            throw new GravesXEventNullPointerException(this, "livingEntity");
+            throw new GravesXNullPointerException(this, "livingEntity");
         }
         return livingEntity.getType();
     }
@@ -260,11 +260,11 @@ public class GraveEntityEvent extends GraveEvent {
      * Gets the killer entity type.
      *
      * @return The killer type
-     * @throws GravesXEventNullPointerException if no killer is present
+     * @throws GravesXNullPointerException if no killer is present
      */
     public @NotNull EntityType getLivingEntityKillerType() {
         if (livingEntity == null || livingEntity.getKiller() == null) {
-            throw new GravesXEventNullPointerException(this, "killer");
+            throw new GravesXNullPointerException(this, "killer");
         }
         return livingEntity.getKiller().getType();
     }
@@ -277,7 +277,7 @@ public class GraveEntityEvent extends GraveEvent {
         if (entity instanceof Player p) {
             return p;
         }
-        throw new GravesXEventNullPointerException(this, "player");
+        throw new GravesXNullPointerException(this, "player");
     }
 
     /**

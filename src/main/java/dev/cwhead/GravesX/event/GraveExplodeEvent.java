@@ -2,7 +2,7 @@ package dev.cwhead.GravesX.event;
 
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.graveevent.GraveEvent;
-import dev.cwhead.GravesX.exception.GravesXEventNullPointerException;
+import dev.cwhead.GravesX.exception.GravesXNullPointerException;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -55,11 +55,11 @@ public class GraveExplodeEvent extends GraveEvent {
      * Gets the entity that caused the explosion.
      *
      * @return The entity that caused the explosion.
-     * @throws GravesXEventNullPointerException if no source entity is present.
+     * @throws GravesXNullPointerException if no source entity is present.
      */
     public @NotNull Entity getEntity() {
         if (entity == null) {
-            throw new GravesXEventNullPointerException(this, "entity");
+            throw new GravesXNullPointerException(this, "entity");
         }
         return entity;
     }
@@ -75,11 +75,11 @@ public class GraveExplodeEvent extends GraveEvent {
      * Gets the player that caused the explosion.
      *
      * @return The player that caused the explosion.
-     * @throws GravesXEventNullPointerException if the source is not a player or absent.
+     * @throws GravesXNullPointerException if the source is not a player or absent.
      */
     public @NotNull Player getPlayer() {
         if (!(entity instanceof Player p)) {
-            throw new GravesXEventNullPointerException(this, "player");
+            throw new GravesXNullPointerException(this, "player");
         }
         return p;
     }

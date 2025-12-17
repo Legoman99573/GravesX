@@ -1,7 +1,7 @@
 package com.ranull.graves.event;
 
 import com.ranull.graves.type.Grave;
-import dev.cwhead.GravesX.exception.GravesXEventIllegalArgumentException;
+import dev.cwhead.GravesX.exception.GravesXIllegalArgumentException;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
@@ -60,7 +60,7 @@ public class GraveCloseEvent extends dev.cwhead.GravesX.event.GraveCloseEvent {
 
     private static @NotNull Player requirePlayer(@NotNull Entity entity) {
         if (entity instanceof Player p) return p;
-        throw new GravesXEventIllegalArgumentException("GraveCloseEvent requires a Player. Received " + entity.getType() + " instead");
+        throw new GravesXIllegalArgumentException("GraveCloseEvent requires a Player. Received " + entity.getType() + " instead");
     }
 
     /**

@@ -3,7 +3,7 @@ package dev.cwhead.GravesX.event.graveevent;
 import com.ranull.graves.data.BlockData;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.interfaces.Addon;
-import dev.cwhead.GravesX.exception.GravesXEventMethodNotSupportedException;
+import dev.cwhead.GravesX.exception.GravesXMethodNotSupportedException;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.LivingEntity;
@@ -92,7 +92,7 @@ public class GravePlayerEvent extends GraveEntityEvent implements Cancellable, A
      */
     public @NotNull InventoryView getInventoryView() {
         if (inventoryView == null)
-            throw new GravesXEventMethodNotSupportedException("This event does not support InventoryView access.");
+            throw new GravesXMethodNotSupportedException("This event does not support InventoryView access.");
         return inventoryView;
     }
 

@@ -1825,39 +1825,74 @@ public class GraveManager {
             return false;
         }
 
+        final UUID graveUUID = grave.getUUID();
+        final UUID viewerUUID = player.getUniqueId();
+
+        if (!plugin.getCacheManager().canAccessGrave(graveUUID, viewerUUID)) {
+            plugin.getGravesXScheduler().execute(anchor, () -> {
+                plugin.getEntityManager().sendMessage("message.grave-in-use", player, location, grave);
+                plugin.getEntityManager().playWorldSound("sound.protection", location, grave);
+            });
+            return false;
+        }
+
         plugin.getGravesXScheduler().execute(anchor, () -> plugin.getEntityManager().swingMainHand(player));
 
         if (plugin.getEntityManager().canOpenGrave(player, grave)) {
             plugin.getGravesXScheduler().execute(anchor, () -> {
                 cleanupCompasses(player, grave);
 
-                if (plugin.getConfig("drop.auto-loot.enabled", grave).getBoolean("drop.auto-loot.enabled", true) && (player.isSneaking() && plugin.hasGrantedPermission("graves.autoloot", player.getPlayer()))) {
-                    if (player.getGameMode() == GameMode.SPECTATOR && !plugin.hasGrantedPermission("graves.spectator.bypass", player.getPlayer())) return;
+                if (plugin.getConfig("drop.auto-loot.enabled", grave).getBoolean("drop.auto-loot.enabled", true)
+                        && (player.isSneaking() && plugin.hasGrantedPermission("graves.autoloot", player.getPlayer()))) {
 
-                    GraveAutoLootEvent modern = new GraveAutoLootEvent(player, location, grave);
-                    plugin.getServer().getPluginManager().callEvent(modern);
+                    if (player.getGameMode() == GameMode.SPECTATOR
+                            && !plugin.hasGrantedPermission("graves.spectator.bypass", player.getPlayer())) return;
 
-                    com.ranull.graves.event.GraveAutoLootEvent legacy = new com.ranull.graves.event.GraveAutoLootEvent(player, location, grave);
-                    plugin.getServer().getPluginManager().callEvent(legacy);
+                    // Lock during auto-loot so nobody else can interact mid-loot.
+                    if (!plugin.getCacheManager().startViewingGrave(graveUUID, viewerUUID)) {
+                        plugin.getEntityManager().sendMessage("message.grave-in-use", player, location, grave);
+                        plugin.getEntityManager().playWorldSound("sound.protection", location, grave);
+                        return;
+                    }
 
-                    if (!modern.isCancelled() || !modern.isAddon() || !legacy.isCancelled() || !legacy.isAddon()) {
-                        autoLootGrave(player, location, grave);
+                    try {
+                        GraveAutoLootEvent modern = new GraveAutoLootEvent(player, location, grave);
+                        plugin.getServer().getPluginManager().callEvent(modern);
 
-                        if (plugin.getIntegrationManager().hasNoteBlockAPI()) {
-                            if (plugin.getIntegrationManager().getNoteBlockAPI().isSongPlayingForPlayer(player)) {
-                                plugin.getIntegrationManager().getNoteBlockAPI().stopSongForPlayer(player);
-                            }
-                            if (plugin.getIntegrationManager().getNoteBlockAPI().isSongPlayingForAllPlayers()) {
-                                plugin.getIntegrationManager().getNoteBlockAPI().stopSongForAllPlayers();
+                        com.ranull.graves.event.GraveAutoLootEvent legacy =
+                                new com.ranull.graves.event.GraveAutoLootEvent(player, location, grave);
+                        plugin.getServer().getPluginManager().callEvent(legacy);
+
+                        if (!modern.isCancelled() || !modern.isAddon() || !legacy.isCancelled() || !legacy.isAddon()) {
+                            autoLootGrave(player, location, grave);
+
+                            if (plugin.getIntegrationManager().hasNoteBlockAPI()) {
+                                if (plugin.getIntegrationManager().getNoteBlockAPI().isSongPlayingForPlayer(player)) {
+                                    plugin.getIntegrationManager().getNoteBlockAPI().stopSongForPlayer(player);
+                                }
+                                if (plugin.getIntegrationManager().getNoteBlockAPI().isSongPlayingForAllPlayers()) {
+                                    plugin.getIntegrationManager().getNoteBlockAPI().stopSongForAllPlayers();
+                                }
                             }
                         }
+                    } finally {
+                        plugin.getCacheManager().stopViewingGrave(graveUUID, viewerUUID);
                     }
+
                 } else if (plugin.hasGrantedPermission("graves.open", player.getPlayer())) {
+
+                    if (!plugin.getCacheManager().startViewingGrave(graveUUID, viewerUUID)) {
+                        plugin.getEntityManager().sendMessage("message.grave-in-use", player, location, grave);
+                        plugin.getEntityManager().playWorldSound("sound.protection", location, grave);
+                        return;
+                    }
+
                     if (plugin.getConfig("grave.preview", grave).getBoolean("grave.preview", false)) {
                         grave.setGravePreview(preview);
                     } else {
                         grave.setGravePreview(false);
                     }
+
                     player.openInventory(grave.getInventory());
                     plugin.getEntityManager().runCommands("event.command.open", player, location, grave);
                     plugin.getEntityManager().playWorldSound("sound.open", location, grave);
@@ -1871,15 +1906,31 @@ public class GraveManager {
                 boolean gravePreview = plugin.getConfig("grave.preview", grave).getBoolean("grave.preview", false);
 
                 if (protPreview && gravePreview) {
+                    // Acquire lock for GUI open; release later on InventoryCloseEvent.
+                    if (!plugin.getCacheManager().startViewingGrave(graveUUID, viewerUUID)) {
+                        plugin.getEntityManager().sendMessage("message.grave-in-use", player, location, grave);
+                        plugin.getEntityManager().playWorldSound("sound.protection", location, grave);
+                        return;
+                    }
+
                     grave.setGravePreview(preview);
                     player.openInventory(grave.getInventory());
                     plugin.getEntityManager().runCommands("event.command.open", player, location, grave);
                     plugin.getEntityManager().playWorldSound("sound.open", location, grave);
+
                 } else if (protPreview) {
+                    // Acquire lock for GUI open; release later on InventoryCloseEvent.
+                    if (!plugin.getCacheManager().startViewingGrave(graveUUID, viewerUUID)) {
+                        plugin.getEntityManager().sendMessage("message.grave-in-use", player, location, grave);
+                        plugin.getEntityManager().playWorldSound("sound.protection", location, grave);
+                        return;
+                    }
+
                     grave.setGravePreview(false);
                     player.openInventory(grave.getInventory());
                     plugin.getEntityManager().runCommands("event.command.open", player, location, grave);
                     plugin.getEntityManager().playWorldSound("sound.open", location, grave);
+
                 } else {
                     plugin.getEntityManager().sendMessage("message.protection", player, location, grave);
                     plugin.getEntityManager().playWorldSound("sound.protection", location, grave);

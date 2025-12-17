@@ -3,7 +3,7 @@ package dev.cwhead.GravesX.event.graveevent;
 import com.ranull.graves.data.BlockData;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.interfaces.Addon;
-import dev.cwhead.GravesX.exception.GravesXEventNullPointerException;
+import dev.cwhead.GravesX.exception.GravesXNullPointerException;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.event.Cancellable;
@@ -207,7 +207,7 @@ public abstract class GraveEvent extends Event implements Cancellable, Addon {
         if (location != null) {
             return location;
         }
-        throw new GravesXEventNullPointerException(this, "location");
+        throw new GravesXNullPointerException(this, "location");
     }
 
     /**
@@ -235,7 +235,7 @@ public abstract class GraveEvent extends Event implements Cancellable, Addon {
         if (blockType != null) {
             return blockType;
         }
-        throw new GravesXEventNullPointerException(this, "blockType");
+        throw new GravesXNullPointerException(this, "blockType");
     }
 
     /**
@@ -254,7 +254,7 @@ public abstract class GraveEvent extends Event implements Cancellable, Addon {
         if (block != null) {
             return block;
         }
-        throw new GravesXEventNullPointerException(this, "block");
+        throw new GravesXNullPointerException(this, "block");
     }
 
     /**

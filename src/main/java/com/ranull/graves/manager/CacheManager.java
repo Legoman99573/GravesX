@@ -6,6 +6,7 @@ import org.bukkit.Location;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -56,6 +57,15 @@ public class CacheManager {
     private final Map<String, Location> rightClickedBlocks = new HashMap<>();
 
     /**
+     * A map of grave UUIDs to the UUID of the player currently viewing that grave.
+     * <p>
+     * Used to prevent multiple players from accessing the same grave at the same time.
+     * If a grave UUID is present in this map, the grave is considered "in use" / "locked".
+     * </p>
+     */
+    private final Map<UUID, UUID> graveViewerMap;
+
+    /**
      * Constructs a new {@link CacheManager} with initialized maps.
      * <p>
      * The constructor initializes all the maps used for caching data related to graves, chunks, locations, and items
@@ -66,6 +76,7 @@ public class CacheManager {
         this.chunkMap = new HashMap<>();
         this.lastLocationMap = new HashMap<>();
         this.removedItemStackMap = new HashMap<>();
+        this.graveViewerMap = new HashMap<>();
     }
 
     /**
@@ -134,6 +145,107 @@ public class CacheManager {
      */
     public Map<UUID, List<ItemStack>> getRemovedItemStackMap() {
         return removedItemStackMap;
+    }
+
+    /**
+     * Marks a grave as currently being viewed by the given player.
+     * <p>
+     * If the grave is already being viewed by someone else, this will NOT overwrite the current viewer.
+     * Use {@link #canAccessGrave(UUID, UUID)} / {@link #isGraveBeingViewed(UUID)} to check first.
+     * </p>
+     *
+     * @param graveUUID  the grave UUID
+     * @param viewerUUID the player's UUID
+     * @return {@code true} if the viewer was set (lock acquired), {@code false} if someone else already holds it
+     */
+    public boolean startViewingGrave(UUID graveUUID, UUID viewerUUID) {
+        UUID current = graveViewerMap.get(graveUUID);
+        if (current == null || current.equals(viewerUUID)) {
+            graveViewerMap.put(graveUUID, viewerUUID);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Clears the viewer lock for a grave if the given player is the current viewer.
+     *
+     * @param graveUUID  the grave UUID
+     * @param viewerUUID the player's UUID
+     * @return {@code true} if the lock was cleared, {@code false} if it was held by someone else or not set
+     */
+    public boolean stopViewingGrave(UUID graveUUID, UUID viewerUUID) {
+        UUID current = graveViewerMap.get(graveUUID);
+        if (current != null && current.equals(viewerUUID)) {
+            graveViewerMap.remove(graveUUID);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Force-clears the viewer lock for a grave (regardless of who is viewing).
+     * Useful for cleanup if a viewer disconnects unexpectedly.
+     *
+     * @param graveUUID the grave UUID
+     */
+    public void clearGraveViewer(UUID graveUUID) {
+        graveViewerMap.remove(graveUUID);
+    }
+
+    /**
+     * Clears any grave-viewer locks held by the specified player.
+     * Useful to call on PlayerQuitEvent.
+     *
+     * @param viewerUUID the player's UUID
+     * @return number of locks removed
+     */
+    public int clearAllGraveViewersFor(UUID viewerUUID) {
+        int removed = 0;
+        Iterator<Map.Entry<UUID, UUID>> it = graveViewerMap.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<UUID, UUID> e = it.next();
+            if (viewerUUID.equals(e.getValue())) {
+                it.remove();
+                removed++;
+            }
+        }
+        return removed;
+    }
+
+    /**
+     * Checks whether a grave is currently being viewed by someone.
+     *
+     * @param graveUUID the grave UUID
+     * @return {@code true} if the grave is being viewed, otherwise {@code false}
+     */
+    public boolean isGraveBeingViewed(UUID graveUUID) {
+        return graveViewerMap.containsKey(graveUUID);
+    }
+
+    /**
+     * Gets the UUID of the player currently viewing a grave, or {@code null} if none.
+     *
+     * @param graveUUID the grave UUID
+     * @return the viewer UUID, or {@code null}
+     */
+    public UUID getGraveViewer(UUID graveUUID) {
+        return graveViewerMap.get(graveUUID);
+    }
+
+    /**
+     * Checks if a player can access a grave right now.
+     * <p>
+     * Access is allowed if the grave is not being viewed, or if it is being viewed by the same player.
+     * </p>
+     *
+     * @param graveUUID  the grave UUID
+     * @param viewerUUID the player's UUID
+     * @return {@code true} if access is allowed, otherwise {@code false}
+     */
+    public boolean canAccessGrave(UUID graveUUID, UUID viewerUUID) {
+        UUID current = graveViewerMap.get(graveUUID);
+        return (current == null || current.equals(viewerUUID));
     }
 
     /**

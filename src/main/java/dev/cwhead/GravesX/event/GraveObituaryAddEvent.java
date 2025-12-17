@@ -2,9 +2,9 @@ package dev.cwhead.GravesX.event;
 
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.graveevent.GraveEvent;
-import dev.cwhead.GravesX.exception.GravesXEventIllegalArgumentException;
-import dev.cwhead.GravesX.exception.GravesXEventMethodNotSupportedException;
-import dev.cwhead.GravesX.exception.GravesXEventNullPointerException;
+import dev.cwhead.GravesX.exception.GravesXIllegalArgumentException;
+import dev.cwhead.GravesX.exception.GravesXMethodNotSupportedException;
+import dev.cwhead.GravesX.exception.GravesXNullPointerException;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -63,11 +63,11 @@ public class GraveObituaryAddEvent extends GraveEvent {
      * Gets the entity for which the grave is being created.
      *
      * @return The entity.
-     * @throws GravesXEventMethodNotSupportedException if no entity is present.
+     * @throws GravesXMethodNotSupportedException if no entity is present.
      */
     public @NotNull Entity getEntity() {
         if (entity == null)
-            throw new GravesXEventNullPointerException(this, "entity");
+            throw new GravesXNullPointerException(this, "entity");
         return entity;
     }
 
@@ -88,8 +88,8 @@ public class GraveObituaryAddEvent extends GraveEvent {
      * Gets the entity for which the grave is being created.
      *
      * @return The entity.
-     * @throws GravesXEventNullPointerException if player is null
-     * @throws GravesXEventIllegalArgumentException if entity pulled was not a player
+     * @throws GravesXNullPointerException if player is null
+     * @throws GravesXIllegalArgumentException if entity pulled was not a player
      */
     public @NotNull Player getPlayer() {
         if (entity instanceof Player p) {
@@ -97,10 +97,10 @@ public class GraveObituaryAddEvent extends GraveEvent {
             if (player != null) {
                 return player;
             }
-            throw new GravesXEventNullPointerException(this, "player");
+            throw new GravesXNullPointerException(this, "player");
         }
         EntityType entityType = (entity != null) ? entity.getType() : EntityType.UNKNOWN;
-        throw new GravesXEventIllegalArgumentException("GraveObituaryAddEvent made a call to get player. Received " + entityType + " instead.");
+        throw new GravesXIllegalArgumentException("GraveObituaryAddEvent made a call to get player. Received " + entityType + " instead.");
     }
 
     /**

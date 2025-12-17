@@ -24,13 +24,21 @@ public class PlayerQuitListener implements Listener {
 
     /**
      * Handles the PlayerQuitEvent to clean up player-related data upon their departure.
-     * This method removes the player's last solid location and stops any ongoing modification.
+     * This method removes the player's last solid location and clears any grave-view locks
+     * they may still be holding.
      *
      * @param event The PlayerQuitEvent to handle.
      */
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
+
+        try {
+            plugin.getCacheManager().clearAllGraveViewersFor(player.getUniqueId());
+        } catch (Throwable ignored) {
+            // Don't break quit handling if cache manager isn't available for some reason.
+        }
+
         removeLastSolidLocation(player);
     }
 

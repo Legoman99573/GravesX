@@ -6,7 +6,7 @@ import java.io.Serial;
  * Thrown when a method on a {@link dev.cwhead.GravesX.event.graveevent.GraveEvent}
  * is called but that method is not supported for the specific event type.
  */
-public class GravesXEventMethodNotSupportedException extends UnsupportedOperationException {
+public class GravesXMethodNotSupportedException extends UnsupportedOperationException {
 
     @Serial
     private static final long serialVersionUID = 1L;
@@ -15,7 +15,7 @@ public class GravesXEventMethodNotSupportedException extends UnsupportedOperatio
      * Thrown when a method on a {@link dev.cwhead.GravesX.event.graveevent.GraveEvent}
      * is called but that method is not supported for the specific event type.
      */
-    public GravesXEventMethodNotSupportedException(String message) {
+    public GravesXMethodNotSupportedException(String message) {
         super(message);
     }
 }

@@ -4,7 +4,7 @@ import org.bukkit.event.Event;
 
 import java.io.Serial;
 
-public class GravesXEventNullPointerException extends NullPointerException {
+public class GravesXNullPointerException extends NullPointerException {
     @Serial
     private static final long serialVersionUID = 1L;
 
@@ -14,7 +14,7 @@ public class GravesXEventNullPointerException extends NullPointerException {
      * @param event The event that fired the error
      * @param cause The cause of the error to occur
      */
-    public GravesXEventNullPointerException(Event event, String cause) {
+    public GravesXNullPointerException(Event event, String cause) {
         super(event.getEventName() + " tried to find " + cause + ", but returned null.");
     }
 
@@ -22,7 +22,7 @@ public class GravesXEventNullPointerException extends NullPointerException {
      * Thrown when a method on a {@link dev.cwhead.GravesX.event.graveevent.GraveEvent}
      * is called but that method is null for the specific event type.
      */
-    public GravesXEventNullPointerException(String message) {
+    public GravesXNullPointerException(String message) {
         super(message);
     }
 }

@@ -2,7 +2,7 @@ package dev.cwhead.GravesX.event;
 
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.graveevent.GraveEntityEvent;
-import dev.cwhead.GravesX.exception.GravesXEventNullPointerException;
+import dev.cwhead.GravesX.exception.GravesXNullPointerException;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -58,11 +58,11 @@ public class GravePreTeleportEvent extends GraveEntityEvent {
      * Gets the player.
      *
      * @return The teleporting {@link Player}.
-     * @throws GravesXEventNullPointerException if the teleporting entity is not a player.
+     * @throws GravesXNullPointerException if the teleporting entity is not a player.
      */
     public @NotNull Player getPlayer() {
         if (!(entity instanceof Player p)) {
-            throw new GravesXEventNullPointerException(this, "player");
+            throw new GravesXNullPointerException(this, "player");
         }
         return p;
     }

@@ -2,7 +2,7 @@ package dev.cwhead.GravesX.event;
 
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.graveevent.GraveEvent;
-import dev.cwhead.GravesX.exception.GravesXEventNullPointerException;
+import dev.cwhead.GravesX.exception.GravesXNullPointerException;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.HandlerList;
@@ -57,11 +57,11 @@ public class GravePlayerHeadDropEvent extends GraveEvent {
      * Gets the entity for which the player head will be dropped.
      *
      * @return The entity.
-     * @throws GravesXEventNullPointerException if no entity is present.
+     * @throws GravesXNullPointerException if no entity is present.
      */
     public @NotNull Entity getEntity() {
         if (entity == null)
-            throw new GravesXEventNullPointerException(this, "entity");
+            throw new GravesXNullPointerException(this, "entity");
         return entity;
     }
 

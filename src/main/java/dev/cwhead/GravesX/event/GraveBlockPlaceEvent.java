@@ -3,7 +3,7 @@ package dev.cwhead.GravesX.event;
 import com.ranull.graves.data.BlockData;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.graveevent.GraveEvent;
-import dev.cwhead.GravesX.exception.GravesXEventNullPointerException;
+import dev.cwhead.GravesX.exception.GravesXNullPointerException;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
@@ -84,11 +84,11 @@ public class GraveBlockPlaceEvent extends GraveEvent {
      * Gets Entity
      *
      * @return the associated entity (killer) or throws if absent.
-     * @throws GravesXEventNullPointerException if no entity is present.
+     * @throws GravesXNullPointerException if no entity is present.
      */
     public @NotNull Entity getEntity() {
         if (livingEntity == null) {
-            throw new GravesXEventNullPointerException(this, "livingEntity");
+            throw new GravesXNullPointerException(this, "livingEntity");
         }
         return livingEntity;
     }
@@ -97,14 +97,14 @@ public class GraveBlockPlaceEvent extends GraveEvent {
      * Gets the killer
      *
      * @return the killer or throws if absent.
-     * @throws GravesXEventNullPointerException if no {@link LivingEntity} or {@link LivingEntity#getKiller()} is present.
+     * @throws GravesXNullPointerException if no {@link LivingEntity} or {@link LivingEntity#getKiller()} is present.
      */
     public @NotNull LivingEntity getKiller() {
         if (livingEntity == null) {
-            throw new GravesXEventNullPointerException(this, "livingEntity");
+            throw new GravesXNullPointerException(this, "livingEntity");
         }
         if (livingEntity.getKiller() == null) {
-            throw new GravesXEventNullPointerException(this, "killer");
+            throw new GravesXNullPointerException(this, "killer");
         }
         return livingEntity.getKiller();
     }
@@ -113,14 +113,14 @@ public class GraveBlockPlaceEvent extends GraveEvent {
      * Gets the killer name
      *
      * @return the killer name or throws if absent.
-     * @throws GravesXEventNullPointerException if no killer is present.
+     * @throws GravesXNullPointerException if no killer is present.
      */
     public @NotNull String getKillerName() {
         if (livingEntity == null) {
-            throw new GravesXEventNullPointerException(this, "livingEntity");
+            throw new GravesXNullPointerException(this, "livingEntity");
         }
         if (livingEntity.getKiller() == null) {
-            throw new GravesXEventNullPointerException(this, "killer");
+            throw new GravesXNullPointerException(this, "killer");
         }
         return livingEntity.getKiller().getName();
     }
@@ -129,14 +129,14 @@ public class GraveBlockPlaceEvent extends GraveEvent {
      * Gets the Killers Unique ID
      *
      * @return the killer unique ID or throws if absent.
-     * @throws GravesXEventNullPointerException if no killer is present.
+     * @throws GravesXNullPointerException if no killer is present.
      */
     public @NotNull UUID getKillerUniqueId() {
         if (livingEntity == null) {
-            throw new GravesXEventNullPointerException(this, "livingEntity");
+            throw new GravesXNullPointerException(this, "livingEntity");
         }
         if (livingEntity.getKiller() == null) {
-            throw new GravesXEventNullPointerException(this, "killer");
+            throw new GravesXNullPointerException(this, "killer");
         }
         return livingEntity.getKiller().getUniqueId();
     }
@@ -166,13 +166,13 @@ public class GraveBlockPlaceEvent extends GraveEvent {
      * Gets the player
      *
      * @return the player (killer) or throws if absent.
-     * @throws GravesXEventNullPointerException if the killer is not a player.
+     * @throws GravesXNullPointerException if the killer is not a player.
      */
     public Player getPlayer() {
         if (livingEntity instanceof Player p) {
             return p.getPlayer();
         }
-        throw new GravesXEventNullPointerException(this, "player");
+        throw new GravesXNullPointerException(this, "player");
     }
 
     /**
