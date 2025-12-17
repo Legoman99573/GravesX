@@ -957,6 +957,7 @@ settings:
           - "STALAGMITE: Impaled"
           - "OUTSIDE_BORDER: Crossed the Border"
           - "FALLING_STALACTITE: Impaled"
+          - "SPEAR: Impaled"
           - "GENERIC: Died"
           - "ENTITY_HIT: Hit"
           - "ENTITY_BURN: Burned by Entity"
