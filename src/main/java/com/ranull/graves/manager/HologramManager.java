@@ -96,6 +96,8 @@ public class HologramManager extends EntityDataManager {
                     if (!plugin.getVersionManager().is_v1_7() && !plugin.getVersionManager().is_v1_8()) {
                         if (!plugin.getConfig("drop.spear-attack", grave).getBoolean("drop.spear-attack", false)) {
                             armorStand.setInvulnerable(true);
+                        } else {
+                            armorStand.setInvulnerable(false);
                         }
                     }
 
