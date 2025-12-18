@@ -43,8 +43,6 @@ public class EntityDamageByEntityListener implements Listener {
         final Entity entity = event.getEntity();
 
         if (shouldCancelDamage(entity)) {
-
-            event.setCancelled(true);
             if (entity instanceof ArmorStand stand) {
                 if (plugin.getVersionManager().hasSpears()) {
                     Grave grave = plugin.getEntityDataManager().getGrave(stand);
@@ -63,7 +61,11 @@ public class EntityDamageByEntityListener implements Listener {
                             }
                         }
                     }
+                } else {
+                    event.setCancelled(true);
                 }
+            } else {
+                event.setCancelled(true);
             }
         }
     }
@@ -108,6 +110,8 @@ public class EntityDamageByEntityListener implements Listener {
      * @param event    The original damage event.
      */
     private void onSpearAttackGraveHologram(LivingEntity attacker, Grave grave, ArmorStand stand, EntityDamageByEntityEvent event) {
+        event.setCancelled(true);
+
         if (!plugin.getConfig("drop.spear-attack", grave).getBoolean("drop.spear-attack", false)) {
             return;
         }
