@@ -115,8 +115,6 @@ settings:
           other: false
         # Should pistons break graves?
         piston-extend: true
-        # Should a spear attack break a grave? (Only works on 1.21.11 and newer)
-        spear-attack: false
         # Should we have an explosion effect occur on looting a grave?
         looted-explosion-effect: false
 

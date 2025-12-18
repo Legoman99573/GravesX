@@ -164,14 +164,6 @@ public class VersionManager {
     private final boolean isPost1_21_9;
 
     /**
-     * Indicates whether the server supports Spears in 1.21.11
-     * <p>
-     * This {@code boolean} flag shows if the server supports Spears.
-     * </p>
-     */
-    private final boolean hasSpears;
-
-    /**
      * Indicates whether the server is older than 1.20.5/1.20.6.
      * <p>
      * This {@code boolean} flag shows if the server or plugin is older than 1.20.5/1.20.6.
@@ -206,8 +198,6 @@ public class VersionManager {
                 && !is_v1_13() && !is_v1_14() && !is_v1_15() && !is_v1_16() && !is_v1_17() && !is_v1_18() && !is_v1_19() && !is_v1_20();
         this.isPost1_21_9 = !is_v1_7() && !is_v1_8() && !is_v1_9() && !is_v1_10() && !is_v1_11() && !is_v1_12()
                 && !is_v1_13() && !is_v1_14() && !is_v1_15() && !is_v1_16() && !is_v1_17() && !is_v1_18() && !is_v1_19() && !is_v1_20() && !is_v1_21();
-        this.hasSpears = !is_v1_7() && !is_v1_8() && !is_v1_9() && !is_v1_10() && !is_v1_11() && !is_v1_12()
-                && !is_v1_13() && !is_v1_14() && !is_v1_15() && !is_v1_16() && !is_v1_17() && !is_v1_18() && !is_v1_19() && !is_v1_20() && !is_v1_21() && !is_v1_20_5() && !isPost1_21_9();
 
         try {
             Class.forName("org.spigotmc.SpigotConfig", false, getClass().getClassLoader());
@@ -564,24 +554,16 @@ public class VersionManager {
         return version.matches("(?i)v1_21_R1|(?i)v1_21_R2|(?i)v1_21_R3|(?i)v1_21_R4");
     }
 
-    public boolean is_v1_21_5() {
-        return version.matches("(?i)v1_21_R5");
+    public boolean isPost1_20_5() {
+        return isPost1_20_5;
     }
 
-    public boolean is_v1_21_8() {
-        return version.matches("(?i)v1_21_R6");
+    public boolean is_v1_21_R5() {
+        return version.matches("(?i)v1_21_R5");
     }
 
     public boolean isPost1_21_9() {
         return isPost1_21_9;
-    }
-
-    public boolean hasSpears() {
-        return hasSpears;
-    }
-
-    public boolean is_v1_21_11() {
-        return version.matches("(?i)v1_21_R7");
     }
 
     /**
