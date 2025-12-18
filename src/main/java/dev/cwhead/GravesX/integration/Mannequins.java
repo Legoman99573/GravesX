@@ -3,6 +3,7 @@ package dev.cwhead.GravesX.integration;
 import com.ranull.graves.Graves;
 import com.ranull.graves.manager.EntityDataManager;
 import com.ranull.graves.type.Grave;
+import dev.cwhead.GravesX.util.SkinTextureUtil_post_1_21_9;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -41,21 +42,17 @@ public final class Mannequins extends EntityDataManager {
     private final boolean supported;
     private final Class<?> mannequinClass;
 
-    // Spigot mannequin API
     private final Method setDescriptionString;
     private final Method setHideDescription;
     private final Method setImmovable;
     private final Method mannequinSetPose;
 
-    // Paper / generic entity pose API
     private final Method entitySetPose;
-    private final Method entitySetPoseFixed; // (Pose, boolean)
+    private final Method entitySetPoseFixed;
 
-    // Profile setters (Spigot vs Paper)
-    private final Method setPlayerProfile;   // Spigot: setPlayerProfile(PlayerProfile)
-    private final Method setProfile;         // Paper: setProfile(ResolvableProfile)
+    private final Method setPlayerProfile;
+    private final Method setProfile;
 
-    // Optional: Paper description (Component)
     private final Method setDescriptionComponent;
 
     public Mannequins(Graves plugin) {
@@ -126,11 +123,9 @@ public final class Mannequins extends EntityDataManager {
                 return;
             }
 
-            // Tag so we can find it later
             String idNoDashes = uuid.toString().replace("-", "");
             living.addScoreboardTag(TAG_PREFIX + idNoDashes);
 
-            // Corpse-like settings
             living.setAI(false);
             living.setSilent(true);
             living.setCanPickupItems(false);
@@ -139,7 +134,6 @@ public final class Mannequins extends EntityDataManager {
             living.setInvulnerable(true);
             living.setPersistent(true);
 
-            // Description + immovable (best-effort, Spigot/Paper differ)
             try {
                 if (setDescriptionString != null) setDescriptionString.invoke(living, HARDCODED_DESCRIPTION);
                 if (setDescriptionComponent != null) {
@@ -151,10 +145,8 @@ public final class Mannequins extends EntityDataManager {
             } catch (Throwable ignored) {
             }
 
-            // ✅ Pose: SWIMMING
             applySwimmingPose(living);
 
-            // Skin/profile (Spigot vs Paper)
             applySkinAsync(living, grave);
 
             // Equipment
@@ -219,25 +211,21 @@ public final class Mannequins extends EntityDataManager {
 
     private void applySwimmingPose(LivingEntity mannequin) {
         try {
-            // Spigot: Mannequin#setPose(Pose) :contentReference[oaicite:5]{index=5}
             if (mannequinSetPose != null) {
                 mannequinSetPose.invoke(mannequin, Pose.SWIMMING);
                 return;
             }
 
-            // Paper: Entity#setPose(Pose, boolean fixed) exists :contentReference[oaicite:6]{index=6}
             if (entitySetPoseFixed != null) {
                 entitySetPoseFixed.invoke(mannequin, Pose.SWIMMING, true);
                 return;
             }
 
-            // Paper: Entity#setPose(Pose)
             if (entitySetPose != null) {
                 entitySetPose.invoke(mannequin, Pose.SWIMMING);
                 return;
             }
 
-            // Last resort (may not force the pose visually)
             mannequin.setSwimming(true);
         } catch (Throwable ignored) {
         }
@@ -270,7 +258,6 @@ public final class Mannequins extends EntityDataManager {
 
     private void applySkinAsync(LivingEntity mannequin, Grave grave) {
         try {
-            // Spigot path: setPlayerProfile(PlayerProfile) requires textures present :contentReference[oaicite:7]{index=7}
             if (setPlayerProfile != null) {
                 Object profile = buildBukkitProfileWithTextures(grave);
                 if (profile == null) return;
@@ -292,16 +279,14 @@ public final class Mannequins extends EntityDataManager {
                 return;
             }
 
-            // Paper path: mannequin uses setProfile(ResolvableProfile) :contentReference[oaicite:8]{index=8}
             if (setProfile != null) {
-                Object resolvable = buildPaperResolvableProfile(grave.getOwnerUUID());
-                if (resolvable != null) {
-                    setProfile.invoke(mannequin, resolvable);
-                }
+                Object resolvable = buildPaperResolvableProfile(grave);
+                if (resolvable != null) setProfile.invoke(mannequin, resolvable);
             }
         } catch (Throwable ignored) {
         }
     }
+
 
     private void trySetProfileSpigot(LivingEntity mannequin, Object profile) {
         try {
@@ -316,44 +301,84 @@ public final class Mannequins extends EntityDataManager {
             if (owner == null) return null;
 
             OfflinePlayer off = Bukkit.getOfflinePlayer(owner);
-            String name = off.getName();
+            String name = (off != null) ? off.getName() : null;
             if (name == null || name.isEmpty()) name = "GravesX";
 
-            Object profile = Bukkit.getServer().createPlayerProfile(owner, name);
+            String texturesBase64 = toValidBase64Texture(grave.getOwnerTexture());
+            if (texturesBase64 == null || texturesBase64.isEmpty()) {
+                return Bukkit.getServer().createPlayerProfile(owner, name);
+            }
 
-            URL skinUrl = extractSkinUrl(grave.getOwnerTexture());
-            if (skinUrl == null) return profile;
-
-            Method getTextures = profile.getClass().getMethod("getTextures");
-            Object textures = getTextures.invoke(profile);
-            if (textures == null) return profile;
-
-            Method setSkin = textures.getClass().getMethod("setSkin", URL.class);
-            setSkin.invoke(textures, skinUrl);
-
-            return profile;
+            return SkinTextureUtil_post_1_21_9.createProfileWithTexture(owner, name, texturesBase64);
         } catch (Throwable t) {
             return null;
         }
     }
 
-    private Object buildPaperResolvableProfile(UUID ownerUuid) {
+    private Object buildPaperResolvableProfile(Grave grave) {
+        UUID ownerUuid = grave.getOwnerUUID();
         if (ownerUuid == null) return null;
+
         try {
             Class<?> rpClass = Class.forName("io.papermc.paper.datacomponent.item.ResolvableProfile");
-            Method builderFactory = rpClass.getMethod("resolvableProfile"); // static -> Builder
-            Object builder = builderFactory.invoke(null);
+            Object builder = rpClass.getMethod("resolvableProfile").invoke(null);
 
-            Method uuid = builder.getClass().getMethod("uuid", UUID.class);
-            uuid.invoke(builder, ownerUuid);
+            builder.getClass().getMethod("uuid", UUID.class).invoke(builder, ownerUuid);
 
-            // build() comes from DataComponentBuilder
-            Method build = builder.getClass().getMethod("build");
-            return build.invoke(builder);
+            try {
+                OfflinePlayer off = Bukkit.getOfflinePlayer(ownerUuid);
+                String name = (off != null) ? off.getName() : null;
+                if (name != null && !name.isEmpty()) {
+                    builder.getClass().getMethod("name", String.class).invoke(builder, name);
+                }
+            } catch (Throwable ignored) {}
+
+            String texturesBase64 = toValidBase64Texture(grave.getOwnerTexture());
+            String sig = null;
+            try { sig = grave.getOwnerTextureSignature(); } catch (Throwable ignored) {}
+
+            if (texturesBase64 != null && !texturesBase64.isEmpty()) {
+                Class<?> propClass = Class.forName("com.destroystokyo.paper.profile.ProfileProperty");
+                Object prop;
+                try {
+                    prop = propClass.getConstructor(String.class, String.class, String.class)
+                            .newInstance("textures", texturesBase64, (sig == null || sig.isEmpty()) ? null : sig);
+                } catch (NoSuchMethodException ignored) {
+                    prop = propClass.getConstructor(String.class, String.class)
+                            .newInstance("textures", texturesBase64);
+                }
+
+                builder.getClass().getMethod("addProperty", propClass).invoke(builder, prop);
+            }
+
+            return builder.getClass().getMethod("build").invoke(builder);
         } catch (Throwable ignored) {
             return null;
         }
     }
+
+    private static String toValidBase64Texture(String graveTexture) {
+        if (graveTexture == null) return "";
+
+        String s = graveTexture.trim();
+        if (s.isEmpty()) return "";
+
+        if (s.startsWith("eyJ")) return s;
+
+        String url = s;
+
+        if (s.matches("^[0-9a-fA-F]{32,}$")) {
+            url = "https://textures.minecraft.net/texture/" + s;
+        } else if (s.startsWith("textures.minecraft.net/texture/")) {
+            url = "https://" + s;
+        }
+
+        if (!(url.startsWith("http://") || url.startsWith("https://"))) return "";
+
+        String json = String.format("{\"textures\":{\"SKIN\":{\"url\":\"%s\"}}}", url);
+        return Base64.getEncoder().encodeToString(json.getBytes(StandardCharsets.UTF_8));
+    }
+
 
     private boolean profileHasSkin(Object profile) {
         try {
@@ -370,21 +395,32 @@ public final class Mannequins extends EntityDataManager {
     }
 
     private URL extractSkinUrl(String textureValue) {
-        if (textureValue == null || textureValue.isEmpty()) return null;
+        if (textureValue == null) return null;
+
+        String s = textureValue.trim();
+        if (s.isEmpty()) return null;
 
         try {
-            if (textureValue.startsWith("http://") || textureValue.startsWith("https://")) {
-                return new URL(textureValue);
+            if (s.startsWith("http://") || s.startsWith("https://")) {
+                return new URL(s);
             }
 
-            if (textureValue.startsWith("eyJ")) {
-                String json = new String(Base64.getDecoder().decode(textureValue), StandardCharsets.UTF_8);
-                Matcher m = BASE64_JSON_URL.matcher(json);
-                if (m.find()) {
-                    String url = m.group(1);
-                    if (url.startsWith("http://") || url.startsWith("https://")) return new URL(url);
-                }
+            if (s.startsWith("textures.minecraft.net/texture/")) {
+                return new URL("https://" + s);
             }
+
+            if (s.matches("^[0-9a-fA-F]{32,}$")) {
+                return new URL("https://textures.minecraft.net/texture/" + s);
+            }
+
+            String json = new String(Base64.getDecoder().decode(s), StandardCharsets.UTF_8);
+            Matcher m = BASE64_JSON_URL.matcher(json);
+            if (m.find()) {
+                String url = m.group(1);
+                if (url.startsWith("http://") || url.startsWith("https://")) return new URL(url);
+                if (url.startsWith("textures.minecraft.net/texture/")) return new URL("https://" + url);
+            }
+
         } catch (Throwable ignored) {
         }
         return null;
@@ -461,7 +497,6 @@ public final class Mannequins extends EntityDataManager {
 
                 Method mannequinSetPose = tryMethod(mannequin, "setPose", Pose.class);
 
-                // Paper has Entity#setPose(Pose) and setPose(Pose, boolean)
                 Method entitySetPose = null;
                 Method entitySetPoseFixed = null;
                 try {
@@ -471,7 +506,6 @@ public final class Mannequins extends EntityDataManager {
                 } catch (Throwable ignored) {
                 }
 
-                // Profile setters: Spigot setPlayerProfile(PlayerProfile), Paper setProfile(ResolvableProfile)
                 Method setPlayerProfile = null;
                 for (Method m : mannequin.getMethods()) {
                     if (m.getName().equals("setPlayerProfile") && m.getParameterCount() == 1) {
@@ -488,7 +522,6 @@ public final class Mannequins extends EntityDataManager {
                     }
                 }
 
-                // Paper description: setDescription(Component)
                 Method setDescriptionComponent = null;
                 try {
                     Class<?> component = Class.forName("net.kyori.adventure.text.Component");

@@ -96,4 +96,14 @@ public class SkinTextureUtil_post_1_21_9 {
     public static PlayerProfile getPlayerProfile(Player player) {
         return player.getPlayerProfile();
     }
+
+
+    /** Create a PlayerProfile with a custom Base64 texture (UUID + name) */
+    public static PlayerProfile createProfileWithTexture(UUID uuid, String name, String base64) {
+        PlayerProfile profile = Bukkit.createPlayerProfile(uuid, name);
+        PlayerTextures textures = profile.getTextures();
+        textures.setSkin(Base64Util.extractSkinURL(base64));
+        profile.setTextures(textures);
+        return profile;
+    }
 }
