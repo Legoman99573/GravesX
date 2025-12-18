@@ -301,15 +301,13 @@ public final class Mannequins extends EntityDataManager {
             if (owner == null) return null;
 
             OfflinePlayer off = Bukkit.getOfflinePlayer(owner);
-            String name = (off != null) ? off.getName() : null;
+            String name = off.getName();
             if (name == null || name.isEmpty()) name = "GravesX";
 
-            String texturesBase64 = toValidBase64Texture(grave.getOwnerTexture());
-            if (texturesBase64 == null || texturesBase64.isEmpty()) {
-                return Bukkit.getServer().createPlayerProfile(owner, name);
-            }
+            String tex = grave.getOwnerTexture();
 
-            return SkinTextureUtil_post_1_21_9.createProfileWithTexture(owner, name, texturesBase64);
+            return dev.cwhead.GravesX.util.SkinTextureUtil_post_1_21_9
+                    .createProfileFromTextureString(owner, name, tex);
         } catch (Throwable t) {
             return null;
         }

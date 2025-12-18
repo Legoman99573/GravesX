@@ -97,13 +97,40 @@ public class SkinTextureUtil_post_1_21_9 {
         return player.getPlayerProfile();
     }
 
-
-    /** Create a PlayerProfile with a custom Base64 texture (UUID + name) */
-    public static PlayerProfile createProfileWithTexture(UUID uuid, String name, String base64) {
+    public static PlayerProfile createProfileFromTextureString(UUID uuid, String name, String textureOrBase64OrHash) {
         PlayerProfile profile = Bukkit.createPlayerProfile(uuid, name);
-        PlayerTextures textures = profile.getTextures();
-        textures.setSkin(Base64Util.extractSkinURL(base64));
-        profile.setTextures(textures);
+
+        try {
+            if (textureOrBase64OrHash == null || textureOrBase64OrHash.isEmpty()) return profile;
+
+            String s = textureOrBase64OrHash.trim();
+
+            if (s.startsWith("http://") || s.startsWith("https://")) {
+                PlayerTextures textures = profile.getTextures();
+                textures.setSkin(new java.net.URL(s));
+                profile.setTextures(textures);
+                return profile;
+            }
+
+            if (s.matches("^[0-9a-fA-F]{32,}$")) {
+                PlayerTextures textures = profile.getTextures();
+                textures.setSkin(new java.net.URL("https://textures.minecraft.net/texture/" + s));
+                profile.setTextures(textures);
+                return profile;
+            }
+
+            java.net.URL url = Base64Util.extractSkinURL(s);
+            if (url != null) {
+                PlayerTextures textures = profile.getTextures();
+                textures.setSkin(url);
+                profile.setTextures(textures);
+            }
+        } catch (Throwable t) {
+            Bukkit.getLogger().warning("Failed to build PlayerProfile from texture: " + t);
+            t.printStackTrace();
+        }
+
         return profile;
     }
+
 }
