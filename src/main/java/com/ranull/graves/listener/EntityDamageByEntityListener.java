@@ -108,8 +108,6 @@ public class EntityDamageByEntityListener implements Listener {
      * @param event    The original damage event.
      */
     private void onSpearAttackGraveHologram(LivingEntity attacker, Grave grave, ArmorStand stand, EntityDamageByEntityEvent event) {
-        event.setCancelled(true);
-
         if (!plugin.getConfig("drop.spear-attack", grave).getBoolean("drop.spear-attack", false)) {
             return;
         }
