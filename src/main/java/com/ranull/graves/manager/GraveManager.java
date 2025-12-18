@@ -903,6 +903,9 @@ public class GraveManager {
                 if (plugin.getIntegrationManager().hasPlayerNPC()) {
                     plugin.getIntegrationManager().getPlayerNPC().removeCorpse(grave);
                 }
+                if (plugin.getIntegrationManager().hasMannequins()) {
+                    plugin.getIntegrationManager().getMannequins().removeCorpse(grave);
+                }
                 if (plugin.getIntegrationManager().hasFancyNpcs()) {
                     plugin.getIntegrationManager().getFancyNpcs().removeCorpse(grave);
                 }
@@ -1371,6 +1374,9 @@ public class GraveManager {
                 }
                 if (plugin.getIntegrationManager().hasPlayerNPC()) {
                     plugin.getIntegrationManager().getPlayerNPC().createCorpse(anchor, grave);
+                }
+                if (plugin.getIntegrationManager().hasMannequins()) {
+                    plugin.getIntegrationManager().getMannequins().createCorpse(grave.getUUID(), grave.getLocationDeath(), grave);
                 }
                 if (plugin.getIntegrationManager().hasFancyNpcs() && !plugin.getIntegrationManager().hasFloodgate()) {
                     plugin.getIntegrationManager().getFancyNpcs().createCorpse(grave.getUUID(), grave.getLocationDeath(), grave);

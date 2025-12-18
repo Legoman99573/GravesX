@@ -637,6 +637,22 @@ settings:
           armor: true
           hand: true
 
+      ##############
+      # Mannequins #
+      ##############
+      # Uses the vanilla Mannequin entity (Spigot/Paper 1.21.9+).
+      mannequins:
+        corpse:
+          enabled: false
+          # Spawn offset from the grave/player death location
+          offset:
+            x: -0.5
+            y: 0
+            z: -0.5
+          # Copy the dead player's equipment onto the mannequin
+          armor: true
+          hand: true
+
       ################
       # NoteBlockAPI #
       ################

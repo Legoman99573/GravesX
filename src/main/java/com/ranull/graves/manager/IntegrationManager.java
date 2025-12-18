@@ -182,6 +182,14 @@ public class IntegrationManager {
     private SkriptImpl skriptImpl;
 
     /**
+     * Integration with Mannequins, which is included in 1.21.9+
+     * <p>
+     * This {@link Mannequins} instance represents the integration with Mannequins.
+     * </p>
+     */
+    private Mannequins mannequins;
+
+    /**
      * Indicates whether Vault permissions are available.
      * <p>
      * This {@code boolean} flag indicates if Vault permissions are present and can be used within the plugin.
@@ -196,6 +204,8 @@ public class IntegrationManager {
      * </p>
      */
     private LuckPermsHandler luckPermsHandler;
+
+    private boolean hasMannequins;
 
     /**
      * @deprecated Unmaintained greedware plugin.
@@ -259,6 +269,7 @@ public class IntegrationManager {
         loadBedrockSupport();
         loadFancyNpcs();
         loadNoteblockAPI();
+        loadMannequins();
     }
 
     /**
@@ -497,6 +508,14 @@ public class IntegrationManager {
      */
     public LuckPermsHandler getLuckPermsHandler() {
         return luckPermsHandler;
+    }
+
+    public Mannequins getMannequins() {
+        return mannequins;
+    }
+
+    public boolean hasMannequins() {
+        return mannequins != null;
     }
 
     /**
@@ -1175,6 +1194,16 @@ public class IntegrationManager {
         }
     }
 
+    private void loadMannequins() {
+        if (plugin.getConfig().getBoolean("settings.integration.mannequins.enabled", true)) {
+            if (plugin.getVersionManager().isPost1_21_9()) {
+                plugin.integrationMessage("Mannequins hooked for " + Bukkit.getServer().getName() + " v." + Bukkit.getServer().getVersion() + " successfully.");
+                mannequins = new Mannequins(plugin);
+            } else {
+                mannequins = null;
+            }
+        }
+    }
     /**
      * Loads and displays warnings for compatibility issues with other plugins.
      */

@@ -262,6 +262,7 @@ public class DataManager {
             case "oraxen" -> plugin.getIntegrationManager().hasOraxen();
             case "nexo" -> plugin.getIntegrationManager().hasNexo();
             case "playernpc" -> plugin.getIntegrationManager().hasPlayerNPC();
+            case "mannequins" -> plugin.getIntegrationManager().hasMannequins();
             default -> {
                 if (key.startsWith("custom_")) {
                     String expected = key.substring("custom_".length());
@@ -313,6 +314,7 @@ public class DataManager {
         integrationMap.put("oraxen", plugin.getIntegrationManager().hasOraxen());
         integrationMap.put("nexo", plugin.getIntegrationManager().hasNexo());
         integrationMap.put("playernpc", plugin.getIntegrationManager().hasPlayerNPC());
+        integrationMap.put("mannequins", plugin.getIntegrationManager().hasMannequins());
 
         for (Map.Entry<String, Boolean> entry : integrationMap.entrySet()) {
             if (entry.getValue()) {
