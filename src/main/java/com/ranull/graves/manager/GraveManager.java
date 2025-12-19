@@ -25,10 +25,7 @@ import org.bukkit.block.Skull;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.*;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
-import org.bukkit.inventory.InventoryView;
-import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.*;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -823,7 +820,39 @@ public class GraveManager {
         Grave toDel = plugin.getCacheManager().getOldestGrave(livingEntity.getUniqueId());
 
         if (toDel != null) {
+            if (plugin.getConfig("drop.old-grave-replacement", toDel).getBoolean("drop.old-grave-replacement", true)) {
+                dropAllFromGrave(toDel);
+            }
             removeGrave(toDel);
+        }
+    }
+
+    /**
+     * Drops items from a grave.
+     *
+     * @param grave the grave that should drop items
+     */
+    public void dropAllFromGrave(Grave grave) {
+        Location loc = grave.getLocationDeath();
+
+        World w = loc.getWorld();
+
+        List<ItemStack> items = grave.getInventoryItemStack();
+        if (items != null) {
+            for (ItemStack is : items) {
+                if (is == null || is.getType() == Material.AIR || is.getAmount() <= 0) continue;
+                w.dropItemNaturally(loc, is.clone());
+            }
+            try { items.clear(); } catch (Throwable ignored) {}
+        }
+
+        Map<EquipmentSlot, ItemStack> equip = grave.getEquipmentMap();
+        if (equip != null) {
+            for (ItemStack is : equip.values()) {
+                if (is == null || is.getType() == Material.AIR || is.getAmount() <= 0) continue;
+                w.dropItemNaturally(loc, is.clone());
+            }
+            try { equip.clear(); } catch (Throwable ignored) {}
         }
     }
 

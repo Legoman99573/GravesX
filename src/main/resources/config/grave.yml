@@ -117,6 +117,8 @@ settings:
         piston-extend: true
         # Should we have an explosion effect occur on looting a grave?
         looted-explosion-effect: false
+        # Should a grave drop all items if a grave is being replaced as a player reaches the maximum graves allowed?
+        old-grave-replacement: true
 
       #########
       # Block #
