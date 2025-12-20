@@ -2,10 +2,8 @@ package dev.cwhead.GravesX.event;
 
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.graveevent.GraveEntityEvent;
-import dev.cwhead.GravesX.exception.GravesXNullPointerException;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
@@ -30,11 +28,6 @@ public class GraveTeleportEvent extends GraveEntityEvent {
     private static final HandlerList HANDLERS = new HandlerList();
 
     /**
-     The entity attempting to teleport (cached locally for convenience helpers).
-     */
-    private final @NotNull Entity entity;
-
-    /**
      * Constructs a new {@code GraveTeleportEvent}.
      *
      * @param grave  The grave associated with the event.
@@ -42,29 +35,6 @@ public class GraveTeleportEvent extends GraveEntityEvent {
      */
     public GraveTeleportEvent(@NotNull Grave grave, @NotNull Entity entity) {
         super(Objects.requireNonNull(grave, "grave"), Objects.requireNonNull(entity, "entity"), grave.getLocationDeath(), null, null, (entity instanceof LivingEntity le) ? le : null, null);
-        this.entity = entity;
-    }
-
-    /**
-     * Checks if the entity is a player.
-     *
-     * @return {@code true} if the teleporting entity is a {@link Player}.
-     */
-    public boolean isPlayer() {
-        return entity instanceof Player;
-    }
-
-    /**
-     * Gets the player.
-     *
-     * @return The teleporting {@link Player}.
-     * @throws GravesXNullPointerException if the teleporting entity is not a player.
-     */
-    public @NotNull Player getPlayer() {
-        if (!(entity instanceof Player p)) {
-            throw new GravesXNullPointerException(this, "player");
-        }
-        return p;
     }
 
     /**
