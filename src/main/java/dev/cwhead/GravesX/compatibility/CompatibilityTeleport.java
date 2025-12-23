@@ -15,7 +15,6 @@ import java.util.concurrent.atomic.AtomicReference;
  * <p>
  * - Tries {@code Player#teleportAsync(Location, TeleportCause)} if present.
  * - If missing or it fails, falls back to {@code Player#teleport(Location, TeleportCause)}
- *   executed on the owning region thread via GravesX's UniversalScheduler.
  */
 public final class CompatibilityTeleport {
 
@@ -32,7 +31,7 @@ public final class CompatibilityTeleport {
 
     /**
      * Teleport with a specific cause, preferring {@code teleportAsync} when available,
-     * and falling back to region-safe {@code teleport} via {@code GravesXScheduler.execute(...)}.
+     * and falling back to region-safe {@code teleport} via GravesX scheduler.
      *
      * @return a future that completes with {@code true} if the player ended up at the target.
      */
@@ -71,12 +70,13 @@ public final class CompatibilityTeleport {
                 if (cf instanceof CompletableFuture) {
                     ((CompletableFuture<Boolean>) cf).whenComplete((ok, ex) -> {
                         if (ex != null || Boolean.FALSE.equals(ok)) {
-                            // Async path failed → fallback on the region thread
                             fallbackRegionTeleport(player, safeTarget, cause, plugin).whenComplete((ok2, ex2) -> {
-                                result.complete(ex2 == null && Boolean.TRUE.equals(ok2));
+                                completeOnRegion(plugin, safeTarget, result, ex2 == null && Boolean.TRUE.equals(ok2));
                             });
                         } else {
-                            result.complete(true);
+                            plugin.getGravesXScheduler().execute(safeTarget, () -> {
+                                completeOnRegion(plugin, safeTarget, result, isAtTarget(player, safeTarget));
+                            });
                         }
                     });
                     return result;
@@ -85,16 +85,15 @@ public final class CompatibilityTeleport {
             }
         }
 
-        // No teleportAsync available or failed early → fallback
         fallbackRegionTeleport(player, safeTarget, cause, plugin).whenComplete((ok, ex) -> {
-            result.complete(ex == null && Boolean.TRUE.equals(ok));
+            completeOnRegion(plugin, safeTarget, result, ex == null && Boolean.TRUE.equals(ok));
         });
 
         return result;
     }
 
     /**
-     * Runs {@code player.teleport(...)} on the owning region thread using GravesX's UniversalScheduler.
+     * Runs {@code player.teleport(...)} on the owning region thread using GravesX's scheduler.
      */
     private static CompletableFuture<Boolean> fallbackRegionTeleport(Player player,
                                                                      Location safeTarget,
@@ -105,7 +104,7 @@ public final class CompatibilityTeleport {
             plugin.getGravesXScheduler().execute(safeTarget, () -> {
                 try {
                     boolean ok = player.teleport(safeTarget, cause);
-                    fut.complete(ok);
+                    fut.complete(ok && isAtTarget(player, safeTarget));
                 } catch (Throwable t) {
                     fut.complete(false);
                 }
@@ -114,5 +113,31 @@ public final class CompatibilityTeleport {
             fut.complete(false);
         }
         return fut;
+    }
+
+    /**
+     * Ensures the returned future completes on the region thread that owns {@code at}.
+     * (If already completed, does nothing.)
+     */
+    private static void completeOnRegion(Graves plugin, Location at, CompletableFuture<Boolean> fut, boolean value) {
+        if (fut.isDone()) return;
+        try {
+            plugin.getGravesXScheduler().execute(at, () -> {
+                if (!fut.isDone()) fut.complete(value);
+            });
+        } catch (Throwable t) {
+            if (!fut.isDone()) fut.complete(value);
+        }
+    }
+
+    /**
+     * "Ended up at target" check. Keep this tolerant (yaw/pitch may differ).
+     */
+    private static boolean isAtTarget(Player player, Location target) {
+        if (player == null || target == null || target.getWorld() == null) return false;
+        Location now = player.getLocation();
+        if (now.getWorld() == null || now.getWorld() != target.getWorld()) return false;
+
+        return now.distanceSquared(target) <= 0.01;
     }
 }
