@@ -48,6 +48,8 @@ settings:
         water-top: false
         # If the entity dies in the void, should it place a grave in the air if it can't find anywhere else.
         void-smart: true
+        # How many blocks should we scan?
+        void-land-scan-radius: 128
         # If the entity dies in lava, try place the grave on the last solid block they stood on. (Only works for players)
         lava-smart: true
         # If the entity drowns in water, try place the grave on the last solid block they stood on. (Only works for players)

@@ -16,6 +16,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
 import java.util.List;
+import java.util.function.BiFunction;
 
 /**
  * Manages location-related operations for graves.
@@ -384,6 +385,7 @@ public class LocationManager {
      *     <li>{@code placement.void}: enables/disables void placement behavior.</li>
      *     <li>{@code placement.void-smart}: attempts to use {@link #getLastSolidLocation(Entity)} first.</li>
      *     <li>{@code placement.nether-roof}: if disabled in the Nether, roof scanning may be skipped.</li>
+     *     <li>{@code placement.void-land-scan-radius}: radius (in blocks) to scan for a valid surface.</li>
      * </ul>
      *
      * <p>In the End, specialized island scanning may be performed via {@link #endVoidScan(Location, Grave)}.</p>
@@ -391,7 +393,8 @@ public class LocationManager {
      * @param location The location.
      * @param entity   The entity.
      * @param grave    The grave.
-     * @return The void location, or {@code null} if void placement is disabled or no world is available.
+     * @return The void location, or {@code null} if void placement is disabled, no world is available,
+     *         or no suitable candidate was found.
      */
     public Location getVoid(Location location, Entity entity, Grave grave) {
         if (location == null) return null;
@@ -401,41 +404,106 @@ public class LocationManager {
         }
 
         Location loc = location.clone();
-
-        if (plugin.getConfig("placement.void-smart", grave).getBoolean("placement.void-smart")) {
-            Location solidLocation = plugin.getLocationManager().getLastSolidLocation(entity);
-            if (solidLocation != null) {
-                return !hasGrave(solidLocation) ? solidLocation : getRoof(solidLocation, entity, grave);
-            }
-        }
-
         if (loc.getWorld() == null) return null;
 
         World world = loc.getWorld();
         World.Environment environment = world.getEnvironment();
 
-        if (environment == World.Environment.THE_END) {
-            Location endCandidate = endVoidScan(loc, grave);
-            if (endCandidate != null) return endCandidate;
+        final boolean skipRoof = (environment == World.Environment.NETHER)
+                && !plugin.getConfig("placement.nether-roof", grave).getBoolean("placement.nether-roof");
+
+        if (plugin.getConfig("placement.void-smart", grave).getBoolean("placement.void-smart")) {
+            Location solidLocation = plugin.getLocationManager().getLastSolidLocation(entity);
+            if (solidLocation != null && solidLocation.getWorld() != null) {
+                if (!hasGrave(solidLocation)) {
+                    return solidLocation;
+                }
+                if (!skipRoof) {
+                    Location roof = getRoof(solidLocation, entity, grave);
+                    if (roof != null && !hasGrave(roof)) return roof;
+                }
+            }
         }
 
-        boolean skipRoof = (environment == World.Environment.NETHER)
-                && !plugin.getConfig("placement.nether-roof", grave).getBoolean("placement.nether-roof");
+        if (environment == World.Environment.THE_END) {
+            Location endCandidate = endVoidScan(loc, grave);
+            if (endCandidate != null && !hasGrave(endCandidate)) return endCandidate;
+        }
 
         if (!skipRoof) {
             Location roof = getRoof(loc, entity, grave);
-            if (roof != null) return roof;
+            if (roof != null && !hasGrave(roof)) return roof;
         }
 
-        int minY = getMinHeight(loc);
-        Location bottom = new Location(world, loc.getX(), minY, loc.getZ());
-        Block block = bottom.getBlock();
+        int radius = plugin.getConfig("placement.void-land-scan-radius", grave)
+                .getInt("placement.void-land-scan-radius", 128);
 
-        if (MaterialUtil.isAir(block.getType()) || !block.getType().isSolid()) {
-            bottom.setY(minY + 1);
+        if (radius < 0) radius = 0;
+        if (radius > 512) radius = 512;
+
+        final int minY = getMinHeight(loc);
+        final int startX = loc.getBlockX();
+        final int startZ = loc.getBlockZ();
+
+        int checksRemaining = 4096;
+
+        BiFunction<Integer, Integer, Location> tryColumn = (x, z) -> {
+            int cx = x >> 4;
+            int cz = z >> 4;
+
+            if (!world.isChunkLoaded(cx, cz)) return null;
+
+            int y = world.getHighestBlockYAt(x, z);
+            if (y < minY) return null;
+
+            Block top = world.getBlockAt(x, y, z);
+            Material topType = top.getType();
+            if (topType.isSolid() && !(skipRoof && topType.name().contains("BEDROCK"))) {
+                return new Location(world, x + 0.5, y + 1.0, z + 0.5, loc.getYaw(), loc.getPitch());
+            }
+
+            for (int yy = y - 1; yy >= minY; yy--) {
+                Block ground = world.getBlockAt(x, yy, z);
+                Material type = ground.getType();
+
+                if (!type.isSolid()) continue;
+                if (skipRoof && type.name().contains("BEDROCK")) continue;
+
+                return new Location(world, x + 0.5, yy + 1.0, z + 0.5, loc.getYaw(), loc.getPitch());
+            }
+
+            return null;
+        };
+
+        Location candidate = tryColumn.apply(startX, startZ);
+        checksRemaining--;
+        if (candidate != null && !hasGrave(candidate)) return candidate;
+
+        outer:
+        for (int r = 1; r <= radius; r++) {
+
+            for (int dx = -r; dx <= r; dx++) {
+                if (checksRemaining-- <= 0) break outer;
+                candidate = tryColumn.apply(startX + dx, startZ - r);
+                if (candidate != null && !hasGrave(candidate)) return candidate;
+
+                if (checksRemaining-- <= 0) break outer;
+                candidate = tryColumn.apply(startX + dx, startZ + r);
+                if (candidate != null && !hasGrave(candidate)) return candidate;
+            }
+
+            for (int dz = -r + 1; dz <= r - 1; dz++) {
+                if (checksRemaining-- <= 0) break outer;
+                candidate = tryColumn.apply(startX - r, startZ + dz);
+                if (candidate != null && !hasGrave(candidate)) return candidate;
+
+                if (checksRemaining-- <= 0) break outer;
+                candidate = tryColumn.apply(startX + r, startZ + dz);
+                if (candidate != null && !hasGrave(candidate)) return candidate;
+            }
         }
 
-        return bottom;
+        return null;
     }
 
     /**
