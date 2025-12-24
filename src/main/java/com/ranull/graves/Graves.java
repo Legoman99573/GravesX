@@ -168,16 +168,16 @@ public class Graves extends JavaPlugin {
     }
 
     private void RegisterSoftCrashHandler() {
-        getLogger().info("Registering Crash Handler...");
+        getLogger().info("Registering Soft Crash Handler...");
         try {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 getLogger().severe("GravesX detected server went into a crashed state...");
                 runShutdownTasks();
                 getServer().getPluginManager().disablePlugin(this);
             }));
-            getLogger().info("Registered Crash Handler. Server will handle crashes in a separate thread.");
+            getLogger().info("Registered Soft Crash Handler. Server will handle crashes in a separate thread. This does not work on hard crashes.");
         } catch (Exception e) {
-            getLogger().severe("Failed to Register Crash Handler. Server will not listen to crashed states in a seperate thread.");
+            getLogger().severe("Failed to Register Soft Crash Handler. Server will not listen to soft crashed states in a separate thread.");
         }
     }
 
