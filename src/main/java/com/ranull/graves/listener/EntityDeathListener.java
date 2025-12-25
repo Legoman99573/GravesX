@@ -769,10 +769,19 @@ public class EntityDeathListener implements Listener {
         if (plugin.getConfig("placement.safe-location", grave).getBoolean("placement.safe-location", true)) {
             Location safeLocation = plugin.getLocationManager().getSafeGraveLocation(livingEntity, location, grave);
             event.setDroppedExp(0);
+            if (safeLocation != null && plugin.getLocationManager().hasCachedGraveAt(safeLocation)) {
+                safeLocation = plugin.getLocationManager().getNewLocationIfCachedGraveExists(livingEntity, location, grave);
+            } else {
+                location = plugin.getLocationManager().getNewLocationIfCachedGraveExists(livingEntity, location, grave);
+            }
 
             grave.setLocationDeath(safeLocation != null ? LocationUtil.roundLocation(safeLocation) : LocationUtil.roundLocation(location));
         } else {
             event.setDroppedExp(0);
+
+            if (plugin.getLocationManager().hasCachedGraveAt(location)) {
+                location = plugin.getLocationManager().getNewLocationIfCachedGraveExists(livingEntity, location, grave);
+            }
 
             grave.setLocationDeath(LocationUtil.roundLocation(location));
         }
