@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xmlns="http://maven.apache.org/POM/4.0.0"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://www.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.ranull</groupId>
@@ -28,7 +29,7 @@
     </contributors>
 
     <properties>
-        <java.version>17</java.version> <!-- As of 4.9.9.1 -->
+        <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -41,8 +42,12 @@
 
     <build>
         <defaultGoal>clean package</defaultGoal>
+
+        <!-- Ensures target/GravesX-<version>.jar and target/GravesX-<version>-api.jar -->
         <finalName>${project.name}-${project.version}</finalName>
+
         <plugins>
+
             <!-- Compiler -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -51,136 +56,206 @@
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
+                    <encoding>${project.build.sourceEncoding}</encoding>
                 </configuration>
             </plugin>
 
-            <!-- Shade Plugin -->
+            <!-- Shade -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>3.6.0</version>
-                <configuration>
-                    <createDependencyReducedPom>true</createDependencyReducedPom>
-                    <relocations>
-                        <relocation>
-                            <pattern>org.bstats</pattern>
-                            <shadedPattern>${project.groupId}.${project.artifactId}.libraries.bstats</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>com.github.puregero.multilib</pattern>
-                            <shadedPattern>${project.groupId}.${project.artifactId}.libraries.multilib</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>com.zaxxer.hikari</pattern>
-                            <shadedPattern>${project.groupId}.${project.artifactId}.libraries.hikari</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>com.tchristofferson.configupdater</pattern>
-                            <shadedPattern>${project.groupId}.${project.artifactId}.libraries.configupdater</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>de.themoep.minedown</pattern>
-                            <shadedPattern>${project.groupId}.${project.artifactId}.libraries.minedown</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>net.kyori</pattern>
-                            <shadedPattern>${project.groupId}.${project.artifactId}.libraries.kyori</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>me.imdanix.text</pattern>
-                            <shadedPattern>${project.groupId}.${project.artifactId}.libraries.imdanix.text</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>com.alessiodp.libby</pattern>
-                            <shadedPattern>${project.groupId}.${project.artifactId}.libraries.libby</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>org.h2</pattern>
-                            <shadedPattern>${project.groupId}.${project.artifactId}.libraries.h2</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>com.mysql</pattern>
-                            <shadedPattern>${project.groupId}.${project.artifactId}.libraries.mysql</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>org.postgresql</pattern>
-                            <shadedPattern>${project.groupId}.${project.artifactId}.libraries.postgresql</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>com.mariadb</pattern>
-                            <shadedPattern>${project.groupId}.${project.artifactId}.libraries.mariadb</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>com.mariadb</pattern>
-                            <shadedPattern>${project.groupId}.${project.artifactId}.libraries.commonstext</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>com.microsoft</pattern>
-                            <shadedPattern>${project.groupId}.${project.artifactId}.libraries.microsoft</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>com.github.Anon8281.universalScheduler</pattern>
-                            <shadedPattern>${project.groupId}.${project.artifactId}.libraries.universalScheduler</shadedPattern>
-                        </relocation>
-                    </relocations>
-                </configuration>
+
                 <executions>
-                    <!-- Main shaded jar -->
+
+                    <!-- MAIN PLUGIN JAR -->
                     <execution>
-                        <id>shade-main</id>
+                        <id>shade-main-bundled-only</id>
                         <phase>package</phase>
                         <goals><goal>shade</goal></goals>
                         <configuration>
+                            <shadedArtifactAttached>false</shadedArtifactAttached>
                             <createDependencyReducedPom>true</createDependencyReducedPom>
+
+                            <artifactSet>
+                                <includes>
+                                    <include>com.alessiodp:libby</include>
+                                    <include>com.github.Anon8281:UniversalScheduler</include>
+                                    <include>com.github.imDaniX:MiniTranslator</include>
+                                    <include>com.tchristofferson:ConfigUpdater</include>
+                                    <include>org.bstats:bstats-bukkit</include>
+                                </includes>
+                            </artifactSet>
+
+                            <relocations>
+                                <relocation>
+                                    <pattern>com.alessiodp.libby</pattern>
+                                    <shadedPattern>com.ranull.graves.bundledlibraries.libby</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.github.Anon8281.universalScheduler</pattern>
+                                    <shadedPattern>com.ranull.graves.bundledlibraries.universalScheduler</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>me.imdanix.text</pattern>
+                                    <shadedPattern>com.ranull.graves.bundledlibraries.imdanix.text</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.tchristofferson.configupdater</pattern>
+                                    <shadedPattern>com.ranull.graves.bundledlibraries.configupdater</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.bstats</pattern>
+                                    <shadedPattern>com.ranull.graves.bundledlibraries.bstats</shadedPattern>
+                                </relocation>
+                            </relocations>
+
                             <filters>
                                 <filter>
                                     <artifact>*:*</artifact>
                                     <excludes>
-                                        <exclude>META-INF/**</exclude>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
                                     </excludes>
                                 </filter>
                             </filters>
+
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                            </transformers>
+
                             <minimizeJar>false</minimizeJar>
                         </configuration>
                     </execution>
 
-                    <!-- Sources jar-->
+                    <!-- API JAR -->
                     <execution>
-                        <id>shade-sources</id>
+                        <id>shade-api-everything</id>
                         <phase>package</phase>
                         <goals><goal>shade</goal></goals>
                         <configuration>
                             <shadedArtifactAttached>true</shadedArtifactAttached>
-                            <shadedClassifierName>api-sources</shadedClassifierName>
+                            <shadedClassifierName>api</shadedClassifierName>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
+
+                            <relocations>
+                                <relocation>
+                                    <pattern>com.alessiodp.libby</pattern>
+                                    <shadedPattern>com.ranull.graves.bundledlibraries.libby</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.github.Anon8281.universalScheduler</pattern>
+                                    <shadedPattern>com.ranull.graves.bundledlibraries.universalScheduler</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>me.imdanix.text</pattern>
+                                    <shadedPattern>com.ranull.graves.bundledlibraries.imdanix.text</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.tchristofferson.configupdater</pattern>
+                                    <shadedPattern>com.ranull.graves.bundledlibraries.configupdater</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.bstats</pattern>
+                                    <shadedPattern>com.ranull.graves.bundledlibraries.bstats</shadedPattern>
+                                </relocation>
+
+                                <relocation>
+                                    <pattern>com.github.puregero.multilib</pattern>
+                                    <shadedPattern>com.ranull.graves.libraries.multilib</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.zaxxer.hikari</pattern>
+                                    <shadedPattern>com.ranull.graves.libraries.hikari</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>de.themoep.minedown</pattern>
+                                    <shadedPattern>com.ranull.graves.libraries.minedown</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>net.kyori</pattern>
+                                    <shadedPattern>com.ranull.graves.libraries.kyori</shadedPattern>
+                                </relocation>
+
+                                <relocation>
+                                    <pattern>org.h2</pattern>
+                                    <shadedPattern>com.ranull.graves.libraries.h2</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.mysql</pattern>
+                                    <shadedPattern>com.ranull.graves.libraries.mysql</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.postgresql</pattern>
+                                    <shadedPattern>com.ranull.graves.libraries.postgresql</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.mariadb</pattern>
+                                    <shadedPattern>com.ranull.graves.libraries.mariadb</shadedPattern>
+                                </relocation>
+
+                                <relocation>
+                                    <pattern>org.apache.commons.text</pattern>
+                                    <shadedPattern>com.ranull.graves.libraries.commonstext</shadedPattern>
+                                </relocation>
+
+                                <relocation>
+                                    <pattern>com.microsoft</pattern>
+                                    <shadedPattern>com.ranull.graves.libraries.microsoft</shadedPattern>
+                                </relocation>
+                            </relocations>
+
                             <filters>
                                 <filter>
                                     <artifact>*:*</artifact>
                                     <excludes>
-                                        <exclude>META-INF/**</exclude>
+                                        <exclude>org/slf4j/**</exclude>
+                                        <exclude>org/jspecify/**</exclude>
+                                        <exclude>com/google/**</exclude>
+
+                                        <exclude>config/**</exclude>
+                                        <exclude>data/**</exclude>
+                                        <exclude>google/**</exclude>
+
+                                        <exclude>plugin.yml</exclude>
+                                        <exclude>mariadb.properties</exclude>
+                                        <exclude>driver.properties</exclude>
+                                        <exclude>deprecated.properties</exclude>
+                                        <exclude>INFO_BIN</exclude>
+                                        <exclude>INFO_SRC</exclude>
                                     </excludes>
                                 </filter>
                             </filters>
+
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                            </transformers>
+
+                            <minimizeJar>true</minimizeJar>
                         </configuration>
                     </execution>
 
-                    <!-- Javadocs jar -->
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
                     <execution>
-                        <id>shade-javadoc</id>
+                        <id>copy-api-jar-name</id>
                         <phase>package</phase>
-                        <goals><goal>shade</goal></goals>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
                         <configuration>
-                            <shadedArtifactAttached>true</shadedArtifactAttached>
-                            <shadedClassifierName>api-javadoc</shadedClassifierName>
-                            <createDependencyReducedPom>false</createDependencyReducedPom>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/**</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
+                            <target>
+                                <copy overwrite="true"
+                                      file="${project.build.directory}/${project.artifactId}-${project.version}-api.jar"
+                                      tofile="${project.build.directory}/GravesX-${project.version}-api.jar"/>
+                            </target>
                         </configuration>
                     </execution>
                 </executions>
@@ -199,33 +274,7 @@
                 </configuration>
             </plugin>
 
-            <!-- API jar -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>3.4.2</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                        <configuration>
-                            <classifier>api</classifier>
-                            <includes>
-                                <include>**/*.class</include>
-                            </includes>
-                            <excludes>
-                                <exclude>**/*.yml</exclude>
-                                <exclude>**/*.json</exclude>
-                                <exclude>config/**</exclude>
-                                <exclude>data/**</exclude>
-                            </excludes>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- Javadocs plugin -->
+            <!-- Javadocs jar (exclude shaded packages) -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
@@ -233,19 +282,21 @@
                 <executions>
                     <execution>
                         <id>attach-javadocs</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
+                        <goals><goal>jar</goal></goals>
                         <configuration>
                             <classifier>api-javadoc</classifier>
                             <sourcepath>${project.build.sourceDirectory}</sourcepath>
-                            <excludePackageNames>config,data</excludePackageNames>
+                            <excludePackageNames>
+                                config,data,
+                                com.ranull.graves.libraries.*,
+                                com.ranull.graves.bundledlibraries.*
+                            </excludePackageNames>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
 
-            <!-- Sources plugin -->
+            <!-- Sources jar (exclude shaded packages) -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
@@ -254,15 +305,15 @@
                     <execution>
                         <id>attach-sources</id>
                         <phase>package</phase>
-                        <goals>
-                            <goal>jar-no-fork</goal>
-                        </goals>
+                        <goals><goal>jar-no-fork</goal></goals>
                         <configuration>
                             <classifier>api-sources</classifier>
                             <includes>
                                 <include>**/*.java</include>
                             </includes>
                             <excludes>
+                                <exclude>com/ranull/graves/libraries/**</exclude>
+                                <exclude>com/ranull/graves/bundledlibraries/**</exclude>
                                 <exclude>**/*.yml</exclude>
                                 <exclude>**/*.json</exclude>
                                 <exclude>config/**</exclude>
@@ -273,12 +324,13 @@
                 </executions>
             </plugin>
 
-            <!-- Site plugin -->
+            <!-- Site -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-site-plugin</artifactId>
                 <version>4.0.0-M16</version>
             </plugin>
+
         </plugins>
 
         <resources>
@@ -352,9 +404,9 @@
 
     <repositories>
         <repository>
-        <id>dmulloy2-repo</id>
-        <url>https://repo.dmulloy2.net/repository/public/</url>
-    </repository>
+            <id>dmulloy2-repo</id>
+            <url>https://repo.dmulloy2.net/repository/public/</url>
+        </repository>
         <repository>
             <id>ranull-repo-ranull</id>
             <name>Ranull's Maven Repository</name>
@@ -459,6 +511,7 @@
     </repositories>
 
     <dependencies>
+        <!-- Server APIs stay provided -->
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
@@ -471,18 +524,49 @@
             <version>1.21.10-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
+
         <dependency>
             <groupId>net.coreprotect</groupId>
             <artifactId>coreprotect</artifactId>
             <version>22.4</version>
             <scope>provided</scope>
         </dependency>
+
+        <!-- BundledLibraries (must be in main jar) -->
         <dependency>
             <groupId>org.bstats</groupId>
             <artifactId>bstats-bukkit</artifactId>
             <version>3.1.0</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>com.github.imDaniX</groupId>
+            <artifactId>MiniTranslator</artifactId>
+            <version>v2.6.1-graves</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.tchristofferson</groupId>
+            <artifactId>ConfigUpdater</artifactId>
+            <version>2.1-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.alessiodp</groupId>
+            <artifactId>libby</artifactId>
+            <version>2.0.1-graves2</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.Anon8281</groupId>
+            <artifactId>UniversalScheduler</artifactId>
+            <version>0.1.7</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <!-- Everything below: keep your existing provided deps UNCHANGED EXCEPT
+             the ones you want shaded into the API jar (they must NOT be provided). -->
+
         <dependency>
             <groupId>de.oliver</groupId>
             <artifactId>FancyNpcs</artifactId>
@@ -495,49 +579,108 @@
             <version>2.2.3-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
+
+        <!-- These are "libraries.*" relocations -> must be compile (optional recommended) so API jar can include them -->
+        <dependency>
+            <groupId>com.github.puregero</groupId>
+            <artifactId>multilib</artifactId>
+            <version>1.2.4</version>
+            <scope>compile</scope>
+            <optional>true</optional>
+        </dependency>
         <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
             <version>6.3.3</version>
-            <scope>provided</scope>
+            <scope>compile</scope>
+            <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>de.themoep</groupId>
+            <artifactId>minedown-adventure</artifactId>
+            <version>1.7.3-SNAPSHOT</version>
+            <scope>compile</scope>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Kyori (you relocate net.kyori.*) -->
+        <dependency>
+            <groupId>net.kyori</groupId>
+            <artifactId>adventure-text-minimessage</artifactId>
+            <version>4.24.0</version>
+            <scope>compile</scope>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>net.kyori</groupId>
+            <artifactId>adventure-text-serializer-gson</artifactId>
+            <version>4.24.0</version>
+            <scope>compile</scope>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>net.kyori</groupId>
+            <artifactId>adventure-platform-bukkit</artifactId>
+            <version>4.4.1</version>
+            <scope>compile</scope>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- DB drivers you relocate -->
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
             <artifactId>mariadb-java-client</artifactId>
             <version>3.5.6</version>
-            <scope>provided</scope>
+            <scope>compile</scope>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
             <version>9.4.0</version>
-            <scope>provided</scope>
+            <scope>compile</scope>
+            <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.7.8</version>
+            <scope>compile</scope>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>2.4.240</version>
+            <scope>compile</scope>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- commons-text relocation -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-text</artifactId>
+            <version>1.14.0</version>
+            <scope>compile</scope>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- microsoft relocation -->
+        <dependency>
+            <groupId>com.microsoft.sqlserver</groupId>
+            <artifactId>mssql-jdbc</artifactId>
+            <version>13.2.0.jre11</version>
+            <scope>compile</scope>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Keep the rest of your original deps as provided (unchanged) -->
         <dependency>
             <groupId>org.xerial</groupId>
             <artifactId>sqlite-jdbc</artifactId>
             <version>3.50.3.0</version>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
-            <version>42.7.8</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <version>2.4.240</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.github.puregero</groupId>
-            <artifactId>multilib</artifactId>
-            <version>1.2.4</version>
-            <scope>provided</scope>
-        </dependency>
-        <!--refer to libs/README.md-->
         <dependency>
             <groupId>com.mojang</groupId>
             <artifactId>authlib</artifactId>
@@ -629,9 +772,104 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>com.github.jojodmo</groupId>
+            <artifactId>ItemBridge</artifactId>
+            <version>b0054538c1</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.20.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+            <version>26.0.2</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.18.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20250517</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.luckperms</groupId>
+            <artifactId>api</artifactId>
+            <version>5.5</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-resolver-provider</artifactId>
+            <version>4.0.0-rc-4</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven.resolver</groupId>
+            <artifactId>maven-resolver-connector-basic</artifactId>
+            <version>2.0.10</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven.resolver</groupId>
+            <artifactId>maven-resolver-transport-http</artifactId>
+            <version>2.0.0-alpha-2</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>de.tr7zw</groupId>
+            <artifactId>item-nbt-api-plugin</artifactId>
+            <version>2.15.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.oshi</groupId>
+            <artifactId>oshi-core</artifactId>
+            <version>6.9.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>33.5.0-jre</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.koca2000</groupId>
+            <artifactId>NoteBlockAPI</artifactId>
+            <version>1.6.3</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.nexomc</groupId>
+            <artifactId>nexo</artifactId>
+            <version>1.10.0</version>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>net.byteflux</groupId>
+                    <artifactId>libby-bukkit</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>dev.triumphteam</groupId>
+                    <artifactId>triumph-gui</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
             <groupId>io.th0rgal</groupId>
             <artifactId>oraxen</artifactId>
             <version>1.181.0</version>
+            <scope>provided</scope>
             <exclusions>
                 <exclusion>
                     <groupId>me.gabytm.util</groupId>
@@ -678,161 +916,7 @@
                     <artifactId>triumph-gui</artifactId>
                 </exclusion>
             </exclusions>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.github.jojodmo</groupId>
-            <artifactId>ItemBridge</artifactId>
-            <version>b0054538c1</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>net.kyori</groupId>
-            <artifactId>adventure-text-minimessage</artifactId>
-            <version>4.24.0</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>net.kyori</groupId>
-            <artifactId>adventure-text-serializer-gson</artifactId>
-            <version>4.24.0</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>net.kyori</groupId>
-            <artifactId>adventure-platform-bukkit</artifactId>
-            <version>4.4.1</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.github.imDaniX</groupId>
-            <artifactId>MiniTranslator</artifactId>
-            <version>v2.6.1-graves</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>2.20.0</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>de.themoep</groupId>
-            <artifactId>minedown-adventure</artifactId>
-            <version>1.7.3-SNAPSHOT</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jetbrains</groupId>
-            <artifactId>annotations</artifactId>
-            <version>26.0.2</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-            <version>3.18.0</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.json</groupId>
-            <artifactId>json</artifactId>
-            <version>20250517</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>net.luckperms</groupId>
-            <artifactId>api</artifactId>
-            <version>5.5</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.tchristofferson</groupId>
-            <artifactId>ConfigUpdater</artifactId>
-            <version>2.1-SNAPSHOT</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven</groupId>
-            <artifactId>maven-resolver-provider</artifactId>
-            <version>4.0.0-rc-4</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven.resolver</groupId>
-            <artifactId>maven-resolver-connector-basic</artifactId>
-            <version>2.0.10</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven.resolver</groupId>
-            <artifactId>maven-resolver-transport-http</artifactId>
-            <version>2.0.0-alpha-2</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>de.tr7zw</groupId>
-            <artifactId>item-nbt-api-plugin</artifactId>
-            <version>2.15.0</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.alessiodp</groupId>
-            <artifactId>libby</artifactId>
-            <version>2.0.1-graves2</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.github.oshi</groupId>
-            <artifactId>oshi-core</artifactId>
-            <version>6.9.0</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>33.5.0-jre</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-text</artifactId>
-            <version>1.14.0</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.microsoft.sqlserver</groupId>
-            <artifactId>mssql-jdbc</artifactId>
-            <version>13.2.0.jre11</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.github.koca2000</groupId>
-            <artifactId>NoteBlockAPI</artifactId>
-            <version>1.6.3</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.github.Anon8281</groupId>
-            <artifactId>UniversalScheduler</artifactId>
-            <version>0.1.7</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.nexomc</groupId>
-            <artifactId>nexo</artifactId>
-            <version>1.10.0</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>net.byteflux</groupId>
-                    <artifactId>libby-bukkit</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>dev.triumphteam</groupId>
-                    <artifactId>triumph-gui</artifactId>
-                </exclusion>
-            </exclusions>
-            <scope>provided</scope>
         </dependency>
     </dependencies>
+
 </project>

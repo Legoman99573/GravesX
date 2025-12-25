@@ -38,6 +38,7 @@
         <configuration>
           <source>${java.version}</source>
           <target>${java.version}</target>
+          <encoding>${project.build.sourceEncoding}</encoding>
         </configuration>
       </plugin>
       <plugin>
@@ -45,130 +46,174 @@
         <version>3.6.0</version>
         <executions>
           <execution>
-            <id>shade-main</id>
+            <id>shade-main-bundled-only</id>
             <phase>package</phase>
             <goals>
               <goal>shade</goal>
             </goals>
             <configuration>
+              <shadedArtifactAttached>false</shadedArtifactAttached>
               <createDependencyReducedPom>true</createDependencyReducedPom>
+              <artifactSet>
+                <includes>
+                  <include>com.alessiodp:libby</include>
+                  <include>com.github.Anon8281:UniversalScheduler</include>
+                  <include>com.github.imDaniX:MiniTranslator</include>
+                  <include>com.tchristofferson:ConfigUpdater</include>
+                  <include>org.bstats:bstats-bukkit</include>
+                </includes>
+              </artifactSet>
+              <relocations>
+                <relocation>
+                  <pattern>com.alessiodp.libby</pattern>
+                  <shadedPattern>com.ranull.graves.bundledlibraries.libby</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.github.Anon8281.universalScheduler</pattern>
+                  <shadedPattern>com.ranull.graves.bundledlibraries.universalScheduler</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>me.imdanix.text</pattern>
+                  <shadedPattern>com.ranull.graves.bundledlibraries.imdanix.text</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.tchristofferson.configupdater</pattern>
+                  <shadedPattern>com.ranull.graves.bundledlibraries.configupdater</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>org.bstats</pattern>
+                  <shadedPattern>com.ranull.graves.bundledlibraries.bstats</shadedPattern>
+                </relocation>
+              </relocations>
               <filters>
                 <filter>
                   <artifact>*:*</artifact>
                   <excludes>
-                    <exclude>META-INF/**</exclude>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
                   </excludes>
                 </filter>
               </filters>
+              <transformers>
+                <transformer />
+              </transformers>
               <minimizeJar>false</minimizeJar>
             </configuration>
           </execution>
           <execution>
-            <id>shade-sources</id>
+            <id>shade-api-everything</id>
             <phase>package</phase>
             <goals>
               <goal>shade</goal>
             </goals>
             <configuration>
               <shadedArtifactAttached>true</shadedArtifactAttached>
-              <shadedClassifierName>api-sources</shadedClassifierName>
+              <shadedClassifierName>api</shadedClassifierName>
               <createDependencyReducedPom>false</createDependencyReducedPom>
+              <relocations>
+                <relocation>
+                  <pattern>com.alessiodp.libby</pattern>
+                  <shadedPattern>com.ranull.graves.bundledlibraries.libby</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.github.Anon8281.universalScheduler</pattern>
+                  <shadedPattern>com.ranull.graves.bundledlibraries.universalScheduler</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>me.imdanix.text</pattern>
+                  <shadedPattern>com.ranull.graves.bundledlibraries.imdanix.text</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.tchristofferson.configupdater</pattern>
+                  <shadedPattern>com.ranull.graves.bundledlibraries.configupdater</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>org.bstats</pattern>
+                  <shadedPattern>com.ranull.graves.bundledlibraries.bstats</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.github.puregero.multilib</pattern>
+                  <shadedPattern>com.ranull.graves.libraries.multilib</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.zaxxer.hikari</pattern>
+                  <shadedPattern>com.ranull.graves.libraries.hikari</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>de.themoep.minedown</pattern>
+                  <shadedPattern>com.ranull.graves.libraries.minedown</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>net.kyori</pattern>
+                  <shadedPattern>com.ranull.graves.libraries.kyori</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>org.h2</pattern>
+                  <shadedPattern>com.ranull.graves.libraries.h2</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.mysql</pattern>
+                  <shadedPattern>com.ranull.graves.libraries.mysql</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>org.postgresql</pattern>
+                  <shadedPattern>com.ranull.graves.libraries.postgresql</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>org.mariadb</pattern>
+                  <shadedPattern>com.ranull.graves.libraries.mariadb</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>org.apache.commons.text</pattern>
+                  <shadedPattern>com.ranull.graves.libraries.commonstext</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.microsoft</pattern>
+                  <shadedPattern>com.ranull.graves.libraries.microsoft</shadedPattern>
+                </relocation>
+              </relocations>
               <filters>
                 <filter>
                   <artifact>*:*</artifact>
                   <excludes>
-                    <exclude>META-INF/**</exclude>
+                    <exclude>org/slf4j/**</exclude>
+                    <exclude>org/jspecify/**</exclude>
+                    <exclude>com/google/**</exclude>
+                    <exclude>config/**</exclude>
+                    <exclude>data/**</exclude>
+                    <exclude>plugin.yml</exclude>
+                    <exclude>mariadb.properties</exclude>
+                    <exclude>driver.properties</exclude>
+                    <exclude>deprecated.properties</exclude>
                   </excludes>
                 </filter>
               </filters>
-            </configuration>
-          </execution>
-          <execution>
-            <id>shade-javadoc</id>
-            <phase>package</phase>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-            <configuration>
-              <shadedArtifactAttached>true</shadedArtifactAttached>
-              <shadedClassifierName>api-javadoc</shadedClassifierName>
-              <createDependencyReducedPom>false</createDependencyReducedPom>
-              <filters>
-                <filter>
-                  <artifact>*:*</artifact>
-                  <excludes>
-                    <exclude>META-INF/**</exclude>
-                  </excludes>
-                </filter>
-              </filters>
+              <transformers>
+                <transformer />
+              </transformers>
+              <minimizeJar>true</minimizeJar>
             </configuration>
           </execution>
         </executions>
-        <configuration>
-          <createDependencyReducedPom>true</createDependencyReducedPom>
-          <relocations>
-            <relocation>
-              <pattern>org.bstats</pattern>
-              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.bstats</shadedPattern>
-            </relocation>
-            <relocation>
-              <pattern>com.github.puregero.multilib</pattern>
-              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.multilib</shadedPattern>
-            </relocation>
-            <relocation>
-              <pattern>com.zaxxer.hikari</pattern>
-              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.hikari</shadedPattern>
-            </relocation>
-            <relocation>
-              <pattern>com.tchristofferson.configupdater</pattern>
-              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.configupdater</shadedPattern>
-            </relocation>
-            <relocation>
-              <pattern>de.themoep.minedown</pattern>
-              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.minedown</shadedPattern>
-            </relocation>
-            <relocation>
-              <pattern>net.kyori</pattern>
-              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.kyori</shadedPattern>
-            </relocation>
-            <relocation>
-              <pattern>me.imdanix.text</pattern>
-              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.imdanix.text</shadedPattern>
-            </relocation>
-            <relocation>
-              <pattern>com.alessiodp.libby</pattern>
-              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.libby</shadedPattern>
-            </relocation>
-            <relocation>
-              <pattern>org.h2</pattern>
-              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.h2</shadedPattern>
-            </relocation>
-            <relocation>
-              <pattern>com.mysql</pattern>
-              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.mysql</shadedPattern>
-            </relocation>
-            <relocation>
-              <pattern>org.postgresql</pattern>
-              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.postgresql</shadedPattern>
-            </relocation>
-            <relocation>
-              <pattern>com.mariadb</pattern>
-              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.mariadb</shadedPattern>
-            </relocation>
-            <relocation>
-              <pattern>com.mariadb</pattern>
-              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.commonstext</shadedPattern>
-            </relocation>
-            <relocation>
-              <pattern>com.microsoft</pattern>
-              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.microsoft</shadedPattern>
-            </relocation>
-            <relocation>
-              <pattern>com.github.Anon8281.universalScheduler</pattern>
-              <shadedPattern>${project.groupId}.${project.artifactId}.libraries.universalScheduler</shadedPattern>
-            </relocation>
-          </relocations>
-        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <version>3.2.0</version>
+        <executions>
+          <execution>
+            <id>copy-api-jar-name</id>
+            <phase>package</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <copy />
+              </target>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <artifactId>maven-resources-plugin</artifactId>
@@ -179,29 +224,6 @@
             <nonFilteredFileExtension>schem</nonFilteredFileExtension>
           </nonFilteredFileExtensions>
         </configuration>
-      </plugin>
-      <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>3.4.2</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>jar</goal>
-            </goals>
-            <configuration>
-              <classifier>api</classifier>
-              <includes>
-                <include>**/*.class</include>
-              </includes>
-              <excludes>
-                <exclude>**/*.yml</exclude>
-                <exclude>**/*.json</exclude>
-                <exclude>config/**</exclude>
-                <exclude>data/**</exclude>
-              </excludes>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
@@ -215,7 +237,9 @@
             <configuration>
               <classifier>api-javadoc</classifier>
               <sourcepath>${project.build.sourceDirectory}</sourcepath>
-              <excludePackageNames>config,data</excludePackageNames>
+              <excludePackageNames>config,data,
+                                com.ranull.graves.libraries.*,
+                                com.ranull.graves.bundledlibraries.*</excludePackageNames>
             </configuration>
           </execution>
         </executions>
@@ -236,6 +260,8 @@
                 <include>**/*.java</include>
               </includes>
               <excludes>
+                <exclude>com/ranull/graves/libraries/**</exclude>
+                <exclude>com/ranull/graves/bundledlibraries/**</exclude>
                 <exclude>**/*.yml</exclude>
                 <exclude>**/*.json</exclude>
                 <exclude>config/**</exclude>
@@ -410,45 +436,93 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>com.github.puregero</groupId>
+      <artifactId>multilib</artifactId>
+      <version>1.2.4</version>
+      <scope>compile</scope>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
       <groupId>com.zaxxer</groupId>
       <artifactId>HikariCP</artifactId>
       <version>6.3.3</version>
-      <scope>provided</scope>
+      <scope>compile</scope>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>de.themoep</groupId>
+      <artifactId>minedown-adventure</artifactId>
+      <version>1.7.3-SNAPSHOT</version>
+      <scope>compile</scope>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>net.kyori</groupId>
+      <artifactId>adventure-text-minimessage</artifactId>
+      <version>4.24.0</version>
+      <scope>compile</scope>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>net.kyori</groupId>
+      <artifactId>adventure-text-serializer-gson</artifactId>
+      <version>4.24.0</version>
+      <scope>compile</scope>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>net.kyori</groupId>
+      <artifactId>adventure-platform-bukkit</artifactId>
+      <version>4.4.1</version>
+      <scope>compile</scope>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.mariadb.jdbc</groupId>
       <artifactId>mariadb-java-client</artifactId>
       <version>3.5.6</version>
-      <scope>provided</scope>
+      <scope>compile</scope>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>com.mysql</groupId>
       <artifactId>mysql-connector-j</artifactId>
       <version>9.4.0</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.xerial</groupId>
-      <artifactId>sqlite-jdbc</artifactId>
-      <version>3.50.3.0</version>
-      <scope>provided</scope>
+      <scope>compile</scope>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
       <version>42.7.8</version>
-      <scope>provided</scope>
+      <scope>compile</scope>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
       <version>2.4.240</version>
-      <scope>provided</scope>
+      <scope>compile</scope>
+      <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>com.github.puregero</groupId>
-      <artifactId>multilib</artifactId>
-      <version>1.2.4</version>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-text</artifactId>
+      <version>1.14.0</version>
+      <scope>compile</scope>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>com.microsoft.sqlserver</groupId>
+      <artifactId>mssql-jdbc</artifactId>
+      <version>13.2.0.jre11</version>
+      <scope>compile</scope>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.xerial</groupId>
+      <artifactId>sqlite-jdbc</artifactId>
+      <version>3.50.3.0</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -542,91 +616,15 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>io.th0rgal</groupId>
-      <artifactId>oraxen</artifactId>
-      <version>1.181.0</version>
-      <scope>provided</scope>
-      <exclusions>
-        <exclusion>
-          <artifactId>actions-spigot</artifactId>
-          <groupId>me.gabytm.util</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>annotations</artifactId>
-          <groupId>org.jetbrains</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>PlayerAnimator</artifactId>
-          <groupId>com.ticxo</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>IF</artifactId>
-          <groupId>com.github.stefvanschie.inventoryframework</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>protectionlib</artifactId>
-          <groupId>io.th0rgal</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>bstats-bukkit</artifactId>
-          <groupId>org.bstats</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>custom-block-data</artifactId>
-          <groupId>com.jeff-media</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>persistent-data-serializer</artifactId>
-          <groupId>com.jeff-media</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>MorePersistentDataTypes</artifactId>
-          <groupId>com.jeff_media</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>java</artifactId>
-          <groupId>gs.mclo</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>triumph-gui</artifactId>
-          <groupId>dev.triumphteam</groupId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
       <groupId>com.github.jojodmo</groupId>
       <artifactId>ItemBridge</artifactId>
       <version>b0054538c1</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>net.kyori</groupId>
-      <artifactId>adventure-text-minimessage</artifactId>
-      <version>4.24.0</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>net.kyori</groupId>
-      <artifactId>adventure-text-serializer-gson</artifactId>
-      <version>4.24.0</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>net.kyori</groupId>
-      <artifactId>adventure-platform-bukkit</artifactId>
-      <version>4.4.1</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
       <version>2.20.0</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>de.themoep</groupId>
-      <artifactId>minedown-adventure</artifactId>
-      <version>1.7.3-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -690,18 +688,6 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-text</artifactId>
-      <version>1.14.0</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.microsoft.sqlserver</groupId>
-      <artifactId>mssql-jdbc</artifactId>
-      <version>13.2.0.jre11</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
       <groupId>com.github.koca2000</groupId>
       <artifactId>NoteBlockAPI</artifactId>
       <version>1.6.3</version>
@@ -716,6 +702,58 @@
         <exclusion>
           <artifactId>libby-bukkit</artifactId>
           <groupId>net.byteflux</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>triumph-gui</artifactId>
+          <groupId>dev.triumphteam</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>io.th0rgal</groupId>
+      <artifactId>oraxen</artifactId>
+      <version>1.181.0</version>
+      <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>actions-spigot</artifactId>
+          <groupId>me.gabytm.util</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>annotations</artifactId>
+          <groupId>org.jetbrains</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>PlayerAnimator</artifactId>
+          <groupId>com.ticxo</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>IF</artifactId>
+          <groupId>com.github.stefvanschie.inventoryframework</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>protectionlib</artifactId>
+          <groupId>io.th0rgal</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>bstats-bukkit</artifactId>
+          <groupId>org.bstats</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>custom-block-data</artifactId>
+          <groupId>com.jeff-media</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>persistent-data-serializer</artifactId>
+          <groupId>com.jeff-media</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>MorePersistentDataTypes</artifactId>
+          <groupId>com.jeff_media</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>java</artifactId>
+          <groupId>gs.mclo</groupId>
         </exclusion>
         <exclusion>
           <artifactId>triumph-gui</artifactId>
