@@ -155,6 +155,10 @@ settings:
     admin:
       - "c59ac6d2-4851-4183-a9f7-15d1a293eed6" # Ranull
       - "069a79f4-44e9-4726-a5be-fca90e38aaf5" # Notch
+    # Should we display which plugin calls this debug?
+    show-caller: true
+    # Should we show what class and line number called this? This is intended for developers and not for production reasons though we won't stop you :)
+    show-caller-class: false
     # 0 = Nothing, 1 = Information, 2 = Failures
     level: 0
 

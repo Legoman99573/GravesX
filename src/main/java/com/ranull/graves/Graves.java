@@ -14,6 +14,7 @@ import dev.cwhead.GravesX.command.GxModulesCommand;
 import dev.cwhead.GravesX.debug.KeepInventoryDetector;
 import dev.cwhead.GravesX.debug.LateEnableHook;
 import dev.cwhead.GravesX.listener.PlayerAfterRespawnListener;
+import dev.cwhead.GravesX.manager.DebugManager;
 import dev.cwhead.GravesX.manager.ParticleManager;
 import dev.cwhead.GravesX.module.listener.DependencyEnableListener;
 import dev.cwhead.GravesX.module.util.LibbyImporter;
@@ -69,6 +70,7 @@ public class Graves extends JavaPlugin {
     private LocationManager locationManager;
     private GraveManager graveManager;
     private ParticleManager particleManager;
+    private DebugManager debugManager;
     private Compatibility compatibility;
     private FileConfiguration fileConfiguration;
     private boolean isDevelopmentBuild = false;
@@ -81,6 +83,7 @@ public class Graves extends JavaPlugin {
 
     @Override
     public void onLoad() {
+        debugManager = new DebugManager(this);
         File gravesDirectory = new File(getDataFolder().getParentFile(), "Graves");
         File newGravesDirectory = new File(getDataFolder().getParentFile(), "GravesX");
 
@@ -106,8 +109,9 @@ public class Graves extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        versionManager = new VersionManager();
         loadLibraries();
+        debugManager = new DebugManager(this);
+        versionManager = new VersionManager();
 
         graveScheduler = UniversalScheduler.getScheduler(this);
 
@@ -229,6 +233,16 @@ public class Graves extends JavaPlugin {
                 getLogger().severe("Failed to unload RecipeManager.");
             }
         }
+
+        if (debugManager != null) {
+            getLogger().info("Unloading DebugManager...");
+            try {
+                debugManager.unload();
+                getLogger().info("Unloaded DebugManager Successfully.");
+            } catch (Exception e) {
+                getLogger().severe("Failed to unload DebugManager.");
+            }
+        }
         getLogger().info("Shutdown Completed :)");
     }
 
@@ -282,10 +296,10 @@ public class Graves extends JavaPlugin {
                 libraryLoaderUtil.loadLibrary("com{}microsoft{}sqlserver", "mssql-jdbc", "13.2.0.jre11", "com{}microsoft", "com{}ranull{}graves{}libraries{}microsoft", false);
                 break;
         }
+        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-platform-bukkit", "4.4.1", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
         libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-api", "4.24.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
         libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-minimessage", "4.24.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
         libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-serializer-gson", "4.24.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
-        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-platform-bukkit", "4.4.1", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
         libraryLoaderUtil.loadLibrary("com{}github{}puregero", "multilib", "1.2.4", "com{}github{}puregero{}multilib", "com{}ranull{}graves{}libraries{}multilib", false, "https://repo.clojars.org/");
         libraryLoaderUtil.loadLibrary("org{}apache{}commons", "commons-text", "1.14.0", "org{}apache{}commons{}text", "com{}ranull{}graves{}libraries{}commonstext", false);
 
@@ -487,31 +501,14 @@ public class Graves extends JavaPlugin {
         }
     }
 
+    /**
+     * Sends a debug message using {@link DebugManager}.
+     *
+     * @param string the message
+     * @param level  0=Nothing, 1=info, 2=warnings
+     */
     public void debugMessage(String string, int level) {
-        if (getConfig().getInt("settings.debug.level", 0) >= level) {
-            getLogger().warning("Debug: " + string);
-
-            for (String admin : getConfig().getStringList("settings.debug.admin")) {
-                Player player = getServer().getPlayer(admin);
-                UUID uuid = UUIDUtil.getUUID(admin);
-
-                if (uuid != null) {
-                    Player uuidPlayer = getServer().getPlayer(uuid);
-
-                    if (uuidPlayer != null) {
-                        player = uuidPlayer;
-                    }
-                }
-
-                if (player != null) {
-                    String debug = !integrationManager.hasMultiPaper() ? "Debug:" : "Debug ("
-                            + integrationManager.getMultiPaper().getLocalServerName() + "):";
-
-                    player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + debug
-                            + ChatColor.RESET + " " + string);
-                }
-            }
-        }
+        getDebugManager().debug(string, level);
     }
 
     /**
@@ -982,6 +979,13 @@ public class Graves extends JavaPlugin {
      */
     public ParticleManager getParticleManager() {
         return particleManager;
+    }
+
+    /**
+     * @return the {@link DebugManager} that manages debugging used by the plugin.
+     */
+    public DebugManager getDebugManager() {
+        return debugManager;
     }
 
     /**
