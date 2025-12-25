@@ -61,6 +61,7 @@
                   <include>com.github.imDaniX:MiniTranslator</include>
                   <include>com.tchristofferson:ConfigUpdater</include>
                   <include>org.bstats:bstats-bukkit</include>
+                  <include>org.bstats:bstats-base</include>
                 </includes>
               </artifactSet>
               <relocations>
@@ -84,14 +85,52 @@
                   <pattern>org.bstats</pattern>
                   <shadedPattern>com.ranull.graves.bundledlibraries.bstats</shadedPattern>
                 </relocation>
+                <relocation>
+                  <pattern>com.github.puregero.multilib</pattern>
+                  <shadedPattern>com.ranull.graves.libraries.multilib</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.zaxxer.hikari</pattern>
+                  <shadedPattern>com.ranull.graves.libraries.hikari</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>de.themoep.minedown</pattern>
+                  <shadedPattern>com.ranull.graves.libraries.minedown</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>net.kyori</pattern>
+                  <shadedPattern>com.ranull.graves.libraries.kyori</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>org.h2</pattern>
+                  <shadedPattern>com.ranull.graves.libraries.h2</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.mysql</pattern>
+                  <shadedPattern>com.ranull.graves.libraries.mysql</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>org.postgresql</pattern>
+                  <shadedPattern>com.ranull.graves.libraries.postgresql</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>org.mariadb</pattern>
+                  <shadedPattern>com.ranull.graves.libraries.mariadb</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>org.apache.commons.text</pattern>
+                  <shadedPattern>com.ranull.graves.libraries.commonstext</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.microsoft</pattern>
+                  <shadedPattern>com.ranull.graves.libraries.microsoft</shadedPattern>
+                </relocation>
               </relocations>
               <filters>
                 <filter>
                   <artifact>*:*</artifact>
                   <excludes>
-                    <exclude>META-INF/*.SF</exclude>
-                    <exclude>META-INF/*.DSA</exclude>
-                    <exclude>META-INF/*.RSA</exclude>
+                    <exclude>META-INF/**</exclude>
                   </excludes>
                 </filter>
               </filters>
@@ -182,10 +221,13 @@
                     <exclude>com/google/**</exclude>
                     <exclude>config/**</exclude>
                     <exclude>data/**</exclude>
+                    <exclude>google/**</exclude>
                     <exclude>plugin.yml</exclude>
                     <exclude>mariadb.properties</exclude>
                     <exclude>driver.properties</exclude>
                     <exclude>deprecated.properties</exclude>
+                    <exclude>INFO_BIN</exclude>
+                    <exclude>INFO_SRC</exclude>
                   </excludes>
                 </filter>
               </filters>
