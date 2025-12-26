@@ -65,7 +65,7 @@ public class PlayerDeathListener implements Listener {
 
         return isAnyCompass
                 && plugin.getEntityManager().getGraveUUIDFromItemStack(itemStack) != null
-                && plugin.getConfig("compass.destroy", event.getEntity()).getBoolean("compass.destroy");
+                && plugin.getConfigManager().getConfigSection("compass.destroy", event.getEntity()).getBoolean("compass.destroy");
     }
 
     /**

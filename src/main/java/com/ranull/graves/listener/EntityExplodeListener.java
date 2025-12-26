@@ -66,7 +66,7 @@ public class EntityExplodeListener implements Listener {
      * @return True if the grave should explode, false otherwise.
      */
     private boolean shouldExplode(Grave grave) {
-        return plugin.getConfig("grave.explode", grave).getBoolean("grave.explode");
+        return plugin.getConfigManager().getConfigSection("grave.explode", grave).getBoolean("grave.explode");
     }
 
     /**
@@ -102,7 +102,7 @@ public class EntityExplodeListener implements Listener {
             // ignored
         }
 
-        if (plugin.getConfig("drop.looted-explosion-effect", grave).getBoolean("drop.looted-explosion-effect", false)) {
+        if (plugin.getConfigManager().getConfigSection("drop.looted-explosion-effect", grave).getBoolean("drop.looted-explosion-effect", false)) {
             try {
                 Location deathLoc = grave.getLocationDeath();
                 Objects.requireNonNull(deathLoc.getWorld())
@@ -121,7 +121,7 @@ public class EntityExplodeListener implements Listener {
             }
         }
 
-        if (plugin.getConfig("drop.explode", grave).getBoolean("drop.explode")) {
+        if (plugin.getConfigManager().getConfigSection("drop.explode", grave).getBoolean("drop.explode")) {
             plugin.getGraveManager().breakGrave(effectiveLoc, grave);
         } else {
             plugin.getGraveManager().removeGrave(grave);
@@ -131,7 +131,7 @@ public class EntityExplodeListener implements Listener {
         plugin.getGraveManager().playEffect("effect.loot", effectiveLoc, grave);
         plugin.getEntityManager().runCommands("event.command.explode", event.getEntity(), effectiveLoc, grave);
 
-        if (plugin.getConfig("zombie.explode", grave).getBoolean("zombie.explode")) {
+        if (plugin.getConfigManager().getConfigSection("zombie.explode", grave).getBoolean("zombie.explode")) {
             plugin.getEntityManager().spawnZombie(effectiveLoc, grave);
         }
     }

@@ -64,12 +64,12 @@ public class PlayerJoinListener implements Listener {
     private void notifyPlayerIfOutdated(Player player) {
         String latestVersion = plugin.getLatestVersion();
         String installedVersion = plugin.getDescription().getVersion();
-        String prefix = plugin.getConfig("message.prefix", player).getString("message.prefix");
+        String prefix = plugin.getConfigManager().getConfigSection("message.prefix", player).getString("message.prefix");
         try {
             int comparisonResult = compareVersions(installedVersion, latestVersion);
 
             if (comparisonResult < 0) {
-                List<String> stringList = plugin.getConfig("message.grave-plugin-version-outdated", player)
+                List<String> stringList = plugin.getConfigManager().getConfigSection("message.grave-plugin-version-outdated", player)
                         .getStringList("message.grave-plugin-version-outdated");
                 if (plugin.getIntegrationManager().hasMiniMessage()) {
                     for (String message : stringList) {
@@ -83,7 +83,7 @@ public class PlayerJoinListener implements Listener {
                     }
                 }
             } else if (comparisonResult > 0) {
-                List<String> stringList = plugin.getConfig("message.grave-plugin-version-development", player)
+                List<String> stringList = plugin.getConfigManager().getConfigSection("message.grave-plugin-version-development", player)
                         .getStringList("message.grave-plugin-version-development");
                 if (plugin.getIntegrationManager().hasMiniMessage()) {
                     for (String message : stringList) {
@@ -101,7 +101,7 @@ public class PlayerJoinListener implements Listener {
                     }
                 }
             } else {
-                String string = plugin.getConfig("message.grave-plugin-version-latest", player)
+                String string = plugin.getConfigManager().getConfigSection("message.grave-plugin-version-latest", player)
                         .getString("message.grave-plugin-version-latest");
                 if (plugin.getIntegrationManager().hasMiniMessage()) {
                     String toConvert = StringUtil.parseString(prefix + string, player, plugin);
@@ -112,7 +112,7 @@ public class PlayerJoinListener implements Listener {
                 }
             }
         } catch (NumberFormatException exception) {
-            List<String> stringList = plugin.getConfig("message.grave-plugin-version-outdated", player)
+            List<String> stringList = plugin.getConfigManager().getConfigSection("message.grave-plugin-version-outdated", player)
                     .getStringList("message.grave-plugin-version-outdated");
             if (plugin.getIntegrationManager().hasMiniMessage()) {
                 for (String message : stringList) {

@@ -72,7 +72,7 @@ public class BlockBreakListener implements Listener {
      * @return True if breaking the grave is allowed, false otherwise.
      */
     private boolean isGraveBreakAllowed(Grave grave) {
-        return plugin.getConfig("grave.break", grave).getBoolean("grave.break");
+        return plugin.getConfigManager().getConfigSection("grave.break", grave).getBoolean("grave.break");
     }
 
     /**
@@ -84,7 +84,7 @@ public class BlockBreakListener implements Listener {
      * @param grave   The grave associated with the block.
      */
     private void handleGraveBreak(BlockBreakEvent event, Player player, Block block, Grave grave) {
-        boolean cfgDrop = plugin.getConfig("drop.break", grave).getBoolean("drop.break");
+        boolean cfgDrop = plugin.getConfigManager().getConfigSection("drop.break", grave).getBoolean("drop.break");
 
         GraveBreakEvent modern = new GraveBreakEvent(block, player, grave);
         modern.setDropItems(cfgDrop);
@@ -103,7 +103,7 @@ public class BlockBreakListener implements Listener {
             boolean dropItemsFinal = modern.isDropItems() && legacy.isDropItems();
             modern.setDropItems(dropItemsFinal);
 
-            if (plugin.getConfig("drop.auto-loot.enabled", grave).getBoolean("drop.auto-loot.enabled")) {
+            if (plugin.getConfigManager().getConfigSection("drop.auto-loot.enabled", grave).getBoolean("drop.auto-loot.enabled")) {
                 handleAutoLoot(event, player, block, grave, modern);
             } else if (dropItemsFinal) {
                 explodeEffectGrave(grave);

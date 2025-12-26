@@ -169,9 +169,9 @@ public class CompatibilityBlockData implements Compatibility {
      */
     @SuppressWarnings("deprecation")
     private void updateSkullBlock(Block block, Grave grave, Graves plugin) {
-        int headType = plugin.getConfig("block.head.type", grave).getInt("block.head.type");
-        String headBase64 = plugin.getConfig("block.head.base64", grave).getString("block.head.base64");
-        String headName = plugin.getConfig("block.head.name", grave).getString("block.head.name");
+        int headType = plugin.getConfigManager().getConfigSection("block.head.type", grave).getInt("block.head.type");
+        String headBase64 = plugin.getConfigManager().getConfigSection("block.head.base64", grave).getString("block.head.base64");
+        String headName = plugin.getConfigManager().getConfigSection("block.head.name", grave).getString("block.head.name");
         Skull skull = (Skull) block.getState();
         Rotatable skullRotate = (Rotatable) block.getBlockData();
 

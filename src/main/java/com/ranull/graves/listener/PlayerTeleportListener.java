@@ -92,7 +92,7 @@ public class PlayerTeleportListener implements Listener {
                 if (graveLocation == null || !location.getWorld().equals(graveLocation.getWorld())) continue;
 
                 if (location.distance(graveLocation) <= 15) {
-                    String configured = plugin.getConfig("compass.name", grave).getString("compass.name");
+                    String configured = plugin.getConfigManager().getConfigSection("compass.name", grave).getString("compass.name");
                     if (configured == null) continue;
 
                     String compassName = StringUtil.parseString("&f" + configured, grave, plugin);

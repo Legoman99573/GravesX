@@ -90,9 +90,9 @@ public class FurnitureLib extends EntityDataManager {
      * @param grave    The grave associated with the furniture.
      */
     public void createFurniture(Location location, Grave grave) {
-        if (plugin.getConfig("furniturelib.enabled", grave)
+        if (plugin.getConfigManager().getConfigSection("furniturelib.enabled", grave)
                 .getBoolean("furniturelib.enabled")) {
-            String name = plugin.getConfig("furniturelib.name", grave)
+            String name = plugin.getConfigManager().getConfigSection("furniturelib.name", grave)
                     .getString("furniturelib.name", "");
             Project project = furnitureLib.getFurnitureManager().getProject(name);
 
@@ -109,11 +109,11 @@ public class FurnitureLib extends EntityDataManager {
                             .filter(signLocation -> signLocation.getBlock().getType().name().contains("SIGN"))
                             .forEach(signLocation -> setSign(
                                     signLocation.getBlock(),
-                                    plugin.getConfig("furniturelib.line", grave).getStringList("furniturelib.line"),
+                                    plugin.getConfigManager().getConfigSection("furniturelib.line", grave).getStringList("furniturelib.line"),
                                     grave
                             ));
 
-                    if (plugin.getConfig("furniturelib.head.replace", grave).getBoolean("furniturelib.head.replace")) {
+                    if (plugin.getConfigManager().getConfigSection("furniturelib.head.replace", grave).getBoolean("furniturelib.head.replace")) {
                         objectID.getPacketList().stream()
                                 .filter(fE -> fE instanceof fContainerEntity)
                                 .map(fE -> (fContainerEntity) fE)
@@ -239,7 +239,7 @@ public class FurnitureLib extends EntityDataManager {
     }
 
     private void setSkull(fContainerEntity fEntity, Grave grave) {
-        List<String> materialList = plugin.getConfig("furniturelib.head.material", grave)
+        List<String> materialList = plugin.getConfigManager().getConfigSection("furniturelib.head.material", grave)
                 .getStringList("furniturelib.head.material");
         ItemStack itemStack = plugin.getCompatibility().getSkullItemStack(grave, plugin);
         if (fEntity.getItemInMainHand() != null && materialList.contains(fEntity.getItemInMainHand().getType().name())

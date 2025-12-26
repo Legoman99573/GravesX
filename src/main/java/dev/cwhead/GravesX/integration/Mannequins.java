@@ -84,7 +84,7 @@ public final class Mannequins extends EntityDataManager {
         plugin.getGravesXScheduler().runTask(() -> {
             if (!supported) return;
 
-            if (!plugin.getConfig("mannequins.corpse.enabled", grave).getBoolean("mannequins.corpse.enabled")
+            if (!plugin.getConfigManager().getConfigSection("mannequins.corpse.enabled", grave).getBoolean("mannequins.corpse.enabled")
                     || grave.getOwnerType() != EntityType.PLAYER) return;
 
             if (location == null || location.getWorld() == null) return;
@@ -96,9 +96,9 @@ public final class Mannequins extends EntityDataManager {
 
             Location mannequinLocation = location.clone();
             try {
-                double x = plugin.getConfig("mannequins.corpse.offset.x", grave).getDouble("mannequins.corpse.offset.x");
-                double y = plugin.getConfig("mannequins.corpse.offset.y", grave).getDouble("mannequins.corpse.offset.y");
-                double z = plugin.getConfig("mannequins.corpse.offset.z", grave).getDouble("mannequins.corpse.offset.z");
+                double x = plugin.getConfigManager().getConfigSection("mannequins.corpse.offset.x", grave).getDouble("mannequins.corpse.offset.x");
+                double y = plugin.getConfigManager().getConfigSection("mannequins.corpse.offset.y", grave).getDouble("mannequins.corpse.offset.y");
+                double z = plugin.getConfigManager().getConfigSection("mannequins.corpse.offset.z", grave).getDouble("mannequins.corpse.offset.z");
                 mannequinLocation.add(x, y, z);
             } catch (IllegalArgumentException ignored) {
                 mannequinLocation.add(-0.5, 0, -0.5);
@@ -150,10 +150,10 @@ public final class Mannequins extends EntityDataManager {
             applySkinAsync(living, grave);
 
             // Equipment
-            if (plugin.getConfig("mannequins.corpse.armor", grave).getBoolean("mannequins.corpse.armor")) {
+            if (plugin.getConfigManager().getConfigSection("mannequins.corpse.armor", grave).getBoolean("mannequins.corpse.armor")) {
                 equipArmor(living, grave);
             }
-            if (plugin.getConfig("mannequins.corpse.hand", grave).getBoolean("mannequins.corpse.hand")) {
+            if (plugin.getConfigManager().getConfigSection("mannequins.corpse.hand", grave).getBoolean("mannequins.corpse.hand")) {
                 equipHands(living, grave);
             }
         });

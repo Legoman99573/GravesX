@@ -106,7 +106,7 @@ public class MultiPaper {
                 final String title;
                 if (plugin.getIntegrationManager().hasMiniMessage()) {
                     final String newTitle = StringUtil.parseString(
-                            plugin.getConfig("gui.grave.title", grave).getString("gui.grave.title"),
+                            plugin.getConfigManager().getConfigSection("gui.grave.title", grave).getString("gui.grave.title"),
                             grave.getLocationDeath(),
                             grave,
                             plugin
@@ -114,7 +114,7 @@ public class MultiPaper {
                     title = MiniMessage.parseString(newTitle);
                 } else {
                     title = StringUtil.parseString(
-                            plugin.getConfig("gui.grave.title", grave).getString("gui.grave.title"),
+                            plugin.getConfigManager().getConfigSection("gui.grave.title", grave).getString("gui.grave.title"),
                             grave.getLocationDeath(),
                             grave,
                             plugin
@@ -122,7 +122,7 @@ public class MultiPaper {
                 }
 
                 final Grave.StorageMode storageMode = plugin.getGraveManager()
-                        .getStorageMode(plugin.getConfig("storage.mode", grave).getString("storage.mode"));
+                        .getStorageMode(plugin.getConfigManager().getConfigSection("storage.mode", grave).getString("storage.mode"));
 
                 grave.setInventory(
                         plugin.getGraveManager().createGraveInventory(

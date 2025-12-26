@@ -44,16 +44,16 @@ public final class FancyNPCs extends EntityDataManager {
 
     public void createCorpse(UUID uuid, Location location, Grave grave) {
         plugin.getGravesXScheduler().runTask(() -> {
-            if (!plugin.getConfig("fancynpcs.corpse.enabled", grave).getBoolean("fancynpcs.corpse.enabled")
+            if (!plugin.getConfigManager().getConfigSection("fancynpcs.corpse.enabled", grave).getBoolean("fancynpcs.corpse.enabled")
                     || grave.getOwnerType() != EntityType.PLAYER) return;
 
             location.getBlock().setType(Material.AIR);
             Location npcLocation = location.clone();
 
             try {
-                double x = plugin.getConfig("fancynpcs.corpse.offset.x", grave).getDouble("fancynpcs.corpse.offset.x");
-                double y = plugin.getConfig("fancynpcs.corpse.offset.y", grave).getDouble("fancynpcs.corpse.offset.y");
-                double z = plugin.getConfig("fancynpcs.corpse.offset.z", grave).getDouble("fancynpcs.corpse.offset.z");
+                double x = plugin.getConfigManager().getConfigSection("fancynpcs.corpse.offset.x", grave).getDouble("fancynpcs.corpse.offset.x");
+                double y = plugin.getConfigManager().getConfigSection("fancynpcs.corpse.offset.y", grave).getDouble("fancynpcs.corpse.offset.y");
+                double z = plugin.getConfigManager().getConfigSection("fancynpcs.corpse.offset.z", grave).getDouble("fancynpcs.corpse.offset.z");
                 npcLocation.add(x, y, z);
             } catch (IllegalArgumentException ignored) {
                 npcLocation.add(-0.5, 0, -0.5);
@@ -85,12 +85,12 @@ public final class FancyNPCs extends EntityDataManager {
             npc.getData().setDisplayName("<empty>");
 
             // Equip armor
-            if (plugin.getConfig("fancynpcs.corpse.armor", grave).getBoolean("fancynpcs.corpse.armor")) {
+            if (plugin.getConfigManager().getConfigSection("fancynpcs.corpse.armor", grave).getBoolean("fancynpcs.corpse.armor")) {
                 equipArmor(npc, grave);
             }
 
             // Equip hands
-            if (plugin.getConfig("fancynpcs.corpse.hand", grave).getBoolean("fancynpcs.corpse.hand")) {
+            if (plugin.getConfigManager().getConfigSection("fancynpcs.corpse.hand", grave).getBoolean("fancynpcs.corpse.hand")) {
                 equipHands(npc, grave);
             }
 
@@ -100,16 +100,16 @@ public final class FancyNPCs extends EntityDataManager {
 
     public void createBedrockcompatCorpse(UUID uuid, Location location, Grave grave) {
         plugin.getGravesXScheduler().runTask(() -> {
-            if (!plugin.getConfig("fancynpcs.corpse.enabled", grave).getBoolean("fancynpcs.corpse.enabled")
+            if (!plugin.getConfigManager().getConfigSection("fancynpcs.corpse.enabled", grave).getBoolean("fancynpcs.corpse.enabled")
                     || grave.getOwnerType() != EntityType.PLAYER) return;
 
             location.getBlock().setType(Material.AIR);
             Location npcLocation = location.clone();
 
             try {
-                double x = plugin.getConfig("fancynpcs.corpse.offset.x", grave).getDouble("fancynpcs.corpse.offset.x");
-                double y = plugin.getConfig("fancynpcs.corpse.offset.y", grave).getDouble("fancynpcs.corpse.offset.y");
-                double z = plugin.getConfig("fancynpcs.corpse.offset.z", grave).getDouble("fancynpcs.corpse.offset.z");
+                double x = plugin.getConfigManager().getConfigSection("fancynpcs.corpse.offset.x", grave).getDouble("fancynpcs.corpse.offset.x");
+                double y = plugin.getConfigManager().getConfigSection("fancynpcs.corpse.offset.y", grave).getDouble("fancynpcs.corpse.offset.y");
+                double z = plugin.getConfigManager().getConfigSection("fancynpcs.corpse.offset.z", grave).getDouble("fancynpcs.corpse.offset.z");
                 npcLocation.add(x, y, z);
             } catch (IllegalArgumentException ignored) {
                 npcLocation.add(-0.5, 0, -0.5);
@@ -140,11 +140,11 @@ public final class FancyNPCs extends EntityDataManager {
             npc.getData().setShowInTab(false);
             npc.getData().setDisplayName("<empty>");
 
-            if (plugin.getConfig("fancynpcs.corpse.armor", grave).getBoolean("fancynpcs.corpse.armor")) {
+            if (plugin.getConfigManager().getConfigSection("fancynpcs.corpse.armor", grave).getBoolean("fancynpcs.corpse.armor")) {
                 equipArmor(npc, grave);
             }
 
-            if (plugin.getConfig("fancynpcs.corpse.hand", grave).getBoolean("fancynpcs.corpse.hand")) {
+            if (plugin.getConfigManager().getConfigSection("fancynpcs.corpse.hand", grave).getBoolean("fancynpcs.corpse.hand")) {
                 equipHands(npc, grave);
             }
 

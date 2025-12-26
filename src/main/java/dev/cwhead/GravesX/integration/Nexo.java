@@ -135,10 +135,10 @@ public class Nexo extends EntityDataManager {
      * @param grave    The grave related to the furniture.
      */
     public void createFurniture(Location location, Grave grave) {
-        if (plugin.getConfig("nexo.furniture.enabled", grave)
+        if (plugin.getConfigManager().getConfigSection("nexo.furniture.enabled", grave)
                 .getBoolean("nexo.furniture.enabled")) {
             try {
-                String name = plugin.getConfig("nexo.furniture.name", grave)
+                String name = plugin.getConfigManager().getConfigSection("nexo.furniture.name", grave)
                         .getString("nexo.furniture.name", "");
                 FurnitureMechanic furnitureMechanic = getFurnitureMechanic(name);
 
@@ -201,8 +201,8 @@ public class Nexo extends EntityDataManager {
      * @param grave    The grave related to the block.
      */
     public void createBlock(Location location, Grave grave) {
-        if (plugin.getConfig("nexo.block.enabled", grave).getBoolean("nexo.block.enabled")) {
-            String name = plugin.getConfig("nexo.block.name", grave).getString("nexo.block.name", "");
+        if (plugin.getConfigManager().getConfigSection("nexo.block.enabled", grave).getBoolean("nexo.block.enabled")) {
+            String name = plugin.getConfigManager().getConfigSection("nexo.block.name", grave).getString("nexo.block.name", "");
 
             if (!name.isEmpty() && location.getWorld() != null) {
                 Block block = location.getBlock();

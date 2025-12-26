@@ -141,7 +141,7 @@ public class PlayerMoveListener implements Listener {
         Grave grave = plugin.getCacheManager().getGraveMap().get(blockData.getGraveUUID());
         if (grave == null) return;
 
-        if (plugin.getConfig("block.walk-over", grave).getBoolean("block.walk-over")
+        if (plugin.getConfigManager().getConfigSection("block.walk-over", grave).getBoolean("block.walk-over")
                 && plugin.getEntityManager().canOpenGrave(player, grave)) {
 
             plugin.getGraveManager().cleanupCompasses(player, grave);
@@ -209,7 +209,7 @@ public class PlayerMoveListener implements Listener {
 
             if (location.distance(graveLocation) > 15) continue;
 
-            String configuredName = plugin.getConfig("compass.name", grave).getString("compass.name");
+            String configuredName = plugin.getConfigManager().getConfigSection("compass.name", grave).getString("compass.name");
             if (configuredName == null) continue;
 
             String expectedName = StringUtil.parseString("&f" + configuredName, grave, plugin);

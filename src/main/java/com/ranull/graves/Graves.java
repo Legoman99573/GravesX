@@ -14,10 +14,7 @@ import dev.cwhead.GravesX.command.GxModulesCommand;
 import dev.cwhead.GravesX.debug.KeepInventoryDetector;
 import dev.cwhead.GravesX.debug.LateEnableHook;
 import dev.cwhead.GravesX.listener.PlayerAfterRespawnListener;
-import dev.cwhead.GravesX.manager.DebugManager;
-import dev.cwhead.GravesX.manager.MetricsManager;
-import dev.cwhead.GravesX.manager.ParticleManager;
-import dev.cwhead.GravesX.manager.PermissionManager;
+import dev.cwhead.GravesX.manager.*;
 import dev.cwhead.GravesX.module.listener.DependencyEnableListener;
 import dev.cwhead.GravesX.module.util.LibbyImporter;
 import dev.cwhead.GravesX.module.ModuleManager;
@@ -69,6 +66,7 @@ public class Graves extends JavaPlugin {
     private ParticleManager particleManager;
     private DebugManager debugManager;
     private PermissionManager permissionManager;
+    private ConfigManager configManager;
     private Compatibility compatibility;
     private FileConfiguration fileConfiguration;
     private boolean isDevelopmentBuild = false;
@@ -82,8 +80,18 @@ public class Graves extends JavaPlugin {
     @Override
     public void onLoad() {
         debugManager = new DebugManager(this);
-        File gravesDirectory = new File(getDataFolder().getParentFile(), "Graves");
-        File newGravesDirectory = new File(getDataFolder().getParentFile(), "GravesX");
+        configManager = new ConfigManager(this);
+
+        // Ensure plugin data folder exists (some servers won't create it until first save)
+        if (!getDataFolder().exists() && !getDataFolder().mkdirs()) {
+            getLogger().severe("Failed to create plugin data folder: " + getDataFolder().getAbsolutePath());
+            // continue anyway; some file operations may fail and will log later
+        }
+
+        // Migrate legacy folder name: /plugins/Graves -> /plugins/GravesX
+        File pluginsDir = getDataFolder().getParentFile();
+        File gravesDirectory = new File(pluginsDir, "Graves");
+        File newGravesDirectory = new File(pluginsDir, "GravesX");
 
         if (gravesDirectory.exists() && gravesDirectory.isDirectory()) {
             getLogger().warning("Your server has legacy version of Graves. Migrating the folder to GravesX for you.");
@@ -94,23 +102,41 @@ public class Graves extends JavaPlugin {
             }
         }
 
-        saveDefaultConfig();
+        // IMPORTANT: after any migration, re-ensure the data folder exists
+        if (!getDataFolder().exists() && !getDataFolder().mkdirs()) {
+            getLogger().severe("Failed to create plugin data folder after migration: " + getDataFolder().getAbsolutePath());
+        }
+
+        if (configManager == null) {
+            configManager = new dev.cwhead.GravesX.manager.ConfigManager(this);
+        }
+
+        configManager.ensureDefaultsExist();
+
         GravesXAddon.ensureAddonRoot(this);
 
         integrationManager = new IntegrationManager(this);
         moduleManager = new ModuleManager(this);
         moduleManager.setLibraryImporter(new LibbyImporter(this));
-        // Decide whether to defer module load
-        deferModuleLoad = moduleManager.shouldDeferLoadOnExternalPlugins();
 
+        deferModuleLoad = moduleManager.shouldDeferLoadOnExternalPlugins();
     }
 
     @Override
     public void onEnable() {
-        loadLibraries();
         debugManager = new DebugManager(this);
-        versionManager = new VersionManager();
 
+        if (configManager == null) {
+            configManager = new dev.cwhead.GravesX.manager.ConfigManager(this);
+        }
+
+        configManager.ensureDefaultsExist();
+        configManager.updateIfNeeded(isPluginDevelopmentBuild());
+
+        configManager.reload();
+        loadLibraries();
+
+        versionManager = new VersionManager();
         graveScheduler = UniversalScheduler.getScheduler(this);
 
         integrationManager.load();
@@ -134,6 +160,7 @@ public class Graves extends JavaPlugin {
         this.moduleManager.setLibraryImporter(new LibbyImporter(this));
         moduleManager.loadAll();
         moduleManager.enableAll();
+
         depListener = new DependencyEnableListener(moduleManager);
         getServer().getPluginManager().registerEvents(depListener, this);
         getGravesXScheduler().runTask(moduleManager::tryEnablePending);
@@ -148,7 +175,6 @@ public class Graves extends JavaPlugin {
             updateChecker();
             RegisterSoftCrashHandler();
             KeepInventoryDetector.logWorldsWithGameruleKeepInventoryTrue(this);
-            updateConfig();
         });
 
         getGravesXScheduler().runTaskLater(() -> KeepInventoryDetector.install(this), 1L);
@@ -312,36 +338,25 @@ public class Graves extends JavaPlugin {
 
     @Override
     public void saveDefaultConfig() {
-        ResourceUtil.copyResources("config", getConfigFolder().getPath(), false, this);
+        getConfigManager().ensureDefaultsExist();
     }
 
     @Override
     public void reloadConfig() {
-        File singleConfigFile = new File(getDataFolder(), "config.yml");
-
-        if (!singleConfigFile.exists()) {
-            fileConfiguration = getConfigFiles(getConfigFolder());
-        } else {
-            fileConfiguration = getConfigFile(singleConfigFile);
-            loadResourceDefaults(fileConfiguration, singleConfigFile.getName());
-        }
+        getConfigManager().reload();
     }
 
     @Override
     @NotNull
     public FileConfiguration getConfig() {
-        if (fileConfiguration == null) {
-            reloadConfig();
-        }
-
-        return fileConfiguration;
+        return getConfigManager().config();
     }
 
     public void reload() {
-        saveDefaultConfig();
+        getConfigManager().ensureDefaultsExist();
+        getConfigManager().updateIfNeeded(isPluginDevelopmentBuild());
+        getConfigManager().reload();
         saveTextFiles();
-        reloadConfig();
-        updateConfig();
         unregisterListeners();
         registerListeners();
         // dataManager.reload();
@@ -349,7 +364,9 @@ public class Graves extends JavaPlugin {
         try {
             registerRecipes();
         } catch (Exception e) {
-            recipeManager.reload();
+            if (recipeManager != null) {
+                recipeManager.reload();
+            }
         }
 
         infoMessage(getName() + " reloaded.");
@@ -521,112 +538,6 @@ public class Graves extends JavaPlugin {
             case "severe", "error" -> getLogger().severe("Integration: " + string);
             case "info", "debug" -> getLogger().info("Integration: " + string);
             default -> getLogger().info("Integration: " + string);
-        }
-    }
-
-    /**
-     * Checks the version of the current configuration file and updates it
-     * if it is outdated. Moves the old configs to an "outdated" directory
-     * and replaces them with updated ones from the plugin's resources.
-     */
-    private void updateConfig() {
-        int currentConfigVersion = 23;
-        File configFolder = new File(getDataFolder(), "config");
-
-        // Load the main config file to check the version
-        File mainConfigFile = new File(configFolder, "config.yml");
-        FileConfiguration mainConfig = YamlConfiguration.loadConfiguration(mainConfigFile);
-        int configVersion = mainConfig.getInt("config-version", 0);
-
-        if (configVersion != currentConfigVersion || isPluginDevelopmentBuild()) {
-            // Create the outdated folder if it doesn't exist
-            new File(getDataFolder(), "outdated").mkdirs();
-
-            // Backup the outdated config files
-            backupOutdatedConfigs(configVersion);
-
-            // Log a warning message
-            warningMessage("Outdated config detected (v" + configVersion + "), current version is (v"
-                    + currentConfigVersion + "). Moving old configs to outdated folder and generating new config files.");
-
-            // Update each config file directly
-            updateConfigFile("config.yml", currentConfigVersion, true);
-            updateConfigFile("entity.yml", currentConfigVersion, false);
-            updateConfigFile("grave.yml", currentConfigVersion, false);
-
-            // Reload the main config after all updates
-            reloadConfig();
-        }
-    }
-
-    /**
-     * Backs up old configuration files to the "outdated" directory, appending
-     * the current config version to their filenames.
-     *
-     * @param configVersion the version number of the outdated config files
-     */
-    private void backupOutdatedConfigs(double configVersion) {
-        File configFolder = new File(getDataFolder(), "config");
-        String[] configFiles = {"config.yml", "entity.yml", "grave.yml"};
-
-        File outdatedFolder = new File(getDataFolder(), "outdated");
-        outdatedFolder.mkdirs(); // Ensure the directory exists
-
-        for (String configFileName : configFiles) {
-            File configFile = new File(configFolder, configFileName);
-            if (configFile.exists()) {
-                File backupFile = new File(outdatedFolder, configFileName + "-" + configVersion);
-                try {
-                    Files.copy(configFile.toPath(), backupFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                } catch (IOException e) {
-                    logStackTrace(e);
-                }
-            }
-        }
-    }
-
-    /**
-     * Updates a single configuration file from the plugin's internal resources using ConfigUpdater.
-     * Optionally sets the config-version field after updating.
-     *
-     * @param fileName                 the name of the config file to update
-     * @param currentConfigVersion     the current config version to set
-     * @param shouldUpdateConfigVersion whether to update the "config-version" field in the file
-     */
-    private void updateConfigFile(String fileName, int currentConfigVersion, boolean shouldUpdateConfigVersion) {
-        File configFile = new File(getDataFolder(), "config/" + fileName);
-        if (configFile.exists()) {
-            try (InputStream resourceStream = getResource("config/" + fileName)) {
-                // Use ConfigUpdater to update the file
-                String resourceName = "config/" + fileName;
-
-                if (resourceStream == null) {
-                    getLogger().warning("Resource " + resourceName + " not found in the JAR.");
-                    return;
-                }
-
-                ConfigUpdater.update(
-                        this,
-                        resourceName,
-                        configFile,
-                        Collections.emptyList()
-                );
-
-                if (shouldUpdateConfigVersion) {
-                    // Load the updated config and set the new version
-                    FileConfiguration config = YamlConfiguration.loadConfiguration(configFile);
-                    config.set("config-version", currentConfigVersion);
-                    config.save(configFile);
-                }
-
-                getLogger().info("Config updated: " + configFile.getAbsolutePath());
-
-            } catch (IOException e) {
-                getLogger().severe("Failed to update " + fileName + ": " + e.getMessage());
-                logStackTrace(e);
-            }
-        } else {
-            getLogger().severe("File " + configFile.getAbsolutePath() + " does not exist.");
         }
     }
 
@@ -940,6 +851,13 @@ public class Graves extends JavaPlugin {
     }
 
     /**
+     * @return the {@link ConfigManager} that manages Configuration used by this plugin.
+     */
+    public ConfigManager getConfigManager() {
+        return configManager;
+    }
+
+    /**
      * @return the {@link Compatibility} handler that ensures functionality across Minecraft versions and server platforms.
      */
     public Compatibility getCompatibility() {
@@ -976,9 +894,15 @@ public class Graves extends JavaPlugin {
      * @param config the config key.
      * @param grave the grave instance.
      * @return the matching configuration section, or default if none match.
+     * @deprecated Will be removed in {@code 4.9.12.1}. Use
+     * {@link #getConfigManager()}{@link dev.cwhead.GravesX.manager.ConfigManager#getConfigSection(String, Grave)}
+     * instead.
      */
+    @Deprecated(since = "4.9.10.1")
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.12.1")
     public ConfigurationSection getConfig(String config, Grave grave) {
-        return getConfig(config, grave.getOwnerType(), grave.getPermissionList());
+        debugMessage("Graves#getConfig(String, Grave) is deprecated and will be removed in 4.9.12.1. Use Graves#getConfigManager().getConfigSection(String, Grave) instead", 2);
+        return getConfigManager().getConfigSection(config, grave);
     }
 
     /**
@@ -988,17 +912,15 @@ public class Graves extends JavaPlugin {
      * @param config the config key.
      * @param graveList the list of graves.
      * @return the matching configuration section, or default if none match.
+     * @deprecated Will be removed in {@code 4.9.12.1}. Use
+     * {@link #getConfigManager()}{@link ConfigManager#getConfigSection(String, List)}
+     * instead.
      */
+    @Deprecated(since = "4.9.10.1")
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.12.1")
     public ConfigurationSection getConfig(String config, List<Grave> graveList) {
-        if (graveList == null) return null;
-
-        for (Grave grave : graveList) {
-            ConfigurationSection section = getConfig(config, grave.getOwnerType(), grave.getPermissionList());
-            if (section != null) {
-                return section;
-            }
-        }
-        return null;
+        debugMessage("Graves#getConfig(String, List<Grave>) is deprecated and will be removed in 4.9.12.1. Use Graves#getConfigManager().getConfigSection(String, List<Grave>) instead", 2);
+        return getConfigManager().getConfigSection(config, graveList);
     }
 
     /**
@@ -1007,9 +929,15 @@ public class Graves extends JavaPlugin {
      * @param config the config key.
      * @param entity the entity.
      * @return the matching configuration section, or default if none match.
+     * @deprecated Will be removed in {@code 4.9.12.1}. Use
+     * {@link #getConfigManager()}{@link ConfigManager#getConfigSection(String, Entity)}
+     * instead.
      */
+    @Deprecated(since = "4.9.10.1")
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.12.1")
     public ConfigurationSection getConfig(String config, Entity entity) {
-        return getConfig(config, entity.getType(), getPermissionList(entity));
+        debugMessage("Graves#getConfig(String, Entity) is deprecated and will be removed in 4.9.12.1. Use Graves#getConfigManager().getConfigSection(String, Entity) instead", 2);
+        return getConfigManager().getConfigSection(config, entity);
     }
 
     /**
@@ -1019,9 +947,15 @@ public class Graves extends JavaPlugin {
      * @param entity the entity.
      * @param permissionList the permissions associated with the entity.
      * @return the matching configuration section, or default if none match.
+     * @deprecated Will be removed in {@code 4.9.12.1}. Use
+     * {@link #getConfigManager()}{@link ConfigManager#getConfigSection(String, Entity, List)}
+     * instead.
      */
+    @Deprecated(since = "4.9.10.1")
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.12.1")
     public ConfigurationSection getConfig(String config, Entity entity, List<String> permissionList) {
-        return getConfig(config, entity.getType(), permissionList);
+        debugMessage("Graves#getConfig(String, Entity, List<String>) is deprecated and will be removed in 4.9.12.1. Use Graves#getConfigManager().getConfigSection(String, Entity, List<String>) instead", 2);
+        return getConfigManager().getConfigSection(config, entity, permissionList);
     }
 
     /**
@@ -1031,67 +965,15 @@ public class Graves extends JavaPlugin {
      * @param entityType the type of entity.
      * @param permissionList a list of permissions to prioritize.
      * @return the best matching configuration section.
+     * @deprecated Will be removed in {@code 4.9.12.1}. Use
+     * {@link #getConfigManager()}{@link ConfigManager#getConfigSection(String, EntityType, java.util.List)}
+     * instead.
      */
+    @Deprecated(since = "4.9.10.1")
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.12.1")
     public ConfigurationSection getConfig(String config, EntityType entityType, List<String> permissionList) {
-        if (permissionList != null && !permissionList.isEmpty()) {
-            for (String permission : permissionList) {
-                String section = "settings.permission." + permission;
-
-                if (getConfig().isConfigurationSection(section)) {
-                    ConfigurationSection configurationSection = getConfig().getConfigurationSection(section);
-
-                    if (configurationSection != null && (versionManager.hasConfigContains()
-                            ? configurationSection.contains(config, true)
-                            : configurationSection.contains(config))) {
-                        return configurationSection;
-                    }
-                }
-            }
-        }
-
-        if (entityType != null) {
-            String section = "settings.entity." + entityType.name();
-
-            if (getConfig().isConfigurationSection(section)) {
-                ConfigurationSection configurationSection = getConfig().getConfigurationSection(section);
-
-                if (configurationSection != null && (versionManager.hasConfigContains()
-                        ? configurationSection.contains(config, true)
-                        : configurationSection.contains(config))) {
-                    return configurationSection;
-                }
-            }
-        }
-
-        return getConfig().getConfigurationSection("settings.default.default");
-    }
-
-    /**
-     * Loads default values from a resource YAML file into the provided configuration.
-     *
-     * @param fileConfiguration the configuration to modify.
-     * @param resource the internal resource path.
-     */
-    private void loadResourceDefaults(FileConfiguration fileConfiguration, String resource) {
-        InputStream inputStream = getResource(resource);
-
-        if (inputStream != null) {
-            fileConfiguration.addDefaults(YamlConfiguration
-                    .loadConfiguration(new InputStreamReader(inputStream, UTF_8)));
-        }
-    }
-
-    /**
-     * Forces default values to be copied and applied in the configuration.
-     *
-     * @param fileConfiguration the configuration to apply defaults to.
-     */
-    private void bakeDefaults(FileConfiguration fileConfiguration) {
-        try {
-            fileConfiguration.options().copyDefaults(true);
-            fileConfiguration.loadFromString(fileConfiguration.saveToString());
-        } catch (InvalidConfigurationException ignored) {
-        }
+        debugMessage("Graves#getConfig(String, EntityType, List<String>) is deprecated and will be removed in 4.9.12.1. Use Graves#getConfigManager().getConfigSection(String, EntityType, List<String>) instead", 2);
+        return getConfigManager().getConfigSection(config, entityType, permissionList);
     }
 
     /**
@@ -1099,112 +981,22 @@ public class Graves extends JavaPlugin {
      *
      * @param entity the entity (usually a Player).
      * @return a sorted list of permission keys that match configuration sections.
+     * @deprecated Will be removed in {@code 4.9.12.1}. Use
+     * {@link #getConfigManager()}{@link ConfigManager#getPermissionList(Entity)}
+     * instead.
      */
+    @Deprecated(since = "4.9.10.1")
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.12.1")
     public List<String> getPermissionList(Entity entity) {
-        List<String> permissionList = new ArrayList<>();
-        List<String> permissionListSorted = new ArrayList<>();
-
-        if (entity instanceof Player player) {
-            for (PermissionAttachmentInfo permissionAttachmentInfo : player.getEffectivePermissions()) {
-                if (permissionAttachmentInfo.getPermission().startsWith("graves.permission.")) {
-                    String permission = permissionAttachmentInfo.getPermission()
-                            .replace("graves.permission.", "").toLowerCase();
-
-                    if (getConfig().isConfigurationSection("settings.permission." + permission)) {
-                        permissionList.add(permission);
-                    }
-                }
-            }
-
-            ConfigurationSection configurationSection = getConfig().getConfigurationSection("settings.permission");
-
-            if (configurationSection != null) {
-                for (String permission : configurationSection.getKeys(false)) {
-                    if (permissionList.contains(permission)) {
-                        permissionListSorted.add(permission);
-                    }
-                }
-            }
-        }
-
-        return permissionListSorted;
-    }
-
-    /**
-     * Recursively loads all valid YAML configuration files from a folder and merges them into one configuration.
-     *
-     * @param folder the folder to scan.
-     * @return the resulting merged configuration.
-     */
-    private FileConfiguration getConfigFiles(File folder) {
-        FileConfiguration fileConfiguration = new YamlConfiguration();
-        File[] files = folder.listFiles();
-
-        if (files != null) {
-            Arrays.sort(files);
-
-            List<File> fileList = new LinkedList<>(Arrays.asList(files));
-            File mainConfig = new File(getConfigFolder(), "config.yml");
-
-            if (fileList.contains(mainConfig)) {
-                fileList.remove(mainConfig);
-                fileList.add(0, mainConfig);
-            }
-
-            for (File file : fileList) {
-                if (YAMLUtil.isValidYAML(file)) {
-                    if (file.isDirectory()) {
-                        fileConfiguration.addDefaults(getConfigFiles(file));
-                    } else {
-                        FileConfiguration savedFileConfiguration = getConfigFile(file);
-
-                        if (savedFileConfiguration != null) {
-                            fileConfiguration.addDefaults(savedFileConfiguration);
-                            bakeDefaults(fileConfiguration);
-                            loadResourceDefaults(fileConfiguration, "config" + File.separator + file.getName());
-                        } else {
-                            warningMessage("Unable to load config " + file.getName());
-                        }
-                    }
-                }
-            }
-        }
-
-        return fileConfiguration;
-    }
-
-    /**
-     * Loads a YAML file into a {@link FileConfiguration} if valid.
-     *
-     * @param file the file to load.
-     * @return the configuration or {@code null} if loading failed.
-     */
-    private FileConfiguration getConfigFile(File file) {
-        FileConfiguration fileConfiguration = null;
-
-        if (YAMLUtil.isValidYAML(file)) {
-            try {
-                fileConfiguration = YamlConfiguration.loadConfiguration(file);
-            } catch (IllegalArgumentException exception) {
-                logStackTrace(exception);
-            }
-        }
-
-        return fileConfiguration;
-    }
-
-    /**
-     * @return the folder where Graves configuration files are stored.
-     */
-    public final File getConfigFolder() {
-        return new File(getDataFolder(), "config");
+        debugMessage("Graves#getPermissionList(Entity) is deprecated and will be removed in 4.9.12.1. Use Graves#getConfigManager().getPermissionList(Entity) instead", 2);
+        return getConfigManager().getPermissionList(entity);
     }
 
     /**
      * @return the parent folder where all plugins are stored.
      */
     public final File getPluginsFolder() {
-        return getDataFolder().getParentFile();
+        return getConfigManager().getPluginsFolder();
     }
 
     /**

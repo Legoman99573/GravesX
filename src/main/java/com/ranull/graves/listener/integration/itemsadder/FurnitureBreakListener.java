@@ -39,7 +39,7 @@ public class FurnitureBreakListener implements Listener {
         Player player = event.getPlayer();
 
         // If the player has permission to break graves, allow it
-        if (plugin.getConfig("grave.break", player).getBoolean("grave.break")) return;
+        if (plugin.getConfigManager().getConfigSection("grave.break", player).getBoolean("grave.break")) return;
 
         // Retrieve the grave associated with the furniture entity
         Grave grave = plugin.getEntityDataManager().getGrave(event.getBukkitEntity());
@@ -48,8 +48,8 @@ public class FurnitureBreakListener implements Listener {
 
         // If the furniture is part of a grave and matches the configured ItemsAdder furniture, cancel the event
         if (grave != null) {
-            if (plugin.getConfig("itemsadder.furniture.enabled", player).getBoolean("itemsadder.furniture.enabled")
-                    && furnitureId.equals(plugin.getConfig("itemsadder.furniture.name", player).getString("itemsadder.furniture.name"))) {
+            if (plugin.getConfigManager().getConfigSection("itemsadder.furniture.enabled", player).getBoolean("itemsadder.furniture.enabled")
+                    && furnitureId.equals(plugin.getConfigManager().getConfigSection("itemsadder.furniture.name", player).getString("itemsadder.furniture.name"))) {
                 event.setCancelled(true);
             }
         }

@@ -80,7 +80,7 @@ public class InventoryDragListener implements Listener {
                     Grave grave = plugin.getCacheManager().getGraveMap().get(graveUUID);
                     if (grave == null) continue;
 
-                    String configured = plugin.getConfig("compass.name", grave).getString("compass.name");
+                    String configured = plugin.getConfigManager().getConfigSection("compass.name", grave).getString("compass.name");
                     String parsedLegacy = StringUtil.parseString("&f" + configured, grave, plugin);
                     String expectedName = plugin.getIntegrationManager().hasMiniMessage()
                             ? MiniMessage.parseString(parsedLegacy)

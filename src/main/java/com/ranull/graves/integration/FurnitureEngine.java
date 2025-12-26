@@ -80,8 +80,8 @@ public class FurnitureEngine extends EntityDataManager {
      */
     @Deprecated
     public void createFurniture(Location location, Grave grave) {
-        if (plugin.getConfig("furnitureengine.enabled", grave).getBoolean("furnitureengine.enabled")) {
-            String name = plugin.getConfig("furnitureengine.name", grave).getString("furnitureengine.name", "");
+        if (plugin.getConfigManager().getConfigSection("furnitureengine.enabled", grave).getBoolean("furnitureengine.enabled")) {
+            String name = plugin.getConfigManager().getConfigSection("furnitureengine.name", grave).getString("furnitureengine.name", "");
             location.getBlock().setType(Material.AIR);
             if (placeFurniture(name, location, BlockFaceUtil.getBlockFaceRotation(BlockFaceUtil.getYawBlockFace(location.getYaw())))) {
                 ItemFrame itemFrame = getItemFrame(location);

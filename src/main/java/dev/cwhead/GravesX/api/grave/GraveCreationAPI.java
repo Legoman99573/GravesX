@@ -285,7 +285,7 @@ public class GraveCreationAPI {
         grave.setPitch(victim.getLocation().getPitch());
         grave.setExperience(experience);
         grave.setTimeCreation(System.currentTimeMillis());
-        long truetimeAliveRemaining = timeAliveRemaining > 0 ? timeAliveRemaining : plugin.getConfig("grave.time", grave).getLong("grave.time");
+        long truetimeAliveRemaining = timeAliveRemaining > 0 ? timeAliveRemaining : plugin.getConfigManager().getConfigSection("grave.time", grave).getLong("grave.time");
         grave.setTimeAlive(truetimeAliveRemaining);
         grave.setTimeAliveRemaining(truetimeAliveRemaining);
         Location finalLocationDeath = locationDeath != null ? locationDeath : locationManager.getSafeGraveLocation((LivingEntity) victim, victim.getLocation(), grave);
@@ -304,11 +304,11 @@ public class GraveCreationAPI {
             grave.setKillerNameDisplay(grave.getKillerName());
         }
 
-        if (graveProtection && plugin.getConfig("protection.enabled", grave).getBoolean("protection.enabled")) {
+        if (graveProtection && plugin.getConfigManager().getConfigSection("protection.enabled", grave).getBoolean("protection.enabled")) {
             GraveProtectionCreateEvent gp = new GraveProtectionCreateEvent(victim, grave);
             plugin.getServer().getPluginManager().callEvent(gp);
             grave.setProtection(true);
-            grave.setTimeProtection(graveProtectionTime > 0 ? graveProtectionTime : plugin.getConfig("protection.time", grave).getInt("protection.time") * 1000L);
+            grave.setTimeProtection(graveProtectionTime > 0 ? graveProtectionTime : plugin.getConfigManager().getConfigSection("protection.time", grave).getInt("protection.time") * 1000L);
         }
 
         try {
@@ -328,13 +328,13 @@ public class GraveCreationAPI {
 
             if (victim instanceof Player) {
                 Player player = (Player) victim;
-                if (plugin.getConfig("noteblockapi.enabled", grave).getBoolean("noteblockapi.enabled")
+                if (plugin.getConfigManager().getConfigSection("noteblockapi.enabled", grave).getBoolean("noteblockapi.enabled")
                         && plugin.getIntegrationManager().hasNoteBlockAPI()) {
                     String deathReason = victim.getLastDamageCause() != null
                             ? victim.getLastDamageCause().getCause().name()
                             : "UNKNOWN";
                     String nbsSound = null;
-                    for (String cause : plugin.getConfig("noteblockapi.death-causes", grave)
+                    for (String cause : plugin.getConfigManager().getConfigSection("noteblockapi.death-causes", grave)
                             .getStringList("noteblockapi.death-causes")) {
                         String[] parts = cause.split(": ");
                         if (parts.length == 2 && parts[0].equalsIgnoreCase(deathReason)) {
@@ -343,9 +343,9 @@ public class GraveCreationAPI {
                         }
                     }
                     if (nbsSound == null) {
-                        nbsSound = plugin.getConfig("noteblockapi.nbs-sound", grave).getString("noteblockapi.nbs-sound");
+                        nbsSound = plugin.getConfigManager().getConfigSection("noteblockapi.nbs-sound", grave).getString("noteblockapi.nbs-sound");
                     }
-                    if (plugin.getConfig("noteblockapi.play-locally", grave).getBoolean("noteblockapi.play-locally")) {
+                    if (plugin.getConfigManager().getConfigSection("noteblockapi.play-locally", grave).getBoolean("noteblockapi.play-locally")) {
                         plugin.getIntegrationManager().getNoteBlockAPI().playSongForPlayer(player, nbsSound);
                     } else {
                         plugin.getIntegrationManager().getNoteBlockAPI().playSongForAllPlayers(nbsSound);
@@ -386,9 +386,9 @@ public class GraveCreationAPI {
             int offsetX = 0, offsetY = 0, offsetZ = 0;
             switch (entry.getValue()) {
                 case NORMAL:
-                    offsetX = plugin.getConfig("placement.offset.x", grave).getInt("placement.offset.x");
-                    offsetY = plugin.getConfig("placement.offset.y", grave).getInt("placement.offset.y");
-                    offsetZ = plugin.getConfig("placement.offset.z", grave).getInt("placement.offset.z");
+                    offsetX = plugin.getConfigManager().getConfigSection("placement.offset.x", grave).getInt("placement.offset.x");
+                    offsetY = plugin.getConfigManager().getConfigSection("placement.offset.y", grave).getInt("placement.offset.y");
+                    offsetZ = plugin.getConfigManager().getConfigSection("placement.offset.z", grave).getInt("placement.offset.z");
                     // fall-through to apply offsets
                 case DEATH:
                 default:

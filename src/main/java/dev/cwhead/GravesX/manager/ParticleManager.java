@@ -111,9 +111,9 @@ public class ParticleManager {
             plugin.debugMessage("getBlockData() reflect failed: " + t.getMessage(), 2);
         }
 
-        String mat = plugin.getConfig("particle.block-material", grave)
+        String mat = plugin.getConfigManager().getConfigSection("particle.block-material", grave)
                 .getString("particle.block-material", "STONE");
-        String data = plugin.getConfig("particle.block-data", grave)
+        String data = plugin.getConfigManager().getConfigSection("particle.block-data", grave)
                 .getString("particle.block-data", "");
 
         java.util.UUID gid = null;
@@ -156,7 +156,7 @@ public class ParticleManager {
      * @return ItemStack or STONE if invalid.
      */
     public ItemStack parseItemStack(Grave grave) {
-        String matName = plugin.getConfig("particle.item", grave).getString("particle.item", "STONE");
+        String matName = plugin.getConfigManager().getConfigSection("particle.item", grave).getString("particle.item", "STONE");
         Material m = Material.matchMaterial(matName);
         if (m == null || m.isAir()) {
             plugin.debugMessage("Invalid particle.item: " + matName + " (defaulting to STONE)", 1);
@@ -178,7 +178,7 @@ public class ParticleManager {
         if (graveLoc == null || graveLoc.getWorld() == null) return null;
         World world = graveLoc.getWorld();
 
-        String destMode = plugin.getConfig("particle.vibration.destination", grave)
+        String destMode = plugin.getConfigManager().getConfigSection("particle.vibration.destination", grave)
                 .getString("particle.vibration.destination", "block")
                 .toLowerCase(java.util.Locale.ROOT);
 
@@ -209,7 +209,7 @@ public class ParticleManager {
         if (graveLoc == null || graveLoc.getWorld() == null) return;
         World world = graveLoc.getWorld();
 
-        String destMode = plugin.getConfig("particle.vibration.destination", grave)
+        String destMode = plugin.getConfigManager().getConfigSection("particle.vibration.destination", grave)
                 .getString("particle.vibration.destination", "block")
                 .toLowerCase(java.util.Locale.ROOT);
 
@@ -270,9 +270,9 @@ public class ParticleManager {
      * Supports (int duration, double spread), (int), and no-arg constructors.
      */
     public Object parseTrailData(Graves plugin, Grave grave) {
-        int duration = plugin.getConfig("particle.trail.duration-ticks", grave)
+        int duration = plugin.getConfigManager().getConfigSection("particle.trail.duration-ticks", grave)
                 .getInt("particle.trail.duration-ticks", 20);
-        double spread = plugin.getConfig("particle.trail.spread", grave)
+        double spread = plugin.getConfigManager().getConfigSection("particle.trail.spread", grave)
                 .getDouble("particle.trail.spread", 0.02D);
 
         try {

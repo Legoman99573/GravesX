@@ -176,7 +176,7 @@ public class MiniMessage {
                 .toList();
         bookMeta.setLore(serializedLore);
 
-        int customModelData = plugin.getConfig("obituary.model-data", grave).getInt("obituary.model-data", -1);
+        int customModelData = plugin.getConfigManager().getConfigSection("obituary.model-data", grave).getInt("obituary.model-data", -1);
 
         CustomModelDataUtil.applyCustomModelData(bookMeta, customModelData);
 

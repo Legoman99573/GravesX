@@ -40,7 +40,7 @@ public class CustomBlockBreakListener implements Listener {
         Player player = event.getPlayer();
 
         // If the player has permission to break graves, allow it
-        if (plugin.getConfig("grave.break", player).getBoolean("grave.break")) return;
+        if (plugin.getConfigManager().getConfigSection("grave.break", player).getBoolean("grave.break")) return;
 
        Block block = event.getBlock();
 
@@ -51,8 +51,8 @@ public class CustomBlockBreakListener implements Listener {
 
         // If the block is part of a grave and matches the configured ItemsAdder block, cancel the event
         if (grave != null) {
-            if (plugin.getConfig("itemsadder.block.enabled", player).getBoolean("itemsadder.block.enabled")
-                    && blockId.equals(plugin.getConfig("itemsadder.block.name", player).getString("itemsadder.block.name"))) {
+            if (plugin.getConfigManager().getConfigSection("itemsadder.block.enabled", player).getBoolean("itemsadder.block.enabled")
+                    && blockId.equals(plugin.getConfigManager().getConfigSection("itemsadder.block.name", player).getString("itemsadder.block.name"))) {
                 event.setCancelled(true);
             }
         }

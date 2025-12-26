@@ -35,7 +35,7 @@ public class ProjectileHitListener implements Listener {
 
         Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
         if (grave == null) return;
-        if (!plugin.getConfig("drop.projectile.enabled", grave).getBoolean("drop.projectile.enabled")) return;
+        if (!plugin.getConfigManager().getConfigSection("drop.projectile.enabled", grave).getBoolean("drop.projectile.enabled")) return;
 
         Location location = block.getLocation();
         ProjectileSource shooter = event.getEntity().getShooter();
@@ -43,15 +43,15 @@ public class ProjectileHitListener implements Listener {
         ShooterKind kind = classifyShooter(shooter);
         switch (kind) {
             case PLAYER -> {
-                if (!plugin.getConfig("drop.projectile.player", grave).getBoolean("drop.projectile.player")) return;
+                if (!plugin.getConfigManager().getConfigSection("drop.projectile.player", grave).getBoolean("drop.projectile.player")) return;
                 handleProjectileHitFromPlayer((Player) shooter, event, block, grave, location);
             }
             case LIVING -> {
-                if (!plugin.getConfig("drop.projectile.living-entity", grave).getBoolean("drop.projectile.living-entity")) return;
+                if (!plugin.getConfigManager().getConfigSection("drop.projectile.living-entity", grave).getBoolean("drop.projectile.living-entity")) return;
                 handleProjectileHitFromLiving((LivingEntity) shooter, event, block, grave, location);
             }
             case OTHER -> {
-                if (!plugin.getConfig("drop.projectile.other", grave).getBoolean("drop.projectile.other")) return;
+                if (!plugin.getConfigManager().getConfigSection("drop.projectile.other", grave).getBoolean("drop.projectile.other")) return;
                 handleProjectileHitFromOther(event, block, grave, location);
             }
         }
@@ -158,7 +158,7 @@ public class ProjectileHitListener implements Listener {
     }
 
     private void playLootedExplosionEffectIfEnabled(Grave grave) {
-        if (!plugin.getConfig("drop.looted-explosion-effect", grave).getBoolean("drop.looted-explosion-effect", false)) return;
+        if (!plugin.getConfigManager().getConfigSection("drop.looted-explosion-effect", grave).getBoolean("drop.looted-explosion-effect", false)) return;
 
         try {
             Location loc = grave.getLocationDeath();

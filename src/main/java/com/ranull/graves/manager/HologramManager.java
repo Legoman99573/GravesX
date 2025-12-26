@@ -36,17 +36,17 @@ public class HologramManager extends EntityDataManager {
      */
     public void createHologram(Location location, Grave grave) {
         if (!plugin.getVersionManager().is_v1_7()
-                && plugin.getConfig("hologram.enabled", grave).getBoolean("hologram.enabled")) {
+                && plugin.getConfigManager().getConfigSection("hologram.enabled", grave).getBoolean("hologram.enabled")) {
 
-            double offsetX = plugin.getConfig("hologram.offset.x", grave).getDouble("hologram.offset.x");
-            double offsetY = plugin.getConfig("hologram.offset.y", grave).getDouble("hologram.offset.y");
-            double offsetZ = plugin.getConfig("hologram.offset.z", grave).getDouble("hologram.offset.z");
-            boolean marker = plugin.getConfig("hologram.marker", grave).getBoolean("hologram.marker");
+            double offsetX = plugin.getConfigManager().getConfigSection("hologram.offset.x", grave).getDouble("hologram.offset.x");
+            double offsetY = plugin.getConfigManager().getConfigSection("hologram.offset.y", grave).getDouble("hologram.offset.y");
+            double offsetZ = plugin.getConfigManager().getConfigSection("hologram.offset.z", grave).getDouble("hologram.offset.z");
+            boolean marker = plugin.getConfigManager().getConfigSection("hologram.marker", grave).getBoolean("hologram.marker");
 
             Location base = LocationUtil.roundLocation(location).add(offsetX + 0.5, offsetY + (marker ? 0.49 : -0.49), offsetZ + 0.5);
 
-            List<String> lineList = new ArrayList<>(plugin.getConfig("hologram.line", grave).getStringList("hologram.line"));
-            double lineHeight = plugin.getConfig("hologram.height-line", grave).getDouble("hologram.height-line");
+            List<String> lineList = new ArrayList<>(plugin.getConfigManager().getConfigSection("hologram.line", grave).getStringList("hologram.line"));
+            double lineHeight = plugin.getConfigManager().getConfigSection("hologram.height-line", grave).getDouble("hologram.height-line");
             int lineNumber = 0;
 
             Collections.reverse(lineList);

@@ -191,11 +191,11 @@ public class PlayerInteractListener implements Listener {
 
             plugin.getEntityManager().runFunction(
                     player,
-                    Objects.requireNonNull(plugin.getConfig("compass.function", grave).getString("compass.function")),
+                    Objects.requireNonNull(plugin.getConfigManager().getConfigSection("compass.function", grave).getString("compass.function")),
                     grave
             );
 
-            if (plugin.getConfig("compass.particles.enabled", grave).getBoolean("compass.particles.enabled")) {
+            if (plugin.getConfigManager().getConfigSection("compass.particles.enabled", grave).getBoolean("compass.particles.enabled")) {
                 GraveParticleEvent modernParticle = new GraveParticleEvent(player, grave);
                 plugin.getServer().getPluginManager().callEvent(modernParticle);
 
@@ -210,14 +210,14 @@ public class PlayerInteractListener implements Listener {
                             player.getLocation(),
                             grave.getLocationDeath(),
                             plugin.getVersionManager().getParticleForVersion(
-                                    Objects.requireNonNull(plugin.getConfig("compass.particles.particle", grave)
+                                    Objects.requireNonNull(plugin.getConfigManager().getConfigSection("compass.particles.particle", grave)
                                             .getString("compass.particles.particle")).toUpperCase()
                             ),
-                            plugin.getConfig("compass.particles.count", grave)
+                            plugin.getConfigManager().getConfigSection("compass.particles.count", grave)
                                     .getInt("compass.particles.count", 5),
-                            plugin.getConfig("compass.particles.speed", grave)
+                            plugin.getConfigManager().getConfigSection("compass.particles.speed", grave)
                                     .getDouble("compass.particles.speed", 0.3D),
-                            plugin.getConfig("compass.particles.duration", grave)
+                            plugin.getConfigManager().getConfigSection("compass.particles.duration", grave)
                                     .getInt("compass.particles.duration"),
                             player.getUniqueId()
                     );

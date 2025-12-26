@@ -164,8 +164,8 @@ public class ItemsAdder extends EntityDataManager {
         location.setYaw(BlockFaceUtil.getBlockFaceYaw(BlockFaceUtil.getYawBlockFace(location.getYaw()).getOppositeFace()));
         location.setPitch(grave.getPitch());
 
-        if (plugin.getConfig("itemsadder.furniture.enabled", grave).getBoolean("itemsadder.furniture.enabled")) {
-            String name = plugin.getConfig("itemsadder.furniture.name", grave)
+        if (plugin.getConfigManager().getConfigSection("itemsadder.furniture.enabled", grave).getBoolean("itemsadder.furniture.enabled")) {
+            String name = plugin.getConfigManager().getConfigSection("itemsadder.furniture.name", grave)
                     .getString("itemsadder.furniture.name", "");
             location.getBlock().setType(Material.AIR);
             CustomFurniture customFurniture = createCustomFurniture(name, location);
@@ -230,8 +230,8 @@ public class ItemsAdder extends EntityDataManager {
      */
     @Deprecated(since = "4.9.9.1", forRemoval = true)
     public void createBlock(Location location, Grave grave) {
-        if (plugin.getConfig("itemsadder.block.enabled", grave).getBoolean("itemsadder.block.enabled")) {
-            String name = plugin.getConfig("itemsadder.block.name", grave)
+        if (plugin.getConfigManager().getConfigSection("itemsadder.block.enabled", grave).getBoolean("itemsadder.block.enabled")) {
+            String name = plugin.getConfigManager().getConfigSection("itemsadder.block.name", grave)
                     .getString("itemsadder.block.name", "");
             CustomBlock customBlock = createCustomBlock(name, location);
 

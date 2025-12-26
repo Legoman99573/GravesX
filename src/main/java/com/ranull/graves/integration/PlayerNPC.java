@@ -123,7 +123,7 @@ public class PlayerNPC extends EntityDataManager {
     @Deprecated(since = "4.9.9.1")
     public void createCorpse(UUID uuid, Location location, Grave grave, boolean createEntityData) {
         plugin.getGravesXScheduler().runTask(plugin, () -> {
-            if (!plugin.getConfig("playernpc.corpse.enabled", grave).getBoolean("playernpc.corpse.enabled")
+            if (!plugin.getConfigManager().getConfigSection("playernpc.corpse.enabled", grave).getBoolean("playernpc.corpse.enabled")
                     || grave.getOwnerType() != EntityType.PLAYER) {
                 return;
             }
@@ -140,7 +140,7 @@ public class PlayerNPC extends EntityDataManager {
 
             NPC.Pose pose = NPC.Pose.SWIMMING;
             try {
-                String poseName = plugin.getConfig("playernpc.corpse.pose", grave)
+                String poseName = plugin.getConfigManager().getConfigSection("playernpc.corpse.pose", grave)
                         .getString("playernpc.corpse.pose");
                 if (poseName != null) {
                     pose = NPC.Pose.valueOf(poseName);
@@ -150,11 +150,11 @@ public class PlayerNPC extends EntityDataManager {
             }
 
             try {
-                double x = plugin.getConfig("playernpc.corpse.offset.x", grave)
+                double x = plugin.getConfigManager().getConfigSection("playernpc.corpse.offset.x", grave)
                         .getDouble("playernpc.corpse.offset.x");
-                double y = plugin.getConfig("playernpc.corpse.offset.y", grave)
+                double y = plugin.getConfigManager().getConfigSection("playernpc.corpse.offset.y", grave)
                         .getDouble("playernpc.corpse.offset.y");
-                double z = plugin.getConfig("playernpc.corpse.offset.z", grave)
+                double z = plugin.getConfigManager().getConfigSection("playernpc.corpse.offset.z", grave)
                         .getDouble("playernpc.corpse.offset.z");
                 npcLocation.add(x, y, z);
             } catch (IllegalArgumentException handled) {
@@ -179,11 +179,11 @@ public class PlayerNPC extends EntityDataManager {
             npc.setAutoShow(true);
             npc.setCustomData(plugin, "grave_uuid", grave.getUUID().toString());
 
-            boolean collide = plugin.getConfig("playernpc.corpse.collide", grave)
+            boolean collide = plugin.getConfigManager().getConfigSection("playernpc.corpse.collide", grave)
                     .getBoolean("playernpc.corpse.collide");
             npc.setCollidable(collide);
 
-            if (plugin.getConfig("playernpc.corpse.armor", grave).getBoolean("playernpc.corpse.armor")) {
+            if (plugin.getConfigManager().getConfigSection("playernpc.corpse.armor", grave).getBoolean("playernpc.corpse.armor")) {
                 if (grave.getEquipmentMap().containsKey(EquipmentSlot.HEAD)) {
                     npc.setHelmet(grave.getEquipmentMap().get(EquipmentSlot.HEAD));
                 }
@@ -198,7 +198,7 @@ public class PlayerNPC extends EntityDataManager {
                 }
             }
 
-            if (plugin.getConfig("playernpc.corpse.hand", grave).getBoolean("playernpc.corpse.hand")) {
+            if (plugin.getConfigManager().getConfigSection("playernpc.corpse.hand", grave).getBoolean("playernpc.corpse.hand")) {
                 if (grave.getEquipmentMap().containsKey(EquipmentSlot.HAND)) {
                     npc.setItemInMainHand(grave.getEquipmentMap().get(EquipmentSlot.HAND));
                 }
@@ -208,10 +208,10 @@ public class PlayerNPC extends EntityDataManager {
                 }
             }
 
-            if (plugin.getConfig("playernpc.corpse.glow.enabled", grave)
+            if (plugin.getConfigManager().getConfigSection("playernpc.corpse.glow.enabled", grave)
                     .getBoolean("playernpc.corpse.glow.enabled")) {
                 try {
-                    String colorName = plugin.getConfig("playernpc.corpse.glow.color", grave)
+                    String colorName = plugin.getConfigManager().getConfigSection("playernpc.corpse.glow.color", grave)
                             .getString("playernpc.corpse.glow.color");
                     if (colorName != null) {
                         npc.setGlowing(true, ChatColor.valueOf(colorName));

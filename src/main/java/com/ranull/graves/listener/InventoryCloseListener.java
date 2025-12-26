@@ -99,7 +99,7 @@ public class InventoryCloseListener implements Listener {
 
             plugin.getEntityManager().spawnZombie(grave.getLocationDeath(), player, player, grave);
 
-            if (plugin.getConfig("drop.looted-explosion-effect", grave).getBoolean("drop.looted-explosion-effect", false)) {
+            if (plugin.getConfigManager().getConfigSection("drop.looted-explosion-effect", grave).getBoolean("drop.looted-explosion-effect", false)) {
                 try {
                     Location location = grave.getLocationDeath();
                     Objects.requireNonNull(location.getWorld()).spawnParticle(plugin.getVersionManager().getParticleForVersion("EXPLOSION"), location, 1);

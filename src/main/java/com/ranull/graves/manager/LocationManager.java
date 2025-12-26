@@ -107,18 +107,15 @@ public class LocationManager {
     public Location getSafeTeleportLocation(Entity entity, Location location, Grave grave, Graves plugin) {
         if (location == null) return null;
 
-        Graves p = (plugin != null) ? plugin : this.plugin;
-        if (p == null) return null;
-
         if (location.getWorld() != null) {
-            if (p.getConfig("teleport.unsafe", grave).getBoolean("teleport.unsafe")
+            if (plugin.getConfigManager().getConfigSection("teleport.unsafe", grave).getBoolean("teleport.unsafe")
                     || isLocationSafePlayer(location)) {
                 return location;
-            } else if (p.getConfig("teleport.top", grave).getBoolean("teleport.top")) {
+            } else if (plugin.getConfigManager().getConfigSection("teleport.top", grave).getBoolean("teleport.top")) {
                 Location topLocation = getTop(location, entity, grave);
 
                 if (topLocation != null && topLocation.getWorld() != null && isLocationSafePlayer(topLocation)) {
-                    p.getEntityManager().sendMessage("message.teleport-top", entity, topLocation, grave);
+                    plugin.getEntityManager().sendMessage("message.teleport-top", entity, topLocation, grave);
                     return topLocation;
                 }
             }
@@ -175,7 +172,7 @@ public class LocationManager {
             }
         } else {
             boolean airOrWater = MaterialUtil.isAir(block.getType()) || MaterialUtil.isWater(block.getType());
-            boolean useGround = plugin.getConfig("placement.ground", grave).getBoolean("placement.ground");
+            boolean useGround = plugin.getConfigManager().getConfigSection("placement.ground", grave).getBoolean("placement.ground");
 
             Location graveLocation = airOrWater
                     ? (useGround ? getGround(location, livingEntity, grave) : null)
@@ -515,7 +512,7 @@ public class LocationManager {
     public Location getVoid(Location location, Entity entity, Grave grave) {
         if (location == null) return null;
 
-        if (!plugin.getConfig("placement.void", grave).getBoolean("placement.void")) {
+        if (!plugin.getConfigManager().getConfigSection("placement.void", grave).getBoolean("placement.void")) {
             return null;
         }
 
@@ -526,9 +523,9 @@ public class LocationManager {
         World.Environment environment = world.getEnvironment();
 
         final boolean skipRoof = (environment == World.Environment.NETHER)
-                && !plugin.getConfig("placement.nether-roof", grave).getBoolean("placement.nether-roof");
+                && !plugin.getConfigManager().getConfigSection("placement.nether-roof", grave).getBoolean("placement.nether-roof");
 
-        if (plugin.getConfig("placement.void-smart", grave).getBoolean("placement.void-smart")) {
+        if (plugin.getConfigManager().getConfigSection("placement.void-smart", grave).getBoolean("placement.void-smart")) {
             Location solidLocation = plugin.getLocationManager().getLastSolidLocation(entity);
             if (solidLocation != null && solidLocation.getWorld() != null) {
                 if (!hasGrave(solidLocation)) {
@@ -551,7 +548,7 @@ public class LocationManager {
             if (roof != null && roof.getWorld() != null && !hasGrave(roof)) return roof;
         }
 
-        int radius = plugin.getConfig("placement.void-land-scan-radius", grave)
+        int radius = plugin.getConfigManager().getConfigSection("placement.void-land-scan-radius", grave)
                 .getInt("placement.void-land-scan-radius", 128);
 
         if (radius < 0) radius = 0;
@@ -658,15 +655,15 @@ public class LocationManager {
         }
         if (columnHasLand) return null;
 
-        int searchRadius = plugin.getConfig("placement.end.search-radius", grave)
+        int searchRadius = plugin.getConfigManager().getConfigSection("placement.end.search-radius", grave)
                 .getInt("placement.end.search-radius", 96);
 
-        boolean allowVoidBlock = plugin.getConfig("placement.allow-void-block", grave)
+        boolean allowVoidBlock = plugin.getConfigManager().getConfigSection("placement.allow-void-block", grave)
                 .getBoolean("placement.allow-void-block", true);
 
         Material voidBlock;
         if (allowVoidBlock) {
-            String voidBlockName = plugin.getConfig("placement.void-block", grave)
+            String voidBlockName = plugin.getConfigManager().getConfigSection("placement.void-block", grave)
                     .getString("placement.void-block", "DIRT");
             Material parsed = null;
             try {
@@ -729,7 +726,7 @@ public class LocationManager {
             }
         }
 
-        int fallbackY = plugin.getConfig("placement.end.fallback-y", grave)
+        int fallbackY = plugin.getConfigManager().getConfigSection("placement.end.fallback-y", grave)
                 .getInt("placement.end.fallback-y", Math.max(64, minY + 1));
 
         Block support = world.getBlockAt(originX, fallbackY, originZ);
@@ -758,7 +755,7 @@ public class LocationManager {
     public Location getLavaTop(Location location, Entity entity, Grave grave) {
         if (location == null) return null;
 
-        if (plugin.getConfig("placement.lava-smart", grave).getBoolean("placement.lava-smart")) {
+        if (plugin.getConfigManager().getConfigSection("placement.lava-smart", grave).getBoolean("placement.lava-smart")) {
             Location solidLocation = plugin.getLocationManager().getLastSolidLocation(entity);
             if (solidLocation != null && solidLocation.getWorld() != null) {
                 if (!hasGrave(solidLocation)) {
@@ -770,7 +767,7 @@ public class LocationManager {
             }
         }
 
-        if (plugin.getConfig("placement.lava-top", grave).getBoolean("placement.lava-top")) {
+        if (plugin.getConfigManager().getConfigSection("placement.lava-top", grave).getBoolean("placement.lava-top")) {
             Location checkLoc = location.clone();
             if (checkLoc.getWorld() == null) return null;
 
@@ -810,7 +807,7 @@ public class LocationManager {
     public Location getWaterTop(Location location, Entity entity, Grave grave) {
         if (location == null) return null;
 
-        if (plugin.getConfig("placement.water-top", grave).getBoolean("placement.water-top")) {
+        if (plugin.getConfigManager().getConfigSection("placement.water-top", grave).getBoolean("placement.water-top")) {
             Location checkLoc = location.clone();
             if (checkLoc.getWorld() == null) return null;
 
@@ -829,7 +826,7 @@ public class LocationManager {
             }
         }
 
-        if (plugin.getConfig("placement.water-smart", grave).getBoolean("placement.water-smart")) {
+        if (plugin.getConfigManager().getConfigSection("placement.water-smart", grave).getBoolean("placement.water-smart")) {
             Location solidLocation = plugin.getLocationManager().getLastSolidLocation(entity);
             if (solidLocation != null && solidLocation.getWorld() != null) {
                 if (!hasGrave(solidLocation)) {
@@ -860,10 +857,10 @@ public class LocationManager {
         if (landProtectionAddonPlugin != null && landProtectionAddonPlugin.isEnabled()) return true;
 
         if (livingEntity instanceof Player player) {
-            return (!plugin.getConfig("placement.can-build", player, permissionList).getBoolean("placement.can-build")
+            return (!plugin.getConfigManager().getConfigSection("placement.can-build", player, permissionList).getBoolean("placement.can-build")
                     || plugin.getCompatibility().canBuild(player, location, plugin))
                     && (!plugin.getIntegrationManager().hasProtectionLib()
-                    || (!plugin.getConfig("placement.can-build-protectionlib", player, permissionList)
+                    || (!plugin.getConfigManager().getConfigSection("placement.can-build-protectionlib", player, permissionList)
                     .getBoolean("placement.can-build-protectionlib")
                     || plugin.getIntegrationManager().getProtectionLib().canBuild(location, player)));
         }

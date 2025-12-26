@@ -97,8 +97,8 @@ public class BlockManager {
         if (location.getWorld() != null) {
             Material material;
 
-            if (plugin.getConfig("block.enabled", grave).getBoolean("block.enabled")) {
-                String materialString = plugin.getConfig("block.material", grave)
+            if (plugin.getConfigManager().getConfigSection("block.enabled", grave).getBoolean("block.enabled")) {
+                String materialString = plugin.getConfigManager().getConfigSection("block.material", grave)
                         .getString("block.material", "CHEST");
 
                 if (materialString.equals("PLAYER_HEAD") && !plugin.getVersionManager().hasBlockData()) {
@@ -110,9 +110,9 @@ public class BlockManager {
                 material = null;
             }
 
-            int offsetX = plugin.getConfig("block.offset.x", grave).getInt("block.offset.x");
-            int offsetY = plugin.getConfig("block.offset.y", grave).getInt("block.offset.y");
-            int offsetZ = plugin.getConfig("block.offset.z", grave).getInt("block.offset.z");
+            int offsetX = plugin.getConfigManager().getConfigSection("block.offset.x", grave).getInt("block.offset.x");
+            int offsetY = plugin.getConfigManager().getConfigSection("block.offset.y", grave).getInt("block.offset.y");
+            int offsetZ = plugin.getConfigManager().getConfigSection("block.offset.z", grave).getInt("block.offset.z");
 
             location.add(offsetX, offsetY, offsetZ);
 

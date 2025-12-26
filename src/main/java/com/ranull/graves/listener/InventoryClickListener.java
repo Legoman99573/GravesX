@@ -89,9 +89,8 @@ public class InventoryClickListener implements Listener {
                 Grave grave = plugin.getCacheManager().getGraveMap().get(graveUUID);
                 if (grave != null) {
                     String compassName = plugin.getIntegrationManager().hasMiniMessage()
-                            ? MiniMessage.parseString(StringUtil.parseString("&f" + plugin
-                            .getConfig("compass.name", grave).getString("compass.name"), grave, plugin))
-                            : StringUtil.parseString("&f" + plugin.getConfig("compass.name", grave).getString("compass.name"), grave, plugin);
+                            ? MiniMessage.parseString(StringUtil.parseString("&f" + plugin.getConfigManager().getConfigSection("compass.name", grave).getString("compass.name"), grave, plugin))
+                            : StringUtil.parseString("&f" + plugin.getConfigManager().getConfigSection("compass.name", grave).getString("compass.name"), grave, plugin);
 
                     if (itemMeta.getDisplayName().equals(compassName)) {
                         InventoryType inventoryType = event.getInventory().getType();
@@ -125,9 +124,8 @@ public class InventoryClickListener implements Listener {
                 Grave grave = plugin.getCacheManager().getGraveMap().get(graveUUID);
                 if (grave != null) {
                     String compassName = plugin.getIntegrationManager().hasMiniMessage()
-                            ? MiniMessage.parseString(StringUtil.parseString("&f" + plugin
-                            .getConfig("compass.name", grave).getString("compass.name"), grave, plugin))
-                            : StringUtil.parseString("&f" + plugin.getConfig("compass.name", grave).getString("compass.name"), grave, plugin);
+                            ? MiniMessage.parseString(StringUtil.parseString("&f" + plugin.getConfigManager().getConfigSection("compass.name", grave).getString("compass.name"), grave, plugin))
+                            : StringUtil.parseString("&f" + plugin.getConfigManager().getConfigSection("compass.name", grave).getString("compass.name"), grave, plugin);
 
                     if (itemMeta.getDisplayName().equals(compassName)) {
                         InventoryType inventoryType = event.getInventory().getType();
@@ -191,8 +189,7 @@ public class InventoryClickListener implements Listener {
         InventoryAction action = event.getAction();
         Inventory topInventory = CompatibilityInventoryView.getTopInventory(event); // grave inv
         Inventory bottomInventory = CompatibilityInventoryView.getBottomInventory(event); // player inv
-        Grave.StorageMode storageMode = plugin.getGraveManager().getStorageMode(
-                plugin.getConfig("storage.mode", grave).getString("storage.mode"));
+        Grave.StorageMode storageMode = plugin.getGraveManager().getStorageMode(plugin.getConfigManager().getConfigSection("storage.mode", grave).getString("storage.mode"));
 
         if (clickedInventory == null) return;
 
@@ -262,8 +259,7 @@ public class InventoryClickListener implements Listener {
             }
 
             // Run function associated with the clicked slot in GraveList
-            plugin.getEntityManager().runFunction(player, plugin.getConfig("gui.menu.list.function", grave)
-                    .getString("gui.menu.list.function", "menu"), grave);
+            plugin.getEntityManager().runFunction(player, plugin.getConfigManager().getConfigSection("gui.menu.list.function", grave).getString("gui.menu.list.function", "menu"), grave);
             plugin.getGUIManager().setGraveListItems(graveList.getInventory(), graveList.getUUID());
         }
 
@@ -287,9 +283,9 @@ public class InventoryClickListener implements Listener {
                 }
 
                 // Run function associated with the clicked slot in GraveMenu
-                if (plugin.getConfig("gui.menu.grave.slot." + event.getSlot() + ".enabled", grave).getBoolean("gui.menu.grave.slot." + event.getSlot() + ".enabled")) {
+                if (plugin.getConfigManager().getConfigSection("gui.menu.grave.slot." + event.getSlot() + ".enabled", grave).getBoolean("gui.menu.grave.slot." + event.getSlot() + ".enabled")) {
                     plugin.getEntityManager().runFunction(player,
-                            plugin.getConfig("gui.menu.grave.slot." + event.getSlot() + ".function", grave)
+                            plugin.getConfigManager().getConfigSection("gui.menu.grave.slot." + event.getSlot() + ".function", grave)
                                     .getString("gui.menu.grave.slot." + event.getSlot()
                                             + ".function", "none"), grave);
                     plugin.getGUIManager().setGraveMenuItems(graveMenu.getInventory(), grave);

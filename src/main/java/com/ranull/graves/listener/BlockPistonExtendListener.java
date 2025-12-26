@@ -57,7 +57,7 @@ public class BlockPistonExtendListener implements Listener {
                                        Block piston,
                                        BlockFace direction,
                                        List<Block> blocks) {
-        boolean allowPush = plugin.getConfig("drop.piston-extend", grave).getBoolean("drop.piston-extend", true);
+        boolean allowPush = plugin.getConfigManager().getConfigSection("drop.piston-extend", grave).getBoolean("drop.piston-extend", true);
         plugin.debugMessage("allowPush value for grave at " + grave.getLocationDeath() + " is: " + allowPush, 2);
 
         if (!allowPush) {

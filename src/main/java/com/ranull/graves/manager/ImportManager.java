@@ -368,12 +368,12 @@ public class ImportManager {
 
         if (!itemStackList.isEmpty() && grave.getLocationDeath() != null) {
             String title = StringUtil.parseString(
-                    plugin.getConfig("gui.grave.title", grave).getString("gui.grave.title", "Grave"),
+                    plugin.getConfigManager().getConfigSection("gui.grave.title", grave).getString("gui.grave.title", "Grave"),
                     grave.getLocationDeath(), grave, plugin
             );
 
             Grave.StorageMode storageMode = plugin.getGraveManager()
-                    .getStorageMode(plugin.getConfig("storage.mode", grave).getString("storage.mode", "INVENTORY"));
+                    .getStorageMode(plugin.getConfigManager().getConfigSection("storage.mode", grave).getString("storage.mode", "INVENTORY"));
 
             Inventory inventory = null;
             try {
@@ -555,7 +555,7 @@ public class ImportManager {
             return secondsLeft * 1000L;
         }
 
-        return plugin.getConfig("grave.time", grave).getInt("grave.time", 0) * 1000L;
+        return plugin.getConfigManager().getConfigSection("grave.time", grave).getInt("grave.time", 0) * 1000L;
     }
 
     private long resolveProtectionMillis(FileConfiguration ac, Grave grave) {
@@ -564,6 +564,6 @@ public class ImportManager {
             return secondsLeft * 1000L;
         }
 
-        return plugin.getConfig("grave.time", grave).getInt("grave.time", 0) * 1000L;
+        return plugin.getConfigManager().getConfigSection("grave.time", grave).getInt("grave.time", 0) * 1000L;
     }
 }

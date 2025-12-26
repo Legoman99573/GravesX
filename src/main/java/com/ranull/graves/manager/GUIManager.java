@@ -166,7 +166,7 @@ public class GUIManager {
 
                 if (plugin.getIntegrationManager().hasMiniMessage()) {
                     String guiTitle = StringUtil.parseString(
-                            plugin.getConfig("gui.menu.list.title", player, permissionList)
+                            plugin.getConfigManager().getConfigSection("gui.menu.list.title", player, permissionList)
                                     .getString("gui.menu.list.title", "Graves Main Menu"),
                             player, plugin
                     );
@@ -181,7 +181,7 @@ public class GUIManager {
                             graveList,
                             InventoryUtil.getInventorySize(playerGraveList.size()),
                             StringUtil.parseString(
-                                    plugin.getConfig("gui.menu.list.title", player, permissionList)
+                                    plugin.getConfigManager().getConfigSection("gui.menu.list.title", player, permissionList)
                                             .getString("gui.menu.list.title", "Graves Main Menu"),
                                     player, plugin
                             )
@@ -251,14 +251,14 @@ public class GUIManager {
 
             if (plugin.getIntegrationManager().hasMiniMessage()) {
                 String newTitle = StringUtil.parseString(
-                        plugin.getConfig("gui.menu.grave.title", player, grave.getPermissionList())
+                        plugin.getConfigManager().getConfigSection("gui.menu.grave.title", player, grave.getPermissionList())
                                 .getString("gui.menu.grave.title", "Grave"),
                         player, plugin
                 );
                 title = MiniMessage.parseString(newTitle);
             } else {
                 title = StringUtil.parseString(
-                        plugin.getConfig("gui.menu.grave.title", player, grave.getPermissionList())
+                        plugin.getConfigManager().getConfigSection("gui.menu.grave.title", player, grave.getPermissionList())
                                 .getString("gui.menu.grave.title", "Grave"),
                         player, plugin
                 );
@@ -286,14 +286,14 @@ public class GUIManager {
     public void setGraveMenuItems(Inventory inventory, Grave grave) {
         inventory.clear();
 
-        ConfigurationSection configurationSection = plugin.getConfig("gui.menu.grave.slot", grave)
+        ConfigurationSection configurationSection = plugin.getConfigManager().getConfigSection("gui.menu.grave.slot", grave)
                 .getConfigurationSection("gui.menu.grave.slot");
 
         if (configurationSection != null) {
             for (String string : configurationSection.getKeys(false)) {
                 try {
                     int slot = Integer.parseInt(string);
-                    if (plugin.getConfig("gui.menu.grave.slot." + slot + ".enabled", grave)
+                    if (plugin.getConfigManager().getConfigSection("gui.menu.grave.slot." + slot + ".enabled", grave)
                             .getBoolean("gui.menu.grave.slot." + slot + ".enabled")) {
                         inventory.setItem(slot, plugin.getItemStackManager().createGraveMenuItemStack(slot, grave));
                     }

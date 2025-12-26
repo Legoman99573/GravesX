@@ -59,8 +59,7 @@ public class PlayerRespawnListener implements Listener {
                         plugin.getGravesXScheduler().execute(respawnLoc, () ->
                                 plugin.getEntityManager().runFunction(
                                         player,
-                                        plugin.getConfig("respawn.function", player, permissionList)
-                                                .getString("respawn.function", "none"),
+                                        plugin.getConfigManager().getConfigSection("respawn.function", player, permissionList).getString("respawn.function", "none"),
                                         grave
                                 )
                         )
@@ -74,17 +73,14 @@ public class PlayerRespawnListener implements Listener {
     private void applyPotionEffectIfWithinTime(Player player, List<String> permissionList, Grave grave, Location respawnLoc) {
         plugin.getGravesXScheduler().runTaskLater(() ->
                         plugin.getGravesXScheduler().execute(respawnLoc, () -> {
-                            boolean enabled = plugin.getConfig("respawn.potion-effect", player, permissionList)
-                                    .getBoolean("respawn.potion-effect");
+                            boolean enabled = plugin.getConfigManager().getConfigSection("respawn.potion-effect", player, permissionList).getBoolean("respawn.potion-effect");
                             boolean hasPerm = plugin.getPermissionManager().hasGrantedPermission("graves.potion-effect", player);
                             if (!enabled || !hasPerm) return;
 
-                            long limitMs = plugin.getConfig("respawn.potion-effect-time-limit", player, permissionList)
-                                    .getInt("respawn.potion-effect-time-limit") * 1000L;
+                            long limitMs = plugin.getConfigManager().getConfigSection("respawn.potion-effect-time-limit", player, permissionList).getInt("respawn.potion-effect-time-limit") * 1000L;
                             if (grave.getLivedTime() > limitMs) return;
 
-                            int durationTicks = plugin.getConfig("respawn.potion-effect-duration", player, permissionList)
-                                    .getInt("respawn.potion-effect-duration") * 20;
+                            int durationTicks = plugin.getConfigManager().getConfigSection("respawn.potion-effect-duration", player, permissionList).getInt("respawn.potion-effect-duration") * 20;
 
                             PotionEffect resist = new PotionEffect(
                                     plugin.getVersionManager().getPotionEffectTypeFromVersion("RESISTANCE"),
@@ -106,9 +102,8 @@ public class PlayerRespawnListener implements Listener {
      */
     private boolean shouldGiveCompass(Player player, List<String> permissionList, Grave grave) {
         return plugin.getVersionManager().hasCompassMeta()
-                && plugin.getConfig("respawn.compass", player, permissionList).getBoolean("respawn.compass")
-                && grave.getLivedTime() <= plugin.getConfig("respawn.compass-time", player, permissionList)
-                .getInt("respawn.compass-time") * 1000L;
+                && plugin.getConfigManager().getConfigSection("respawn.compass", player, permissionList).getBoolean("respawn.compass")
+                && grave.getLivedTime() <= plugin.getConfigManager().getConfigSection("respawn.compass-time", player, permissionList).getInt("respawn.compass-time") * 1000L;
     }
 
     /**
