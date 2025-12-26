@@ -76,7 +76,7 @@ public class PlayerRespawnListener implements Listener {
                         plugin.getGravesXScheduler().execute(respawnLoc, () -> {
                             boolean enabled = plugin.getConfig("respawn.potion-effect", player, permissionList)
                                     .getBoolean("respawn.potion-effect");
-                            boolean hasPerm = plugin.hasGrantedPermission("graves.potion-effect", player);
+                            boolean hasPerm = plugin.getPermissionManager().hasGrantedPermission("graves.potion-effect", player);
                             if (!enabled || !hasPerm) return;
 
                             long limitMs = plugin.getConfig("respawn.potion-effect-time-limit", player, permissionList)

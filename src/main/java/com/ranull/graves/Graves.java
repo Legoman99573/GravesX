@@ -17,6 +17,7 @@ import dev.cwhead.GravesX.listener.PlayerAfterRespawnListener;
 import dev.cwhead.GravesX.manager.DebugManager;
 import dev.cwhead.GravesX.manager.MetricsManager;
 import dev.cwhead.GravesX.manager.ParticleManager;
+import dev.cwhead.GravesX.manager.PermissionManager;
 import dev.cwhead.GravesX.module.listener.DependencyEnableListener;
 import dev.cwhead.GravesX.module.util.LibbyImporter;
 import dev.cwhead.GravesX.module.ModuleManager;
@@ -39,6 +40,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
@@ -66,6 +68,7 @@ public class Graves extends JavaPlugin {
     private GraveManager graveManager;
     private ParticleManager particleManager;
     private DebugManager debugManager;
+    private PermissionManager permissionManager;
     private Compatibility compatibility;
     private FileConfiguration fileConfiguration;
     private boolean isDevelopmentBuild = false;
@@ -125,6 +128,7 @@ public class Graves extends JavaPlugin {
         locationManager = new LocationManager(this);
         graveManager = new GraveManager(this);
         particleManager = new ParticleManager(this);
+        permissionManager = new PermissionManager(this);
 
         this.moduleManager = new ModuleManager(this);
         this.moduleManager.setLibraryImporter(new LibbyImporter(this));
@@ -929,6 +933,13 @@ public class Graves extends JavaPlugin {
     }
 
     /**
+     * @return the {@link PermissionManager} that manages permission handling used by this plugin.
+     */
+    public PermissionManager getPermissionManager() {
+        return permissionManager;
+    }
+
+    /**
      * @return the {@link Compatibility} handler that ensures functionality across Minecraft versions and server platforms.
      */
     public Compatibility getCompatibility() {
@@ -1292,70 +1303,35 @@ public class Graves extends JavaPlugin {
     }
 
     /**
-     * Checks if the specified player has been granted the specified permission.
-     * This method first checks if various permission plugins are available and uses them to check permissions.
-     * If no permission plugin is found, it falls back to the default Bukkit permission check.
-     * Additionally, this method logs debug messages based on the permission check results for each permission plugin.
+     * Checks whether the given player has been granted the specified permission.
      *
-     * @param permission the permission to check for
+     * @param permission the permission to check
      * @param player the player whose permissions are being checked
-     * @return {@code true} if the player has the specified permission, {@code false} otherwise
+     * @return {@code true} if the player has the permission, otherwise {@code false}
+     * @deprecated Will be removed in {@code 4.9.12.1}. Use
+     * {@link #getPermissionManager()}{@link PermissionManager#hasGrantedPermission(String, Player)} instead.
      */
+    @Deprecated(since = "4.9.10.1")
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.12.1")
     public boolean hasGrantedPermission(String permission, Player player) {
-        boolean hasPermission;
-
-        if (getIntegrationManager().hasLuckPermsHandler()) {
-            hasPermission = getIntegrationManager().getLuckPermsHandler().hasPermission(player, permission);
-            debugMessage("[LuckPerms] Player: " + player.getName() + " | Permission: " + permission + " | Has Permission: " + hasPermission, 4);
-        } else if (getIntegrationManager().hasVault()) {
-            hasPermission = getIntegrationManager().getVault().hasPermission(player, permission);
-            debugMessage("[Vault] Player: " + player.getName() + " | Permission: " + permission + " | Has Permission: " + hasPermission, 4);
-        } else {
-            hasPermission = player.hasPermission(permission);
-            debugMessage("[Bukkit] Player: " + player.getName() + " | Permission: " + permission + " | Has Permission: " + hasPermission, 4);
-        }
-
-        return hasPermission;
+        debugMessage("Graves#hasGrantedPermission(String, Player) is deprecated and will be removed in 4.9.12.1. Use Graves#getPermissionManager().hasGrantedPermission(String, Player) instead", 2);
+        return getPermissionManager().hasGrantedPermission(permission, player);
     }
 
     /**
-     * Checks if the specified offline player has been granted the specified permission.
-     * This method first checks if various permission plugins are available and uses them to check permissions.
-     * If no permission plugin is found, it falls back to the default Bukkit permission check.
-     * Additionally, this method logs debug messages based on the permission check results for each permission plugin.
+     * Checks whether the given offline player has been granted the specified permission.
      *
-     * @param permission the permission to check for
+     * @param permission the permission to check
      * @param offlinePlayer the offline player whose permissions are being checked
-     * @return {@code true} if the offline player has the specified permission, {@code false} otherwise
-     * @deprecated This method is deprecated because it is less efficient to check permissions for offline players.
-     *             Use {@link #hasGrantedPermission(String, Player)} for online players instead.
+     * @return {@code true} if the offline player has the permission, otherwise {@code false}
+     * @deprecated Will be removed in {@code 4.9.12.1}. Use
+     * {@link #getPermissionManager()}{@link PermissionManager#hasGrantedPermission(String, OfflinePlayer)} instead.
      */
-    @Deprecated
+    @Deprecated(since = "4.9.10.1")
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.12.1")
     public boolean hasGrantedPermission(String permission, OfflinePlayer offlinePlayer) {
-        boolean hasPermission;
-
-        if (getIntegrationManager().hasLuckPermsHandler()) {
-            hasPermission = getIntegrationManager().getLuckPermsHandler().hasPermission(offlinePlayer, permission);
-            debugMessage("[LuckPerms] Offline Player: " + offlinePlayer.getName() + " | Permission: " + permission + " | Has Permission: " + hasPermission, 4);
-        } else if (getIntegrationManager().hasVaultPermProvider()) {
-            hasPermission = getIntegrationManager().getVault().hasPermission(offlinePlayer, permission);
-            debugMessage("[Vault] Offline Player: " + offlinePlayer.getName() + " | Permission: " + permission + " | Has Permission: " + hasPermission, 4);
-        } else if (offlinePlayer.isOnline()) {
-            if (offlinePlayer.getPlayer() != null) {
-                hasPermission = offlinePlayer.getPlayer().hasPermission(permission);
-                debugMessage("[Bukkit] Offline Player: " + offlinePlayer.getName() + " | Permission: " + permission + " | Has Permission: " + hasPermission, 4);
-            } else {
-                hasPermission = false;
-                debugMessage("[Bukkit] Failed to get offline player. Assuming player doesn't have permission.", 4);
-                debugMessage("[Bukkit] Offline Player: " + offlinePlayer.getName() + " | Permission: " + permission + " | Has Permission: " + hasPermission, 4);
-            }
-        } else {
-            hasPermission = false;
-            debugMessage("[Bukkit] Failed to get offline player. Assuming player doesn't have permission.", 4);
-            debugMessage("[Bukkit] Offline Player: " + offlinePlayer.getName() + " | Permission: " + permission + " | Has Permission: " + hasPermission, 4);
-        }
-
-        return hasPermission;
+        debugMessage("Graves#hasGrantedPermission(String, OfflinePlayer) is deprecated and will be removed in 4.9.12.1. Use Graves#getPermissionManager().hasGrantedPermission(String, OfflinePlayer) instead", 2);
+        return getPermissionManager().hasGrantedPermission(permission, offlinePlayer);
     }
 
     /**

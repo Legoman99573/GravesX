@@ -257,7 +257,7 @@ public class EntityManager extends EntityDataManager {
             plugin.getServer().getPluginManager().callEvent(legacy);
 
             if (!modern.isCancelled() && !modern.isAddon() && !legacy.isCancelled() && !legacy.isAddon()) {
-                boolean bypass = plugin.hasGrantedPermission("graves.teleport.delay-bypass", player);
+                boolean bypass = plugin.getPermissionManager().hasGrantedPermission("graves.teleport.delay-bypass", player);
 
                 if (!bypass && delaySeconds > 0L) {
                     Location finalTarget = target.clone();
@@ -753,7 +753,7 @@ public class EntityManager extends EntityDataManager {
             }
             case "menu" -> {
                 if (entity instanceof Player player) {
-                    if (!plugin.hasGrantedPermission("graves.gui", player.getPlayer()))  {
+                    if (!plugin.getPermissionManager().hasGrantedPermission("graves.gui", player.getPlayer()))  {
                         plugin.getEntityManager().sendMessage("message.permission-denied", entity, entity.getLocation(), grave);
                         return false;
                     }
@@ -763,23 +763,23 @@ public class EntityManager extends EntityDataManager {
             }
             case "teleport", "teleportation" -> {
                 if (entity instanceof Player player) {
-                    if (!plugin.hasGrantedPermission("graves.teleport", player.getPlayer()))  {
+                    if (!plugin.getPermissionManager().hasGrantedPermission("graves.teleport", player.getPlayer()))  {
                         plugin.getEntityManager().sendMessage("message.permission-denied", entity, entity.getLocation(), grave);
                         return false;
                     }
                 }
 
                 if (plugin.getConfig("teleport.enabled", grave).getBoolean("teleport.enabled")
-                        && (plugin.hasGrantedPermission("graves.teleport", ((Player) entity).getPlayer())
+                        && (plugin.getPermissionManager().hasGrantedPermission("graves.teleport", ((Player) entity).getPlayer())
                         || plugin.getConfig("teleport.enabled", grave).getBoolean("teleport.enabled")
-                        && plugin.hasGrantedPermission("graves.teleport.world." + grave.getLocationDeath().getWorld().getName(), ((Player) entity).getPlayer())
-                        || plugin.hasGrantedPermission("graves.bypass", ((Player) entity).getPlayer()))
-                        || plugin.hasGrantedPermission("graves.teleport.bypass", ((Player) entity).getPlayer())) {
+                        && plugin.getPermissionManager().hasGrantedPermission("graves.teleport.world." + grave.getLocationDeath().getWorld().getName(), ((Player) entity).getPlayer())
+                        || plugin.getPermissionManager().hasGrantedPermission("graves.bypass", ((Player) entity).getPlayer()))
+                        || plugin.getPermissionManager().hasGrantedPermission("graves.teleport.bypass", ((Player) entity).getPlayer())) {
 
                     boolean isBypassOther =
-                            (plugin.hasGrantedPermission("graves.bypass", ((Player) entity).getPlayer())
+                            (plugin.getPermissionManager().hasGrantedPermission("graves.bypass", ((Player) entity).getPlayer())
                                     && !grave.getOwnerUUID().equals(entity.getUniqueId()))
-                                    || (plugin.hasGrantedPermission("graves.teleport.bypass", ((Player) entity).getPlayer())
+                                    || (plugin.getPermissionManager().hasGrantedPermission("graves.teleport.bypass", ((Player) entity).getPlayer())
                                     && !grave.getOwnerUUID().equals(entity.getUniqueId()));
 
                     if (isBypassOther) {
@@ -801,7 +801,7 @@ public class EntityManager extends EntityDataManager {
             }
             case "protect", "protection" -> {
                 if (entity instanceof Player player) {
-                    if (!plugin.hasGrantedPermission("graves.protection", player.getPlayer()))  {
+                    if (!plugin.getPermissionManager().hasGrantedPermission("graves.protection", player.getPlayer()))  {
                         plugin.getEntityManager().sendMessage("message.permission-denied", entity, entity.getLocation(), grave);
                         return false;
                     }
@@ -865,7 +865,7 @@ public class EntityManager extends EntityDataManager {
             case "open", "loot", "virtual" -> {
                 if (entity.getLocation().getWorld() == grave.getLocationDeath().getWorld()) {
                     if (entity instanceof Player player) {
-                        if (!plugin.hasGrantedPermission("graves.open", player.getPlayer()))  {
+                        if (!plugin.getPermissionManager().hasGrantedPermission("graves.open", player.getPlayer()))  {
                             plugin.getEntityManager().sendMessage("message.permission-denied", entity, entity.getLocation(), grave);
                             return false;
                         }
@@ -926,12 +926,12 @@ public class EntityManager extends EntityDataManager {
                 Location loc = entity.getLocation();
 
                 if (entity instanceof Player player) {
-                    if (!plugin.hasGrantedPermission("graves.autoloot", player.getPlayer()))  {
+                    if (!plugin.getPermissionManager().hasGrantedPermission("graves.autoloot", player.getPlayer()))  {
                         plugin.getEntityManager().sendMessage("message.permission-denied", entity, entity.getLocation(), grave);
                         return false;
                     }
 
-                    if (player.getGameMode() == GameMode.SPECTATOR && !plugin.hasGrantedPermission("graves.spectator.bypass", player.getPlayer())) return false;
+                    if (player.getGameMode() == GameMode.SPECTATOR && !plugin.getPermissionManager().hasGrantedPermission("graves.spectator.bypass", player.getPlayer())) return false;
                 }
 
                 GraveAutoLootEvent modern =
@@ -1017,7 +1017,7 @@ public class EntityManager extends EntityDataManager {
      * @return true if the player can open the grave, false otherwise
      */
     public boolean canOpenGrave(Player player, Grave grave) {
-        if (plugin.hasGrantedPermission("graves.bypass", player.getPlayer())) {
+        if (plugin.getPermissionManager().hasGrantedPermission("graves.bypass", player.getPlayer())) {
             return true;
         }
 

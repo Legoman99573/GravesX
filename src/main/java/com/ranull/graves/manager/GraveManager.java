@@ -1878,10 +1878,10 @@ public class GraveManager {
                 cleanupCompasses(player, grave);
 
                 if (plugin.getConfig("drop.auto-loot.enabled", grave).getBoolean("drop.auto-loot.enabled", true)
-                        && (player.isSneaking() && plugin.hasGrantedPermission("graves.autoloot", player.getPlayer()))) {
+                        && (player.isSneaking() && plugin.getPermissionManager().hasGrantedPermission("graves.autoloot", player.getPlayer()))) {
 
                     if (player.getGameMode() == GameMode.SPECTATOR
-                            && !plugin.hasGrantedPermission("graves.spectator.bypass", player.getPlayer())) return;
+                            && !plugin.getPermissionManager().hasGrantedPermission("graves.spectator.bypass", player.getPlayer())) return;
 
                     // Lock during auto-loot so nobody else can interact mid-loot.
                     if (!plugin.getCacheManager().startViewingGrave(graveUUID, viewerUUID)) {
@@ -1914,7 +1914,7 @@ public class GraveManager {
                         plugin.getCacheManager().stopViewingGrave(graveUUID, viewerUUID);
                     }
 
-                } else if (plugin.hasGrantedPermission("graves.open", player.getPlayer())) {
+                } else if (plugin.getPermissionManager().hasGrantedPermission("graves.open", player.getPlayer())) {
 
                     if (!plugin.getCacheManager().startViewingGrave(graveUUID, viewerUUID)) {
                         plugin.getEntityManager().sendMessage("message.grave-in-use", player, location, grave);

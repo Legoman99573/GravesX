@@ -86,7 +86,7 @@ public class PlayerMoveListener implements Listener {
     private boolean isNotSpectatorMode(Player player) {
         if (plugin.getVersionManager().is_v1_7()) return true;
 
-        if (plugin.hasGrantedPermission("graves.spectator.bypass", player.getPlayer())) return true;
+        if (plugin.getPermissionManager().hasGrantedPermission("graves.spectator.bypass", player.getPlayer())) return true;
 
         return Objects.requireNonNull(player.getPlayer()).getGameMode() != GameMode.SPECTATOR;
     }

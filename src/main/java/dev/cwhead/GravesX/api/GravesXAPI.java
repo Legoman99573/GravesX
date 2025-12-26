@@ -5,9 +5,11 @@ import dev.cwhead.GravesX.api.addon.AddonAPI;
 import dev.cwhead.GravesX.api.grave.GraveCreationAPI;
 import dev.cwhead.GravesX.api.grave.GraveManagementAPI;
 import dev.cwhead.GravesX.api.inventory.InventoryAPI;
+import dev.cwhead.GravesX.api.permission.PermissionAPI;
 import dev.cwhead.GravesX.api.skin.SkinAPI;
 import dev.cwhead.GravesX.api.util.UtilAPI;
 import dev.cwhead.GravesX.api.world.LocationAPI;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
@@ -37,6 +39,9 @@ public class GravesXAPI {
     /** Addon helpers. */
     public final AddonAPI addon;
 
+    /** Permission helpers. */
+    public final PermissionAPI permission;
+
     /** Utilities (permissions, XP, colors, files, YAML, paste, etc.). */
     public final UtilAPI util;
 
@@ -51,6 +56,7 @@ public class GravesXAPI {
      *   <li>{@link InventoryAPI} – helpers for inventories, conversions, and equipping players</li>
      *   <li>{@link SkinAPI} – helpers for skins, skulls, and player textures</li>
      *   <li>{@link AddonAPI} – helpers for managing addons and their configuration</li>
+     *   <li>{@link PermissionAPI} – helpers for permission checks via the active permissions provider</li>
      *   <li>{@link GraveManagementAPI} – operations for managing existing graves</li>
      *   <li>{@link GraveCreationAPI} – operations for creating new graves</li>
      * </ul>
@@ -71,6 +77,7 @@ public class GravesXAPI {
         this.inventory = new InventoryAPI(plugin, util);
         this.skin = new SkinAPI();
         this.addon = new AddonAPI(plugin);
+        this.permission = new PermissionAPI(plugin);
         this.gravesManage = new GraveManagementAPI(plugin);
         this.gravesCreate = new GraveCreationAPI(plugin, world, util, gravesManage);
     }
@@ -144,6 +151,15 @@ public class GravesXAPI {
     }
 
     /**
+     * Provides access to permission checks via {@link PermissionAPI}.
+     *
+     * @return the {@link PermissionAPI} instance
+     */
+    public @NotNull PermissionAPI getPermissionAPI() {
+        return permission;
+    }
+
+    /**
      * Provides access to grave management utility methods.
      * <p>
      * This includes removing, breaking, looting, abandoning,
@@ -169,7 +185,16 @@ public class GravesXAPI {
         return gravesCreate;
     }
 
-    /** Underlying Graves plugin (advanced usage). */
+    /**
+     * Returns the underlying {@link Graves} plugin instance.
+     *
+     * <p>This is intended for advanced use-cases where direct access to internal managers
+     * or server state is necessary. Most consumers should prefer the modular sub-APIs
+     * exposed by this facade.</p>
+     *
+     * @return the active Graves plugin instance
+     */
+    @ApiStatus.Experimental
     public @NotNull Graves plugin() {
         return plugin;
     }

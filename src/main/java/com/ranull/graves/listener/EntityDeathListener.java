@@ -102,7 +102,7 @@ public class EntityDeathListener implements Listener {
             if (handlePlayerDeath(player, entityName)) return;
 
             if (pde != null && isKeepInventory(pde, entityName) &&
-                    !plugin.hasGrantedPermission("graves.keepinventory.bypass", player)) {
+                    !plugin.getPermissionManager().hasGrantedPermission("graves.keepinventory.bypass", player)) {
                 return;
             }
 
@@ -165,8 +165,8 @@ public class EntityDeathListener implements Listener {
     private int getMaxGravesPermission(Player player) {
         int maxGraves = 0;
         for (int i = 0; i <= 10; i++) {
-            if (plugin.hasGrantedPermission("grave.max.limit.unlimited", player)) return Integer.MAX_VALUE;
-            if (plugin.hasGrantedPermission("grave.max.limit." + i, player)) maxGraves = i;
+            if (plugin.getPermissionManager().hasGrantedPermission("grave.max.limit.unlimited", player)) return Integer.MAX_VALUE;
+            if (plugin.getPermissionManager().hasGrantedPermission("grave.max.limit." + i, player)) maxGraves = i;
         }
         return maxGraves;
     }
@@ -268,10 +268,10 @@ public class EntityDeathListener implements Listener {
      * @return True if a grave should not be created, false otherwise.
      */
     private boolean handlePlayerDeath(Player player, String entityName) {
-        if (!plugin.hasGrantedPermission("graves.place", player)) {
+        if (!plugin.getPermissionManager().hasGrantedPermission("graves.place", player)) {
             plugin.debugMessage("Grave not created for " + entityName + " because they don't have permission to place graves", 2);
             return true;
-        } else if (plugin.hasGrantedPermission("essentials.keepinv", player)) {
+        } else if (plugin.getPermissionManager().hasGrantedPermission("essentials.keepinv", player)) {
             plugin.debugMessage(entityName + " has essentials.keepinv", 2);
         }
         return false;
@@ -304,7 +304,7 @@ public class EntityDeathListener implements Listener {
      */
     private boolean isKeepInventory(PlayerDeathEvent event, String entityName) {
         try {
-            if (event.getKeepInventory() && !plugin.hasGrantedPermission("graves.keepinventory.bypass", event.getEntity())) {
+            if (event.getKeepInventory() && !plugin.getPermissionManager().hasGrantedPermission("graves.keepinventory.bypass", event.getEntity())) {
                 plugin.debugMessage("Grave not created for " + entityName + " because they had keep inventory", 2);
                 return true;
             }
@@ -490,12 +490,12 @@ public class EntityDeathListener implements Listener {
             int applicableMax = (permsMax > 0) ? permsMax : serverMax;
 
             if (plugin.getGraveManager().getGraveList(livingEntity).size() >= applicableMax) {
-                if (plugin.hasGrantedPermission("graves.max.replace", player)
+                if (plugin.getPermissionManager().hasGrantedPermission("graves.max.replace", player)
                         && plugin.getConfig("grave.replace-oldest", livingEntity, permissionList).getBoolean("grave.replace-oldest")) {
                     plugin.getGraveManager().removeOldestGrave(livingEntity);
                     plugin.getEntityManager().sendMessage("message.grave-oldest-replaced", livingEntity, livingEntity.getLocation(), permissionList);
                     plugin.debugMessage("Grave replaced oldest for " + entityName + " because they reached maximum graves", 2);
-                } else if (plugin.hasGrantedPermission("graves.max.bypass", player)) {
+                } else if (plugin.getPermissionManager().hasGrantedPermission("graves.max.bypass", player)) {
                     plugin.debugMessage("Grave created for " + entityName + " even though they reached the maximum graves cap", 2);
                 } else {
                     plugin.getEntityManager().sendMessage("message.max", livingEntity, livingEntity.getLocation(), permissionList);
@@ -675,7 +675,7 @@ public class EntityDeathListener implements Listener {
 
         if (pct >= 0) {
             if (livingEntity instanceof Player p) {
-                if (plugin.hasGrantedPermission("graves.experience", p)) {
+                if (plugin.getPermissionManager().hasGrantedPermission("graves.experience", p)) {
                     int adjusted = ExperienceUtil.getDropPercent(ExperienceUtil.getPlayerExperience(p), pct);
                     grave.setExperience(adjusted);
                     plugin.debugMessage("Set Experience for player grave " + grave.getUUID() + ": " + adjusted, 2);

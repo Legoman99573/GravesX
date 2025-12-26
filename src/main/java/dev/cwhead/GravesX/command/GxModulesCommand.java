@@ -27,7 +27,7 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String label, String[] args) {
-        if (sender instanceof Player player && !plugin.hasGrantedPermission("graves.command.modules", player.getPlayer())) {
+        if (sender instanceof Player player && !plugin.getPermissionManager().hasGrantedPermission("graves.command.modules", player.getPlayer())) {
             sender.sendMessage(ChatColor.RED + "☠ " + ChatColor.RESET + "You don't have permission.");
             return true;
         }
