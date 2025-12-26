@@ -15,6 +15,7 @@ import dev.cwhead.GravesX.debug.KeepInventoryDetector;
 import dev.cwhead.GravesX.debug.LateEnableHook;
 import dev.cwhead.GravesX.listener.PlayerAfterRespawnListener;
 import dev.cwhead.GravesX.manager.DebugManager;
+import dev.cwhead.GravesX.manager.MetricsManager;
 import dev.cwhead.GravesX.manager.ParticleManager;
 import dev.cwhead.GravesX.module.listener.DependencyEnableListener;
 import dev.cwhead.GravesX.module.util.LibbyImporter;
@@ -23,10 +24,6 @@ import dev.cwhead.GravesX.util.LibraryLoaderUtil;
 import dev.cwhead.GravesX.util.MclogsUtil;
 import dev.cwhead.GravesX.util.PastebinUtil;
 import dev.cwhead.GravesX.util.ToptalUtil;
-import org.bstats.bukkit.Metrics;
-import org.bstats.charts.DrilldownPie;
-import org.bstats.charts.SimplePie;
-import org.bstats.charts.SingleLineChart;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
@@ -41,7 +38,6 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.permissions.PermissionAttachmentInfo;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
@@ -50,7 +46,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
-import java.util.concurrent.Callable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -147,9 +142,9 @@ public class Graves extends JavaPlugin {
         getGravesXScheduler().runTask(() -> {
             compatibilityChecker();
             updateChecker();
-            updateConfig();
             RegisterSoftCrashHandler();
             KeepInventoryDetector.logWorldsWithGameruleKeepInventoryTrue(this);
+            updateConfig();
         });
 
         getGravesXScheduler().runTaskLater(() -> KeepInventoryDetector.install(this), 1L);
@@ -157,11 +152,13 @@ public class Graves extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new LateEnableHook(), this);
 
         if (getConfig().getBoolean("settings.metrics.enabled", true)) {
-            getLogger().info("Metrics has been enabled. All metrics will be sent to https://bstats.org/plugin/bukkit/Graves/12849 and https://bstats.org/plugin/bukkit/GravesX/23069.");
-            registerMetrics();
-            registerMetricsLegacy();
+            getLogger().info("Loading bStats Metrics Manager...");
+
+            MetricsManager metricsManager = new MetricsManager(this);
+            metricsManager.registerMetrics();
+            metricsManager.registerMetricsLegacy();
         } else {
-            getLogger().warning("Metrics has been disabled. Metrics will not be sent.");
+            getLogger().warning("Metrics has been disabled. Metrics will not be sent to bStats.");
         }
     }
 
@@ -252,6 +249,9 @@ public class Graves extends JavaPlugin {
         LibraryLoaderUtil libraryLoaderUtil = new LibraryLoaderUtil(this);
 
         getLogger().warning(getServer().getName() + " v." + getServer().getVersion() + " detected. Using BukkitLibraryManager to download and load libraries.");
+
+        libraryLoaderUtil.loadLibrary("org{}bstats", "bstats-base", "3.1.0", "org{}bstats", "com{}ranull{}graves{}libraries{}bstats", false);
+        libraryLoaderUtil.loadLibrary("org{}bstats", "bstats-bukkit", "3.1.0", "org{}bstats", "com{}ranull{}graves{}libraries{}bstats", false);
 
         libraryLoaderUtil.loadLibrary("com{}zaxxer", "HikariCP", "6.3.3", "com{}zaxxer{}hikari", "com{}ranull{}graves{}libraries{}hikari", false);
         libraryLoaderUtil.loadLibrary("org{}xerial", "sqlite-jdbc", "3.50.3.0", false);
@@ -368,66 +368,6 @@ public class Graves extends JavaPlugin {
                         + "/furniturelib.txt", this);
             }
         }
-    }
-
-    private void registerMetrics() {
-        Metrics metrics = new Metrics((Plugin) this, getMetricsID());
-
-        metrics.addCustomChart(new SingleLineChart("graves", () -> cacheManager.getGraveMap().size()));
-
-        metrics.addCustomChart(new SimplePie("permission_handler", () -> {
-            if (getIntegrationManager().hasLuckPermsHandler()) {
-                return "LuckPerms";
-            } else if (getIntegrationManager().hasVaultPermProvider()) {
-                return "Vault";
-            } else {
-                return "Bukkit";
-            }
-        }));
-
-        metrics.addCustomChart(new SimplePie("database", () -> getDataManager().getType()));
-
-        metrics.addCustomChart(new SimplePie("plugin_release", () -> {
-            if (isDevelopmentBuild) {
-                return "Development Build";
-            } else if (isOutdatedBuild) {
-                return "Outdated Build";
-            } else if (isUnknownBuild) {
-                return "Unknown Build";
-            } else {
-                return "Production Build";
-            }
-        }));
-
-        metrics.addCustomChart(new DrilldownPie("database_versions", (Callable<Map<String, Map<String, Integer>>>) () -> getDataManager().getDatabaseVersions()));
-    }
-
-    private void registerMetricsLegacy() {
-        Metrics metricsLegacy = new Metrics((Plugin) this, getMetricsIDLegacy());
-
-        metricsLegacy.addCustomChart(new SingleLineChart("graves", () -> cacheManager.getGraveMap().size()));
-
-        metricsLegacy.addCustomChart(new SimplePie("permission_handler", () -> {
-            if (getIntegrationManager().hasLuckPermsHandler()) {
-                return "LuckPerms";
-            } else if (getIntegrationManager().hasVaultPermProvider()) {
-                return "Vault";
-            } else {
-                return "Bukkit";
-            }
-        }));
-
-        metricsLegacy.addCustomChart(new SimplePie("database", () -> getDataManager().getType()));
-
-        metricsLegacy.addCustomChart(new SimplePie("plugin_release", () -> {
-            if (isDevelopmentBuild) {
-                return "Development Build";
-            } else {
-                return "Production Build";
-            }
-        }));
-
-        metricsLegacy.addCustomChart(new DrilldownPie("database_versions", (Callable<Map<String, Map<String, Integer>>>) () -> getDataManager().getDatabaseVersions()));
     }
 
     public void registerListeners() {
@@ -594,7 +534,7 @@ public class Graves extends JavaPlugin {
         FileConfiguration mainConfig = YamlConfiguration.loadConfiguration(mainConfigFile);
         int configVersion = mainConfig.getInt("config-version", 0);
 
-        if (configVersion != currentConfigVersion || isDevelopmentBuild) {
+        if (configVersion != currentConfigVersion || isPluginDevelopmentBuild()) {
             // Create the outdated folder if it doesn't exist
             new File(getDataFolder(), "outdated").mkdirs();
 
@@ -702,13 +642,13 @@ public class Graves extends JavaPlugin {
                         int comparisonResult = compareVersions(installedVersion, latestVersion);
 
                         if (comparisonResult < 0) {
-                            isOutdatedBuild = true;
+                            setPluginOutdatedBuild(true);
                             getLogger().warning("You are using an outdated version of " + getDescription().getName() + ".");
                             getLogger().warning("Installed Version: " + installedVersion);
                             getLogger().warning("Latest Version:  " + latestVersion);
                             getLogger().warning("Grab the latest release from https://www.spigotmc.org/resources/" + getSpigotID() + "/");
                         } else if (comparisonResult > 0) {
-                            isDevelopmentBuild = true;
+                            setPluginDevelopmentBuild(true);
                             getLogger().severe("You are running " + getDescription().getName() + " version " + installedVersion + ", which is a development build and is not production safe.");
                             getLogger().severe("THERE WILL NOT BE SUPPORT IF YOU LOSE GRAVE DATA FROM DEVELOPMENT OR COMPILED BUILDS. THIS BUILD IS FOR TESTING PURPOSES ONLY");
                             getLogger().severe("Keep note that you are using a development version when you report bugs.");
@@ -717,7 +657,7 @@ public class Graves extends JavaPlugin {
                             getLogger().info("You are running the latest version of " + getDescription().getName() + ".");
                         }
                     } catch (NumberFormatException exception) {
-                        isUnknownBuild = true;
+                        setPluginUnknownBuild(true);
                         getLogger().severe("NumberFormatException: " + exception.getMessage());
                         if (!installedVersion.equalsIgnoreCase(latestVersion)) {
                             getLogger().severe("You are either running an outdated version of " + getDescription().getName() + " or a development version.");
@@ -1008,11 +948,11 @@ public class Graves extends JavaPlugin {
      * @return a string indicating whether the build is Development, Outdated, Unknown, or Production.
      */
     public String getPluginReleaseType() {
-        if (isDevelopmentBuild) {
+        if (isPluginDevelopmentBuild()) {
             return "Development Build";
-        } else if (isOutdatedBuild) {
+        } else if (isPluginOutdatedBuild()) {
             return "Outdated Build";
-        } else if (isUnknownBuild) {
+        } else if (isPluginUnknownBuild()) {
             return "Unknown Build";
         } else {
             return "Production Build";
@@ -1278,20 +1218,6 @@ public class Graves extends JavaPlugin {
     }
 
     /**
-     * @return the bStats plugin ID used for usage metrics.
-     */
-    public final int getMetricsID() {
-        return 23069; // https://bstats.org/plugin/bukkit/GravesX/23069
-    }
-
-    /**
-     * @return the legacy bStats plugin ID (for previous plugin versions).
-     */
-    public final int getMetricsIDLegacy() {
-        return 12849; // https://bstats.org/plugin/bukkit/Graves/12849
-    }
-
-    /**
      * Logs the full stack trace of an exception to the plugin logger.
      *
      * @param e the exception to log.
@@ -1430,5 +1356,53 @@ public class Graves extends JavaPlugin {
         }
 
         return hasPermission;
+    }
+
+    /**
+     * @return true if this is a development build.
+     */
+    public boolean isPluginDevelopmentBuild() {
+        return isDevelopmentBuild;
+    }
+
+    /**
+     * @return true if this build is marked as outdated.
+     */
+    public boolean isPluginOutdatedBuild() {
+        return isOutdatedBuild;
+    }
+
+    /**
+     * @return true if this build's status is unknown.
+     */
+    public boolean isPluginUnknownBuild() {
+        return isUnknownBuild;
+    }
+
+    /**
+     * Sets whether this is a development build.
+     *
+     * @param value true for development build
+     */
+    public void setPluginDevelopmentBuild(boolean value) {
+        isDevelopmentBuild = value;
+    }
+
+    /**
+     * Sets whether this build is marked as outdated.
+     *
+     * @param value true for outdated build
+     */
+    public void setPluginOutdatedBuild(boolean value) {
+        isOutdatedBuild = value;
+    }
+
+    /**
+     * Sets whether this build's status is unknown.
+     *
+     * @param value true for unknown build
+     */
+    public void setPluginUnknownBuild(boolean value) {
+        isUnknownBuild = value;
     }
 }

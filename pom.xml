@@ -83,8 +83,6 @@
                                     <include>com.github.Anon8281:UniversalScheduler</include>
                                     <include>com.github.imDaniX:MiniTranslator</include>
                                     <include>com.tchristofferson:ConfigUpdater</include>
-                                    <include>org.bstats:bstats-bukkit</include>
-                                    <include>org.bstats:bstats-base</include>
                                 </includes>
                             </artifactSet>
 
@@ -107,7 +105,7 @@
                                 </relocation>
                                 <relocation>
                                     <pattern>org.bstats</pattern>
-                                    <shadedPattern>com.ranull.graves.bundledlibraries.bstats</shadedPattern>
+                                    <shadedPattern>com.ranull.graves.libraries.bstats</shadedPattern>
                                 </relocation>
 
 
@@ -202,7 +200,7 @@
                                 </relocation>
                                 <relocation>
                                     <pattern>org.bstats</pattern>
-                                    <shadedPattern>com.ranull.graves.bundledlibraries.bstats</shadedPattern>
+                                    <shadedPattern>com.ranull.graves.libraries.bstats</shadedPattern>
                                 </relocation>
 
                                 <relocation>
@@ -582,12 +580,14 @@
             <artifactId>bstats-bukkit</artifactId>
             <version>3.1.0</version>
             <scope>compile</scope>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.bstats</groupId>
             <artifactId>bstats-base</artifactId>
             <version>3.1.0</version>
             <scope>compile</scope>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.github.imDaniX</groupId>
