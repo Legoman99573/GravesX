@@ -19,6 +19,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Creature;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
@@ -411,51 +412,193 @@ public class EntityDeathListener implements Listener {
     /**
      * Retrieves the list of item stacks for the grave.
      *
-     * @param event               The entity death event.
-     * @param livingEntity        The entity that died.
-     * @param permissionList      The list of permissions.
-     * @param ignoredItemStackList A list to populate with items that should be ignored by the grave
-     *                             (they will be dropped normally instead of stored).
+     * <p>In EXACT mode we must preserve slot positions. We therefore start from the player's inventory
+     * slot layout, but ONLY keep items that are actually present in {@code event.getDrops()} (multiset/amount aware).
+     * Anything not present in drops is set to {@code null} to avoid duping.</p>
+     *
+     * @param event                 The entity death event.
+     * @param livingEntity          The entity that died.
+     * @param permissionList        The list of permissions.
+     * @param ignoredItemStackList  A list to populate with items that should be ignored by the grave
+     *                              (they will be dropped normally instead of stored).
      * @return The list of item stacks for the grave.
      */
     private List<ItemStack> getGraveItemStackList(EntityDeathEvent event,
                                                   LivingEntity livingEntity,
                                                   List<String> permissionList,
                                                   List<ItemStack> ignoredItemStackList) {
-        final List<ItemStack> graveList = new ArrayList<>();
 
         try {
-            final ListIterator<ItemStack> it = event.getDrops().listIterator();
-            while (it.hasNext()) {
-                final ItemStack item = it.next();
+            final boolean exactMode = (event.getEntity() instanceof Player player)
+                    && plugin.getGraveManager().getStorageMode(
+                    plugin.getConfigManager().getConfigSection("storage.mode", player).getString("storage.mode")
+            ) == Grave.StorageMode.EXACT;
+
+            // -------------------------
+            // EXACT: preserve slots, but only keep what is actually in event drops
+            // -------------------------
+            if (exactMode) {
+                final Player player = (Player) event.getEntity();
+
+                // Work list of remaining drops (amount-aware). We'll subtract as we assign items into grave slots.
+                final List<ItemStack> remainingDrops = new ArrayList<>();
+                for (ItemStack drop : event.getDrops()) {
+                    if (drop == null || drop.getType() == Material.AIR) continue;
+                    remainingDrops.add(drop.clone());
+                }
+
+                final List<ItemStack> slots = new ArrayList<>(Arrays.asList(player.getInventory().getContents()));
+                final ListIterator<ItemStack> it = slots.listIterator();
+
+                while (it.hasNext()) {
+                    final ItemStack invItem = it.next();
+                    if (invItem == null || invItem.getType() == Material.AIR) {
+                        continue;
+                    }
+
+                    // ---- Curse of Binding: stays equipped, never stored in grave ----
+                    if (plugin.getVersionManager().hasEnchantmentCurse()
+                            && invItem.containsEnchantment(Enchantment.BINDING_CURSE)) {
+                        it.set(null);
+                        continue;
+                    }
+
+                    // ---- Curse of Vanishing: not stored in grave ----
+                    if (plugin.getVersionManager().hasEnchantmentCurse()
+                            && invItem.containsEnchantment(Enchantment.VANISHING_CURSE)) {
+                        it.set(null);
+                        continue;
+                    }
+
+                    // Compass (grave item) handling
+                    final UUID graveId = plugin.getEntityManager().getGraveUUIDFromItemStack(invItem);
+                    if (graveId != null) {
+                        if (plugin.getConfigManager().getConfigSection("compass.destroy", livingEntity, permissionList).getBoolean("compass.destroy")) {
+                            it.set(null);
+                        } else if (plugin.getConfigManager().getConfigSection("compass.ignore", livingEntity, permissionList).getBoolean("compass.ignore")) {
+                            if (ignoredItemStackList != null) ignoredItemStackList.add(invItem);
+                            it.set(null);
+                        }
+                        // else: stored in grave -> keep (but still must exist in drops, handled below? no: compass is usually created later)
+                        continue;
+                    }
+
+                    // General ignore logic: ignored items are NOT stored in grave
+                    if (plugin.getGraveManager().shouldIgnoreItemStack(invItem, livingEntity, permissionList)) {
+                        if (ignoredItemStackList != null) ignoredItemStackList.add(invItem);
+                        it.set(null);
+                        continue;
+                    }
+
+                    // ONLY keep what is actually in event.getDrops() (amount-aware, meta-aware via isSimilar)
+                    final int consumed = consumeFromDropsBySimilarity(remainingDrops, invItem);
+                    if (consumed <= 0) {
+                        // This inventory slot item wasn't actually dropped -> do not store (prevents duping)
+                        it.set(null);
+                        continue;
+                    }
+
+                    // Store in grave, but clamp amount to what was actually dropped for this item.
+                    final ItemStack stored = invItem.clone();
+                    stored.setAmount(consumed);
+                    it.set(stored);
+                }
+
+                // Replace event drops with whatever is left after we consumed what the grave will store.
+                // (Anything left will drop normally.)
+                event.getDrops().clear();
+                for (ItemStack left : remainingDrops) {
+                    if (left != null && left.getType() != Material.AIR && left.getAmount() > 0) {
+                        event.getDrops().add(left);
+                    }
+                }
+
+                return slots;
+            }
+
+            // -------------------------
+            // NON-EXACT: compact list built from drops; remove as we store
+            // -------------------------
+            final List<ItemStack> graveList = new ArrayList<>();
+            final ListIterator<ItemStack> dropIt = event.getDrops().listIterator();
+
+            while (dropIt.hasNext()) {
+                final ItemStack item = dropIt.next();
                 if (item == null || item.getType() == Material.AIR) continue;
+
+                // Curse items: not stored in grave at all (vanilla handles behavior)
+                if (plugin.getVersionManager().hasEnchantmentCurse()
+                        && (item.containsEnchantment(Enchantment.BINDING_CURSE)
+                        || item.containsEnchantment(Enchantment.VANISHING_CURSE))) {
+                    dropIt.remove();
+                    continue;
+                }
 
                 final UUID graveId = plugin.getEntityManager().getGraveUUIDFromItemStack(item);
                 if (graveId != null) {
                     if (plugin.getConfigManager().getConfigSection("compass.destroy", livingEntity, permissionList).getBoolean("compass.destroy")) {
-                        it.remove();
+                        dropIt.remove();
                     } else if (!plugin.getConfigManager().getConfigSection("compass.ignore", livingEntity, permissionList).getBoolean("compass.ignore")) {
                         graveList.add(item);
-                        it.remove();
+                        dropIt.remove();
+                    } else {
+                        if (ignoredItemStackList != null) ignoredItemStackList.add(item);
+                        dropIt.remove();
                     }
                     continue;
                 }
 
                 if (!plugin.getGraveManager().shouldIgnoreItemStack(item, livingEntity, permissionList)) {
-                    // Goes into the grave
                     graveList.add(item);
-                    it.remove();
+                    dropIt.remove();
                 } else {
-                    // Ignored by the grave: track it separately and remove from drops
-                    if (ignoredItemStackList != null) {
-                        ignoredItemStackList.add(item);
-                    }
-                    it.remove();
+                    if (ignoredItemStackList != null) ignoredItemStackList.add(item);
+                    dropIt.remove();
                 }
             }
-        } catch (ArrayIndexOutOfBoundsException ignored) {}
 
-        return graveList;
+            return graveList;
+
+        } catch (ArrayIndexOutOfBoundsException ignored) {
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * Consumes up to {@code target.getAmount()} from {@code remainingDrops} using {@link ItemStack#isSimilar(ItemStack)}
+     * (exact meta match, ignoring amount). Mutates {@code remainingDrops} by decrementing/removing stacks.
+     *
+     * @return amount actually consumed (0 if no matching drops)
+     */
+    private static int consumeFromDropsBySimilarity(List<ItemStack> remainingDrops, ItemStack target) {
+        int need = target.getAmount();
+        int consumed = 0;
+
+        for (ListIterator<ItemStack> it = remainingDrops.listIterator(); it.hasNext() && need > 0; ) {
+            final ItemStack drop = it.next();
+            if (drop == null || drop.getType() == Material.AIR) {
+                it.remove();
+                continue;
+            }
+
+            if (!target.isSimilar(drop)) {
+                continue;
+            }
+
+            final int take = Math.min(need, drop.getAmount());
+            consumed += take;
+            need -= take;
+
+            final int left = drop.getAmount() - take;
+            if (left <= 0) {
+                it.remove();
+            } else {
+                drop.setAmount(left);
+                it.set(drop);
+            }
+        }
+
+        return consumed;
     }
 
     /**

@@ -1447,7 +1447,6 @@ public class GraveManager {
             List<org.bukkit.inventory.ItemStack> graveItemStackList,
             List<org.bukkit.inventory.ItemStack> removedItemStackList,
             List<String> permissionList) {
-        List<ItemStack> filterGraveItemStackList = filterGraveItemStackList(graveItemStackList, removedItemStackList, livingEntity, permissionList);
 
         String title;
         if (plugin.getIntegrationManager().hasMiniMessage()) {
@@ -1459,7 +1458,7 @@ public class GraveManager {
 
         Grave.StorageMode storageMode = getStorageMode(plugin.getConfigManager().getConfigSection("storage.mode", grave).getString("storage.mode"));
 
-        return plugin.getGraveManager().createGraveInventory(grave, grave.getLocationDeath(), filterGraveItemStackList, title, storageMode);
+        return plugin.getGraveManager().createGraveInventory(grave, grave.getLocationDeath(), graveItemStackList, title, storageMode);
     }
 
     /**
@@ -1553,54 +1552,6 @@ public class GraveManager {
             }
         }
         return counter;
-    }
-
-    /**
-     * Filters the grave item stack list based on the living entity, removed item stacks, and permission list.
-     *
-     * @param itemStackList        the original list of item stacks.
-     * @param removedItemStackList the list of item stacks to be removed.
-     * @param livingEntity         the living entity.
-     * @param permissionList       the list of permissions associated with the grave.
-     * @return the filtered list of item stacks.
-     */
-    public List<ItemStack> filterGraveItemStackList(List<ItemStack> itemStackList, List<ItemStack> removedItemStackList, LivingEntity livingEntity, List<String> permissionList) {
-        List<ItemStack> source = (itemStackList != null) ? new ArrayList<>(itemStackList) : new ArrayList<>();
-        List<ItemStack> removed = (removedItemStackList != null) ? new ArrayList<>(removedItemStackList) : new ArrayList<>();
-
-        if (livingEntity instanceof Player player && getStorageMode(plugin.getConfigManager().getConfigSection("storage.mode", livingEntity, permissionList).getString("storage.mode")) == Grave.StorageMode.EXACT) {
-
-            List<ItemStack> playerInventoryContentList = Arrays.asList(player.getInventory().getContents());
-
-            List<ItemStack> itemStackListNew = new ArrayList<>(playerInventoryContentList);
-            List<ItemStack> differenceList = new ArrayList<>(removed);
-
-            differenceList.removeIf(source::contains);
-
-            itemStackListNew.removeAll(differenceList);
-
-            source.removeAll(playerInventoryContentList);
-
-            if (!source.isEmpty()) {
-                int counter = 0;
-
-                for (ItemStack itemStack : new ArrayList<>(itemStackListNew)) {
-                    if (!source.isEmpty()) {
-                        if (itemStack == null) {
-                            itemStackListNew.set(counter, source.get(0));
-                        } else {
-                            itemStackListNew.add(source.get(0));
-                        }
-                        source.remove(0);
-                    }
-                    counter++;
-                }
-            }
-
-            return itemStackListNew;
-        }
-
-        return source;
     }
 
     /**
