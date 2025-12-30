@@ -8,7 +8,6 @@ import com.ranull.graves.listener.*;
 import com.ranull.graves.manager.*;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.*;
-import com.tchristofferson.configupdater.ConfigUpdater;
 import dev.cwhead.GravesX.addon.GravesXAddon;
 import dev.cwhead.GravesX.command.GxModulesCommand;
 import dev.cwhead.GravesX.debug.KeepInventoryDetector;
@@ -28,25 +27,18 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
-import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.*;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Graves extends JavaPlugin {
     private VersionManager versionManager;
@@ -170,14 +162,10 @@ public class Graves extends JavaPlugin {
         registerRecipes();
         saveTextFiles();
 
-        getGravesXScheduler().runTask(() -> {
-            compatibilityChecker();
-            updateChecker();
-            RegisterSoftCrashHandler();
+        getGravesXScheduler().runTaskLater(() -> {
+            KeepInventoryDetector.install(this);
             KeepInventoryDetector.logWorldsWithGameruleKeepInventoryTrue(this);
-        });
-
-        getGravesXScheduler().runTaskLater(() -> KeepInventoryDetector.install(this), 1L);
+        }, 1L);
 
         getServer().getPluginManager().registerEvents(new LateEnableHook(), this);
 
@@ -190,6 +178,13 @@ public class Graves extends JavaPlugin {
         } else {
             getLogger().warning("Metrics has been disabled. Metrics will not be sent to bStats.");
         }
+
+        getGravesXScheduler().runTask(() -> {
+            compatibilityChecker();
+            updateChecker();
+            getConfigManager().updateIfNeeded(isPluginDevelopmentBuild());
+            RegisterSoftCrashHandler();
+        });
     }
 
     @Override
