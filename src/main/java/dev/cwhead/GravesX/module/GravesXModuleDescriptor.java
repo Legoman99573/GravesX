@@ -1,5 +1,7 @@
 package dev.cwhead.GravesX.module;
 
+import dev.cwhead.GravesX.module.util.ModuleInfo;
+
 import java.util.List;
 
 /**
@@ -14,6 +16,7 @@ import java.util.List;
  * to run on Folia-based server implementations.</p>
  */
 public interface GravesXModuleDescriptor {
+
     /**
      * Module display name from {@code module.yml:name}.
      *
@@ -92,6 +95,28 @@ public interface GravesXModuleDescriptor {
      * @return immutable list of soft plugin names (may be empty)
      */
     List<String> getPluginSoftDepends();
+
+    /**
+     * Declared load phase from {@code module.yml:load}.
+     *
+     * <p>This is a declarative hint that tells the host when the module expects
+     * to be enabled relative to server/plugin lifecycle.</p>
+     *
+     * <p>If omitted in {@code module.yml}, the host will default this to
+     * {@link GravesXModuleController.LoadPhase#COMPLETED}.</p>
+     *
+     * @return the declared load phase, never {@code null}
+     */
+    GravesXModuleController.LoadPhase getLoadPhase();
+
+    /**
+     * Libraries declared in {@code module.yml:libraries}.
+     *
+     * <p>Each entry describes the Maven coordinates plus optional relocation/isolation flags.</p>
+     *
+     * @return immutable list of library definitions (may be empty)
+     */
+    List<ModuleInfo.LibraryDef> getLibraries();
 
     /**
      * Current runtime enablement state.

@@ -15,6 +15,7 @@ import java.util.List;
  *   <li>Enable/disable another module by key (module.yml name, simple class name, or FQCN)</li>
  *   <li>Access read-only module descriptors and enumerate all modules</li>
  *   <li>Query Folia support flags for itself or other modules</li>
+ *   <li>Query module load phase for itself or other modules</li>
  * </ul>
  *
  * <p>Unless otherwise noted, enable/disable operations are idempotent:
@@ -27,6 +28,32 @@ import java.util.List;
  * may consistently return {@code false} even though no exception is thrown.</p>
  */
 public interface GravesXModuleController {
+
+    /**
+     * Defines the lifecycle phase in which a module is expected to be enabled by the host.
+     *
+     * <ul>
+     *   <li>{@link #STARTUP} - Early startup (e.g., during plugin enable).</li>
+     *   <li>{@link #POSTWORLD} - After worlds are loaded/available (safe for world-dependent logic).</li>
+     *   <li>{@link #COMPLETED} - After startup is considered complete (late init / optional features).</li>
+     * </ul>
+     */
+    enum LoadPhase {
+        /**
+         * Early startup phase (typically during plugin enable).
+         */
+        STARTUP,
+
+        /**
+         * After worlds are loaded/available (safe for world-dependent logic).
+         */
+        POSTWORLD,
+
+        /**
+         * After startup is considered complete (late init / optional features).
+         */
+        COMPLETED
+    }
 
     /**
      * Reports whether <strong>this</strong> (current) module is enabled.
@@ -187,5 +214,34 @@ public interface GravesXModuleController {
     default boolean supportsFolia() {
         GravesXModuleDescriptor d = getThisModule();
         return d != null && d.supportsFolia();
+    }
+
+    /**
+     * Convenience accessor for {@code getModule(moduleKey).getLoadPhase()}.
+     *
+     * <p>This reflects the module load phase parsed from {@code module.yml} (or host defaults).
+     * If the module cannot be found, this returns {@link LoadPhase#STARTUP}.</p>
+     *
+     * @param moduleKey identifier for the target module
+     * @return the target module load phase (never {@code null})
+     */
+    default LoadPhase getLoadPhase(String moduleKey) {
+        GravesXModuleDescriptor d = getModule(moduleKey);
+        LoadPhase phase = (d != null) ? d.getLoadPhase() : null;
+        return phase != null ? phase : LoadPhase.STARTUP;
+    }
+
+    /**
+     * Convenience accessor for {@code getThisModule().getLoadPhase()}.
+     *
+     * <p>This reflects this module's load phase parsed from {@code module.yml} (or host defaults).
+     * If unset, this returns {@link LoadPhase#STARTUP}.</p>
+     *
+     * @return the current module load phase (never {@code null})
+     */
+    default LoadPhase getLoadPhase() {
+        GravesXModuleDescriptor d = getThisModule();
+        LoadPhase phase = (d != null) ? d.getLoadPhase() : null;
+        return phase != null ? phase : LoadPhase.STARTUP;
     }
 }

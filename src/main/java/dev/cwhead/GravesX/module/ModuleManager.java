@@ -21,7 +21,8 @@ import java.util.stream.Collectors;
  * Manages GravesX modules: discovers, loads, resolves order, and enables/disables them.
  *
  * <p>Module metadata is parsed from {@code module.yml} into {@link ModuleInfo}, including
- * the {@code supportsFolia} flag, which is then exposed via {@link GravesXModuleDescriptor}.</p>
+ * the {@code supportsFolia} flag, {@code load} phase, and optional {@code libraries} list,
+ * which are then exposed via {@link GravesXModuleDescriptor}.</p>
  */
 public final class ModuleManager {
     private final Graves plugin;
@@ -33,6 +34,18 @@ public final class ModuleManager {
     private final Set<String> pending = new LinkedHashSet<>();
     private List<String> topoOrder = List.of();
     private final ModuleCommandRegistrar commandRegistrar;
+
+    /**
+     * Tracks the highest lifecycle phase the host has reached so far.
+     *
+     * <p>This is used to gate module enables by {@code module.yml:load}:</p>
+     * <ul>
+     *   <li>STARTUP modules may enable at STARTUP (or later if they were pending)</li>
+     *   <li>POSTWORLD modules may only enable at POSTWORLD (or later)</li>
+     *   <li>COMPLETED modules may only enable at COMPLETED</li>
+     * </ul>
+     */
+    private GravesXModuleController.LoadPhase currentPhase = GravesXModuleController.LoadPhase.STARTUP;
 
     /**
      * Holds a loaded module instance and its metadata.
@@ -153,6 +166,18 @@ public final class ModuleManager {
         @Override
         public List<String> getPluginSoftDepends() {
             return List.copyOf(lm.info.pluginSoftDepends());
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public GravesXModuleController.LoadPhase getLoadPhase() {
+            GravesXModuleController.LoadPhase phase = lm.info.loadPhase();
+            return phase != null ? phase : GravesXModuleController.LoadPhase.COMPLETED;
+        }
+
+        @Override
+        public List<ModuleInfo.LibraryDef> getLibraries() {
+            return List.copyOf(lm.info.libraries());
         }
 
         /** {@inheritDoc} */
@@ -355,8 +380,10 @@ public final class ModuleManager {
     }
 
     /**
-     * Scans the modules directory, validates jars, loads metadata, constructs instances, and calls onModuleLoad.
-     * Also computes the topological order after loading descriptors.
+     * Scans the modules directory, validates jars, loads metadata, constructs instances, imports
+     * declared module libraries (if any), and calls {@link GravesXModule#onModuleLoad(ModuleContext)}.
+     *
+     * <p>Also computes the topological order after loading descriptors.</p>
      */
     public void loadAll() {
         File[] jars = modulesDir.listFiles((d, n) -> n.toLowerCase(Locale.ROOT).endsWith(".jar"));
@@ -403,6 +430,7 @@ public final class ModuleManager {
                 LoadedModule lm = new LoadedModule(info, cl, instance, ctx);
                 ctx._internalAttachController(new ControllerImpl(lm));
 
+                importDeclaredLibraries(lm);
                 instance.onModuleLoad(ctx);
 
                 loaded.put(info.name(), lm);
@@ -411,6 +439,34 @@ public final class ModuleManager {
             }
         }
         buildTopoOrder();
+    }
+
+    private void importDeclaredLibraries(LoadedModule lm) {
+        if (lm == null) return;
+
+        List<ModuleInfo.LibraryDef> libs = lm.info.libraries();
+        if (libs == null || libs.isEmpty()) return;
+
+        if (importer == null) {
+            warn(lm.info, "Module declares libraries but no LibraryImporter is configured; skipping library import.");
+            return;
+        }
+
+        for (ModuleInfo.LibraryDef lib : libs) {
+            if (lib == null) continue;
+
+            String coords = lib.coordinates();
+            if (coords == null || coords.isBlank()) continue;
+
+            try {
+                importer.importLibrary(lm.context, lib);
+            } catch (Throwable t) {
+                lm.failed = true;
+                severe(lm.info, "Failed importing library " + coords + " for " + lm.info.name(), t);
+                disable(lm.info.name());
+                return;
+            }
+        }
     }
 
     /**
@@ -461,11 +517,20 @@ public final class ModuleManager {
     /**
      * Enables all modules in topological order.
      */
-    public void enableAll() {
+    public void enableAll(GravesXModuleController.LoadPhase phase) {
+        if (phase == null) phase = GravesXModuleController.LoadPhase.STARTUP;
+        if (phase.ordinal() > currentPhase.ordinal()) currentPhase = phase;
+
         for (String n : topoOrder) {
-            Optional<LoadedModule> lm = get(n);
-            if (lm.isPresent() && !lm.get().enabled) attemptEnable(lm.get());
+            LoadedModule lm = loaded.get(n);
+            if (lm != null && !lm.enabled && shouldAttemptInCurrentPhase(lm)) {
+                attemptEnable(lm);
+            }
         }
+    }
+
+    public void enableAll() {
+        enableAll(GravesXModuleController.LoadPhase.COMPLETED);
     }
 
     /**
@@ -473,11 +538,21 @@ public final class ModuleManager {
      */
     public void tryEnablePending() {
         if (pending.isEmpty()) return;
+
         for (String n : topoOrder) {
             if (!pending.contains(n)) continue;
-            Optional<LoadedModule> lm = get(n);
-            if (lm.isPresent() && !lm.get().enabled) attemptEnable(lm.get());
+
+            LoadedModule lm = loaded.get(n);
+            if (lm != null && !lm.enabled && shouldAttemptInCurrentPhase(lm)) {
+                attemptEnable(lm);
+            }
         }
+    }
+
+    private boolean shouldAttemptInCurrentPhase(LoadedModule lm) {
+        GravesXModuleController.LoadPhase needed = lm.info.loadPhase();
+        if (needed == null) needed = GravesXModuleController.LoadPhase.COMPLETED;
+        return needed.ordinal() <= currentPhase.ordinal();
     }
 
     /**
@@ -495,6 +570,13 @@ public final class ModuleManager {
             info(lm.info, "Not enabling " + name + " because it previously failed to enable and was disabled.");
             return false;
         }
+        if (!lm.enabled && !shouldAttemptInCurrentPhase(lm)) {
+            pending.add(lm.info.name());
+            info(lm.info, "Pending " + lm.info.name() + " (waiting for load phase: "
+                    + (lm.info.loadPhase() != null ? lm.info.loadPhase() : GravesXModuleController.LoadPhase.COMPLETED)
+                    + ", current phase: " + currentPhase + ")");
+            return false;
+        }
         return lm.enabled || attemptEnable(lm);
     }
 
@@ -509,27 +591,11 @@ public final class ModuleManager {
         if (lm == null) return false;
         info(lm.info, "Disabling Module " + name);
 
-        try {
-            lm.context._internalPreDisable();
-        } catch (Throwable ignored) {
-        }
-        try {
-            lm.instance.onModuleDisable(lm.context);
-        } catch (Throwable t) {
-            severe(lm.info, "Error in onModuleDisable for " + name, t);
-        }
-        try {
-            commandRegistrar.unregisterFor(lm);
-        } catch (Throwable ignored) {
-        }
-        try {
-            lm.context._internalCleanup();
-        } catch (Throwable ignored) {
-        }
-        try {
-            lm.cl.close();
-        } catch (Throwable ignored) {
-        }
+        try { lm.context._internalPreDisable(); } catch (Throwable ignored) {}
+        try { lm.instance.onModuleDisable(lm.context); } catch (Throwable t) { severe(lm.info, "Error in onModuleDisable for " + name, t); }
+        try { commandRegistrar.unregisterFor(lm); } catch (Throwable ignored) {}
+        try { lm.context._internalCleanup(); } catch (Throwable ignored) {}
+        try { lm.cl.close(); } catch (Throwable ignored) {}
 
         lm.enabled = false;
         pending.remove(name);
@@ -547,6 +613,33 @@ public final class ModuleManager {
         topoOrder = List.of();
         pending.clear();
         loaded.clear();
+        currentPhase = GravesXModuleController.LoadPhase.STARTUP;
+    }
+
+    /**
+     * Scans the modules directory and returns a lightweight list of detected modules
+     * by reading only {@code module.yml} from each jar (no class loading).
+     */
+    public List<ModuleInfo> detectModules() {
+        List<ModuleInfo> out = new ArrayList<>();
+        File[] jars = modulesDir.listFiles((d, n) -> n.toLowerCase(Locale.ROOT).endsWith(".jar"));
+        if (jars == null || jars.length == 0) return out;
+
+        Arrays.sort(jars);
+        for (File jar : jars) {
+            try (JarFile jf = new JarFile(jar)) {
+                JarEntry entry = jf.getJarEntry("module.yml");
+                if (entry == null) continue;
+
+                try (InputStream in = jf.getInputStream(entry)) {
+                    ModuleInfo mi = ModuleInfo.fromYaml(in);
+                    if (mi.name() != null) out.add(mi);
+                }
+            } catch (Throwable ignored) {
+                // intentionally quiet: detection is best-effort
+            }
+        }
+        return out;
     }
 
     /**
@@ -569,6 +662,15 @@ public final class ModuleManager {
             return false;
         }
 
+        // Phase gate: do not enable modules earlier than their declared phase.
+        if (!shouldAttemptInCurrentPhase(lm)) {
+            pending.add(lm.info.name());
+            info(lm.info, "Pending " + lm.info.name() + " (waiting for load phase: "
+                    + (lm.info.loadPhase() != null ? lm.info.loadPhase() : GravesXModuleController.LoadPhase.COMPLETED)
+                    + ", current phase: " + currentPhase + ")");
+            return false;
+        }
+
         List<String> missingPlugins = missingRequiredPlugins(lm.info);
         if (!missingPlugins.isEmpty()) {
             warn(lm.info, lm.info.name() + ": required plugin(s) not installed: " + String.join(", ", missingPlugins));
@@ -582,6 +684,7 @@ public final class ModuleManager {
             pending.add(lm.info.name());
             info(lm.info, "Pending " + lm.info.name() + " (waiting for required plugins to enable: "
                     + String.join(", ", inactivePlugins) + ")");
+            warnPostworldPendingRecommendation(lm.info, "plugins", inactivePlugins);
             return false;
         }
 
@@ -594,6 +697,7 @@ public final class ModuleManager {
         if (!missingMods.isEmpty()) {
             pending.add(lm.info.name());
             info(lm.info, "Pending " + lm.info.name() + " (waiting for modules: " + String.join(", ", missingMods) + ")");
+            warnPostworldPendingRecommendation(lm.info, "modules", missingMods);
             return false;
         }
 
@@ -615,7 +719,6 @@ public final class ModuleManager {
             try {
                 commandRegistrar.registerFor(lm);
             } catch (Throwable t) {
-                // Command registration failure is a hard error: mark failed, disable, and do not re-enable.
                 lm.failed = true;
                 severe(lm.info, "Command registration failed for " + lm.info.name(), t);
                 disable(lm.info.name());
@@ -629,6 +732,17 @@ public final class ModuleManager {
             disable(lm.info.name());
             return false;
         }
+    }
+
+    private void warnPostworldPendingRecommendation(ModuleInfo info, String waitingOnWhat, List<String> missing) {
+        if (info == null) return;
+        if (info.loadPhase() != GravesXModuleController.LoadPhase.POSTWORLD) return;
+        if (missing == null || missing.isEmpty()) return;
+
+        warn(info,
+                info.name() + " is configured to load at POSTWORLD but is waiting for " + waitingOnWhat + ": "
+                        + String.join(", ", missing)
+                        + ". Consider setting load to COMPLETED in module.yml for " + info.name() + " to avoid load-order delays.");
     }
 
     /**
@@ -666,7 +780,7 @@ public final class ModuleManager {
         if (hints.isEmpty()) return false;
         for (String name : hints) {
             Plugin p = Bukkit.getPluginManager().getPlugin(name);
-            if (p != null) return true; // we "see" it: defer
+            if (p != null) return true;
         }
         return false;
     }

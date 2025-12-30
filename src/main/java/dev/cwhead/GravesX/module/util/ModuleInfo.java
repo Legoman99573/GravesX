@@ -1,5 +1,7 @@
 package dev.cwhead.GravesX.module.util;
 
+import dev.cwhead.GravesX.module.GravesXModuleController;
+
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,10 +17,11 @@ import java.util.regex.Pattern;
  * Immutable descriptor of a module parsed from {@code module.yml}.
  *
  * <p>Holds name, description, main class, version, authors, website,
- * plugin/module dependency lists, Folia support flag, and simple
- * permission/command metadata.</p>
+ * plugin/module dependency lists, Folia support flag, declared load phase,
+ * libraries, and simple permission/command metadata.</p>
  */
 public final class ModuleInfo {
+
     /**
      * Simple immutable description of a permission from module.yml:
      *
@@ -136,13 +139,93 @@ public final class ModuleInfo {
         }
     }
 
+    /**
+     * Immutable descriptor for a library entry under {@code libraries:} in module.yml.
+     *
+     * <pre>
+     * libraries:
+     *   - com.squareup.okhttp3:okhttp:4.9.0
+     *   - old.loc.library:library:1.0.0
+     *     relocatefrom: "old.loc.library"
+     *     relocateTo: "new.loc.library"
+     *     isIsolated: true
+     *     useTransitive: false
+     *     repo: "repo.url"
+     *     id: "id"
+     * </pre>
+     */
+    public static final class LibraryDef {
+        private final String coordinates;
+        private final String relocateFrom;
+        private final String relocateTo;
+        private final Boolean isIsolated;
+        private final Boolean useTransitive;
+        private final String repo;
+        private final String id;
+
+        public LibraryDef(
+                String coordinates,
+                String relocateFrom,
+                String relocateTo,
+                Boolean isIsolated,
+                Boolean useTransitive,
+                String repo,
+                String id
+        ) {
+            this.coordinates = coordinates;
+            this.relocateFrom = relocateFrom;
+            this.relocateTo = relocateTo;
+            this.isIsolated = isIsolated;
+            this.useTransitive = useTransitive;
+            this.repo = repo;
+            this.id = id;
+        }
+
+        /** Maven coordinates, e.g. {@code group:artifact:version}. */
+        public String coordinates() {
+            return coordinates;
+        }
+
+        /** Relocation source package, or {@code null}. */
+        public String relocateFrom() {
+            return relocateFrom;
+        }
+
+        /** Relocation target package, or {@code null}. */
+        public String relocateTo() {
+            return relocateTo;
+        }
+
+        /** Whether this library should be isolated, or {@code null} if unspecified. */
+        public Boolean isIsolated() {
+            return isIsolated;
+        }
+
+        /** Whether transitive dependencies should be resolved, or {@code null} if unspecified. */
+        public Boolean useTransitive() {
+            return useTransitive;
+        }
+
+        /** Optional repository URL, or {@code null}. */
+        public String repo() {
+            return repo;
+        }
+
+        /** Optional repository id/name, or {@code null}. */
+        public String id() {
+            return id;
+        }
+    }
+
     private final String name, description, mainClass, version, website;
     private final List<String> authors;
     private final List<String> pluginDepends, pluginSoftDepends, pluginLoadBefore;
     private final List<String> moduleDepends, moduleSoftDepends, moduleLoadBefore;
     private final boolean supportsFolia;
+    private final GravesXModuleController.LoadPhase loadPhase;
     private final Map<String, PermissionDef> permissions;
     private final Map<String, CommandDef> commands;
+    private final List<LibraryDef> libraries;
 
     private ModuleInfo(
             String name,
@@ -158,8 +241,10 @@ public final class ModuleInfo {
             List<String> mSoft,
             List<String> mBefore,
             boolean supportsFolia,
+            GravesXModuleController.LoadPhase loadPhase,
             Map<String, PermissionDef> permissions,
-            Map<String, CommandDef> commands
+            Map<String, CommandDef> commands,
+            List<LibraryDef> libraries
     ) {
         this.name = name;
         this.description = nv(description);
@@ -174,8 +259,10 @@ public final class ModuleInfo {
         this.moduleSoftDepends = List.copyOf(mSoft);
         this.moduleLoadBefore = List.copyOf(mBefore);
         this.supportsFolia = supportsFolia;
+        this.loadPhase = (loadPhase != null) ? loadPhase : GravesXModuleController.LoadPhase.COMPLETED;
         this.permissions = Map.copyOf(permissions == null ? Map.of() : permissions);
         this.commands = Map.copyOf(commands == null ? Map.of() : commands);
+        this.libraries = List.copyOf(libraries == null ? List.of() : libraries);
     }
 
     /** Gets the module name, or {@code null} if not provided. */
@@ -248,6 +335,27 @@ public final class ModuleInfo {
     }
 
     /**
+     * Declared enable phase for this module via {@code load:}.
+     *
+     * <p>Valid values are {@code STARTUP}, {@code POSTWORLD}, {@code COMPLETED}.
+     * If missing or invalid, defaults to {@link GravesXModuleController.LoadPhase#COMPLETED}.</p>
+     *
+     * @return declared load phase (never {@code null})
+     */
+    public GravesXModuleController.LoadPhase loadPhase() {
+        return loadPhase;
+    }
+
+    /**
+     * Libraries declared under {@code libraries:} in module.yml.
+     *
+     * @return immutable list of library definitions (may be empty, never {@code null})
+     */
+    public List<LibraryDef> libraries() {
+        return libraries;
+    }
+
+    /**
      * Returns permissions defined in {@code permissions:} in module.yml,
      * keyed by permission node.
      */
@@ -271,25 +379,22 @@ public final class ModuleInfo {
      * {@code author} (single) or {@code authors} (list),
      * {@code pluginDepends}, {@code pluginSoftDepends}, {@code pluginLoadBefore},
      * {@code moduleDepends}, {@code moduleSoftDepends} / {@code moduleSoftDepend},
-     * {@code moduleLoadBefore}, {@code supportsFolia},
+     * {@code moduleLoadBefore}, {@code supportsFolia}, {@code load},
+     * {@code libraries},
      * {@code permissions}, {@code commands}.</p>
      *
-     * <p>Permissions and commands support a simple two-level structure like:</p>
+     * <p>Libraries support a simple list with optional nested flags:</p>
      *
      * <pre>
-     * permissions:
-     *   node.here:
-     *     description: "text"
-     *     default: true
-     *
-     * commands:
-     *   cmd:
-     *     description: "text"
-     *     usage: "/cmd"
-     *     permission: "node"
-     *     aliases: ["a", "b"]
-     *     executor: fqcn
-     *     tab-completer: fqcn
+     * libraries:
+     *   - group:artifact:version
+     *   - group:artifact:version
+     *     relocatefrom: old.pkg
+     *     relocateto: new.pkg
+     *     isIsolated: true
+     *     useTransitive: false
+     *     repo: https://repo.example/
+     *     id: myRepo
      * </pre>
      *
      * <p>List values may be comma-separated on the same line or via {@code - item} lines.
@@ -305,6 +410,7 @@ public final class ModuleInfo {
         Map<String, String> scalars = new HashMap<>();
         Map<String, PermissionDef> permissions = new LinkedHashMap<>();
         Map<String, CommandDef> commands = new LinkedHashMap<>();
+        List<LibraryDef> libraries = new ArrayList<>();
 
         String currentList = null;
         String currentSection = null;
@@ -323,9 +429,19 @@ public final class ModuleInfo {
             String tabCompleter;
             List<String> aliases = new ArrayList<>();
         }
+        class LibBuilder {
+            String coordinates;
+            String relocateFrom;
+            String relocateTo;
+            Boolean isIsolated;
+            Boolean useTransitive;
+            String repo;
+            String id;
+        }
 
         PermBuilder currentPerm = null;
         CmdBuilder currentCmd = null;
+        LibBuilder currentLib = null;
 
         Pattern keyLine = Pattern.compile("^[A-Za-z][A-Za-z0-9_-]*\\s*:");
 
@@ -348,7 +464,10 @@ public final class ModuleInfo {
             int indent = leadingSpaces(raw);
 
             if (indent == 0 && keyLine.matcher(trimmed).find()) {
-                if (!"permissions".equalsIgnoreCase(trimmed.split(":")[0].trim())
+                String topKeyName = trimmed.split(":")[0].trim();
+
+                // flush section builders when leaving their section
+                if (!"permissions".equalsIgnoreCase(topKeyName)
                         && currentPerm != null && currentPerm.node != null) {
                     permissions.put(currentPerm.node,
                             new PermissionDef(currentPerm.node,
@@ -356,7 +475,7 @@ public final class ModuleInfo {
                                     nv(currentPerm.defaultValue)));
                     currentPerm = null;
                 }
-                if (!"commands".equalsIgnoreCase(trimmed.split(":")[0].trim())
+                if (!"commands".equalsIgnoreCase(topKeyName)
                         && currentCmd != null && currentCmd.name != null) {
                     commands.put(currentCmd.name,
                             new CommandDef(currentCmd.name,
@@ -367,6 +486,19 @@ public final class ModuleInfo {
                                     nv(currentCmd.executor),
                                     nv(currentCmd.tabCompleter)));
                     currentCmd = null;
+                }
+                if (!"libraries".equalsIgnoreCase(topKeyName)
+                        && currentLib != null && currentLib.coordinates != null) {
+                    libraries.add(new LibraryDef(
+                            nv(currentLib.coordinates),
+                            nv(currentLib.relocateFrom),
+                            nv(currentLib.relocateTo),
+                            currentLib.isIsolated,
+                            currentLib.useTransitive,
+                            nv(currentLib.repo),
+                            nv(currentLib.id)
+                    ));
+                    currentLib = null;
                 }
 
                 int idx = trimmed.indexOf(':');
@@ -381,6 +513,9 @@ public final class ModuleInfo {
                     continue;
                 } else if ("commands".equals(k)) {
                     currentSection = "commands";
+                    continue;
+                } else if ("libraries".equals(k)) {
+                    currentSection = "libraries";
                     continue;
                 }
 
@@ -415,6 +550,48 @@ public final class ModuleInfo {
             if (trimmed.startsWith("-") && currentList != null && currentSection == null) {
                 String v = trimmed.substring(1).trim();
                 if (!v.isEmpty()) lists.get(currentList).add(v);
+                continue;
+            }
+
+            if ("libraries".equals(currentSection)) {
+                // New library entry "- group:artifact:version"
+                if (indent == 2 && trimmed.startsWith("-")) {
+                    if (currentLib != null && currentLib.coordinates != null) {
+                        libraries.add(new LibraryDef(
+                                nv(currentLib.coordinates),
+                                nv(currentLib.relocateFrom),
+                                nv(currentLib.relocateTo),
+                                currentLib.isIsolated,
+                                currentLib.useTransitive,
+                                nv(currentLib.repo),
+                                nv(currentLib.id)
+                        ));
+                    }
+                    currentLib = new LibBuilder();
+                    currentLib.coordinates = stripSimpleQuotes(trimmed.substring(1).trim());
+                    continue;
+                }
+
+                int idx = trimmed.indexOf(':');
+                if (idx <= 0 || currentLib == null) continue;
+
+                String key = trimmed.substring(0, idx).trim();
+                String val = stripSimpleQuotes(trimmed.substring(idx + 1).trim());
+                String lk = key.toLowerCase(Locale.ROOT);
+
+                if ("relocatefrom".equals(lk)) {
+                    currentLib.relocateFrom = val;
+                } else if ("relocateto".equals(lk) || "relocateto".equals(lk)) {
+                    currentLib.relocateTo = val;
+                } else if ("isisolated".equals(lk)) {
+                    currentLib.isIsolated = parseBoolNullable(val);
+                } else if ("usetransitive".equals(lk)) {
+                    currentLib.useTransitive = parseBoolNullable(val);
+                } else if ("repo".equals(lk)) {
+                    currentLib.repo = val;
+                } else if ("id".equals(lk)) {
+                    currentLib.id = val;
+                }
                 continue;
             }
 
@@ -485,7 +662,6 @@ public final class ModuleInfo {
                     }
                 }
             }
-
         }
 
         if (currentPerm != null && currentPerm.node != null) {
@@ -504,13 +680,24 @@ public final class ModuleInfo {
                             nv(currentCmd.executor),
                             nv(currentCmd.tabCompleter)));
         }
+        if (currentLib != null && currentLib.coordinates != null) {
+            libraries.add(new LibraryDef(
+                    nv(currentLib.coordinates),
+                    nv(currentLib.relocateFrom),
+                    nv(currentLib.relocateTo),
+                    currentLib.isIsolated,
+                    currentLib.useTransitive,
+                    nv(currentLib.repo),
+                    nv(currentLib.id)
+            ));
+        }
 
         // Scalars
-        String name  = nv(scalars.get("name"));
-        String desc  = nv(scalars.get("description"));
-        String main  = nv(scalars.get("main"));
-        String ver   = scalars.getOrDefault("version", "0.0.0");
-        String site  = nv(scalars.get("website"));
+        String name = nv(scalars.get("name"));
+        String desc = nv(scalars.get("description"));
+        String main = nv(scalars.get("main"));
+        String ver = scalars.getOrDefault("version", "0.0.0");
+        String site = nv(scalars.get("website"));
 
         List<String> authors = new ArrayList<>(lists.getOrDefault("authors", List.of()));
         String singleAuthor = nv(scalars.get("author"));
@@ -527,6 +714,8 @@ public final class ModuleInfo {
                 scalars.getOrDefault("supportsfolia", "false")
         );
 
+        GravesXModuleController.LoadPhase loadPhase = parseLoadPhase(scalars.get("load"));
+
         List<String> moduleSoftDeps = new ArrayList<>(lists.getOrDefault("modulesoftdepends", List.of()));
         moduleSoftDeps.addAll(lists.getOrDefault("modulesoftdepend", List.of()));
 
@@ -539,15 +728,52 @@ public final class ModuleInfo {
                 moduleSoftDeps,
                 lists.getOrDefault("moduleloadbefore", List.of()),
                 supportsFolia,
+                loadPhase,
                 permissions,
-                commands
+                commands,
+                libraries
         );
     }
 
+    /**
+     * Parses the {@code load:} value from module.yml into a {@link GravesXModuleController.LoadPhase}.
+     *
+     * <p>Accepts case-insensitive phase names. If the value is missing/blank or invalid,
+     * this returns {@link GravesXModuleController.LoadPhase#COMPLETED}.</p>
+     *
+     * @param raw raw string value from {@code load:} (maybe {@code null})
+     * @return resolved load phase (never {@code null})
+     */
+    private static GravesXModuleController.LoadPhase parseLoadPhase(String raw) {
+        String v = nv(stripSimpleQuotes(raw));
+        if (v == null) return GravesXModuleController.LoadPhase.COMPLETED;
+
+        String u = v.trim().toUpperCase(Locale.ROOT);
+        try {
+            return GravesXModuleController.LoadPhase.valueOf(u);
+        } catch (IllegalArgumentException ignored) {
+            return GravesXModuleController.LoadPhase.COMPLETED;
+        }
+    }
+
+    /**
+     * Normalizes a string value by converting blank inputs to {@code null}.
+     *
+     * @param s input string (maybe {@code null})
+     * @return trimmed input, or {@code null} if {@code s} is null/blank
+     */
     private static String nv(String s) {
         return (s == null || s.isBlank()) ? null : s;
     }
 
+    /**
+     * Counts leading indentation characters.
+     *
+     * <p>Spaces count as 1. Tabs are treated as 4 spaces.</p>
+     *
+     * @param s input line (must not be {@code null})
+     * @return number of leading spaces (with tabs expanded)
+     */
     private static int leadingSpaces(String s) {
         int count = 0;
         while (count < s.length()) {
@@ -563,6 +789,14 @@ public final class ModuleInfo {
         return count;
     }
 
+    /**
+     * Strips a single pair of surrounding quotes from a value.
+     *
+     * <p>Supports both double quotes ({@code "}) and single quotes ({@code '}).</p>
+     *
+     * @param s input string (may be {@code null})
+     * @return unquoted, trimmed value or {@code null} if input is {@code null}
+     */
     private static String stripSimpleQuotes(String s) {
         if (s == null) return null;
         String t = s.trim();
@@ -584,7 +818,6 @@ public final class ModuleInfo {
         if (s == null) return out;
         String t = s.trim();
         if (!t.startsWith("[") || !t.endsWith("]")) {
-            // fall back to a single value
             if (!t.isEmpty()) out.add(stripSimpleQuotes(t));
             return out;
         }
@@ -597,5 +830,13 @@ public final class ModuleInfo {
             if (v != null && !v.isEmpty()) out.add(v);
         }
         return out;
+    }
+
+    private static Boolean parseBoolNullable(String s) {
+        if (s == null) return null;
+        String t = s.trim();
+        if (t.equalsIgnoreCase("true")) return Boolean.TRUE;
+        if (t.equalsIgnoreCase("false")) return Boolean.FALSE;
+        return null;
     }
 }

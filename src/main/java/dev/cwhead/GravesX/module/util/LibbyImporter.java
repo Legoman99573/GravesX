@@ -29,7 +29,7 @@ public final class LibbyImporter implements LibraryImporter {
      * Loads libraries described by coordinate strings.
      * Each coordinate is trimmed and ignored if null/empty.
      *
-     * @param ctx Module context of the caller.
+     * @param ctx         Module context of the caller.
      * @param coordinates One or more coordinates in the form
      *                    {@code group:artifact:version[?key=value&...]}.
      */
@@ -40,7 +40,75 @@ public final class LibbyImporter implements LibraryImporter {
             if (spec == null) continue;
             String s = spec.trim();
             if (s.isEmpty()) continue;
-            loadOne(s);
+            loadOneFromStringSpec(s);
+        }
+    }
+
+    /**
+     * Loads a library described by a structured {@code module.yml:libraries} entry.
+     *
+     * <p>If optional flags are not provided, defaults are used and only coordinates are required.</p>
+     *
+     * @param ctx Module context of the caller.
+     * @param def library definition from module.yml
+     */
+    @Override
+    public void importLibrary(ModuleContext ctx, ModuleInfo.LibraryDef def) {
+        if (def == null) return;
+
+        String coordsRaw = def.coordinates();
+        if (coordsRaw == null || coordsRaw.isBlank()) return;
+
+        // Allow people to keep using ?query style even inside coordinates if they want.
+        // If they do, we parse that string spec and ignore structured flags (string spec wins).
+        if (coordsRaw.indexOf('?') >= 0) {
+            loadOneFromStringSpec(coordsRaw.trim());
+            return;
+        }
+
+        String[] parts = coordsRaw.trim().split(":");
+        if (parts.length < 3) {
+            plugin.getLogger().severe("Failed to parse library coordinates: " + coordsRaw + " (expected group:artifact:version)");
+            plugin.getServer().getPluginManager().disablePlugin(plugin);
+            return;
+        }
+
+        String group = parts[0].trim();
+        String artifact = parts[1].trim();
+        String version = parts[2].trim();
+
+        boolean isolated = def.isIsolated() != null && def.isIsolated();
+        boolean resolveTransitive = def.useTransitive() == null || def.useTransitive(); // default true
+
+        String relocateFrom = nv(def.relocateFrom());
+        String relocateTo = nv(def.relocateTo());
+        String repo = nv(def.repo());
+        String id = nv(def.id());
+
+        try {
+            // Prefer the most-specific overload when repo/id are provided.
+            if (id != null || repo != null) {
+                util.loadLibrary(group, artifact, version, id, relocateFrom, relocateTo, isolated, repo, resolveTransitive);
+                return;
+            }
+
+            // Next: relocation-capable overload
+            if (relocateFrom != null || relocateTo != null) {
+                util.loadLibrary(group, artifact, version, relocateFrom, relocateTo, isolated, resolveTransitive);
+                return;
+            }
+
+            // Next: isolation-only overload
+            if (isolated) {
+                util.loadLibrary(group, artifact, version, true);
+                return;
+            }
+
+            // Default: basic overload
+            util.loadLibrary(group, artifact, version);
+        } catch (Exception e) {
+            plugin.getLogger().severe("Failed to load library: " + coordsRaw + " -> " + e.getMessage());
+            plugin.getServer().getPluginManager().disablePlugin(plugin);
         }
     }
 
@@ -52,7 +120,7 @@ public final class LibbyImporter implements LibraryImporter {
      *
      * @param spec Coordinate string to load.
      */
-    private void loadOne(String spec) {
+    private void loadOneFromStringSpec(String spec) {
         try {
             String coords = spec;
             String query = null;
@@ -120,7 +188,11 @@ public final class LibbyImporter implements LibraryImporter {
      * @return True if the value is truthy, otherwise false.
      */
     private static boolean parseBoolean(String s) {
-        String v = s.toLowerCase(Locale.ROOT);
+        String v = (s == null ? "" : s).toLowerCase(Locale.ROOT);
         return "1".equals(v) || "true".equals(v) || "yes".equals(v) || "y".equals(v);
+    }
+
+    private static String nv(String s) {
+        return (s == null || s.isBlank()) ? null : s.trim();
     }
 }

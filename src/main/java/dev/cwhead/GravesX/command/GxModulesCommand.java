@@ -1,6 +1,7 @@
 package dev.cwhead.GravesX.command;
 
 import com.ranull.graves.Graves;
+import dev.cwhead.GravesX.module.GravesXModuleController;
 import dev.cwhead.GravesX.module.ModuleManager;
 import dev.cwhead.GravesX.module.util.ModuleInfo;
 import org.bukkit.Bukkit;
@@ -62,6 +63,14 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
                             ? ChatColor.GREEN + "YES"
                             : ChatColor.RED + "NO";
 
+                    // Declared load phase from module.yml -> load
+                    GravesXModuleController.LoadPhase phase = lm.info.loadPhase();
+                    String phaseColor = switch (phase) {
+                        case STARTUP -> ChatColor.YELLOW.toString();
+                        case POSTWORLD -> ChatColor.GOLD.toString();
+                        case COMPLETED -> ChatColor.AQUA.toString();
+                    };
+
                     // Description strictly from module.yml "description"
                     String desc = (lm.info.description() == null) ? "" : lm.info.description().trim();
                     String descPreview = desc.isEmpty()
@@ -72,6 +81,7 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
                             ChatColor.AQUA + "- " + name + ChatColor.GRAY + " v" + lm.info.version()
                                     + ChatColor.DARK_GRAY + " [" + state + ChatColor.DARK_GRAY + "]"
                                     + ChatColor.DARK_GRAY + " [Folia: " + foliaFlag + ChatColor.DARK_GRAY + "]"
+                                    + ChatColor.DARK_GRAY + " [Load: " + phaseColor + phase + ChatColor.DARK_GRAY + "]"
                                     + descPreview
                     );
                 }
@@ -113,6 +123,14 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
                                 + ChatColor.DARK_GRAY + " (Server: "
                                 + (runningFolia ? ChatColor.GREEN + "Folia" : ChatColor.YELLOW + "Non-Folia")
                                 + ChatColor.DARK_GRAY + ")";
+
+                // Declared load phase
+                GravesXModuleController.LoadPhase phase = lm.info.loadPhase();
+                String loadLine = switch (phase) {
+                    case STARTUP -> ChatColor.YELLOW + "STARTUP" + ChatColor.DARK_GRAY + " (early enable)";
+                    case POSTWORLD -> ChatColor.GOLD + "POSTWORLD" + ChatColor.DARK_GRAY + " (after worlds load)";
+                    case COMPLETED -> ChatColor.AQUA + "COMPLETED" + ChatColor.DARK_GRAY + " (after startup complete)";
+                };
 
                 Function<String, String> fmtPluginReq = (dep) -> {
                     Plugin p = Bukkit.getPluginManager().getPlugin(dep);
@@ -167,6 +185,7 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage(ChatColor.GRAY + "Version: " + lm.info.version());
                 sender.sendMessage(ChatColor.GRAY + "Description: " + descLine);
                 sender.sendMessage(ChatColor.GRAY + "State: " + state);
+                sender.sendMessage(ChatColor.GRAY + "Load phase: " + loadLine);
                 sender.sendMessage(ChatColor.GRAY + "Data folder: " + lm.context.getDataFolder().getPath());
                 sender.sendMessage(ChatColor.GRAY + "Authors: " + authorsLine);
                 sender.sendMessage(ChatColor.GRAY + "Website: " + websiteLine);
@@ -212,7 +231,11 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
                 try {
                     manager.disableAll();
                     manager.loadAll();
-                    manager.enableAll();
+
+                    // Enable in phases to respect module.yml:load
+                    manager.enableAll(GravesXModuleController.LoadPhase.STARTUP);
+                    manager.enableAll(GravesXModuleController.LoadPhase.POSTWORLD);
+                    manager.enableAll(GravesXModuleController.LoadPhase.COMPLETED);
 
                     sender.sendMessage(ChatColor.GREEN + "✔ Modules reloaded.");
                 } catch (Throwable t) {
@@ -272,7 +295,7 @@ public final class GxModulesCommand implements CommandExecutor, TabCompleter {
             String desc = def.description();
             String usage = def.usage();
             String perm = def.permission();
-            List<String> aliases = def.aliases() == null ? List.of() : def.aliases();
+            List<String> aliases = def.aliases().isEmpty() ? List.of() : def.aliases();
 
             sender.sendMessage(ChatColor.AQUA + "/" + name
                     + ChatColor.GRAY + " - "

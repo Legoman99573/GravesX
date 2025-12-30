@@ -14,9 +14,11 @@ import dev.cwhead.GravesX.debug.KeepInventoryDetector;
 import dev.cwhead.GravesX.debug.LateEnableHook;
 import dev.cwhead.GravesX.listener.PlayerAfterRespawnListener;
 import dev.cwhead.GravesX.manager.*;
+import dev.cwhead.GravesX.module.GravesXModuleController;
 import dev.cwhead.GravesX.module.listener.DependencyEnableListener;
 import dev.cwhead.GravesX.module.util.LibbyImporter;
 import dev.cwhead.GravesX.module.ModuleManager;
+import dev.cwhead.GravesX.module.util.ModuleInfo;
 import dev.cwhead.GravesX.util.LibraryLoaderUtil;
 import dev.cwhead.GravesX.util.MclogsUtil;
 import dev.cwhead.GravesX.util.PastebinUtil;
@@ -108,10 +110,30 @@ public class Graves extends JavaPlugin {
         GravesXAddon.ensureAddonRoot(this);
 
         integrationManager = new IntegrationManager(this);
-        moduleManager = new ModuleManager(this);
-        moduleManager.setLibraryImporter(new LibbyImporter(this));
+        this.moduleManager = new ModuleManager(this);
+        this.moduleManager.setLibraryImporter(new LibbyImporter(this));
+        moduleManager.enableAll(GravesXModuleController.LoadPhase.STARTUP);
 
         deferModuleLoad = moduleManager.shouldDeferLoadOnExternalPlugins();
+
+        if (!deferModuleLoad) {
+            moduleManager.loadAll();
+        }
+
+        List<ModuleInfo> detected = moduleManager.detectModules();
+        if (detected.isEmpty()) {
+            getLogger().info("[Modules] Detected 0 module(s).");
+        } else {
+            getLogger().info("[Modules] Detected " + detected.size() + " module(s):");
+            for (ModuleInfo mi : detected) {
+                int libs = (mi.libraries() == null) ? 0 : mi.libraries().size();
+                getLogger().info("[Modules] - " + mi.name()
+                        + " v" + mi.version()
+                        + " (load=" + mi.loadPhase()
+                        + ", folia=" + mi.supportsFolia()
+                        + ", libs=" + libs + ")");
+            }
+        }
     }
 
     @Override
@@ -148,10 +170,17 @@ public class Graves extends JavaPlugin {
         particleManager = new ParticleManager(this);
         permissionManager = new PermissionManager(this);
 
-        this.moduleManager = new ModuleManager(this);
-        this.moduleManager.setLibraryImporter(new LibbyImporter(this));
-        moduleManager.loadAll();
-        moduleManager.enableAll();
+        if (moduleManager == null) {
+            moduleManager = new ModuleManager(this);
+            moduleManager.setLibraryImporter(new LibbyImporter(this));
+            deferModuleLoad = moduleManager.shouldDeferLoadOnExternalPlugins();
+        }
+
+        if (deferModuleLoad) {
+            moduleManager.loadAll();
+        }
+
+        moduleManager.enableAll(GravesXModuleController.LoadPhase.STARTUP);
 
         depListener = new DependencyEnableListener(moduleManager);
         getServer().getPluginManager().registerEvents(depListener, this);
@@ -179,11 +208,17 @@ public class Graves extends JavaPlugin {
             getLogger().warning("Metrics has been disabled. Metrics will not be sent to bStats.");
         }
 
+        moduleManager.enableAll(GravesXModuleController.LoadPhase.POSTWORLD);
+        moduleManager.tryEnablePending();
+
         getGravesXScheduler().runTask(() -> {
             compatibilityChecker();
             updateChecker();
             getConfigManager().updateIfNeeded(isPluginDevelopmentBuild());
             RegisterSoftCrashHandler();
+
+            moduleManager.enableAll(GravesXModuleController.LoadPhase.COMPLETED);
+            moduleManager.tryEnablePending();
         });
     }
 

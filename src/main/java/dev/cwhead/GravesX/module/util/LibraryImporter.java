@@ -2,18 +2,35 @@ package dev.cwhead.GravesX.module.util;
 
 import dev.cwhead.GravesX.module.ModuleContext;
 
+import java.util.Objects;
+
 /**
- * Strategy interface for loading external libraries for a module.
+ * Imports external libraries for a module.
  */
-@FunctionalInterface
 public interface LibraryImporter {
 
     /**
-     * Imports one or more libraries described by coordinates for the given module.
+     * Imports one or more libraries by coordinate strings.
      *
-     * @param ctx Calling module's context.
-     * @param coordinates One or more Maven-style coordinates, e.g.
-     *                    {@code group:artifact:version[?key=value&...]}.
+     * @param ctx module context
+     * @param coordinates Maven coordinates (group:artifact:version[key=value...])
      */
     void importLibrary(ModuleContext ctx, String... coordinates);
+
+    /**
+     * Imports a library described in {@code module.yml:libraries}.
+     *
+     * <p>Default behavior imports by {@link ModuleInfo.LibraryDef#coordinates()} only.
+     * Importers that support extra flags should override this method.</p>
+     *
+     * @param ctx module context
+     * @param def library definition
+     */
+    default void importLibrary(ModuleContext ctx, ModuleInfo.LibraryDef def) {
+        Objects.requireNonNull(ctx, "ctx");
+        Objects.requireNonNull(def, "def");
+        String coords = def.coordinates();
+        if (coords == null || coords.isBlank()) return;
+        importLibrary(ctx, coords);
+    }
 }
