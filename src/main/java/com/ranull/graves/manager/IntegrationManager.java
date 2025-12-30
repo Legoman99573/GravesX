@@ -5,8 +5,7 @@ import com.ranull.graves.Graves;
 import com.ranull.graves.integration.*;
 import dev.cwhead.GravesX.integration.*;
 import dev.cwhead.GravesX.listener.integration.coreprotect.CoreProtectListener;
-import com.ranull.graves.listener.integration.itemsadder.CustomBlockBreakListener;
-import com.ranull.graves.listener.integration.itemsadder.FurnitureBreakListener;
+import dev.cwhead.GravesX.listener.integration.itemsadder.*;
 import me.jay.GravesX.integration.FancyNPCs;
 import com.ranull.graves.integration.PlayerNPC;
 import net.milkbowl.vault.permission.Permission;
@@ -902,9 +901,14 @@ public class IntegrationManager {
             Plugin itemsAdderPlugin = plugin.getServer().getPluginManager().getPlugin("ItemsAdder");
 
             if (itemsAdderPlugin != null && itemsAdderPlugin.isEnabled()) {
-                itemsAdder = new ItemsAdder(plugin, itemsAdderPlugin);
+                itemsAdder = new ItemsAdder(plugin);
                 plugin.getServer().getPluginManager().registerEvents(new FurnitureBreakListener(plugin), plugin);
                 plugin.getServer().getPluginManager().registerEvents(new CustomBlockBreakListener(plugin), plugin);
+
+                // Guess we need to check this shit now LOL
+                plugin.getServer().getPluginManager().registerEvents(new ItemsAdderLoadListener(plugin, itemsAdder), plugin);
+                plugin.getServer().getPluginManager().registerEvents(new ItemsAdderReloadGateListener(plugin, itemsAdder), plugin);
+                plugin.getServer().getPluginManager().registerEvents(new ItemsAdderDisableListener(plugin, itemsAdder), plugin);
 
                 plugin.integrationMessage("Hooked into " + itemsAdderPlugin.getName() + " " + itemsAdderPlugin.getDescription().getVersion() + ".");
             }

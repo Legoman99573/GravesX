@@ -1,4 +1,4 @@
-package com.ranull.graves.listener.integration.itemsadder;
+package dev.cwhead.GravesX.listener.integration.itemsadder;
 
 import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
@@ -38,15 +38,12 @@ public class FurnitureBreakListener implements Listener {
     public void onFurnitureBreak(FurnitureBreakEvent event) {
         Player player = event.getPlayer();
 
-        // If the player has permission to break graves, allow it
         if (plugin.getConfigManager().getConfigSection("grave.break", player).getBoolean("grave.break")) return;
 
-        // Retrieve the grave associated with the furniture entity
         Grave grave = plugin.getEntityDataManager().getGrave(event.getBukkitEntity());
 
         String furnitureId = event.getNamespacedID();
 
-        // If the furniture is part of a grave and matches the configured ItemsAdder furniture, cancel the event
         if (grave != null) {
             if (plugin.getConfigManager().getConfigSection("itemsadder.furniture.enabled", player).getBoolean("itemsadder.furniture.enabled")
                     && furnitureId.equals(plugin.getConfigManager().getConfigSection("itemsadder.furniture.name", player).getString("itemsadder.furniture.name"))) {

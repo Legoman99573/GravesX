@@ -1,4 +1,4 @@
-package com.ranull.graves.listener.integration.itemsadder;
+package dev.cwhead.GravesX.listener.integration.itemsadder;
 
 import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
@@ -39,17 +39,14 @@ public class CustomBlockBreakListener implements Listener {
     public void onBlockBreakIA(CustomBlockBreakEvent event) {
         Player player = event.getPlayer();
 
-        // If the player has permission to break graves, allow it
         if (plugin.getConfigManager().getConfigSection("grave.break", player).getBoolean("grave.break")) return;
 
        Block block = event.getBlock();
 
-        // Retrieve the grave associated with the block
        Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
 
        String blockId = event.getNamespacedID();
 
-        // If the block is part of a grave and matches the configured ItemsAdder block, cancel the event
         if (grave != null) {
             if (plugin.getConfigManager().getConfigSection("itemsadder.block.enabled", player).getBoolean("itemsadder.block.enabled")
                     && blockId.equals(plugin.getConfigManager().getConfigSection("itemsadder.block.name", player).getString("itemsadder.block.name"))) {

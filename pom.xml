@@ -547,6 +547,10 @@
             <url>https://repo.nexomc.com/releases</url>
         </repository>
         <repository>
+            <id>matteodev</id>
+            <url>https://maven.devs.beer/</url>
+        </repository>
+        <repository>
             <id>cwhead-repo</id>
             <url>https://repo.cwhead.dev/repository/maven-public</url>
         </repository>
@@ -816,9 +820,9 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.github.LoneDev6</groupId>
+            <groupId>dev.lone</groupId>
             <artifactId>api-itemsadder</artifactId>
-            <version>3.6.3-beta-14</version>
+            <version>4.0.10</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
