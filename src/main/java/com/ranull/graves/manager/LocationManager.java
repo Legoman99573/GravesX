@@ -522,8 +522,18 @@ public class LocationManager {
 
         World world = loc.getWorld();
 
+        Material at = loc.getBlock().getType();
+        if (MaterialUtil.isWater(at)) {
+            return null;
+        }
+
+        Material above = loc.getBlock().getRelative(BlockFace.UP).getType();
+        if (MaterialUtil.isWater(above)) {
+            return null;
+        }
+
         final int minY = getMinHeight(loc);
-        if (loc.getBlockY() >= minY) {
+        if (loc.getY() >= minY) {
             return null;
         }
 
@@ -577,52 +587,27 @@ public class LocationManager {
             if (!world.isChunkLoaded(cx, cz)) return null;
 
             final int maxY = world.getMaxHeight() - 1;
-            final int roofIgnoreY = maxY - 10;
+            final int roofIgnoreY = maxY - 10; // heuristic for nether roof bedrock
+            final int topY = Math.min(world.getHighestBlockYAt(x, z), maxY);
 
-            int y = world.getHighestBlockYAt(x, z);
-            if (y < minY) return null;
+            if (topY < minY) return null;
 
-            Block top = world.getBlockAt(x, y, z);
-            Material topType = top.getType();
-
-            if (topType.isSolid()) {
-                if (topType.name().contains("BEDROCK")) {
-                    if (!(skipRoof && y >= roofIgnoreY)) {
-                        Block a1 = world.getBlockAt(x, y + 1, z);
-                        Block a2 = world.getBlockAt(x, y + 2, z);
-                        if (!a1.getType().isSolid() && !a2.getType().isSolid()) {
-                            return new Location(world, x + 0.5, y + 1.0, z + 0.5, loc.getYaw(), loc.getPitch());
-                        }
-                    }
-                } else {
-                    Block a1 = world.getBlockAt(x, y + 1, z);
-                    Block a2 = world.getBlockAt(x, y + 2, z);
-                    if (!a1.getType().isSolid() && !a2.getType().isSolid()) {
-                        return new Location(world, x + 0.5, y + 1.0, z + 0.5, loc.getYaw(), loc.getPitch());
-                    }
-                }
-            }
-
-            for (int yy = y - 1; yy >= minY; yy--) {
+            for (int yy = minY; yy <= topY; yy++) {
                 Block ground = world.getBlockAt(x, yy, z);
                 Material type = ground.getType();
 
                 if (!type.isSolid()) continue;
 
-                if (type.name().contains("BEDROCK")) {
-                    if (skipRoof && yy >= roofIgnoreY) continue;
+                if (type.name().contains("BEDROCK") && skipRoof && yy >= roofIgnoreY) continue;
 
-                    Block a1 = world.getBlockAt(x, yy + 1, z);
-                    Block a2 = world.getBlockAt(x, yy + 2, z);
-                    if (a1.getType().isSolid() || a2.getType().isSolid()) continue;
+                // Require 2-block headroom above the ground block
+                if (yy + 2 > maxY) continue;
 
-                    return new Location(world, x + 0.5, yy + 1.0, z + 0.5, loc.getYaw(), loc.getPitch());
-                }
+                Material a1 = world.getBlockAt(x, yy + 1, z).getType();
+                Material a2 = world.getBlockAt(x, yy + 2, z).getType();
+                if (a1.isSolid() || a2.isSolid()) continue;
 
-                Block a1 = world.getBlockAt(x, yy + 1, z);
-                Block a2 = world.getBlockAt(x, yy + 2, z);
-                if (a1.getType().isSolid() || a2.getType().isSolid()) continue;
-
+                // Bedrock is OK only if headroom exists (covered above)
                 return new Location(world, x + 0.5, yy + 1.0, z + 0.5, loc.getYaw(), loc.getPitch());
             }
 
