@@ -6,11 +6,7 @@ import com.ranull.graves.data.BlockData;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.ExperienceUtil;
 import com.ranull.graves.util.LocationUtil;
-import dev.cwhead.GravesX.event.GraveBlockPlaceEvent;
-import dev.cwhead.GravesX.event.GraveCreateEvent;
-import dev.cwhead.GravesX.event.GraveObituaryAddEvent;
-import dev.cwhead.GravesX.event.GravePlayerHeadDropEvent;
-import dev.cwhead.GravesX.event.GraveProtectionCreateEvent;
+import dev.cwhead.GravesX.event.*;
 import dev.cwhead.GravesX.util.SkinTextureUtil_post_1_21_9;
 import me.jay.GravesX.util.SkinSignatureUtil;
 import me.jay.GravesX.util.SkinTextureUtil;
@@ -666,7 +662,8 @@ public class EntityDeathListener implements Listener {
         setupGraveKiller(grave, livingEntity);
         setupGraveProtection(livingEntity, grave);
 
-        GraveCreateEvent modern = new GraveCreateEvent(livingEntity, grave);
+        GraveCreateEvent modern = new GraveCreateEvent(livingEntity, grave, graveItemStackList, ignoredItemStackList, ignoredBlockList);
+
         if (ignoredItemStackList != null && !ignoredItemStackList.isEmpty()) {
             modern.setIgnoredItems(ignoredItemStackList);
         }
@@ -674,8 +671,16 @@ public class EntityDeathListener implements Listener {
 
         plugin.getServer().getPluginManager().callEvent(modern);
 
-        com.ranull.graves.event.GraveCreateEvent legacy = new com.ranull.graves.event.GraveCreateEvent(livingEntity, grave, ignoredItemStackList, ignoredBlockList);
+        com.ranull.graves.event.GraveCreateEvent legacy =
+                new com.ranull.graves.event.GraveCreateEvent(livingEntity, grave, ignoredItemStackList, ignoredBlockList);
         plugin.getServer().getPluginManager().callEvent(legacy);
+
+        if (graveItemStackList != null) {
+            graveItemStackList.clear();
+            graveItemStackList.addAll(modern.getGraveItemStackList());
+        } else if (!modern.getGraveItemStackList().isEmpty()) {
+            graveItemStackList = new ArrayList<>(modern.getGraveItemStackList());
+        }
 
         List<ItemStack> effectiveIgnoredItems = new ArrayList<>();
         Set<ItemStack> itemsIdentity = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -727,8 +732,14 @@ public class EntityDeathListener implements Listener {
         }
 
         if (!cancelled) {
-            placeGrave(event, grave, graveItemStackList, removedItemStackList, location,
-                    livingEntity, permissionList, player);
+            Location placedLocation = placeGrave(
+                    event, grave, graveItemStackList, removedItemStackList, location,
+                    livingEntity, permissionList, player
+            );
+
+            plugin.getServer().getPluginManager().callEvent(
+                    new GravePostCreateEvent(livingEntity, grave, placedLocation)
+            );
 
             if (!effectiveIgnoredItems.isEmpty() || !effectiveIgnoredBlocks.isEmpty()) {
                 dropIgnored(livingEntity, location, event, effectiveIgnoredItems, effectiveIgnoredBlocks);
@@ -898,15 +909,16 @@ public class EntityDeathListener implements Listener {
      * @param location             The location to place the grave.
      * @param livingEntity         The entity that died.
      * @param permissionList       The list of permissions.
+     * @return if placement is listed or null
      */
-    private void placeGrave(EntityDeathEvent event,
-                            Grave grave,
-                            List<ItemStack> graveItemStackList,
-                            List<ItemStack> removedItemStackList,
-                            Location location,
-                            LivingEntity livingEntity,
-                            List<String> permissionList,
-                            Player player) {
+    private Location placeGrave(EntityDeathEvent event,
+                                Grave grave,
+                                List<ItemStack> graveItemStackList,
+                                List<ItemStack> removedItemStackList,
+                                Location location,
+                                LivingEntity livingEntity,
+                                List<String> permissionList,
+                                Player player) {
 
         Map<Location, BlockData.BlockType> locationMap = new HashMap<>();
         if (plugin.getConfigManager().getConfigSection("placement.safe-location", grave).getBoolean("placement.safe-location", true)) {
@@ -926,9 +938,13 @@ public class EntityDeathListener implements Listener {
                 location = plugin.getLocationManager().getNewLocationIfCachedGraveExists(livingEntity, location, grave);
             }
 
-            Location voidLocation = plugin.getLocationManager().getVoid(location, livingEntity, grave);
+            World world = location.getWorld();
+            if (world != null && location.getY() < world.getMinHeight()) {
+                handleFailedGravePlacement(event, grave, location, livingEntity, removedItemStackList, graveItemStackList);
+                return null;
+            }
 
-            grave.setLocationDeath(LocationUtil.roundLocation((voidLocation != null) ? voidLocation : location));
+            grave.setLocationDeath(LocationUtil.roundLocation(location));
         }
 
         grave.getLocationDeath().setYaw(grave.getYaw());
@@ -950,6 +966,7 @@ public class EntityDeathListener implements Listener {
         } else {
             handleFailedGravePlacement(event, grave, location, livingEntity, removedItemStackList, graveItemStackList);
         }
+        return location;
     }
 
     /**

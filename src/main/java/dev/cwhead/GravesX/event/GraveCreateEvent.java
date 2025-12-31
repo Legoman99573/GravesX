@@ -20,10 +20,6 @@ import java.util.Collections;
  * This event extends {@link GraveEntityEvent} and is cancellable, allowing event listeners
  * to prevent the creation of the grave if necessary.
  * </p>
- * <p>
- * In addition, this event stores collections of ignored items and blocks that were
- * skipped during grave creation.
- * </p>
  */
 public class GraveCreateEvent extends GraveEntityEvent {
 
@@ -35,6 +31,11 @@ public class GraveCreateEvent extends GraveEntityEvent {
      * </p>
      */
     private static final HandlerList HANDLERS = new HandlerList();
+
+    /**
+     * Items intended to be stored in the grave.
+     */
+    private @Nullable Collection<ItemStack> graveItemStackList;
 
     /**
      * Items that were ignored (not stored in the grave).
@@ -57,24 +58,67 @@ public class GraveCreateEvent extends GraveEntityEvent {
      * @param grave  The grave being created.
      */
     public GraveCreateEvent(@NotNull Entity entity, @NotNull Grave grave) {
-        this(entity, grave, null, null);
+        this(entity, grave, null, null, null);
     }
 
     /**
      * Constructs a new {@code GraveCreateEvent} with ignored items and blocks.
+     *
+     * @param entity             The entity for which the grave is being created.
+     * @param grave              The grave being created.
+     * @param graveItemStackList Items intended to be stored in the grave (may be {@code null} or empty).
+     * @param ignoredItems       Items that were not stored in the grave (may be {@code null} or empty).
+     * @param ignoredBlocks      Blocks that were ignored for this grave (may be {@code null} or empty).
+     */
+    public GraveCreateEvent(@NotNull Entity entity,
+                            @NotNull Grave grave,
+                            @Nullable Collection<ItemStack> graveItemStackList,
+                            @Nullable Collection<ItemStack> ignoredItems,
+                            @Nullable Collection<Block> ignoredBlocks) {
+
+        super(grave, entity, grave.getLocationDeath(), null, null,
+                (entity instanceof LivingEntity) ? (LivingEntity) entity : null, null);
+
+        this.graveItemStackList = (graveItemStackList == null) ? null : new ArrayList<>(graveItemStackList);
+        this.ignoredItems = (ignoredItems == null) ? null : new ArrayList<>(ignoredItems);
+        this.ignoredBlocks = (ignoredBlocks == null) ? null : new ArrayList<>(ignoredBlocks);
+    }
+
+    /**
+     * Backwards-compatible constructor (no grave items provided).
      *
      * @param entity        The entity for which the grave is being created.
      * @param grave         The grave being created.
      * @param ignoredItems  Items that were not stored in the grave (may be {@code null} or empty).
      * @param ignoredBlocks Blocks that were ignored for this grave (may be {@code null} or empty).
      */
-    public GraveCreateEvent(@NotNull Entity entity, @NotNull Grave grave, @Nullable Collection<ItemStack> ignoredItems, @Nullable Collection<Block> ignoredBlocks) {
+    public GraveCreateEvent(@NotNull Entity entity,
+                            @NotNull Grave grave,
+                            @Nullable Collection<ItemStack> ignoredItems,
+                            @Nullable Collection<Block> ignoredBlocks) {
+        this(entity, grave, null, ignoredItems, ignoredBlocks);
+    }
 
-        super(grave, entity, grave.getLocationDeath(), null, null, (entity instanceof LivingEntity) ? (LivingEntity) entity : null, null);
+    /**
+     * Gets the items intended to be stored in the grave.
+     *
+     * @return An unmodifiable collection of grave items, or an empty collection if none.
+     */
+    public @NotNull Collection<ItemStack> getGraveItemStackList() {
+        return graveItemStackList == null
+                ? Collections.emptyList()
+                : Collections.unmodifiableCollection(graveItemStackList);
+    }
 
-        this.ignoredItems = (ignoredItems == null) ? null : new ArrayList<>(ignoredItems);
-
-        this.ignoredBlocks = (ignoredBlocks == null) ? null : new ArrayList<>(ignoredBlocks);
+    /**
+     * Sets the items intended to be stored in the grave.
+     *
+     * @param graveItemStackList Items intended to be stored in the grave (may be {@code null} or empty).
+     */
+    public void setGraveItemStackList(@Nullable Collection<ItemStack> graveItemStackList) {
+        this.graveItemStackList = (graveItemStackList == null)
+                ? null
+                : new ArrayList<>(graveItemStackList);
     }
 
     /**
