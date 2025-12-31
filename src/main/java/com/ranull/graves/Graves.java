@@ -119,21 +119,6 @@ public class Graves extends JavaPlugin {
         if (!deferModuleLoad) {
             moduleManager.loadAll();
         }
-
-        List<ModuleInfo> detected = moduleManager.detectModules();
-        if (detected.isEmpty()) {
-            getLogger().info("[Modules] Detected 0 module(s).");
-        } else {
-            getLogger().info("[Modules] Detected " + detected.size() + " module(s):");
-            for (ModuleInfo mi : detected) {
-                int libs = (mi.libraries() == null) ? 0 : mi.libraries().size();
-                getLogger().info("[Modules] - " + mi.name()
-                        + " v" + mi.version()
-                        + " (load=" + mi.loadPhase()
-                        + ", folia=" + mi.supportsFolia()
-                        + ", libs=" + libs + ")");
-            }
-        }
     }
 
     @Override
@@ -170,10 +155,27 @@ public class Graves extends JavaPlugin {
         particleManager = new ParticleManager(this);
         permissionManager = new PermissionManager(this);
 
+        getLogger().info("[Modules] Loading GravesX Modules...");
+
         if (moduleManager == null) {
             moduleManager = new ModuleManager(this);
             moduleManager.setLibraryImporter(new LibbyImporter(this));
             deferModuleLoad = moduleManager.shouldDeferLoadOnExternalPlugins();
+        }
+
+        List<ModuleInfo> detected = moduleManager.detectModules();
+        if (detected.isEmpty()) {
+            getLogger().info("[Modules] Detected 0 module(s).");
+        } else {
+            getLogger().info("[Modules] Detected " + detected.size() + " module(s):");
+            for (ModuleInfo mi : detected) {
+                int libs = (mi.libraries() == null) ? 0 : mi.libraries().size();
+                getLogger().info("[Modules] - " + mi.name()
+                        + " v" + mi.version()
+                        + " (load=" + mi.loadPhase()
+                        + ", folia=" + mi.supportsFolia()
+                        + ", libs=" + libs + ")");
+            }
         }
 
         if (deferModuleLoad) {
@@ -224,7 +226,11 @@ public class Graves extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        if (moduleManager != null) moduleManager.disableAll();
+        if (moduleManager != null) {
+            getLogger().info("[Modules] Disabling modules...");
+            moduleManager.disableAll();
+            getLogger().info("[Modules] All modules have been disabled. Running remaining shutdown tasks.");
+        }
         runShutdownTasks();
     }
 
