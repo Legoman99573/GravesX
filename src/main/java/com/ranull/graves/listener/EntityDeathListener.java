@@ -926,7 +926,9 @@ public class EntityDeathListener implements Listener {
                 location = plugin.getLocationManager().getNewLocationIfCachedGraveExists(livingEntity, location, grave);
             }
 
-            grave.setLocationDeath(LocationUtil.roundLocation(location));
+            Location voidLocation = plugin.getLocationManager().getVoid(location, livingEntity, grave);
+
+            grave.setLocationDeath(LocationUtil.roundLocation((voidLocation != null) ? voidLocation : location));
         }
 
         grave.getLocationDeath().setYaw(grave.getYaw());
