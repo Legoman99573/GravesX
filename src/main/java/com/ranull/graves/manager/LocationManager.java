@@ -71,8 +71,9 @@ public class LocationManager {
 
         World w = location.getWorld();
         if (w == null) return null;
-        entity.getWorld();
-        if (!w.equals(entity.getWorld())) return null;
+
+        World ew = entity.getWorld();
+        if (!w.equals(ew)) return null;
 
         Block below = location.getBlock().getRelative(BlockFace.DOWN);
         return MaterialUtil.isSafeSolid(below.getType()) ? location : null;
@@ -520,6 +521,12 @@ public class LocationManager {
         if (loc.getWorld() == null) return null;
 
         World world = loc.getWorld();
+
+        final int minY = getMinHeight(loc);
+        if (loc.getBlockY() >= minY) {
+            return null;
+        }
+
         World.Environment environment = world.getEnvironment();
 
         final boolean skipRoof = (environment == World.Environment.NETHER)
@@ -538,9 +545,13 @@ public class LocationManager {
             }
         }
 
-        if (environment == World.Environment.THE_END) {
-            Location endCandidate = endVoidScan(loc, grave);
-            if (endCandidate != null && endCandidate.getWorld() != null && !hasGrave(endCandidate)) return endCandidate;
+        final boolean islandScanEnabled = plugin.getConfigManager()
+                .getConfigSection("placement.void-island-scan", grave)
+                .getBoolean("placement.void-island-scan", false);
+
+        if (environment == World.Environment.THE_END || islandScanEnabled) {
+            Location islandCandidate = endVoidScan(loc, grave);
+            if (islandCandidate != null && islandCandidate.getWorld() != null && !hasGrave(islandCandidate)) return islandCandidate;
         }
 
         if (!skipRoof) {
@@ -554,7 +565,6 @@ public class LocationManager {
         if (radius < 0) radius = 0;
         if (radius > 512) radius = 512;
 
-        final int minY = getMinHeight(loc);
         final int startX = loc.getBlockX();
         final int startZ = loc.getBlockZ();
 
@@ -566,13 +576,31 @@ public class LocationManager {
 
             if (!world.isChunkLoaded(cx, cz)) return null;
 
+            final int maxY = world.getMaxHeight() - 1;
+            final int roofIgnoreY = maxY - 10;
+
             int y = world.getHighestBlockYAt(x, z);
             if (y < minY) return null;
 
             Block top = world.getBlockAt(x, y, z);
             Material topType = top.getType();
-            if (topType.isSolid() && !(skipRoof && topType.name().contains("BEDROCK"))) {
-                return new Location(world, x + 0.5, y + 1.0, z + 0.5, loc.getYaw(), loc.getPitch());
+
+            if (topType.isSolid()) {
+                if (topType.name().contains("BEDROCK")) {
+                    if (!(skipRoof && y >= roofIgnoreY)) {
+                        Block a1 = world.getBlockAt(x, y + 1, z);
+                        Block a2 = world.getBlockAt(x, y + 2, z);
+                        if (!a1.getType().isSolid() && !a2.getType().isSolid()) {
+                            return new Location(world, x + 0.5, y + 1.0, z + 0.5, loc.getYaw(), loc.getPitch());
+                        }
+                    }
+                } else {
+                    Block a1 = world.getBlockAt(x, y + 1, z);
+                    Block a2 = world.getBlockAt(x, y + 2, z);
+                    if (!a1.getType().isSolid() && !a2.getType().isSolid()) {
+                        return new Location(world, x + 0.5, y + 1.0, z + 0.5, loc.getYaw(), loc.getPitch());
+                    }
+                }
             }
 
             for (int yy = y - 1; yy >= minY; yy--) {
@@ -580,7 +608,20 @@ public class LocationManager {
                 Material type = ground.getType();
 
                 if (!type.isSolid()) continue;
-                if (skipRoof && type.name().contains("BEDROCK")) continue;
+
+                if (type.name().contains("BEDROCK")) {
+                    if (skipRoof && yy >= roofIgnoreY) continue;
+
+                    Block a1 = world.getBlockAt(x, yy + 1, z);
+                    Block a2 = world.getBlockAt(x, yy + 2, z);
+                    if (a1.getType().isSolid() || a2.getType().isSolid()) continue;
+
+                    return new Location(world, x + 0.5, yy + 1.0, z + 0.5, loc.getYaw(), loc.getPitch());
+                }
+
+                Block a1 = world.getBlockAt(x, yy + 1, z);
+                Block a2 = world.getBlockAt(x, yy + 2, z);
+                if (a1.getType().isSolid() || a2.getType().isSolid()) continue;
 
                 return new Location(world, x + 0.5, yy + 1.0, z + 0.5, loc.getYaw(), loc.getPitch());
             }
@@ -694,7 +735,7 @@ public class LocationManager {
                     Location candidate = new Location(world, xc + 0.5, hy + 2, zc + 0.5);
                     if (hasGrave(candidate)) continue;
 
-                    if (allowVoidBlock) {
+                    if (allowVoidBlock && voidBlock != null) {
                         setBlockTypeNoPhysicsSafely(space1, voidBlock);
                     }
                     return candidate;
@@ -718,7 +759,7 @@ public class LocationManager {
                     Location candidate = new Location(world, xc + 0.5, hy + 2, zc + 0.5);
                     if (hasGrave(candidate)) continue;
 
-                    if (allowVoidBlock) {
+                    if (allowVoidBlock && voidBlock != null) {
                         setBlockTypeNoPhysicsSafely(space1, voidBlock);
                     }
                     return candidate;
@@ -730,8 +771,8 @@ public class LocationManager {
                 .getInt("placement.end.fallback-y", Math.max(64, minY + 1));
 
         Block support = world.getBlockAt(originX, fallbackY, originZ);
-        if (allowVoidBlock) {
-            setBlockTypeNoPhysicsSafely(support, (voidBlock != null ? voidBlock : Material.DIRT));
+        if (allowVoidBlock && voidBlock != null) {
+            setBlockTypeNoPhysicsSafely(support, voidBlock);
         }
 
         return new Location(world, originX + 0.5, fallbackY + 1, originZ + 0.5);
