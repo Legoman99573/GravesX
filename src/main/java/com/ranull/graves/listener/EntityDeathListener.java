@@ -430,13 +430,9 @@ public class EntityDeathListener implements Listener {
                     plugin.getConfigManager().getConfigSection("storage.mode", player).getString("storage.mode")
             ) == Grave.StorageMode.EXACT;
 
-            // -------------------------
-            // EXACT: preserve slots, but only keep what is actually in event drops
-            // -------------------------
             if (exactMode) {
                 final Player player = (Player) event.getEntity();
 
-                // Work list of remaining drops (amount-aware). We'll subtract as we assign items into grave slots.
                 final List<ItemStack> remainingDrops = new ArrayList<>();
                 for (ItemStack drop : event.getDrops()) {
                     if (drop == null || drop.getType() == Material.AIR) continue;
@@ -475,33 +471,26 @@ public class EntityDeathListener implements Listener {
                             if (ignoredItemStackList != null) ignoredItemStackList.add(invItem);
                             it.set(null);
                         }
-                        // else: stored in grave -> keep (but still must exist in drops, handled below? no: compass is usually created later)
                         continue;
                     }
 
-                    // General ignore logic: ignored items are NOT stored in grave
                     if (plugin.getGraveManager().shouldIgnoreItemStack(invItem, livingEntity, permissionList)) {
                         if (ignoredItemStackList != null) ignoredItemStackList.add(invItem);
                         it.set(null);
                         continue;
                     }
 
-                    // ONLY keep what is actually in event.getDrops() (amount-aware, meta-aware via isSimilar)
                     final int consumed = consumeFromDropsBySimilarity(remainingDrops, invItem);
                     if (consumed <= 0) {
-                        // This inventory slot item wasn't actually dropped -> do not store (prevents duping)
                         it.set(null);
                         continue;
                     }
 
-                    // Store in grave, but clamp amount to what was actually dropped for this item.
                     final ItemStack stored = invItem.clone();
                     stored.setAmount(consumed);
                     it.set(stored);
                 }
 
-                // Replace event drops with whatever is left after we consumed what the grave will store.
-                // (Anything left will drop normally.)
                 event.getDrops().clear();
                 for (ItemStack left : remainingDrops) {
                     if (left != null && left.getType() != Material.AIR && left.getAmount() > 0) {
@@ -512,9 +501,6 @@ public class EntityDeathListener implements Listener {
                 return slots;
             }
 
-            // -------------------------
-            // NON-EXACT: compact list built from drops; remove as we store
-            // -------------------------
             final List<ItemStack> graveList = new ArrayList<>();
             final ListIterator<ItemStack> dropIt = event.getDrops().listIterator();
 
@@ -522,7 +508,6 @@ public class EntityDeathListener implements Listener {
                 final ItemStack item = dropIt.next();
                 if (item == null || item.getType() == Material.AIR) continue;
 
-                // Curse items: not stored in grave at all (vanilla handles behavior)
                 if (plugin.getVersionManager().hasEnchantmentCurse()
                         && (item.containsEnchantment(Enchantment.BINDING_CURSE)
                         || item.containsEnchantment(Enchantment.VANISHING_CURSE))) {
@@ -826,28 +811,31 @@ public class EntityDeathListener implements Listener {
     private void setGraveExperience(Grave grave, EntityDeathEvent event, LivingEntity livingEntity, PlayerDeathEvent pde) {
         float pct = (float) plugin.getConfigManager().getConfigSection("experience.store", grave).getDouble("experience.store");
         plugin.debugMessage("Experience Percentage for " + grave.getUUID() + ": " + pct, 2);
-
-        if (pct >= 0) {
-            if (livingEntity instanceof Player p) {
-                if (plugin.getPermissionManager().hasGrantedPermission("graves.experience", p)) {
-                    int adjusted = ExperienceUtil.getDropPercent(ExperienceUtil.getPlayerExperience(p), pct);
-                    grave.setExperience(adjusted);
-                    plugin.debugMessage("Set Experience for player grave " + grave.getUUID() + ": " + adjusted, 2);
-                } else {
-                    grave.setExperience(event.getDroppedExp());
-                    plugin.debugMessage("Set Experience for player grave " + grave.getUUID() + ": " + event.getDroppedExp(), 2);
-                }
-                if (pde != null) {
-                    pde.setKeepLevel(false);
-                }
+        int vanillaDrop = event.getDroppedExp();
+        event.setDroppedExp(0);
+        if (livingEntity instanceof Player p) {
+            if (pct >= 0 && plugin.getPermissionManager().hasGrantedPermission("graves.experience", p)) {
+                int total = ExperienceUtil.getPlayerExperience(p);
+                int stored = ExperienceUtil.getDropPercent(total, pct);
+                grave.setExperience(stored);
+                plugin.debugMessage("Set Experience for player grave " + grave.getUUID() + ": " + stored, 2);
             } else {
-                int adjusted = ExperienceUtil.getDropPercent(event.getDroppedExp(), pct);
-                grave.setExperience(adjusted);
-                plugin.debugMessage("Set Experience for non player grave " + grave.getUUID() + ": " + adjusted, 2);
+                // Either pct < 0 (default behavior) OR no permission: store vanilla drop amount
+                grave.setExperience(vanillaDrop);
+                plugin.debugMessage("Set Experience for player grave " + grave.getUUID() + ": " + vanillaDrop, 2);
+            }
+            if (pde != null) {
+                pde.setKeepLevel(false);
             }
         } else {
-            grave.setExperience(event.getDroppedExp());
-            plugin.debugMessage("Set Experience for default grave " + grave.getUUID() + ": " + event.getDroppedExp(), 2);
+            if (pct >= 0) {
+                int stored = ExperienceUtil.getDropPercent(vanillaDrop, pct);
+                grave.setExperience(stored);
+                plugin.debugMessage("Set Experience for non player grave " + grave.getUUID() + ": " + stored, 2);
+            } else {
+                grave.setExperience(vanillaDrop);
+                plugin.debugMessage("Set Experience for default grave " + grave.getUUID() + ": " + vanillaDrop, 2);
+            }
         }
     }
 

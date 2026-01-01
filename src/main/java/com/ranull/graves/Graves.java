@@ -359,7 +359,7 @@ public class Graves extends JavaPlugin {
                 libraryLoaderUtil.loadLibrary("com{}h2database", "h2", "2.4.240", "org{}h2", "com{}ranull{}graves{}libraries{}h2", false, "https://repo1.maven.org/maven2/");
                 break;
             case "MSSQL":
-                libraryLoaderUtil.loadLibrary("com{}microsoft{}sqlserver", "mssql-jdbc", "13.2.0.jre11", "com{}microsoft", "com{}ranull{}graves{}libraries{}microsoft", false);
+                libraryLoaderUtil.loadLibrary("com{}microsoft{}sqlserver", "mssql-jdbc", "13.2.1.jre11", "com{}microsoft", "com{}ranull{}graves{}libraries{}microsoft", false);
                 break;
         }
         libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-platform-bukkit", "4.4.1", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
