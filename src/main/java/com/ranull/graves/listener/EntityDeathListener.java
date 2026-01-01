@@ -963,10 +963,11 @@ public class EntityDeathListener implements Listener {
         if (!locationMap.isEmpty()) {
             notifyGraveCreation(event, grave, locationMap, livingEntity, permissionList, player,
                     location, removedItemStackList, graveItemStackList);
+            return location;
         } else {
             handleFailedGravePlacement(event, grave, location, livingEntity, removedItemStackList, graveItemStackList);
+            return null;
         }
-        return location;
     }
 
     /**
