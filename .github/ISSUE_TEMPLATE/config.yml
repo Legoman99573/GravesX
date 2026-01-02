@@ -1,0 +1,9 @@
+blank_issues_enabled: false
+
+contact_links:
+  - name: 📖 Documentation
+    url: https://github.com/Legoman99573/GravesX/wiki
+    about: Please read the documentation before opening an issue.
+  - name: 💬 Discord Support
+    url: https://discord.ranull.com/
+    about: Ask questions or get help in real time.
