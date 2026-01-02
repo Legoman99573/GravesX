@@ -1,6 +1,7 @@
 package dev.cwhead.GravesX.integration;
 
 import com.ranull.graves.Graves;
+import com.ranull.graves.data.EntityData;
 import com.ranull.graves.manager.EntityDataManager;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.listener.integration.mannequins.MannequinInteractListener;
@@ -155,19 +156,25 @@ public final class Mannequins extends EntityDataManager {
 
             applySwimmingPose(living);
 
-            plugin.debugMessage("[Mannequins] spawned=" + spawned.getClass().getName()
-                    + " setProfile=" + (setProfile != null)
-                    + " setPlayerProfile=" + (setPlayerProfile != null), 2);
+            try {
+                createEntityData(living.getLocation(), living.getUniqueId(), grave.getUUID(), EntityData.Type.MANNEQUIN);
+                plugin.debugMessage("[Mannequins] spawned=" + spawned.getClass().getName()
+                        + " setProfile=" + (setProfile != null)
+                        + " setPlayerProfile=" + (setPlayerProfile != null), 2);
 
-            applySkin(living, grave);
+                applySkin(living, grave);
 
-            if (plugin.getConfigManager().getConfigSection("mannequins.corpse.armor", grave)
-                    .getBoolean("mannequins.corpse.armor")) {
-                equipArmor(living, grave);
-            }
-            if (plugin.getConfigManager().getConfigSection("mannequins.corpse.hand", grave)
-                    .getBoolean("mannequins.corpse.hand")) {
-                equipHands(living, grave);
+                if (plugin.getConfigManager().getConfigSection("mannequins.corpse.armor", grave)
+                        .getBoolean("mannequins.corpse.armor")) {
+                    equipArmor(living, grave);
+                }
+                if (plugin.getConfigManager().getConfigSection("mannequins.corpse.hand", grave)
+                        .getBoolean("mannequins.corpse.hand")) {
+                    equipHands(living, grave);
+                }
+            } catch (Throwable t) {
+                plugin.getLogger().severe("[Mannequins] createEntityData failed: " + t.getCause());
+                plugin.logStackTrace(t);
             }
         });
     }
@@ -182,14 +189,30 @@ public final class Mannequins extends EntityDataManager {
         if (base != null && base.getWorld() != null) {
             Collection<Entity> nearby = base.getWorld().getNearbyEntities(base, 16, 16, 16);
             for (Entity e : nearby) {
-                if (isTaggedCorpse(e, tag)) e.remove();
+                if (isTaggedCorpse(e, tag)) {
+                    try {
+                        plugin.getDataManager().removeEntityData((EntityData) e);
+                    } catch (Throwable t) {
+                        plugin.debugMessage("[Mannequins] removeEntityData failed: " + t, 1);
+                    }
+
+                    e.remove();
+                }
             }
             return;
         }
 
         for (World w : Bukkit.getWorlds()) {
             for (Entity e : w.getEntities()) {
-                if (isTaggedCorpse(e, tag)) e.remove();
+                if (isTaggedCorpse(e, tag)) {
+                    try {
+                        plugin.getDataManager().removeEntityData((EntityData) e);
+                    } catch (Throwable t) {
+                        plugin.debugMessage("[Mannequins] removeEntityData failed: " + t, 1);
+                    }
+
+                    e.remove();
+                }
             }
         }
     }

@@ -98,6 +98,56 @@ public class EntityData implements Serializable {
     }
 
     /**
+     * Returns {@code true} if this entity data is associated with the given grave UUID.
+     *
+     * @param graveUUID the grave UUID to compare
+     * @return {@code true} if {@code graveUUID} matches this entry's grave UUID
+     */
+    public boolean isForGrave(UUID graveUUID) {
+        return this.uuidGrave.equals(graveUUID);
+    }
+
+    /**
+     * Returns {@code true} if this entity data is for the given entity UUID.
+     *
+     * @param entityUUID the entity UUID to compare
+     * @return {@code true} if {@code entityUUID} matches this entry's entity UUID
+     */
+    public boolean isForEntity(UUID entityUUID) {
+        return this.uuidEntity.equals(entityUUID);
+    }
+
+    /**
+     * Returns {@code true} if this entity is in the same world as the provided location.
+     *
+     * @param other the other location to compare
+     * @return {@code true} if both locations have non-null worlds and they match
+     */
+    public boolean isSameWorld(Location other) {
+        return other != null
+                && this.location.getWorld() != null
+                && other.getWorld() != null
+                && this.location.getWorld().equals(other.getWorld());
+    }
+
+    /**
+     * Returns {@code true} if this entity location is within the given squared distance
+     * of the provided location.
+     *
+     * <p>Uses {@link Location#distanceSquared(Location)} to avoid a sqrt.</p>
+     *
+     * @param other           the other location
+     * @param maxDistanceSq   max allowed squared distance (e.g. {@code 16} for 4 blocks)
+     * @return {@code true} if within range and in the same world
+     */
+    public boolean isWithinDistanceSquared(Location other, double maxDistanceSq) {
+        if (!isSameWorld(other)) {
+            return false;
+        }
+        return this.location.distanceSquared(other) <= maxDistanceSq;
+    }
+
+    /**
      * Enum representing the different types of entities that can be associated with a grave.
      */
     public enum Type {
@@ -115,6 +165,11 @@ public class EntityData implements Serializable {
          * Represents an item frame entity.
          */
         ITEM_FRAME,
+
+        /**
+         * Represents a mannequin entity.
+         */
+        MANNEQUIN,
 
         /**
          * Represents an entity from the FurnitureLib plugin.
@@ -149,6 +204,64 @@ public class EntityData implements Serializable {
         /**
          * Represents a custom entry, whether that be an addon or module.
          */
-        CUSTOM
+        CUSTOM;
+
+        /**
+         * Returns {@code true} if this type is one of the "vanilla" grave entity types.
+         *
+         * @return {@code true} for {@link #HOLOGRAM}, {@link #ARMOR_STAND}, {@link #ITEM_FRAME}, {@link #MANNEQUIN}
+         */
+        public boolean isVanilla() {
+            return this == HOLOGRAM || this == ARMOR_STAND || this == ITEM_FRAME || this == MANNEQUIN;
+        }
+
+        /**
+         * Returns {@code true} if this type represents a third-party integration.
+         *
+         * @return {@code true} for integration-backed types
+         */
+        public boolean isIntegration() {
+            return this == FURNITURELIB
+                    || this == FURNITUREENGINE
+                    || this == ITEMSADDER
+                    || this == ORAXEN
+                    || this == NEXO
+                    || this == PLAYERNPC;
+        }
+
+        /**
+         * Returns {@code true} if this type is {@link #CUSTOM}.
+         *
+         * @return {@code true} when {@link #CUSTOM}
+         */
+        public boolean isCustom() {
+            return this == CUSTOM;
+        }
+
+        /**
+         * Safely resolves a {@link Type} from a string.
+         *
+         * <p>Accepts case-insensitive values like "hologram" or "ITEMSADDER". If the input is
+         * {@code null}, blank, or unrecognized, {@link Type#CUSTOM} is returned.</p>
+         *
+         * @param value       the input string
+         * @return the resolved {@link Type} or {@link Type#CUSTOM} when invalid
+         */
+        public static Type fromString(String value) {
+            if (value == null) {
+                return CUSTOM;
+            }
+
+            String cleaned = value.trim();
+            if (cleaned.isEmpty()) {
+                return CUSTOM;
+            }
+
+            try {
+                return Type.valueOf(cleaned.toUpperCase());
+            } catch (IllegalArgumentException ignored) {
+                return CUSTOM;
+            }
+        }
     }
 }

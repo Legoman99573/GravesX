@@ -207,7 +207,7 @@ public class DataManager {
             integrationMap.put("oraxen", EntityData.Type.ORAXEN);
             integrationMap.put("nexo", EntityData.Type.NEXO);
             integrationMap.put("playernpc", EntityData.Type.PLAYERNPC);
-
+            integrationMap.put("mannequins", EntityData.Type.MANNEQUIN);
             for (Map.Entry<String, EntityData.Type> entry : integrationMap.entrySet()) {
                 String integration = entry.getKey();
                 EntityData.Type type = entry.getValue();
@@ -2142,6 +2142,7 @@ public class DataManager {
             case ORAXEN         -> "oraxen";
             case NEXO           -> "nexo";
             case PLAYERNPC      -> "playernpc";
+            case MANNEQUIN      -> "mannequins";
             default             -> type.name().toLowerCase(java.util.Locale.ROOT).replace("_", "");
         };
     }

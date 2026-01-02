@@ -101,7 +101,59 @@ public class BlockData implements Serializable {
      * Enum representing the type of block.
      */
     public enum BlockType {
+
+        /**
+         * A block associated with a death/grave-related action.
+         */
         DEATH,
-        NORMAL
+
+        /**
+         * A standard (non-death-related) block.
+         */
+        NORMAL;
+
+        /**
+         * Returns {@code true} if this block type is death/grave-related.
+         *
+         * @return {@code true} when {@link #DEATH}, otherwise {@code false}
+         */
+        public boolean isDeath() {
+            return this == DEATH;
+        }
+
+        /**
+         * Returns {@code true} if this block type is not death/grave-related.
+         *
+         * @return {@code true} when {@link #NORMAL}, otherwise {@code false}
+         */
+        public boolean isNormal() {
+            return this == NORMAL;
+        }
+
+        /**
+         * Safely resolves a {@link BlockType} from a string.
+         *
+         * <p>Accepts case-insensitive values like "death" or "NORMAL". If the input is
+         * {@code null}, blank, or unrecognized, {@link BlockType#NORMAL} is returned.</p>
+         *
+         * @param value       the input string
+         * @return the resolved {@link BlockType} or {@link BlockType#NORMAL}. when invalid
+         */
+        public static BlockType fromString(String value) {
+            if (value == null) {
+                return NORMAL;
+            }
+
+            String cleaned = value.trim();
+            if (cleaned.isEmpty()) {
+                return NORMAL;
+            }
+
+            try {
+                return BlockType.valueOf(cleaned.toUpperCase());
+            } catch (IllegalArgumentException ignored) {
+                return NORMAL;
+            }
+        }
     }
 }
