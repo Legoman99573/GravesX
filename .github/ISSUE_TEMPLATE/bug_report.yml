@@ -87,5 +87,11 @@ body:
           required: true
         - label: If I use any sort of Plugin Manager/Management plugin that I will not receive support. (Plugin Managers causes alot of behavioral issues and causes more problems than it resolves)
           required: true
+        - label: My issue is not a duplicate of another issue reported.
+          required: true
+        - label: If I do not provide enough information in my bug report or using an outdated version when reporting a bug, my issue will be closed. You may re-open a new issue if the issue still occurs.
+          required: true
+        - label: I agree that I am running some sort of Spigot, Paper, or a Folia server and not a hybrid of either (Hybrid jars, like Mohist, cause breaking bugs and we will not provide support.)
+          required: true
         - label: "I am not just clicking checkboxes randomly without reading them. If I don't check this, then I did read everything."
           required: false
