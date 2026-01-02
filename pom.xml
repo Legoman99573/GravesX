@@ -906,7 +906,7 @@
         <dependency>
             <groupId>com.nexomc</groupId>
             <artifactId>nexo</artifactId>
-            <version>1.14.0</version>
+            <version>1.16.1</version>
             <scope>provided</scope>
             <exclusions>
                 <exclusion>
