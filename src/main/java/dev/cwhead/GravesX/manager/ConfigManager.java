@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public final class ConfigManager {
 
-    public static final int CURRENT_CONFIG_VERSION = 23;
+    public static final int CURRENT_CONFIG_VERSION = 24;
 
     private final Graves plugin;
     private final Paths paths;
@@ -47,7 +47,7 @@ public final class ConfigManager {
     private final Updater updater;
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-    private volatile FileConfiguration mergedConfig; // merged view used by the plugin
+    private volatile FileConfiguration mergedConfig;
 
     public ConfigManager(@NotNull Graves plugin) {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
@@ -57,10 +57,6 @@ public final class ConfigManager {
         this.defaults = new Defaults(plugin, io);
         this.updater = new Updater(plugin, paths);
     }
-
-    // -------------------------------------------------------------------------
-    // Lifecycle
-    // -------------------------------------------------------------------------
 
     /**
      * Initializes the configuration system:
@@ -202,7 +198,6 @@ public final class ConfigManager {
     }
 
     private boolean contains(@NotNull ConfigurationSection section, @NotNull String path) {
-        // Keep your legacy behavior for contains(deep) where available.
         if (plugin.getVersionManager() != null && plugin.getVersionManager().hasConfigContains()) {
             return section.contains(path, true);
         }
@@ -260,9 +255,9 @@ public final class ConfigManager {
         final File dataFolder;
         final File pluginsFolder;
 
-        final File configFolder;         // /plugins/GravesX/config/
-        final File outdatedFolder;       // /plugins/GravesX/outdated/
-        final File legacySingleConfig;   // /plugins/GravesX/config.yml (legacy)
+        final File configFolder;
+        final File outdatedFolder;
+        final File legacySingleConfig;
 
         final List<String> managedConfigFiles = List.of("config.yml", "entity.yml", "grave.yml");
 
@@ -382,7 +377,6 @@ public final class ConfigManager {
             List<File> files = io.listFilesSorted(folder);
             if (files.isEmpty()) return result;
 
-            // Ensure config.yml comes first if present (matches your prior behavior)
             File mainConfig = new File(folder, "config.yml");
             if (files.contains(mainConfig)) {
                 files.remove(mainConfig);
@@ -430,7 +424,6 @@ public final class ConfigManager {
             File configFolder = paths.configFolder;
             File mainConfigFile = new File(configFolder, "config.yml");
 
-            // If config folder doesn't exist yet, nothing to update.
             if (!configFolder.exists()) {
                 return;
             }
