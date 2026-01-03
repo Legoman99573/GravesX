@@ -95,7 +95,7 @@ settings:
         # Should a grave drop its contents when destroyed for the following reasons.
         auto-loot:
           # If broken by a player, should we try to autoloot the grave's contents.
-          enabled: false
+          enabled: true
           # If not all items can be picked up when auto-looting a grave, should we break the grave anyway and drop them on the ground.
           break: true
         # When a grave times out drop everything in it. If false it gets destroyed.
