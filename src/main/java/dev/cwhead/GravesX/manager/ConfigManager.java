@@ -77,7 +77,6 @@ public final class ConfigManager {
      * Uses ResourceUtil copier (not JavaPlugin#saveDefaultConfig).
      */
     public void ensureDefaultsExist() {
-        // Copies /config/** into /plugins/GravesX/config/**
         ResourceUtil.copyResources("config", paths.configFolder.getPath(), false, plugin);
     }
 
@@ -93,7 +92,6 @@ public final class ConfigManager {
                 loaded = io.loadYaml(paths.legacySingleConfig);
                 if (loaded == null) loaded = new YamlConfiguration();
 
-                // If you ship a legacy config.yml resource at jar root, this will apply defaults.
                 defaults.applyResourceDefaults(loaded, paths.legacySingleConfig.getName());
             } else {
                 loaded = merger.loadMergedFolderConfig(paths.configFolder);
@@ -285,12 +283,15 @@ public final class ConfigManager {
         FileConfiguration loadYaml(@NotNull File file) {
             if (!YAMLUtil.isValidYAML(file)) return null;
 
-            try {
-                return YamlConfiguration.loadConfiguration(file);
-            } catch (IllegalArgumentException ex) {
-                plugin.logStackTrace(ex);
+            String jarResource = "config/" + file.getName();
+
+            YAMLUtil.YamlParseError err = YAMLUtil.validateWithBukkit(plugin, file, jarResource);
+            if (err != null) {
+                YAMLUtil.logParseError(plugin, file.getName(), err);
                 return null;
             }
+
+            return YamlConfiguration.loadConfiguration(file);
         }
 
         @NotNull
@@ -323,7 +324,6 @@ public final class ConfigManager {
                         )
                 );
             } catch (IOException e) {
-                // getResource() InputStream close error is extremely rare; log anyway
                 plugin.logStackTrace(e);
             }
         }
@@ -393,14 +393,13 @@ public final class ConfigManager {
 
                 FileConfiguration loaded = io.loadYaml(file);
                 if (loaded == null) {
-                    plugin.getLogger().warning("Unable to load config " + file.getName());
+                    plugin.getLogger().warning("Unable to load config " + file.getName() + ". Plugin may not function correctly. Do not report as a bug. Correct the following issues above.");
                     continue;
                 }
 
                 result.addDefaults(loaded);
                 defaults.bakeDefaults(result);
 
-                // Apply shipped defaults for this file (jar: /config/<filename>)
                 defaults.applyFolderResourceDefaults(result, file.getName());
             }
 
