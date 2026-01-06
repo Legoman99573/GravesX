@@ -61,6 +61,7 @@ public class Graves extends JavaPlugin {
     private DebugManager debugManager;
     private PermissionManager permissionManager;
     private ConfigManager configManager;
+    private ChunkManager chunkManager;
     private Compatibility compatibility;
     private FileConfiguration fileConfiguration;
     private boolean isDevelopmentBuild = false;
@@ -154,6 +155,7 @@ public class Graves extends JavaPlugin {
         graveManager = new GraveManager(this);
         particleManager = new ParticleManager(this);
         permissionManager = new PermissionManager(this);
+        chunkManager = new ChunkManager(this);
 
         getLogger().info("[Modules] Loading GravesX Modules...");
 
@@ -891,6 +893,13 @@ public class Graves extends JavaPlugin {
      */
     public ConfigManager getConfigManager() {
         return configManager;
+    }
+
+    /**
+     * @return the {@link ChunkManager} that manages Chunks used by this plugin.
+     */
+    public ChunkManager getChunkManager() {
+        return chunkManager;
     }
 
     /**

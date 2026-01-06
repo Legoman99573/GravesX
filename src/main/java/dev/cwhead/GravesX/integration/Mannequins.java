@@ -5,6 +5,7 @@ import com.ranull.graves.data.EntityData;
 import com.ranull.graves.manager.EntityDataManager;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.listener.integration.mannequins.MannequinInteractListener;
+import dev.cwhead.GravesX.manager.ChunkManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -22,10 +23,7 @@ import org.bukkit.profile.PlayerTextures;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.Collection;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -187,32 +185,63 @@ public final class Mannequins extends EntityDataManager {
         String tag = TAG_PREFIX + idNoDashes;
 
         if (base != null && base.getWorld() != null) {
-            Collection<Entity> nearby = base.getWorld().getNearbyEntities(base, 16, 16, 16);
-            for (Entity e : nearby) {
-                if (isTaggedCorpse(e, tag)) {
-                    try {
-                        plugin.getDataManager().removeEntityData((EntityData) e);
-                    } catch (Throwable t) {
-                        plugin.debugMessage("[Mannequins] removeEntityData failed: " + t, 1);
-                    }
+            Location anchor = base.clone();
 
-                    e.remove();
-                }
-            }
+            plugin.getChunkManager().ensureLoadedAndExecute(
+                    anchor,
+                    base,
+                    false,
+                    false,
+                    () -> {
+                        try {
+                            Collection<Entity> nearby = base.getWorld().getNearbyEntities(base, 16, 16, 16);
+                            for (Entity e : nearby) {
+                                if (!isTaggedCorpse(e, tag)) continue;
+
+                                try {
+                                    EntityData data = new EntityData(
+                                            e.getLocation(),
+                                            e.getUniqueId(),
+                                            grave.getUUID(),
+                                            EntityData.Type.MANNEQUIN
+                                    );
+
+                                    plugin.getDataManager().removeEntityData(data);
+                                } catch (Throwable t) {
+                                    plugin.getLogger().severe(t.getMessage());
+                                    plugin.logStackTrace(t);
+                                }
+
+                                e.remove();
+                            }
+                        } catch (Throwable t) {
+                            plugin.getLogger().severe(t.getMessage());
+                            plugin.logStackTrace(t);
+                        }
+                    }
+            );
+
+            return;
+        }
+
+        if (plugin.getChunkManager().getChunkType().effective() == ChunkManager.ChunkType.FOLIA) {
             return;
         }
 
         for (World w : Bukkit.getWorlds()) {
             for (Entity e : w.getEntities()) {
-                if (isTaggedCorpse(e, tag)) {
-                    try {
-                        plugin.getDataManager().removeEntityData((EntityData) e);
-                    } catch (Throwable t) {
-                        plugin.debugMessage("[Mannequins] removeEntityData failed: " + t, 1);
-                    }
+                if (!isTaggedCorpse(e, tag)) continue;
 
-                    e.remove();
+                try {
+                    EntityData data = new EntityData(e.getLocation(), e.getUniqueId(), grave.getUUID(), EntityData.Type.MANNEQUIN);
+
+                    plugin.getDataManager().removeEntityData(data);
+                } catch (Throwable t) {
+                    plugin.getLogger().severe(t.getMessage());
+                    plugin.logStackTrace(t);
                 }
+
+                e.remove();
             }
         }
     }

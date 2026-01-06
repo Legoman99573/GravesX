@@ -124,7 +124,7 @@ public final class KeepInventoryDetector {
             if (v != null) return v;
         } catch (Throwable ignored) {}
         try {
-            String s = w.getGameRuleValue(GameRule.KEEP_INVENTORY.getName());
+            String s = (String) w.getGameRuleValue(Objects.requireNonNull(GameRule.getByName("keepInventory")));
             return "true".equalsIgnoreCase(s);
         } catch (Throwable ignored) {}
         return false;

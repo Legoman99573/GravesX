@@ -191,17 +191,35 @@ public class GraveManager {
                 return;
             }
 
-            Chunk chunk = world.getChunkAt(loc);
+            if (dropOnTimeout && !abandonSnapshot) {
+                plugin.debugMessage("Dropping on timeout: " + grave.getUUID(), 2);
 
-            boolean wasForceLoaded = chunk.isForceLoaded();
+                dropGraveItems(loc, grave);
+                dropGraveExperience(loc, grave);
+                sendPlayerMessage(grave, "message.timeout", loc);
 
-            if (!chunk.isLoaded()) {
-                chunk.setForceLoaded(true);
+                synchronized (graveRemoveList) {
+                    graveRemoveList.add(grave);
+                }
+
+                removeGrave(grave);
+                return;
             }
 
-            try {
-                if (dropOnTimeout && !abandonSnapshot) {
-                    plugin.debugMessage("Dropping on timeout: " + grave.getUUID(), 2);
+            if (!dropOnTimeout && abandonSnapshot) {
+                plugin.debugMessage("Abandoning grave: " + grave.getUUID(), 2);
+
+                GraveAbandonedEvent aevModern = new GraveAbandonedEvent(grave);
+                plugin.getServer().getPluginManager().callEvent(aevModern);
+
+                com.ranull.graves.event.GraveAbandonedEvent aevLegacy =
+                        new com.ranull.graves.event.GraveAbandonedEvent(grave);
+                plugin.getServer().getPluginManager().callEvent(aevLegacy);
+
+                if (aevModern.isCancelled() || aevModern.isAddon() ||
+                        aevLegacy.isCancelled() || aevLegacy.isAddon()) {
+
+                    plugin.debugMessage("Abandon event cancelled for " + grave.getUUID(), 2);
 
                     dropGraveItems(loc, grave);
                     dropGraveExperience(loc, grave);
@@ -215,71 +233,33 @@ public class GraveManager {
                     return;
                 }
 
-                if (!dropOnTimeout && abandonSnapshot) {
-                    plugin.debugMessage("Abandoning grave: " + grave.getUUID(), 2);
-
-                    GraveAbandonedEvent aevModern = new GraveAbandonedEvent(grave);
-                    plugin.getServer().getPluginManager().callEvent(aevModern);
-
-                    com.ranull.graves.event.GraveAbandonedEvent aevLegacy =
-                            new com.ranull.graves.event.GraveAbandonedEvent(grave);
-                    plugin.getServer().getPluginManager().callEvent(aevLegacy);
-
-                    if (aevModern.isCancelled() || aevModern.isAddon() ||
-                            aevLegacy.isCancelled() || aevLegacy.isAddon()) {
-
-                        plugin.debugMessage("Abandon event cancelled for " + grave.getUUID(), 2);
-
-                        dropGraveItems(loc, grave);
-                        dropGraveExperience(loc, grave);
-                        sendPlayerMessage(grave, "message.timeout", loc);
-
-                        synchronized (graveRemoveList) {
-                            graveRemoveList.add(grave);
-                        }
-
-                        removeGrave(grave);
-                        return;
-                    }
-
-                    Location abandonLoc = (aevModern.hasLocation() ? aevModern.getLocation() : aevLegacy.getLocation());
-                    sendPlayerMessage(grave, "message.grave-abandoned", abandonLoc != null ? abandonLoc : loc);
-                    abandonGrave(grave);
-                    return;
-                }
-
-                GraveExpiredEvent expired = new GraveExpiredEvent(grave);
-                plugin.getServer().getPluginManager().callEvent(expired);
-
-                if (expired.isCancelled() || expired.isAddon()) {
-                    plugin.debugMessage("Fallback drop cancelled — grave lives forever: " + grave.getUUID(), 2);
-                    grave.setTimeAliveRemaining(-1L);
-                    return;
-                }
-
-                plugin.debugMessage("Fallback drop for " + grave.getUUID(), 2);
-
-                sendPlayerMessage(grave, "message.timeout", loc);
-
-                synchronized (graveRemoveList) {
-                    graveRemoveList.add(grave);
-                }
-
-                removeGrave(grave);
-
-            } finally {
-                // Restore original force-load state
-                if (!wasForceLoaded) {
-                    chunk.setForceLoaded(false);
-                }
+                Location abandonLoc = (aevModern.hasLocation() ? aevModern.getLocation() : aevLegacy.getLocation());
+                sendPlayerMessage(grave, "message.grave-abandoned", abandonLoc != null ? abandonLoc : loc);
+                abandonGrave(grave);
+                return;
             }
+
+            GraveExpiredEvent expired = new GraveExpiredEvent(grave);
+            plugin.getServer().getPluginManager().callEvent(expired);
+
+            if (expired.isCancelled() || expired.isAddon()) {
+                plugin.debugMessage("Fallback drop cancelled — grave lives forever: " + grave.getUUID(), 2);
+                grave.setTimeAliveRemaining(-1L);
+                return;
+            }
+
+            plugin.debugMessage("Fallback drop for " + grave.getUUID(), 2);
+
+            sendPlayerMessage(grave, "message.timeout", loc);
+
+            synchronized (graveRemoveList) {
+                graveRemoveList.add(grave);
+            }
+
+            removeGrave(grave);
         };
 
-        if (plugin.getVersionManager().isFolia()) {
-            plugin.getGravesXScheduler().execute(anchor, logic);
-        } else {
-            plugin.getGravesXScheduler().runTask(logic);
-        }
+        plugin.getChunkManager().ensureLoadedAndExecute(anchor, loc, true, true, logic);
     }
 
     /**
@@ -452,46 +432,52 @@ public class GraveManager {
             );
             Collections.reverse(lineList);
 
+            Location holoLoc = hologramData.getLocation();
+            if (holoLoc == null || holoLoc.getWorld() == null) {
+                plugin.debugMessage("HologramData has invalid location for grave " + grave.getUUID(), 2);
+                return;
+            }
+
+            UUID targetId = hologramData.getUUIDEntity();
+            if (targetId == null) {
+                synchronized (entityDataRemoveList) {
+                    entityDataRemoveList.add(hologramData);
+                }
+                return;
+            }
+
             Runnable logic = () -> {
-                Location holoLoc = hologramData.getLocation();
-                if (holoLoc == null || holoLoc.getWorld() == null) {
-                    plugin.debugMessage("HologramData has invalid location for grave " + grave.getUUID(), 2);
-                    return;
-                }
-
-                if (!hologramData.isChunkLoaded()) {
-                    return;
-                }
-
-                World world = holoLoc.getWorld();
-                Chunk chunk = world.getChunkAt(hologramData.getChunkX(), hologramData.getChunkZ());
-
-                UUID targetId = hologramData.getUUIDEntity();
-                if (targetId == null) {
-                    synchronized (entityDataRemoveList) {
-                        entityDataRemoveList.add(hologramData);
+                try {
+                    World world = holoLoc.getWorld();
+                    if (world == null) {
+                        return;
                     }
-                    return;
-                }
 
-                Entity target = null;
-                for (Entity entity : chunk.getEntities()) {
-                    if (entity != null && targetId.equals(entity.getUniqueId())) {
-                        target = entity;
-                        break;
+                    Chunk chunk = world.getChunkAt(hologramData.getChunkX(), hologramData.getChunkZ());
+
+                    Entity target = null;
+                    for (Entity entity : chunk.getEntities()) {
+                        if (entity != null && targetId.equals(entity.getUniqueId())) {
+                            target = entity;
+                            break;
+                        }
                     }
-                }
 
-                if (target == null) {
-                    synchronized (entityDataRemoveList) {
-                        entityDataRemoveList.add(hologramData);
+                    if (target == null) {
+                        synchronized (entityDataRemoveList) {
+                            entityDataRemoveList.add(hologramData);
+                        }
+                        return;
                     }
-                    return;
-                }
 
-                int lineIndex = hologramData.getLine();
+                    int lineIndex = hologramData.getLine();
+                    if (lineIndex < 0 || lineIndex >= lineList.size()) {
+                        synchronized (entityDataRemoveList) {
+                            entityDataRemoveList.add(hologramData);
+                        }
+                        return;
+                    }
 
-                if (lineIndex >= 0 && lineIndex < lineList.size()) {
                     String lineText = StringUtil.parseString(lineList.get(lineIndex), location, grave, plugin);
 
                     if (plugin.getIntegrationManager().hasMiniMessage()) {
@@ -499,20 +485,23 @@ public class GraveManager {
                     } else {
                         target.setCustomName(lineText);
                     }
-                } else {
-                    synchronized (entityDataRemoveList) {
-                        entityDataRemoveList.add(hologramData);
-                    }
+                } catch (Throwable t) {
+                    plugin.getLogger().severe(t.getMessage());
+                    plugin.logStackTrace(t);
                 }
             };
 
-            if (plugin.getVersionManager().isFolia()) {
-                plugin.getGravesXScheduler().execute(hologramData.getLocation(), logic);
-            } else {
-                logic.run();
-            }
-        } catch (IllegalStateException ex) {
-            plugin.debugMessage("processHologramData failed: " + ex.getMessage(), 2);
+            plugin.getChunkManager().ensureLoadedAndExecute(
+                    holoLoc,
+                    holoLoc,
+                    false,
+                    false,
+                    logic
+            );
+
+        } catch (Throwable t) {
+            plugin.getLogger().severe(t.getMessage());
+            plugin.logStackTrace(t);
         }
     }
 
@@ -1848,14 +1837,8 @@ public class GraveManager {
 
         final UUID graveUUID = grave.getUUID();
         final UUID viewerUUID = player.getUniqueId();
-
-        if (!plugin.getCacheManager().canAccessGrave(graveUUID, viewerUUID)) {
-            plugin.getGravesXScheduler().execute(anchor, () -> {
-                plugin.getEntityManager().sendMessage("message.grave-in-use", player, location, grave);
-                plugin.getEntityManager().playWorldSound("sound.protection", location, grave);
-            });
-            return false;
-        }
+        final UUID ownerUUID = grave.getOwnerUUID();
+        final boolean isOwner = ownerUUID != null && ownerUUID.equals(viewerUUID);
 
         plugin.getGravesXScheduler().execute(anchor, () -> plugin.getEntityManager().swingMainHand(player));
 
@@ -1869,11 +1852,19 @@ public class GraveManager {
                     if (player.getGameMode() == GameMode.SPECTATOR
                             && !plugin.getPermissionManager().hasGrantedPermission("graves.spectator.bypass", player.getPlayer())) return;
 
-                    // Lock during auto-loot so nobody else can interact mid-loot.
                     if (!plugin.getCacheManager().startViewingGrave(graveUUID, viewerUUID)) {
-                        plugin.getEntityManager().sendMessage("message.grave-in-use", player, location, grave);
-                        plugin.getEntityManager().playWorldSound("sound.protection", location, grave);
-                        return;
+                        if (isOwner) {
+                            closeGrave(grave);
+                            if (!plugin.getCacheManager().startViewingGrave(graveUUID, viewerUUID)) {
+                                plugin.getEntityManager().sendMessage("message.grave-in-use", player, location, grave);
+                                plugin.getEntityManager().playWorldSound("sound.protection", location, grave);
+                                return;
+                            }
+                        } else {
+                            plugin.getEntityManager().sendMessage("message.grave-in-use", player, location, grave);
+                            plugin.getEntityManager().playWorldSound("sound.protection", location, grave);
+                            return;
+                        }
                     }
 
                     try {
@@ -1902,10 +1893,21 @@ public class GraveManager {
 
                 } else if (plugin.getPermissionManager().hasGrantedPermission("graves.open", player.getPlayer())) {
 
-                    if (!plugin.getCacheManager().startViewingGrave(graveUUID, viewerUUID)) {
-                        plugin.getEntityManager().sendMessage("message.grave-in-use", player, location, grave);
-                        plugin.getEntityManager().playWorldSound("sound.protection", location, grave);
-                        return;
+                    if (!preview) {
+                        if (!plugin.getCacheManager().startViewingGrave(graveUUID, viewerUUID)) {
+                            if (isOwner) {
+                                closeGrave(grave);
+                                if (!plugin.getCacheManager().startViewingGrave(graveUUID, viewerUUID)) {
+                                    plugin.getEntityManager().sendMessage("message.grave-in-use", player, location, grave);
+                                    plugin.getEntityManager().playWorldSound("sound.protection", location, grave);
+                                    return;
+                                }
+                            } else {
+                                plugin.getEntityManager().sendMessage("message.grave-in-use", player, location, grave);
+                                plugin.getEntityManager().playWorldSound("sound.protection", location, grave);
+                                return;
+                            }
+                        }
                     }
 
                     if (plugin.getConfigManager().getConfigSection("grave.preview", grave).getBoolean("grave.preview", false)) {
@@ -1927,26 +1929,12 @@ public class GraveManager {
                 boolean gravePreview = plugin.getConfigManager().getConfigSection("grave.preview", grave).getBoolean("grave.preview", false);
 
                 if (protPreview && gravePreview) {
-                    // Acquire lock for GUI open; release later on InventoryCloseEvent.
-                    if (!plugin.getCacheManager().startViewingGrave(graveUUID, viewerUUID)) {
-                        plugin.getEntityManager().sendMessage("message.grave-in-use", player, location, grave);
-                        plugin.getEntityManager().playWorldSound("sound.protection", location, grave);
-                        return;
-                    }
-
                     grave.setGravePreview(preview);
                     player.openInventory(grave.getInventory());
                     plugin.getEntityManager().runCommands("event.command.open", player, location, grave);
                     plugin.getEntityManager().playWorldSound("sound.open", location, grave);
 
                 } else if (protPreview) {
-                    // Acquire lock for GUI open; release later on InventoryCloseEvent.
-                    if (!plugin.getCacheManager().startViewingGrave(graveUUID, viewerUUID)) {
-                        plugin.getEntityManager().sendMessage("message.grave-in-use", player, location, grave);
-                        plugin.getEntityManager().playWorldSound("sound.protection", location, grave);
-                        return;
-                    }
-
                     grave.setGravePreview(false);
                     player.openInventory(grave.getInventory());
                     plugin.getEntityManager().runCommands("event.command.open", player, location, grave);

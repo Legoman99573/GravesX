@@ -10,6 +10,7 @@ import me.jay.GravesX.integration.FancyNPCs;
 import com.ranull.graves.integration.PlayerNPC;
 import net.milkbowl.vault.permission.Permission;
 import org.bukkit.Bukkit;
+import org.bukkit.GameRule;
 import org.bukkit.World;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -17,6 +18,7 @@ import org.bukkit.plugin.RegisteredServiceProvider;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -1216,11 +1218,11 @@ public class IntegrationManager {
         if (plugin.getConfig().getBoolean("settings.compatibility.warning")) {
             for (World world : plugin.getServer().getWorlds()) {
                 try {
-                    if (world.getGameRuleValue("keepInventory").equals("true")) {
+                    if (Objects.equals(world.getGameRuleValue(Objects.requireNonNull(GameRule.getByName("keepInventory"))), "true")) {
                         plugin.compatibilityMessage("World \"" + world.getName() + "\" has keepInventory set to true, Graves will not be created here unless a player has the \"graves.keepinventory.bypass\" permission.");
                     }
                 } catch (Exception e) {
-                    if (world.getGameRuleValue("keep_inventory").equals("true")) {
+                    if (Objects.equals(world.getGameRuleValue(Objects.requireNonNull(GameRule.getByName("keep_inventory"))), "true")) {
                         plugin.compatibilityMessage("World \"" + world.getName() + "\" has keepInventory set to true, Graves will not be created here unless a player has the \"graves.keepinventory.bypass\" permission.");
                     }
                 }

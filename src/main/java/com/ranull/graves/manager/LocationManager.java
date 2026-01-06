@@ -4,6 +4,7 @@ import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.LocationUtil;
 import com.ranull.graves.util.MaterialUtil;
+import dev.cwhead.GravesX.manager.ChunkManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -539,32 +540,35 @@ public class LocationManager {
 
         World.Environment environment = world.getEnvironment();
 
-        final boolean skipRoof = (environment == World.Environment.NETHER)
-                && !plugin.getConfigManager().getConfigSection("placement.nether-roof", grave).getBoolean("placement.nether-roof");
-
         if (plugin.getConfigManager().getConfigSection("placement.void-smart", grave).getBoolean("placement.void-smart")) {
             Location solidLocation = plugin.getLocationManager().getLastSolidLocation(entity);
             if (solidLocation != null && solidLocation.getWorld() != null) {
                 if (!hasGrave(solidLocation)) {
                     return solidLocation;
                 }
-                if (!skipRoof) {
+
+                if (!(environment == World.Environment.NETHER
+                        && !plugin.getConfigManager().getConfigSection("placement.nether-roof", grave)
+                        .getBoolean("placement.nether-roof"))) {
+
                     Location roof = getRoof(solidLocation, entity, grave);
                     if (roof != null && roof.getWorld() != null && !hasGrave(roof)) return roof;
                 }
             }
         }
 
-        final boolean islandScanEnabled = plugin.getConfigManager()
-                .getConfigSection("placement.void-island-scan", grave)
-                .getBoolean("placement.void-island-scan", false);
+        if (environment == World.Environment.THE_END
+                || plugin.getConfigManager().getConfigSection("placement.void-island-scan", grave)
+                .getBoolean("placement.void-island-scan", false)) {
 
-        if (environment == World.Environment.THE_END || islandScanEnabled) {
             Location islandCandidate = endVoidScan(loc, grave);
             if (islandCandidate != null && islandCandidate.getWorld() != null && !hasGrave(islandCandidate)) return islandCandidate;
         }
 
-        if (!skipRoof) {
+        if (!(environment == World.Environment.NETHER
+                && !plugin.getConfigManager().getConfigSection("placement.nether-roof", grave)
+                .getBoolean("placement.nether-roof"))) {
+
             Location roof = getRoof(loc, entity, grave);
             if (roof != null && roof.getWorld() != null && !hasGrave(roof)) return roof;
         }
@@ -577,6 +581,8 @@ public class LocationManager {
 
         final int startX = loc.getBlockX();
         final int startZ = loc.getBlockZ();
+        final int startChunkX = startX >> 4;
+        final int startChunkZ = startZ >> 4;
 
         int checksRemaining = 4096;
 
@@ -584,7 +590,15 @@ public class LocationManager {
             int cx = x >> 4;
             int cz = z >> 4;
 
-            if (!world.isChunkLoaded(cx, cz)) return null;
+            if (plugin.getChunkManager().getChunkType().effective() == ChunkManager.ChunkType.FOLIA) {
+                if (cx != startChunkX || cz != startChunkZ) {
+                    return null;
+                }
+            } else {
+                if (!world.isChunkLoaded(cx, cz)) {
+                    return null;
+                }
+            }
 
             final int maxY = world.getMaxHeight() - 1;
             final int roofIgnoreY = maxY - 10; // heuristic for nether roof bedrock
@@ -598,16 +612,22 @@ public class LocationManager {
 
                 if (!type.isSolid()) continue;
 
-                if (type.name().contains("BEDROCK") && skipRoof && yy >= roofIgnoreY) continue;
+                if (type.name().contains("BEDROCK")
+                        && (environment == World.Environment.NETHER
+                        && !plugin.getConfigManager().getConfigSection("placement.nether-roof", grave)
+                        .getBoolean("placement.nether-roof"))
+                        && yy >= roofIgnoreY) {
+                    continue;
+                }
 
-                // Require 2-block headroom above the ground block
                 if (yy + 2 > maxY) continue;
 
                 Material a1 = world.getBlockAt(x, yy + 1, z).getType();
                 Material a2 = world.getBlockAt(x, yy + 2, z).getType();
                 if (a1.isSolid() || a2.isSolid()) continue;
 
-                // Bedrock is OK only if headroom exists (covered above)
+                if (!getSky(world, x, yy + 1, z)) continue;
+
                 return new Location(world, x + 0.5, yy + 1.0, z + 0.5, loc.getYaw(), loc.getPitch());
             }
 
@@ -643,6 +663,33 @@ public class LocationManager {
         }
 
         return null;
+    }
+
+    /**
+     * Returns true if the given position is exposed to the sky (no blocks above it in that column).
+     *
+     * @param world the world
+     * @param x block x
+     * @param y block y (position to test)
+     * @param z block z
+     * @return true if exposed to sky
+     */
+    private boolean getSky(World world, int x, int y, int z) {
+        if (world == null) {
+            return false;
+        }
+
+        int yMax = world.getMaxHeight() - 1;
+        if (y > yMax) {
+            y = yMax;
+        }
+
+        int top = world.getHighestBlockYAt(x, z);
+        if (top > yMax) {
+            top = yMax;
+        }
+
+        return y >= top;
     }
 
     /**

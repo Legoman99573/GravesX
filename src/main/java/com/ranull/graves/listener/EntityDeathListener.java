@@ -1083,7 +1083,7 @@ public class EntityDeathListener implements Listener {
                         }
                         break;
                     case CUSTOM:
-                        Boolean weatherCycle = world.getGameRuleValue(GameRule.DO_WEATHER_CYCLE);
+                        Boolean weatherCycle = (Boolean) world.getGameRuleValue(Objects.requireNonNull(GameRule.getByName("do_weather_cycle")));
                         if (Boolean.TRUE.equals(weatherCycle)) {
                             if (plugin.getConfigManager().getConfigSection("grave.actually-smite-death-location", grave).getBoolean("grave.actually-smite-death-location", false)) {
                                 world.strikeLightning(player.getLocation());

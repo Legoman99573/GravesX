@@ -11,6 +11,8 @@ import org.bukkit.entity.Entity;
 
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -159,13 +161,26 @@ public class EntityDataManager {
         Map<EntityData, Entity> entityDataMap = new HashMap<>();
 
         for (EntityData entityData : entityDataList) {
+            if (entityData == null) {
+                continue;
+            }
+
             Location location = entityData.getLocation();
+            if (location == null) {
+                continue;
+            }
+
             World world = location.getWorld();
             if (world == null) {
                 continue;
             }
 
-            Entity found = fastGetEntity(entityData.getUUIDEntity());
+            UUID uuid = entityData.getUUIDEntity();
+            if (uuid == null) {
+                continue;
+            }
+
+            Entity found = fastGetEntity(uuid);
             if (found != null) {
                 entityDataMap.put(entityData, found);
                 continue;
@@ -173,11 +188,46 @@ public class EntityDataManager {
 
             int cx = location.getBlockX() >> 4;
             int cz = location.getBlockZ() >> 4;
-            if (!world.isChunkLoaded(cx, cz)) {
-                continue;
+
+            final AtomicReference<Entity> ref = new AtomicReference<>(null);
+            final CountDownLatch latch = new CountDownLatch(1);
+
+            plugin.getChunkManager().ensureLoadedAndExecute(
+                    location,
+                    location,
+                    false,
+                    false,
+                    () -> {
+                        try {
+                            Entity quick = fastGetEntity(uuid);
+                            if (quick != null) {
+                                ref.set(quick);
+                                return;
+                            }
+
+                            Chunk chunk = world.getChunkAt(cx, cz);
+                            for (Entity e : chunk.getEntities()) {
+                                if (e != null && uuid.equals(e.getUniqueId())) {
+                                    ref.set(e);
+                                    break;
+                                }
+                            }
+                        } catch (Throwable t) {
+                            plugin.getLogger().severe(t.getMessage());
+                            plugin.logStackTrace(t);
+                        } finally {
+                            latch.countDown();
+                        }
+                    }
+            );
+
+            try {
+                latch.await(25L, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
 
-            Entity scanned = scanChunkForEntityRegionSafe(world, cx, cz, entityData.getUUIDEntity(), location);
+            Entity scanned = ref.get();
             if (scanned != null) {
                 entityDataMap.put(entityData, scanned);
             }
@@ -195,14 +245,26 @@ public class EntityDataManager {
         List<EntityData> removedEntityDataList = new ArrayList<>();
 
         for (EntityData entityData : entityDataList) {
+            if (entityData == null) {
+                continue;
+            }
+
             Location location = entityData.getLocation();
+            if (location == null) {
+                continue;
+            }
+
             World world = location.getWorld();
             if (world == null) {
                 continue;
             }
 
-            // If we can resolve the entity quickly/safely, mark for removal.
-            Entity found = fastGetEntity(entityData.getUUIDEntity());
+            UUID uuid = entityData.getUUIDEntity();
+            if (uuid == null) {
+                continue;
+            }
+
+            Entity found = fastGetEntity(uuid);
             if (found != null) {
                 removedEntityDataList.add(entityData);
                 continue;
@@ -210,12 +272,46 @@ public class EntityDataManager {
 
             int cx = location.getBlockX() >> 4;
             int cz = location.getBlockZ() >> 4;
-            if (!world.isChunkLoaded(cx, cz)) {
-                continue;
+
+            final AtomicReference<Entity> ref = new AtomicReference<>(null);
+            final CountDownLatch latch = new CountDownLatch(1);
+
+            plugin.getChunkManager().ensureLoadedAndExecute(
+                    location,
+                    location,
+                    false,
+                    false,
+                    () -> {
+                        try {
+                            Entity quick = fastGetEntity(uuid);
+                            if (quick != null) {
+                                ref.set(quick);
+                                return;
+                            }
+
+                            Chunk chunk = world.getChunkAt(cx, cz);
+                            for (Entity e : chunk.getEntities()) {
+                                if (e != null && uuid.equals(e.getUniqueId())) {
+                                    ref.set(e);
+                                    break;
+                                }
+                            }
+                        } catch (Throwable t) {
+                            plugin.getLogger().severe(t.getMessage());
+                            plugin.logStackTrace(t);
+                        } finally {
+                            latch.countDown();
+                        }
+                    }
+            );
+
+            try {
+                latch.await(25L, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
 
-            Entity scanned = scanChunkForEntityRegionSafe(world, cx, cz, entityData.getUUIDEntity(), location);
-            if (scanned != null) {
+            if (ref.get() != null) {
                 removedEntityDataList.add(entityData);
             }
         }
@@ -246,28 +342,46 @@ public class EntityDataManager {
      * If not (legacy servers), we fall back to a direct on-thread scan (original behavior).
      */
     private Entity scanChunkForEntityRegionSafe(World world, int cx, int cz, UUID uuid, Location anchor) {
-        if (plugin.getVersionManager().isFolia()) {
-            final AtomicReference<Entity> ref = new AtomicReference<>(null);
+        if (world == null || uuid == null) {
+            return null;
+        }
 
-            plugin.getGravesXScheduler().execute(anchor, () -> {
-                Chunk chunk = world.getChunkAt(cx, cz);
-                for (Entity e : chunk.getEntities()) {
-                    if (uuid.equals(e.getUniqueId())) {
-                        ref.set(e);
-                        break;
+        Location chunkLoc = new Location(world, (cx << 4) + 8, (anchor != null ? anchor.getY() : 64), (cz << 4) + 8);
+
+        Location useAnchor = (anchor != null ? anchor : chunkLoc);
+
+        final AtomicReference<Entity> ref = new AtomicReference<>(null);
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        plugin.getChunkManager().ensureLoadedAndExecute(
+                useAnchor,
+                chunkLoc,
+                false,
+                false,
+                () -> {
+                    try {
+                        Chunk chunk = world.getChunkAt(cx, cz);
+                        for (Entity e : chunk.getEntities()) {
+                            if (uuid.equals(e.getUniqueId())) {
+                                ref.set(e);
+                                break;
+                            }
+                        }
+                    } catch (Throwable t) {
+                        plugin.getLogger().severe(t.getMessage());
+                        plugin.logStackTrace(t);
+                    } finally {
+                        latch.countDown();
                     }
                 }
-            });
+        );
 
-            return ref.get();
+        try {
+            latch.await(25L, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
 
-        Chunk chunk = world.getChunkAt(cx, cz);
-        for (Entity e : chunk.getEntities()) {
-            if (uuid.equals(e.getUniqueId())) {
-                return e;
-            }
-        }
-        return null;
+        return ref.get();
     }
 }
