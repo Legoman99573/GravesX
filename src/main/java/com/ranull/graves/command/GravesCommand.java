@@ -236,12 +236,22 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
         } else if (args.length > 1) {
             if ((args[0].equalsIgnoreCase("list") || args[0].equalsIgnoreCase("gui"))
                     && (!(commandSender instanceof Player) || plugin.getPermissionManager().hasGrantedPermission("graves.gui.other", (Player) commandSender))) {
-                plugin.getServer().getOnlinePlayers().forEach(player -> stringList.add(player.getName()));
 
+                String partial = args[args.length - 1].toLowerCase(Locale.ROOT);
+
+                for (OfflinePlayer op : Bukkit.getOfflinePlayers()) {
+                    if (op == null || op.isOnline() || !op.hasPlayedBefore()) continue;
+
+                    String name = op.getName();
+                    if (name == null) continue;
+
+                    if (partial.isEmpty() || name.toLowerCase(Locale.ROOT).startsWith(partial)) {
+                        stringList.add(name);
+                    }
+                }
             } else if ((args[0].equalsIgnoreCase("teleport") || args[0].equalsIgnoreCase("tp"))
                     && (!(commandSender instanceof Player) || plugin.getPermissionManager().hasGrantedPermission("graves.teleport.command.others", (Player) commandSender))) {
                 plugin.getServer().getOnlinePlayers().forEach(player -> stringList.add(player.getName()));
-
             } else if (args[0].equals("debug") && (!(commandSender instanceof Player) || plugin.getPermissionManager().hasGrantedPermission("graves.debug", ((Player) commandSender).getPlayer()))) {
                 stringList.add("0");
                 stringList.add("1");
