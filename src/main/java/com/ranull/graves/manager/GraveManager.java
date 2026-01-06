@@ -866,13 +866,23 @@ public class GraveManager {
         }
 
         Grave toDel = plugin.getCacheManager().getOldestGrave(livingEntity.getUniqueId());
+        if (toDel == null) {
+            return;
+        }
 
-        if (toDel != null) {
-            if (plugin.getConfigManager().getConfigSection("drop.old-grave-replacement", toDel).getBoolean("drop.old-grave-replacement", true)) {
-                dropAllFromGrave(toDel);
+        Location deathLoc = toDel.getLocationDeath();
+        if (deathLoc == null || deathLoc.getWorld() == null) {
+            removeGrave(toDel);
+            return;
+        }
+
+        plugin.getChunkManager().ensureLoadedAndExecute(deathLoc, deathLoc, true, false, () -> {
+            if (plugin.getConfigManager().getConfigSection("drop.timeout", toDel).getBoolean("drop.timeout", true)) {
+                dropGraveItems(deathLoc, toDel);
+                dropGraveExperience(deathLoc, toDel);
             }
             removeGrave(toDel);
-        }
+        });
     }
 
     /**
