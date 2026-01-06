@@ -70,40 +70,56 @@ public class Graves extends JavaPlugin {
     private static TaskScheduler graveScheduler;
     private ModuleManager moduleManager;
     private boolean deferModuleLoad;
-    private DependencyEnableListener depListener;
 
     @Override
     public void onLoad() {
         debugManager = new DebugManager(this);
         configManager = new ConfigManager(this);
 
-        // Ensure plugin data folder exists (some servers won't create it until first save)
-        if (!getDataFolder().exists() && !getDataFolder().mkdirs()) {
-            getLogger().severe("Failed to create plugin data folder: " + getDataFolder().getAbsolutePath());
-            // continue anyway; some file operations may fail and will log later
+        try {
+            if (!getDataFolder().exists() && !getDataFolder().mkdirs()) {
+                getLogger().severe(
+                        "GravesX does not have permission to create or access the plugin data folder " + getDataFolder().getAbsolutePath() + ". Ensure the server process user has read/write access to this folder. If you're on Linux, you may need to adjust ownership/permissions (chown/chmod). If you're on Windows, ensure the account running the server has Modify permission."
+                );
+            }
+        } catch (SecurityException e) {
+            getLogger().severe("GravesX does not have permission to create or access the plugin data folder " + getDataFolder().getAbsolutePath() + ". Ensure the server process user has read/write access to this folder.");
+            logStackTrace(e);
         }
 
-        // Migrate legacy folder name: /plugins/Graves -> /plugins/GravesX
         File pluginsDir = getDataFolder().getParentFile();
         File gravesDirectory = new File(pluginsDir, "Graves");
         File newGravesDirectory = new File(pluginsDir, "GravesX");
 
         if (gravesDirectory.exists() && gravesDirectory.isDirectory()) {
             getLogger().warning("Your server has legacy version of Graves. Migrating the folder to GravesX for you.");
-            if (gravesDirectory.renameTo(newGravesDirectory)) {
-                getLogger().info("Successfully renamed legacy folder Graves to GravesX.");
-            } else {
-                getLogger().severe("Failed to rename legacy folder Graves to GravesX. Ensure the folder doesn't already exist.");
+            try {
+                if (gravesDirectory.renameTo(newGravesDirectory)) {
+                    getLogger().info("Successfully renamed legacy folder Graves to GravesX.");
+                } else {
+                    getLogger().severe(
+                            "Failed to rename legacy folder Graves to GravesX. Ensure GravesX has permission to rename the folder, and that the destination doesn't already exist."
+                    );
+                }
+            } catch (SecurityException e) {
+                getLogger().severe("GravesX does not have permission to rename the legacy folder. Ensure the server process user has Modify/write permission from " + gravesDirectory.getAbsolutePath() + " to " + newGravesDirectory.getAbsolutePath());
+                logStackTrace(e);
             }
         }
 
-        // IMPORTANT: after any migration, re-ensure the data folder exists
-        if (!getDataFolder().exists() && !getDataFolder().mkdirs()) {
-            getLogger().severe("Failed to create plugin data folder after migration: " + getDataFolder().getAbsolutePath());
+        try {
+            if (!getDataFolder().exists() && !getDataFolder().mkdirs()) {
+                getLogger().severe(
+                        "GravesX does not have permission to create or access the plugin data folder after migration of " + getDataFolder().getAbsolutePath() + ". Ensure the server process user has read/write access to this folder."
+                );
+            }
+        } catch (SecurityException e) {
+            getLogger().severe("GravesX does not have permission to create or access the plugin data folder after migration: " + getDataFolder().getAbsolutePath());
+            logStackTrace(e);
         }
 
         if (configManager == null) {
-            configManager = new dev.cwhead.GravesX.manager.ConfigManager(this);
+            configManager = new ConfigManager(this);
         }
 
         configManager.ensureDefaultsExist();
@@ -186,7 +202,7 @@ public class Graves extends JavaPlugin {
 
         moduleManager.enableAll(GravesXModuleController.LoadPhase.STARTUP);
 
-        depListener = new DependencyEnableListener(moduleManager);
+        DependencyEnableListener depListener = new DependencyEnableListener(moduleManager);
         getServer().getPluginManager().registerEvents(depListener, this);
         getGravesXScheduler().runTask(moduleManager::tryEnablePending);
 

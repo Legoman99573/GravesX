@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -27,12 +28,24 @@ public class GravesXAddon {
     public static void ensureAddonRoot(Graves plugin) {
         File data = plugin.getDataFolder();
         File addonRoot = new File(data, "addon");
+
         try {
             Files.createDirectories(addonRoot.toPath());
+        } catch (AccessDeniedException e) {
+            plugin.getLogger().log(Level.SEVERE,
+                    "GravesX does not have permission to create or access the addon folder:\n"
+                            + "  " + addonRoot.getAbsolutePath() + "\n"
+                            + "Fix: ensure the server process user has read/write access to:\n"
+                            + "  " + data.getAbsolutePath() + "\n"
+                            + "If you're on Linux, you may need to adjust ownership/permissions (chown/chmod).\n"
+                            + "If you're on Windows, ensure the account running the server has Modify permission.",
+                    e);
+            plugin.logStackTrace(e);
         } catch (IOException e) {
             plugin.getLogger().log(Level.SEVERE,
-                    "Failed to create addon folder: " + addonRoot.getAbsolutePath(), e);
-            throw new IllegalStateException("Could not create addon root: " + addonRoot, e);
+                    "Failed to create addon folder: " + addonRoot.getAbsolutePath(),
+                    e);
+            plugin.logStackTrace(e);
         }
     }
 
