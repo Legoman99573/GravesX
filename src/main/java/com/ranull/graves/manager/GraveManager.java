@@ -139,127 +139,151 @@ public class GraveManager {
     private void handleGraveTimeout(Grave grave, List<Grave> graveRemoveList) {
         long remaining = grave.getTimeAliveRemaining();
 
-        if (remaining == -1L) {
-            return;
-        }
+        if (remaining != -1L) {
+            plugin.debugMessage("GraveTimeout check for " + grave.getUUID(), 1);
 
-        plugin.debugMessage("GraveTimeout check for " + grave.getUUID(), 1);
+            if (remaining <= 0L) {
+                boolean dropOnTimeout = plugin.getConfigManager().getConfigSection("drop.timeout", grave)
+                        .getBoolean("drop.timeout", true);
+                boolean abandonEnabled = plugin.getConfigManager().getConfigSection("drop.abandon", grave)
+                        .getBoolean("drop.abandon", false);
 
-        if (remaining > 0L) {
-            return;
-        }
+                GraveTimeoutEvent tevModern = new GraveTimeoutEvent(grave);
+                plugin.getServer().getPluginManager().callEvent(tevModern);
 
-        boolean dropOnTimeout = plugin.getConfigManager().getConfigSection("drop.timeout", grave)
-                .getBoolean("drop.timeout", true);
-        boolean abandonEnabled = plugin.getConfigManager().getConfigSection("drop.abandon", grave)
-                .getBoolean("drop.abandon", false);
+                com.ranull.graves.event.GraveTimeoutEvent tevLegacy =
+                        new com.ranull.graves.event.GraveTimeoutEvent(grave);
+                plugin.getServer().getPluginManager().callEvent(tevLegacy);
 
-        if (abandonEnabled && dropOnTimeout) {
-            plugin.debugMessage("Config 'drop.abandon' ignored because 'drop.timeout' is enabled", 2);
-            abandonEnabled = false;
-        }
+                if (tevModern.isCancelled() || tevModern.isAddon()
+                        || tevLegacy.isCancelled() || tevLegacy.isAddon()) {
 
-        GraveTimeoutEvent tevModern = new GraveTimeoutEvent(grave);
-        plugin.getServer().getPluginManager().callEvent(tevModern);
+                    plugin.debugMessage("GraveTimeoutEvent cancelled → infinite life for " + grave.getUUID(), 2);
+                    grave.setTimeAliveRemaining(-1L);
 
-        com.ranull.graves.event.GraveTimeoutEvent tevLegacy =
-                new com.ranull.graves.event.GraveTimeoutEvent(grave);
-        plugin.getServer().getPluginManager().callEvent(tevLegacy);
+                } else {
+                    Location loc = tevModern.hasLocation() ? tevModern.getLocation() : tevLegacy.getLocation();
 
-        if (tevModern.isCancelled() || tevModern.isAddon() ||
-                tevLegacy.isCancelled() || tevLegacy.isAddon()) {
+                    if (loc == null || loc.getWorld() == null) {
+                        plugin.debugMessage("Invalid timeout location for " + grave.getUUID(), 2);
+                    } else {
+                        Location anchor = loc.clone();
 
-            plugin.debugMessage("GraveTimeoutEvent cancelled → infinite life for " + grave.getUUID(), 2);
-            grave.setTimeAliveRemaining(-1L);
-            return;
-        }
+                        Runnable logic = () -> {
+                            World world = loc.getWorld();
 
-        Location loc = (tevModern.hasLocation() ? tevModern.getLocation() : tevLegacy.getLocation());
-        if (loc.getWorld() == null) {
-            plugin.debugMessage("Invalid timeout location for " + grave.getUUID(), 2);
-            return;
-        }
+                            if (world == null) {
+                                plugin.debugMessage("World became null for grave " + grave.getUUID(), 2);
+                            } else if (!dropOnTimeout && abandonEnabled) {
+                                boolean cancelled = handleGraveAbandoned(grave, loc);
 
-        boolean abandonSnapshot = abandonEnabled;
+                                if (cancelled) {
+                                    GraveExpiredEvent expired = new GraveExpiredEvent(grave);
+                                    plugin.getServer().getPluginManager().callEvent(expired);
 
-        Location anchor = loc.clone();
+                                    if (expired.isCancelled() || expired.isAddon()) {
+                                        plugin.debugMessage("Expired cancelled — grave lives forever: " + grave.getUUID(), 2);
+                                        grave.setTimeAliveRemaining(-1L);
 
-        Runnable logic = () -> {
-            World world = loc.getWorld();
-            if (world == null) {
-                plugin.debugMessage("World became null for grave " + grave.getUUID(), 2);
-                return;
-            }
+                                    } else {
+                                        plugin.debugMessage("Expired: removing grave (drop handled by removeGrave): " + grave.getUUID(), 2);
 
-            if (dropOnTimeout && !abandonSnapshot) {
-                plugin.debugMessage("Dropping on timeout: " + grave.getUUID(), 2);
+                                        sendPlayerMessage(grave, "message.timeout", loc);
 
-                dropGraveItems(loc, grave);
-                dropGraveExperience(loc, grave);
-                sendPlayerMessage(grave, "message.timeout", loc);
+                                        synchronized (graveRemoveList) {
+                                            graveRemoveList.add(grave);
+                                        }
 
-                synchronized (graveRemoveList) {
-                    graveRemoveList.add(grave);
-                }
+                                        removeGrave(grave);
+                                    }
+                                }
+                            } else if (dropOnTimeout) {
+                                if (abandonEnabled) {
+                                    boolean cancelled = handleGraveAbandoned(grave, loc);
 
-                removeGrave(grave);
-                return;
-            }
+                                    if (cancelled) {
+                                        plugin.debugMessage("Timeout: removing grave " + grave.getUUID(), 2);
 
-            if (!dropOnTimeout && abandonSnapshot) {
-                plugin.debugMessage("Abandoning grave: " + grave.getUUID(), 2);
+                                        dropGraveItems(loc, grave);
+                                        dropGraveExperience(loc, grave);
+                                        sendPlayerMessage(grave, "message.timeout", loc);
 
-                GraveAbandonedEvent aevModern = new GraveAbandonedEvent(grave);
-                plugin.getServer().getPluginManager().callEvent(aevModern);
+                                        synchronized (graveRemoveList) {
+                                            graveRemoveList.add(grave);
+                                        }
 
-                com.ranull.graves.event.GraveAbandonedEvent aevLegacy =
-                        new com.ranull.graves.event.GraveAbandonedEvent(grave);
-                plugin.getServer().getPluginManager().callEvent(aevLegacy);
+                                        removeGrave(grave);
+                                    }
+                                } else {
+                                    plugin.debugMessage("Timeout: removing grave (drop handled by removeGrave): " + grave.getUUID(), 2);
 
-                if (aevModern.isCancelled() || aevModern.isAddon() ||
-                        aevLegacy.isCancelled() || aevLegacy.isAddon()) {
+                                    dropGraveItems(loc, grave);
+                                    dropGraveExperience(loc, grave);
+                                    sendPlayerMessage(grave, "message.timeout", loc);
 
-                    plugin.debugMessage("Abandon event cancelled for " + grave.getUUID(), 2);
+                                    synchronized (graveRemoveList) {
+                                        graveRemoveList.add(grave);
+                                    }
 
-                    dropGraveItems(loc, grave);
-                    dropGraveExperience(loc, grave);
-                    sendPlayerMessage(grave, "message.timeout", loc);
+                                    removeGrave(grave);
+                                }
 
-                    synchronized (graveRemoveList) {
-                        graveRemoveList.add(grave);
+                            } else {
+                                GraveExpiredEvent expired = new GraveExpiredEvent(grave);
+                                plugin.getServer().getPluginManager().callEvent(expired);
+
+                                if (expired.isCancelled() || expired.isAddon()) {
+                                    plugin.debugMessage("Expired cancelled — grave lives forever: " + grave.getUUID(), 2);
+                                    grave.setTimeAliveRemaining(-1L);
+
+                                } else {
+                                    plugin.debugMessage("Expired: removing grave (drop handled by removeGrave): " + grave.getUUID(), 2);
+
+                                    sendPlayerMessage(grave, "message.timeout", loc);
+
+                                    synchronized (graveRemoveList) {
+                                        graveRemoveList.add(grave);
+                                    }
+
+                                    removeGrave(grave);
+                                }
+                            }
+                        };
+
+                        plugin.getChunkManager().ensureLoadedAndExecute(anchor, loc, true, true, logic);
                     }
-
-                    removeGrave(grave);
-                    return;
                 }
-
-                Location abandonLoc = (aevModern.hasLocation() ? aevModern.getLocation() : aevLegacy.getLocation());
-                sendPlayerMessage(grave, "message.grave-abandoned", abandonLoc != null ? abandonLoc : loc);
-                abandonGrave(grave);
-                return;
             }
+        }
+    }
 
-            GraveExpiredEvent expired = new GraveExpiredEvent(grave);
-            plugin.getServer().getPluginManager().callEvent(expired);
+    /**
+     * Fires the grave abandoned events and performs the abandon actions.
+     *
+     * @param grave the grave being evaluated for abandonment
+     * @param loc   the timeout location used as a fallback for messaging if no event location is provided
+     */
+    private boolean handleGraveAbandoned(Grave grave, Location loc) {
+        GraveAbandonedEvent aevModern = new GraveAbandonedEvent(grave);
+        plugin.getServer().getPluginManager().callEvent(aevModern);
 
-            if (expired.isCancelled() || expired.isAddon()) {
-                plugin.debugMessage("Fallback drop cancelled — grave lives forever: " + grave.getUUID(), 2);
-                grave.setTimeAliveRemaining(-1L);
-                return;
-            }
+        com.ranull.graves.event.GraveAbandonedEvent aevLegacy =
+                new com.ranull.graves.event.GraveAbandonedEvent(grave);
+        plugin.getServer().getPluginManager().callEvent(aevLegacy);
 
-            plugin.debugMessage("Fallback drop for " + grave.getUUID(), 2);
+        if (aevModern.isCancelled() || aevModern.isAddon()
+                || aevLegacy.isCancelled() || aevLegacy.isAddon()) {
 
+            plugin.debugMessage("Abandon event cancelled for " + grave.getUUID(), 2);
             sendPlayerMessage(grave, "message.timeout", loc);
+            return true;
 
-            synchronized (graveRemoveList) {
-                graveRemoveList.add(grave);
-            }
-
-            removeGrave(grave);
-        };
-
-        plugin.getChunkManager().ensureLoadedAndExecute(anchor, loc, true, true, logic);
+        } else {
+            Location abandonLoc = aevModern.hasLocation() ? aevModern.getLocation() : aevLegacy.getLocation();
+            sendPlayerMessage(grave, "message.grave-abandoned", abandonLoc != null ? abandonLoc : loc);
+            abandonGrave(grave);
+            return false;
+        }
     }
 
     /**
