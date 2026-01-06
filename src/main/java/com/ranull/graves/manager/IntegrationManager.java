@@ -3,6 +3,7 @@ package com.ranull.graves.manager;
 import ch.njol.skript.SkriptAddon;
 import com.ranull.graves.Graves;
 import com.ranull.graves.integration.*;
+import dev.cwhead.GravesX.compatibility.CompatibilityGameRule;
 import dev.cwhead.GravesX.integration.*;
 import dev.cwhead.GravesX.listener.integration.coreprotect.CoreProtectListener;
 import dev.cwhead.GravesX.listener.integration.itemsadder.*;
@@ -1218,12 +1219,12 @@ public class IntegrationManager {
         if (plugin.getConfig().getBoolean("settings.compatibility.warning")) {
             for (World world : plugin.getServer().getWorlds()) {
                 try {
-                    if (Objects.equals(world.getGameRuleValue(Objects.requireNonNull(GameRule.getByName("keepInventory"))), "true")) {
+                    if (CompatibilityGameRule.getBoolean(world, "keepInventory")) {
                         plugin.compatibilityMessage("World \"" + world.getName() + "\" has keepInventory set to true, Graves will not be created here unless a player has the \"graves.keepinventory.bypass\" permission.");
                     }
                 } catch (Exception e) {
-                    if (Objects.equals(world.getGameRuleValue(Objects.requireNonNull(GameRule.getByName("keep_inventory"))), "true")) {
-                        plugin.compatibilityMessage("World \"" + world.getName() + "\" has keepInventory set to true, Graves will not be created here unless a player has the \"graves.keepinventory.bypass\" permission.");
+                    if (CompatibilityGameRule.getBoolean(world, "keep_inventory")) {
+                        plugin.compatibilityMessage("World \"" + world.getName() + "\" has keep_inventory set to true, Graves will not be created here unless a player has the \"graves.keepinventory.bypass\" permission.");
                     }
                 }
             }

@@ -1,6 +1,7 @@
 package dev.cwhead.GravesX.debug;
 
 import com.ranull.graves.Graves;
+import dev.cwhead.GravesX.compatibility.CompatibilityGameRule;
 import org.bukkit.Bukkit;
 import org.bukkit.GameRule;
 import org.bukkit.World;
@@ -120,14 +121,14 @@ public final class KeepInventoryDetector {
 
     private static boolean isKeepInventoryGameruleTrue(World w) {
         try {
-            Boolean v = w.getGameRuleValue(GameRule.KEEP_INVENTORY);
-            if (v != null) return v;
-        } catch (Throwable ignored) {}
-        try {
-            String s = (String) w.getGameRuleValue(Objects.requireNonNull(GameRule.getByName("keepInventory")));
-            return "true".equalsIgnoreCase(s);
-        } catch (Throwable ignored) {}
-        return false;
+            return CompatibilityGameRule.getBoolean(w, "keepInventory");
+        } catch (Exception ignored) {
+            try {
+                return CompatibilityGameRule.getBoolean(w, "keep_inventory");
+            } catch (Exception ignoredAgain) {
+                return false;
+            }
+        }
     }
 
     private static final class Wrapper implements EventExecutor {
