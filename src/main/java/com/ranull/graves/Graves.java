@@ -1,5 +1,6 @@
 package com.ranull.graves;
 
+import dev.cwhead.GravesX.listener.BlockEntityExplodeListener;
 import me.croabeast.scheduler.GlobalScheduler;
 import com.ranull.graves.command.GravesCommand;
 import com.ranull.graves.compatibility.*;
@@ -478,7 +479,7 @@ public class Graves extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PlayerDropItemListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerDeathListener(this), this);
         getServer().getPluginManager().registerEvents(new EntityDeathListener(this), this);
-        getServer().getPluginManager().registerEvents(new EntityExplodeListener(this), this);
+        getServer().getPluginManager().registerEvents(new BlockEntityExplodeListener(this), this);
         getServer().getPluginManager().registerEvents(new BlockBurnAndIgniteListener(this), this);
         getServer().getPluginManager().registerEvents(new EntityDamageByEntityListener(this), this);
         getServer().getPluginManager().registerEvents(new BlockPlaceListener(this), this);
@@ -496,10 +497,6 @@ public class Graves extends JavaPlugin {
 
         if (!versionManager.is_v1_7()) {
             getServer().getPluginManager().registerEvents(new PlayerInteractAtEntityListener(this), this);
-        }
-
-        if (!versionManager.is_v1_7() && !versionManager.is_v1_8()) {
-            getServer().getPluginManager().registerEvents(new BlockExplodeListener(this), this);
         }
 
         //getServer().getPluginManager().registerEvents(new GraveTestListener(this), this); // Test Listener
