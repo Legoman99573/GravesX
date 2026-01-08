@@ -1,7 +1,6 @@
 package com.ranull.graves;
 
-import com.github.Anon8281.universalScheduler.UniversalScheduler;
-import com.github.Anon8281.universalScheduler.scheduling.schedulers.TaskScheduler;
+import me.croabeast.scheduler.GlobalScheduler;
 import com.ranull.graves.command.GravesCommand;
 import com.ranull.graves.compatibility.*;
 import com.ranull.graves.listener.*;
@@ -67,7 +66,7 @@ public class Graves extends JavaPlugin {
     private boolean isDevelopmentBuild = false;
     private boolean isOutdatedBuild = false;
     private boolean isUnknownBuild = false;
-    private static TaskScheduler graveScheduler;
+    private SchedulerManager graveScheduler;
     private ModuleManager moduleManager;
     private boolean deferModuleLoad;
 
@@ -140,6 +139,7 @@ public class Graves extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        graveScheduler = new SchedulerManager(this);
         debugManager = new DebugManager(this);
 
         if (configManager == null) {
@@ -153,7 +153,6 @@ public class Graves extends JavaPlugin {
         loadLibraries();
 
         versionManager = new VersionManager();
-        graveScheduler = UniversalScheduler.getScheduler(this);
 
         integrationManager.load();
         integrationManager.loadNoReload();
@@ -204,14 +203,14 @@ public class Graves extends JavaPlugin {
 
         DependencyEnableListener depListener = new DependencyEnableListener(moduleManager);
         getServer().getPluginManager().registerEvents(depListener, this);
-        getGravesXScheduler().runTask(moduleManager::tryEnablePending);
+        getSchedulerManager().runTask(moduleManager::tryEnablePending);
 
         registerCommands();
         registerListeners();
         registerRecipes();
         saveTextFiles();
 
-        getGravesXScheduler().runTaskLater(() -> {
+        getSchedulerManager().runTaskLater(() -> {
             KeepInventoryDetector.install(this);
             KeepInventoryDetector.logWorldsWithGameruleKeepInventoryTrue(this);
         }, 1L);
@@ -231,7 +230,7 @@ public class Graves extends JavaPlugin {
         moduleManager.enableAll(GravesXModuleController.LoadPhase.POSTWORLD);
         moduleManager.tryEnablePending();
 
-        getGravesXScheduler().runTask(() -> {
+        getSchedulerManager().runTask(() -> {
             compatibilityChecker();
             updateChecker();
             getConfigManager().updateIfNeeded(isPluginDevelopmentBuild());
@@ -282,10 +281,13 @@ public class Graves extends JavaPlugin {
         getLogger().info("Grave inventories saved.");
 
         getLogger().info("Shutting Down GravesX...");
+        getLogger().info("Unloading and Shutting Down DataManager...");
         try {
             dataManager.closeConnection();
+            getLogger().info("Unloaded DataManager Successfully.");
         } catch (Exception e) {
-            getLogger().severe("Failed to close Database Connection.");
+            getLogger().severe("Failed to unload DataManager and shut down Database.");
+            logStackTrace(e);
         }
 
         getLogger().info("Unloading GraveManager...");
@@ -294,6 +296,7 @@ public class Graves extends JavaPlugin {
             getLogger().info("Unloaded GraveManager Successfully.");
         } catch (Exception e) {
             getLogger().severe("Failed to unload GraveManager.");
+            logStackTrace(e);
         }
 
         getLogger().info("Unloading IntegrationManager...");
@@ -302,7 +305,8 @@ public class Graves extends JavaPlugin {
             integrationManager.unloadNoReload();
             getLogger().info("Unloaded IntegrationManager Successfully.");
         } catch (Exception e) {
-            getLogger().severe("Failed to unload IntegrationManager. Cause: " + e.getCause());
+            getLogger().severe("Failed to unload IntegrationManager.");
+            logStackTrace(e);
         }
 
         if (recipeManager != null) {
@@ -312,6 +316,7 @@ public class Graves extends JavaPlugin {
                 getLogger().info("Unloaded RecipeManager Successfully.");
             } catch (Exception e) {
                 getLogger().severe("Failed to unload RecipeManager.");
+                logStackTrace(e);
             }
         }
 
@@ -322,6 +327,18 @@ public class Graves extends JavaPlugin {
                 getLogger().info("Unloaded DebugManager Successfully.");
             } catch (Exception e) {
                 getLogger().severe("Failed to unload DebugManager.");
+                logStackTrace(e);
+            }
+        }
+
+        if (graveScheduler != null) {
+            getLogger().info("Shutting down SchedulerManager...");
+            try {
+                graveScheduler.cancelAll(this);
+                getLogger().info("Shutting down SchedulerManager Successfully.");
+            } catch (Exception e) {
+                getLogger().severe("Failed to shut down SchedulerManager.");
+                logStackTrace(e);
             }
         }
         getLogger().info("Shutdown Completed :)");
@@ -602,7 +619,7 @@ public class Graves extends JavaPlugin {
      */
     private void updateChecker() {
         if (getConfig().getBoolean("settings.update.check")) {
-            getGravesXScheduler().runTaskAsynchronously(() -> {
+            getSchedulerManager().runTaskAsynchronously(() -> {
                 String latestVersion = getLatestVersion();
                 String installedVersion = getDescription().getVersion();
 
@@ -716,7 +733,7 @@ public class Graves extends JavaPlugin {
     public void dumpServerInfo(CommandSender commandSender) {
         if (!isEnabled()) return;
 
-        getGravesXScheduler().runTaskAsynchronously(() -> {
+        getSchedulerManager().runTaskAsynchronously(() -> {
             final String serverDumpInfo = ServerUtil.getServerDumpInfo(this);
             String message = serverDumpInfo;
 
@@ -919,6 +936,13 @@ public class Graves extends JavaPlugin {
     }
 
     /**
+     * @return the {@link SchedulerManager} that manages Scheduling used by this plugin.
+     */
+    public SchedulerManager getSchedulerManager() {
+        return graveScheduler;
+    }
+
+    /**
      * @return the {@link Compatibility} handler that ensures functionality across Minecraft versions and server platforms.
      */
     public Compatibility getCompatibility() {
@@ -926,10 +950,15 @@ public class Graves extends JavaPlugin {
     }
 
     /**
-     * @return the {@link TaskScheduler} used for running asynchronous or scheduled plugin tasks.
+     * @return the {@link GlobalScheduler} used for running asynchronous or scheduled plugin tasks.
+     * @deprecated Will be removed in {@code 4.9.12.1}. Use
+     * {@link #getSchedulerManager()} ()}{@link dev.cwhead.GravesX.manager.SchedulerManager} instead
      */
-    public TaskScheduler getGravesXScheduler() {
-        return graveScheduler;
+    @Deprecated (forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.12.1")
+    public GlobalScheduler getGravesXScheduler() {
+        debugMessage("Method plugin.getGravesXScheduler() is deprecated and set for removal in 4.9.12.1. We recommend using plugin.getSchedulerManager()", 2);
+        return getSchedulerManager().getScheduler();
     }
 
     /**

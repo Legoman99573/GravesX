@@ -335,7 +335,7 @@ public final class ModuleContext {
      * @param r Task to run.
      */
     public void runTask(Runnable r) {
-        plugin.getGravesXScheduler().runTask(guard(r));
+        plugin.getSchedulerManager().runTask(guard(r));
     }
 
     /**
@@ -345,7 +345,7 @@ public final class ModuleContext {
      * @param delay Delay in ticks before first run.
      */
     public void runTaskLater(Runnable r, long delay) {
-        plugin.getGravesXScheduler().runTaskLater(guard(r), delay);
+        plugin.getSchedulerManager().runTaskLater(guard(r), delay);
     }
 
     /**
@@ -356,7 +356,7 @@ public final class ModuleContext {
      * @param period Period in ticks between runs.
      */
     public void runTaskTimer(Runnable r, long delay, long period) {
-        plugin.getGravesXScheduler().runTaskTimer(guard(r), delay, period);
+        plugin.getSchedulerManager().runTaskTimer(guard(r), delay, period);
     }
 
     /**
@@ -365,7 +365,7 @@ public final class ModuleContext {
      * @param r Task to run.
      */
     public void runTaskAsync(Runnable r) {
-        plugin.getGravesXScheduler().runTaskAsynchronously(guard(r));
+        plugin.getSchedulerManager().runTaskAsynchronously(guard(r));
     }
 
     /**
@@ -376,7 +376,7 @@ public final class ModuleContext {
      * @param period Period in ticks between runs.
      */
     public void runTaskTimerAsync(Runnable r, long delay, long period) {
-        plugin.getGravesXScheduler().runTaskTimerAsynchronously(guard(r), delay, period);
+        plugin.getSchedulerManager().runTaskTimerAsynchronously(guard(r), delay, period);
     }
 
     /**
@@ -392,7 +392,7 @@ public final class ModuleContext {
      */
     public void executeRegion(Location location, Runnable r) {
         if (location == null || r == null) return;
-        plugin.getGravesXScheduler().execute(location, guard(r));
+        plugin.getSchedulerManager().execute(location, guard(r));
     }
 
     /**

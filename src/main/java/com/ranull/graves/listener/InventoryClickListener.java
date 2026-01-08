@@ -218,7 +218,7 @@ public class InventoryClickListener implements Listener {
                         return;
                     }
 
-                    plugin.getGravesXScheduler().runTaskLater(() ->
+                    plugin.getSchedulerManager().runTaskLater(() ->
                             plugin.getDataManager().updateGrave(grave, "inventory",
                                     InventoryUtil.inventoryToString(grave.getInventory())), 1L);
                 }

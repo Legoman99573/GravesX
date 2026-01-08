@@ -437,20 +437,20 @@ public class HologramManager extends EntityDataManager {
 
 
     private void executeRegion(Location loc, Runnable task) {
-        var sched = plugin.getGravesXScheduler();
+        var sched = plugin.getSchedulerManager();
         if (sched != null) {
             sched.execute(loc, task);
         } else {
-            plugin.getGravesXScheduler().runTask(task);
+            plugin.getSchedulerManager().runTask(task);
         }
     }
 
     private void executeRegion(Entity entity, Runnable task) {
-        var sched = plugin.getGravesXScheduler();
+        var sched = plugin.getSchedulerManager();
         if (sched != null) {
             sched.execute(entity, task);
         } else {
-            plugin.getGravesXScheduler().runTask(task);
+            plugin.getSchedulerManager().runTask(task);
         }
     }
 }

@@ -70,7 +70,7 @@ public class GraveManager {
      * Starts the grave timer task that periodically checks and updates graves.
      */
     private void startGraveTimer() {
-        plugin.getGravesXScheduler().runTaskTimer(this::checkAndUpdateGraves, 20L, 20L);
+        plugin.getSchedulerManager().runTaskTimer(this::checkAndUpdateGraves, 20L, 20L);
     }
 
     /**
@@ -313,7 +313,7 @@ public class GraveManager {
         for (ChunkData chunkData : chunks) {
             Location anchor = new Location(chunkData.getWorld(), chunkData.getX() << 4, 0.0D, chunkData.getZ() << 4);
             if (plugin.getVersionManager().isFolia()) {
-                plugin.getGravesXScheduler().execute(anchor, () -> {
+                plugin.getSchedulerManager().execute(anchor, () -> {
                     if (!chunkData.isLoaded()) return;
 
                     processEntityData(chunkData, entityDataRemoveList, anchor);
@@ -356,9 +356,9 @@ public class GraveManager {
 
             if (graveLoc != null && graveLoc.getWorld() != null) {
                 Location anchor = new Location(graveLoc.getWorld(), graveLoc.getX(), graveLoc.getY(), graveLoc.getZ());
-                plugin.getGravesXScheduler().execute(anchor, () -> removeGrave(grave));
+                plugin.getSchedulerManager().execute(anchor, () -> removeGrave(grave));
             } else {
-                plugin.getGravesXScheduler().runTask(() -> removeGrave(grave));
+                plugin.getSchedulerManager().runTask(() -> removeGrave(grave));
             }
         }
 
@@ -376,9 +376,9 @@ public class GraveManager {
 
             if (entityLoc != null && entityLoc.getWorld() != null) {
                 Location anchor = new Location(entityLoc.getWorld(), entityLoc.getX(), entityLoc.getY(), entityLoc.getZ());
-                plugin.getGravesXScheduler().execute(anchor, () -> removeEntityData(entityData));
+                plugin.getSchedulerManager().execute(anchor, () -> removeEntityData(entityData));
             } else {
-                plugin.getGravesXScheduler().runTask(() -> removeEntityData(entityData));
+                plugin.getSchedulerManager().runTask(() -> removeEntityData(entityData));
             }
         }
 
@@ -391,17 +391,17 @@ public class GraveManager {
 
             if (blockLoc != null && blockLoc.getWorld() != null) {
                 Location anchor = new Location(blockLoc.getWorld(), blockLoc.getX(), blockLoc.getY(), blockLoc.getZ());
-                plugin.getGravesXScheduler().execute(anchor, () -> plugin.getBlockManager().removeBlock(blockData));
+                plugin.getSchedulerManager().execute(anchor, () -> plugin.getBlockManager().removeBlock(blockData));
             } else {
-                plugin.getGravesXScheduler().runTask(() -> plugin.getBlockManager().removeBlock(blockData));
+                plugin.getSchedulerManager().runTask(() -> plugin.getBlockManager().removeBlock(blockData));
             }
         }
 
         if (plugin.getVersionManager().isFolia()) {
-            plugin.getGravesXScheduler().runTask(() -> plugin.getGUIManager().refreshMenusSafely());
+            plugin.getSchedulerManager().runTask(() -> plugin.getGUIManager().refreshMenusSafely());
 
         } else {
-            plugin.getGravesXScheduler().runTask(() -> plugin.getGUIManager().refreshMenus());
+            plugin.getSchedulerManager().runTask(() -> plugin.getGUIManager().refreshMenus());
         }
     }
 
@@ -440,16 +440,14 @@ public class GraveManager {
     /**
      * Processes hologram data within the chunk.
      *
-     * @param hologramData          the hologram data to be processed.
-     * @param location              the location representing the chunk coordinates.
-     * @param entityDataRemoveList  the list to which hologram data to be removed will be added.
+     * @param hologramData         the hologram data to be processed.
+     * @param location             the location representing the chunk coordinates.
+     * @param entityDataRemoveList the list to which hologram data to be removed will be added.
      */
     private void processHologramData(HologramData hologramData, Location location, List<EntityData> entityDataRemoveList) {
         try {
             Grave grave = plugin.getCacheManager().getGraveMap().get(hologramData.getUUIDGrave());
-            if (grave == null) {
-                return;
-            }
+            if (grave == null) return;
 
             List<String> lineList = new ArrayList<>(
                     plugin.getConfigManager().getConfigSection("hologram.line", grave).getStringList("hologram.line")
@@ -470,58 +468,58 @@ public class GraveManager {
                 return;
             }
 
+            int lineIndex = hologramData.getLine();
+            if (lineIndex < 0 || lineIndex >= lineList.size()) {
+                return;
+            }
+
+            World world = holoLoc.getWorld();
+            Location chunkAnchor = new Location(
+                    world,
+                    (hologramData.getChunkX() << 4) + 0.5D,
+                    holoLoc.getY(),
+                    (hologramData.getChunkZ() << 4) + 0.5D
+            );
+
             Runnable logic = () -> {
                 try {
-                    World world = holoLoc.getWorld();
-                    if (world == null) {
-                        return;
-                    }
+                    World w = chunkAnchor.getWorld();
+                    if (w == null) return;
 
-                    Chunk chunk = world.getChunkAt(hologramData.getChunkX(), hologramData.getChunkZ());
+                    Chunk chunk = w.getChunkAt(hologramData.getChunkX(), hologramData.getChunkZ());
 
-                    Entity target = null;
-                    for (Entity entity : chunk.getEntities()) {
-                        if (entity != null && targetId.equals(entity.getUniqueId())) {
-                            target = entity;
-                            break;
-                        }
-                    }
+                    Entity target = Arrays.stream(chunk.getEntities()).filter(e -> e != null && targetId.equals(e.getUniqueId())).findFirst().orElse(null);
 
-                    if (target == null) {
-                        synchronized (entityDataRemoveList) {
-                            entityDataRemoveList.add(hologramData);
-                        }
-                        return;
-                    }
-
-                    int lineIndex = hologramData.getLine();
-                    if (lineIndex < 0 || lineIndex >= lineList.size()) {
-                        synchronized (entityDataRemoveList) {
-                            entityDataRemoveList.add(hologramData);
-                        }
-                        return;
-                    }
+                    if (target == null) return;
 
                     String lineText = StringUtil.parseString(lineList.get(lineIndex), location, grave, plugin);
 
-                    if (plugin.getIntegrationManager().hasMiniMessage()) {
-                        target.setCustomName(MiniMessage.parseString(lineText));
+                    Runnable applyName = () -> {
+                        try {
+                            if (plugin.getIntegrationManager().hasMiniMessage()) {
+                                target.setCustomName(MiniMessage.parseString(lineText));
+                            } else {
+                                target.setCustomName(lineText);
+                            }
+                        } catch (Throwable t) {
+                            plugin.getLogger().severe(t.getMessage());
+                            plugin.logStackTrace(t);
+                        }
+                    };
+
+                    if (plugin.getSchedulerManager().isEntityThread(target)) {
+                        applyName.run();
                     } else {
-                        target.setCustomName(lineText);
+                        plugin.getSchedulerManager().execute(target, applyName);
                     }
+
                 } catch (Throwable t) {
                     plugin.getLogger().severe(t.getMessage());
                     plugin.logStackTrace(t);
                 }
             };
 
-            plugin.getChunkManager().ensureLoadedAndExecute(
-                    holoLoc,
-                    holoLoc,
-                    false,
-                    false,
-                    logic
-            );
+            plugin.getChunkManager().ensureLoadedAndExecute(chunkAnchor, holoLoc, true, false, logic);
 
         } catch (Throwable t) {
             plugin.getLogger().severe(t.getMessage());
@@ -706,7 +704,7 @@ public class GraveManager {
         }
 
         Particle finalParticle = particle;
-        plugin.getGravesXScheduler().execute(anchor, () -> {
+        plugin.getSchedulerManager().execute(anchor, () -> {
             try {
                 org.bukkit.World world = anchor.getWorld();
                 if (world == null) {
@@ -1005,9 +1003,9 @@ public class GraveManager {
         };
 
         if (anchor != null && anchor.getWorld() != null) {
-            plugin.getGravesXScheduler().execute(anchor, work);
+            plugin.getSchedulerManager().execute(anchor, work);
         } else {
-            plugin.getGravesXScheduler().runTask(work);
+            plugin.getSchedulerManager().runTask(work);
         }
     }
 
@@ -1095,9 +1093,9 @@ public class GraveManager {
         };
 
         if (anchor != null && anchor.getWorld() != null) {
-            plugin.getGravesXScheduler().execute(anchor, work);
+            plugin.getSchedulerManager().execute(anchor, work);
         } else {
-            plugin.getGravesXScheduler().runTask(work);
+            plugin.getSchedulerManager().runTask(work);
         }
     }
 
@@ -1195,7 +1193,7 @@ public class GraveManager {
         String parsedTitle = StringUtil.parseString(rawTitle, entity, baseLocation, grave, plugin);
         String storageModeStr = plugin.getConfigManager().getConfigSection("storage.mode", entity, permissionList).getString("storage.mode");
 
-        plugin.getGravesXScheduler().execute(baseLocation, () -> {
+        plugin.getSchedulerManager().execute(baseLocation, () -> {
             try {
                 grave.setInventory(createGraveInventory(
                         grave,
@@ -1254,7 +1252,7 @@ public class GraveManager {
                 Location scheduleAnchor = loc;
                 Grave scheduleGrave = grave;
 
-                plugin.getGravesXScheduler().execute(scheduleAnchor, () -> {
+                plugin.getSchedulerManager().execute(scheduleAnchor, () -> {
                     try {
                         if (isGravePlaced(scheduleGrave)) return; // double-check inside scheduler
                         plugin.getGraveManager().placeGrave(scheduleAnchor, scheduleGrave);
@@ -1327,7 +1325,7 @@ public class GraveManager {
         }
 
         CompletableFuture<Boolean> result = new CompletableFuture<>();
-        plugin.getGravesXScheduler().execute(location, () -> {
+        plugin.getSchedulerManager().execute(location, () -> {
             try {
                 Collection<Entity> nearby = location.getWorld().getNearbyEntities(location, 0.49, 0.49, 0.49);
                 if (!nearby.isEmpty()) {
@@ -1418,7 +1416,7 @@ public class GraveManager {
 
         Location anchor = location.clone();
 
-        plugin.getGravesXScheduler().execute(anchor, () -> {
+        plugin.getSchedulerManager().execute(anchor, () -> {
             try {
                 plugin.getBlockManager().createBlock(anchor, grave);
                 plugin.getHologramManager().createHologram(anchor, grave);
@@ -1638,7 +1636,7 @@ public class GraveManager {
         }
 
         Location anchor = location.clone();
-        plugin.getGravesXScheduler().execute(anchor, () -> {
+        plugin.getSchedulerManager().execute(anchor, () -> {
             try {
                 dropGraveItems(anchor, grave);
                 dropGraveExperience(anchor, grave);
@@ -1670,7 +1668,7 @@ public class GraveManager {
         Inventory inv = grave.getInventory();
 
         Location anchor = location.clone();
-        plugin.getGravesXScheduler().execute(anchor, () -> {
+        plugin.getSchedulerManager().execute(anchor, () -> {
             try {
                 World world = anchor.getWorld();
                 if (world == null) {
@@ -1709,7 +1707,7 @@ public class GraveManager {
 
         Location anchor = player.getLocation();
         if (anchor.getWorld() == null) {
-            plugin.getGravesXScheduler().runTask(() -> {
+            plugin.getSchedulerManager().runTask(() -> {
                 if (!player.isOnline()) {
                     return;
                 }
@@ -1720,7 +1718,7 @@ public class GraveManager {
             return;
         }
 
-        plugin.getGravesXScheduler().execute(anchor, () -> {
+        plugin.getSchedulerManager().execute(anchor, () -> {
             if (!player.isOnline()) {
                 return;
             }
@@ -1747,7 +1745,7 @@ public class GraveManager {
         }
 
         Location anchor = location.clone();
-        plugin.getGravesXScheduler().execute(anchor, () -> {
+        plugin.getSchedulerManager().execute(anchor, () -> {
             try {
                 World world = anchor.getWorld();
                 if (world == null) {
@@ -1874,10 +1872,10 @@ public class GraveManager {
         final UUID ownerUUID = grave.getOwnerUUID();
         final boolean isOwner = ownerUUID != null && ownerUUID.equals(viewerUUID);
 
-        plugin.getGravesXScheduler().execute(anchor, () -> plugin.getEntityManager().swingMainHand(player));
+        plugin.getSchedulerManager().execute(anchor, () -> plugin.getEntityManager().swingMainHand(player));
 
         if (plugin.getEntityManager().canOpenGrave(player, grave)) {
-            plugin.getGravesXScheduler().execute(anchor, () -> {
+            plugin.getSchedulerManager().execute(anchor, () -> {
                 cleanupCompasses(player, grave);
 
                 if (plugin.getConfigManager().getConfigSection("drop.auto-loot.enabled", grave).getBoolean("drop.auto-loot.enabled", true)
@@ -1958,7 +1956,7 @@ public class GraveManager {
 
             return true;
         } else {
-            plugin.getGravesXScheduler().execute(anchor, () -> {
+            plugin.getSchedulerManager().execute(anchor, () -> {
                 boolean protPreview = plugin.getConfigManager().getConfigSection("protection.preview", grave).getBoolean("protection.preview", false);
                 boolean gravePreview = plugin.getConfigManager().getConfigSection("grave.preview", grave).getBoolean("grave.preview", false);
 
@@ -2085,7 +2083,7 @@ public class GraveManager {
             return;
         }
 
-        plugin.getGravesXScheduler().execute(anchor, () -> {
+        plugin.getSchedulerManager().execute(anchor, () -> {
             Grave.StorageMode storageMode = getStorageMode(
                     plugin.getConfigManager().getConfigSection("storage.mode", grave).getString("storage.mode")
             );
@@ -2299,7 +2297,7 @@ public class GraveManager {
         }
 
         String resolved = effectName;
-        plugin.getGravesXScheduler().execute(location, () -> {
+        plugin.getSchedulerManager().execute(location, () -> {
             World world = location.getWorld();
             if (world == null) {
                 return;

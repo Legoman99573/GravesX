@@ -57,7 +57,7 @@
               <artifactSet>
                 <includes>
                   <include>com.alessiodp:libby</include>
-                  <include>com.github.Anon8281:UniversalScheduler</include>
+                  <include>me.croabeast:GlobalScheduler</include>
                   <include>com.github.imDaniX:MiniTranslator</include>
                   <include>com.tchristofferson:ConfigUpdater</include>
                 </includes>
@@ -68,8 +68,8 @@
                   <shadedPattern>com.ranull.graves.bundledlibraries.libby</shadedPattern>
                 </relocation>
                 <relocation>
-                  <pattern>com.github.Anon8281.universalScheduler</pattern>
-                  <shadedPattern>com.ranull.graves.bundledlibraries.universalScheduler</shadedPattern>
+                  <pattern>me.corabeast.scheduler</pattern>
+                  <shadedPattern>com.ranull.graves.bundledlibraries.scheduler</shadedPattern>
                 </relocation>
                 <relocation>
                   <pattern>me.imdanix.text</pattern>
@@ -154,8 +154,8 @@
                   <shadedPattern>com.ranull.graves.bundledlibraries.libby</shadedPattern>
                 </relocation>
                 <relocation>
-                  <pattern>com.github.Anon8281.universalScheduler</pattern>
-                  <shadedPattern>com.ranull.graves.bundledlibraries.universalScheduler</shadedPattern>
+                  <pattern>me.corabeast.scheduler</pattern>
+                  <shadedPattern>com.ranull.graves.bundledlibraries.scheduler</shadedPattern>
                 </relocation>
                 <relocation>
                   <pattern>me.imdanix.text</pattern>
@@ -442,6 +442,10 @@
     <repository>
       <id>matteodev</id>
       <url>https://maven.devs.beer/</url>
+    </repository>
+    <repository>
+      <id>croabeast-repo</id>
+      <url>https://croabeast.github.io/repo/</url>
     </repository>
     <repository>
       <id>cwhead-repo</id>

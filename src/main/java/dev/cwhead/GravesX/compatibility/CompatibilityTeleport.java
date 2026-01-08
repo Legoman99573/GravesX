@@ -74,7 +74,7 @@ public final class CompatibilityTeleport {
                                 completeOnRegion(plugin, safeTarget, result, ex2 == null && Boolean.TRUE.equals(ok2));
                             });
                         } else {
-                            plugin.getGravesXScheduler().execute(safeTarget, () -> {
+                            plugin.getSchedulerManager().execute(safeTarget, () -> {
                                 completeOnRegion(plugin, safeTarget, result, isAtTarget(player, safeTarget));
                             });
                         }
@@ -101,7 +101,7 @@ public final class CompatibilityTeleport {
                                                                      Graves plugin) {
         final CompletableFuture<Boolean> fut = new CompletableFuture<>();
         try {
-            plugin.getGravesXScheduler().execute(safeTarget, () -> {
+            plugin.getSchedulerManager().execute(safeTarget, () -> {
                 try {
                     boolean ok = player.teleport(safeTarget, cause);
                     fut.complete(ok && isAtTarget(player, safeTarget));
@@ -122,7 +122,7 @@ public final class CompatibilityTeleport {
     private static void completeOnRegion(Graves plugin, Location at, CompletableFuture<Boolean> fut, boolean value) {
         if (fut.isDone()) return;
         try {
-            plugin.getGravesXScheduler().execute(at, () -> {
+            plugin.getSchedulerManager().execute(at, () -> {
                 if (!fut.isDone()) fut.complete(value);
             });
         } catch (Throwable t) {

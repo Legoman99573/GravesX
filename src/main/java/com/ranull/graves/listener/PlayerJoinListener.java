@@ -42,7 +42,7 @@ public class PlayerJoinListener implements Listener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         if (shouldCheckForUpdates(player)) {
-            plugin.getGravesXScheduler().runTaskAsynchronously(() -> notifyPlayerIfOutdated(player));
+            plugin.getSchedulerManager().runTaskAsynchronously(() -> notifyPlayerIfOutdated(player));
         }
     }
 

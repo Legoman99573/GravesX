@@ -122,7 +122,7 @@ public class PlayerNPC extends EntityDataManager {
      */
     @Deprecated(since = "4.9.9.1")
     public void createCorpse(UUID uuid, Location location, Grave grave, boolean createEntityData) {
-        plugin.getGravesXScheduler().runTask(plugin, () -> {
+        plugin.getSchedulerManager().runTask(() -> {
             if (!plugin.getConfigManager().getConfigSection("playernpc.corpse.enabled", grave).getBoolean("playernpc.corpse.enabled")
                     || grave.getOwnerType() != EntityType.PLAYER) {
                 return;

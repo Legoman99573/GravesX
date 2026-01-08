@@ -117,7 +117,7 @@ public class GUIManager {
 
             Location anchor = new Location(loc.getWorld(), loc.getX(), loc.getY(), loc.getZ());
 
-            plugin.getGravesXScheduler().execute(anchor, () -> {
+            plugin.getSchedulerManager().execute(anchor, () -> {
                 if (!player.isOnline()) return;
 
                 InventoryView openInventory;

@@ -1,9 +1,9 @@
 package dev.cwhead.GravesX.listener;
 
 import com.destroystokyo.paper.event.player.PlayerPostRespawnEvent;
-import com.github.Anon8281.universalScheduler.scheduling.tasks.MyScheduledTask;
 import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
+import dev.cwhead.GravesX.manager.SchedulerManager;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.*;
@@ -60,8 +60,8 @@ public final class PlayerAfterRespawnListener implements Listener {
         final Player player = event.getEntity();
         final long start = System.currentTimeMillis();
 
-        final MyScheduledTask[] ref = new MyScheduledTask[1];
-        ref[0] = plugin.getGravesXScheduler().runTaskTimer(() -> {
+        final SchedulerManager.Task[] ref = new SchedulerManager.Task[1];
+        ref[0] = plugin.getSchedulerManager().returnable().runTaskTimer(() -> {
             if (System.currentTimeMillis() - start > 10_000L) {
                 ref[0].cancel();
                 return;
@@ -83,8 +83,8 @@ public final class PlayerAfterRespawnListener implements Listener {
         final Grave grave = graves.get(graves.size() - 1);
         final Location anchor = (respawnLoc != null ? respawnLoc : player.getLocation()).clone();
 
-        plugin.getGravesXScheduler().runTaskLater(() ->
-                        plugin.getGravesXScheduler().execute(anchor, () ->
+        plugin.getSchedulerManager().runTaskLater(() ->
+                        plugin.getSchedulerManager().execute(anchor, () ->
                                 plugin.getEntityManager().runFunction(
                                         player,
                                         plugin.getConfigManager().getConfigSection("respawn.function", player, perms).getString("respawn.function", "none"),
@@ -93,8 +93,8 @@ public final class PlayerAfterRespawnListener implements Listener {
                         )
                 , 1L);
 
-        plugin.getGravesXScheduler().runTaskLater(() ->
-                        plugin.getGravesXScheduler().execute(anchor, () -> {
+        plugin.getSchedulerManager().runTaskLater(() ->
+                        plugin.getSchedulerManager().execute(anchor, () -> {
                             boolean enabled = plugin.getConfigManager().getConfigSection("respawn.potion-effect", player, perms)
                                     .getBoolean("respawn.potion-effect");
                             boolean hasPerm = plugin.getPermissionManager().hasGrantedPermission("graves.potion-effect", player);
@@ -117,8 +117,8 @@ public final class PlayerAfterRespawnListener implements Listener {
                 , 1L);
 
         if (shouldGiveCompass(player, perms, grave)) {
-            plugin.getGravesXScheduler().runTaskLater(() ->
-                            plugin.getGravesXScheduler().execute(anchor, () -> {
+            plugin.getSchedulerManager().runTaskLater(() ->
+                            plugin.getSchedulerManager().execute(anchor, () -> {
                                 List<Location> locs = plugin.getGraveManager().getGraveLocationList(anchor, grave);
                                 if (locs.isEmpty()) return;
                                 ItemStack compass = plugin.getEntityManager().createGraveCompass(player, locs.get(0), grave);

@@ -55,8 +55,8 @@ public class PlayerRespawnListener implements Listener {
      * player's respawn location region.
      */
     private void scheduleRespawnFunction(Player player, List<String> permissionList, Grave grave, Location respawnLoc) {
-        plugin.getGravesXScheduler().runTaskLater(() ->
-                        plugin.getGravesXScheduler().execute(respawnLoc, () ->
+        plugin.getSchedulerManager().runTaskLater(() ->
+                        plugin.getSchedulerManager().execute(respawnLoc, () ->
                                 plugin.getEntityManager().runFunction(
                                         player,
                                         plugin.getConfigManager().getConfigSection("respawn.function", player, permissionList).getString("respawn.function", "none"),
@@ -71,8 +71,8 @@ public class PlayerRespawnListener implements Listener {
      * Executed one tick after respawn on the respawn location region.
      */
     private void applyPotionEffectIfWithinTime(Player player, List<String> permissionList, Grave grave, Location respawnLoc) {
-        plugin.getGravesXScheduler().runTaskLater(() ->
-                        plugin.getGravesXScheduler().execute(respawnLoc, () -> {
+        plugin.getSchedulerManager().runTaskLater(() ->
+                        plugin.getSchedulerManager().execute(respawnLoc, () -> {
                             boolean enabled = plugin.getConfigManager().getConfigSection("respawn.potion-effect", player, permissionList).getBoolean("respawn.potion-effect");
                             boolean hasPerm = plugin.getPermissionManager().hasGrantedPermission("graves.potion-effect", player);
                             if (!enabled || !hasPerm) return;
@@ -111,8 +111,8 @@ public class PlayerRespawnListener implements Listener {
      * location region to safely read locations and modify the player's inventory.
      */
     private void giveCompassToPlayer(PlayerRespawnEvent event, Player player, Grave grave, Location respawnLoc) {
-        plugin.getGravesXScheduler().runTaskLater(() ->
-                        plugin.getGravesXScheduler().execute(respawnLoc, () -> {
+        plugin.getSchedulerManager().runTaskLater(() ->
+                        plugin.getSchedulerManager().execute(respawnLoc, () -> {
                             List<Location> targets = plugin.getGraveManager().getGraveLocationList(
                                     event.getRespawnLocation(), grave
                             );

@@ -276,7 +276,7 @@ public class ImportManager {
         if (ownerUUID != null) {
             Player player = null;
             try {
-                player = plugin.getGravesXScheduler().callSyncMethod(() -> plugin.getServer().getPlayer(ownerUUID)).get();
+                player = plugin.getSchedulerManager().callSyncMethod(() -> plugin.getServer().getPlayer(ownerUUID)).get();
             } catch (InterruptedException | ExecutionException e) {
                 throw new RuntimeException(e);
             }
@@ -377,7 +377,7 @@ public class ImportManager {
 
             Inventory inventory = null;
             try {
-                inventory = plugin.getGravesXScheduler().callSyncMethod(() ->
+                inventory = plugin.getSchedulerManager().callSyncMethod(() ->
                         plugin.getGraveManager().createGraveInventory(
                                 grave, grave.getLocationDeath(), itemStackList, title, storageMode
                         )
@@ -456,7 +456,7 @@ public class ImportManager {
         World world = null;
         try {
             world = worldUUID != null
-                    ? plugin.getGravesXScheduler().callSyncMethod(() -> plugin.getServer().getWorld(worldUUID)).get()
+                    ? plugin.getSchedulerManager().callSyncMethod(() -> plugin.getServer().getWorld(worldUUID)).get()
                     : null;
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
@@ -466,7 +466,7 @@ public class ImportManager {
             UUID worldUUID2 = UUIDUtil.getUUID(ac.getString("customblock.location.worldid", null));
             try {
                 world = worldUUID2 != null
-                        ? plugin.getGravesXScheduler().callSyncMethod(() -> plugin.getServer().getWorld(worldUUID2)).get()
+                        ? plugin.getSchedulerManager().callSyncMethod(() -> plugin.getServer().getWorld(worldUUID2)).get()
                         : null;
             } catch (InterruptedException | ExecutionException e) {
                 throw new RuntimeException(e);
@@ -477,7 +477,7 @@ public class ImportManager {
             if (worldNameFromFile != null) {
                 String name = worldNameFromFile;
                 try {
-                    world = plugin.getGravesXScheduler().callSyncMethod(() -> plugin.getServer().getWorld(name)).get();
+                    world = plugin.getSchedulerManager().callSyncMethod(() -> plugin.getServer().getWorld(name)).get();
                 } catch (InterruptedException | ExecutionException e) {
                     throw new RuntimeException(e);
                 }
@@ -489,7 +489,7 @@ public class ImportManager {
             if (split.length > 1) {
                 String name = split[1];
                 try {
-                    world = plugin.getGravesXScheduler().callSyncMethod(() -> plugin.getServer().getWorld(name)).get();
+                    world = plugin.getSchedulerManager().callSyncMethod(() -> plugin.getServer().getWorld(name)).get();
                 } catch (InterruptedException | ExecutionException e) {
                     throw new RuntimeException(e);
                 }

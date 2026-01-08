@@ -89,7 +89,7 @@ public final class ItemsAdderReloadGateListener implements Listener {
      * @param cmd raw command line
      */
     private void gateNotReady(String source, String cmd) {
-        plugin.getGravesXScheduler().runTask(() -> {
+        plugin.getSchedulerManager().runTask(() -> {
             if (integration.isReady()) {
                 integration.setReady(false);
                 plugin.debugMessage(

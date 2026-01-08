@@ -1123,7 +1123,7 @@ public class LocationManager {
             }
         };
 
-        var scheduler = plugin.getGravesXScheduler();
+        var scheduler = plugin.getSchedulerManager();
         if (scheduler != null) {
             scheduler.execute(block.getLocation(), action);
         } else {

@@ -184,9 +184,9 @@ public final class ChunkManager {
      */
     private void execute(Location anchor, Runnable task) {
         if (getChunkType().effective() == ChunkType.FOLIA) {
-            plugin.getGravesXScheduler().execute(anchor, task);
+            plugin.getSchedulerManager().execute(anchor, task);
         } else {
-            plugin.getGravesXScheduler().runTask(task);
+            plugin.getSchedulerManager().runTask(task);
         }
     }
 
@@ -256,7 +256,7 @@ public final class ChunkManager {
                                    boolean allowForceLoad,
                                    Runnable onLoaded) {
 
-        plugin.getGravesXScheduler().runTask(() -> {
+        plugin.getSchedulerManager().runTask(() -> {
             Chunk chunk = null;
             boolean didForceLoad = false;
 

@@ -40,8 +40,8 @@ public final class ItemsAdderLoadListener implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR)
     public void onItemsAdderLoad(ItemsAdderLoadDataEvent event) {
-        plugin.getGravesXScheduler().runTask(() ->
-                plugin.getGravesXScheduler().runTaskLater(() -> {
+        plugin.getSchedulerManager().runTask(() ->
+                plugin.getSchedulerManager().runTaskLater(() -> {
                     integration.setReady(true);
                     plugin.debugMessage("ItemsAdder content loaded. ItemsAdder integration is now ready.", 1);
                 }, 1L)

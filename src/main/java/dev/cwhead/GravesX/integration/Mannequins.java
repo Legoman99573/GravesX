@@ -91,7 +91,7 @@ public final class Mannequins extends EntityDataManager {
     }
 
     public void createCorpse(UUID uuid, Location location, Grave grave) {
-        plugin.getGravesXScheduler().runTask(() -> {
+        plugin.getSchedulerManager().runTask(() -> {
             if (!supported) return;
 
             if (!plugin.getConfigManager().getConfigSection("mannequins.corpse.enabled", grave)

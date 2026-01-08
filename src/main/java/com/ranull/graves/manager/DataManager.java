@@ -187,7 +187,7 @@ public class DataManager {
      * Loads data from the database asynchronously.
      */
     private void load() {
-        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
+        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
             try {
                 loadTables();
             } catch (SQLException e) {
@@ -1500,12 +1500,12 @@ public class DataManager {
      * Loads the block map from the database (Folia-safe).
      * - Reads DB asynchronously.
      * - Batches rows per chunk and applies them on the chunk's region thread
-     *   using plugin.getGravesXScheduler().execute(anchorLocation, ...).
+     *   using plugin.getSchedulerManager().execute(anchorLocation, ...).
      */
     public void loadBlockMap() {
         String query = "SELECT * FROM " + getStoragePrefix() + "block;";
 
-        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
+        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
             plugin.getLogger().info("Loading Block Map cache...");
 
             class BlockWork {
@@ -1559,7 +1559,7 @@ public class DataManager {
 
                     Location anchor = group.get(0).loc.clone();
 
-                    plugin.getGravesXScheduler().execute(anchor, () -> {
+                    plugin.getSchedulerManager().execute(anchor, () -> {
                         for (BlockWork w : group) {
                             try {
                                 getChunkData(w.loc).addBlockData(w.data);
@@ -1603,7 +1603,7 @@ public class DataManager {
     private void loadEntityMap(String table, EntityData.Type type) {
         String query = "SELECT * FROM " + getStoragePrefix() + table + ";";
 
-        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
+        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
             plugin.getLogger().info("Loading Entity Map Cache for " + table + "...");
             int entityCount = 0;
 
@@ -1660,7 +1660,7 @@ public class DataManager {
     public void loadHologramMap() {
         String query = "SELECT * FROM " + getStoragePrefix() + "hologram;";
 
-        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
+        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
             plugin.getLogger().info("Loading Holograms into Hologram Map Cache...");
             int hologramCount = 0;
 
@@ -1784,7 +1784,7 @@ public class DataManager {
         String physicalTable = getStoragePrefix() + table;
         String query = "SELECT location, uuid_entity, uuid_grave FROM " + physicalTable + ";";
 
-        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
+        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
             plugin.getLogger().info("Loading Entity Data Map Cache for " + physicalTable + "...");
             int entityCount = 0;
 
@@ -1846,7 +1846,7 @@ public class DataManager {
         if (loc != null && loc.getWorld() != null
                 && plugin.getVersionManager().isFolia()) {
 
-            plugin.getGravesXScheduler().execute(loc, () -> getChunkData(loc).addBlockData(blockData));
+            plugin.getSchedulerManager().execute(loc, () -> getChunkData(loc).addBlockData(blockData));
         } else {
             Objects.requireNonNull(getChunkData(loc)).addBlockData(blockData);
         }
@@ -1862,7 +1862,7 @@ public class DataManager {
                 blockData.getReplaceData()
         };
 
-        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
+        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException exception) {
@@ -1890,7 +1890,7 @@ public class DataManager {
             return;
         }
 
-        plugin.getGravesXScheduler().execute(location, () -> {
+        plugin.getSchedulerManager().execute(location, () -> {
             ChunkData chunkData = getChunkData(location);
             if (chunkData != null) {
                 chunkData.removeBlockData(location);
@@ -1900,7 +1900,7 @@ public class DataManager {
         String query = "DELETE FROM " + getStoragePrefix() + "block WHERE location = ?";
         Object[] parameters = new Object[] { LocationUtil.locationToString(location) };
 
-        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
+        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException exception) {
@@ -1922,7 +1922,7 @@ public class DataManager {
         Location loc = hologramData.getLocation();
 
         if (loc != null && loc.getWorld() != null) {
-            plugin.getGravesXScheduler().execute(loc, () -> getChunkData(loc).addEntityData(hologramData));
+            plugin.getSchedulerManager().execute(loc, () -> getChunkData(loc).addEntityData(hologramData));
         } else {
             Objects.requireNonNull(getChunkData(loc)).addEntityData(hologramData);
         }
@@ -1938,7 +1938,7 @@ public class DataManager {
                 LocationUtil.locationToString(hologramData.getLocation())
         };
 
-        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
+        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException exception) {
@@ -1955,7 +1955,7 @@ public class DataManager {
      * @param grave the grave to remove hologram data.
      */
     public void removeHologramData(Grave grave) {
-        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
+        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
             String selectSql = "SELECT uuid_entity, location FROM " + getStoragePrefix() + "hologram WHERE uuid_grave = ?";
             String deleteSql = "DELETE FROM " + getStoragePrefix() + "hologram WHERE uuid_grave = ?";
 
@@ -1990,7 +1990,7 @@ public class DataManager {
                         EntityData.Type type = EntityData.Type.HOLOGRAM;
                         EntityData entityData = new EntityData(location, uuidEntity, grave.getUUID(), type);
 
-                        plugin.getGravesXScheduler().execute(location, () -> {
+                        plugin.getSchedulerManager().execute(location, () -> {
                             ChunkData chunkData = getChunkData(location);
                             if (chunkData != null) {
                                 chunkData.removeEntityData(entityData);
@@ -2023,7 +2023,7 @@ public class DataManager {
         Location loc = entityData.getLocation();
 
         if (loc != null && loc.getWorld() != null) {
-            plugin.getGravesXScheduler().execute(loc, () -> getChunkData(loc).addEntityData(entityData));
+            plugin.getSchedulerManager().execute(loc, () -> getChunkData(loc).addEntityData(entityData));
         } else {
             Objects.requireNonNull(getChunkData(loc)).addEntityData(entityData);
         }
@@ -2038,7 +2038,7 @@ public class DataManager {
                 entityData.getUUIDGrave()
         };
 
-        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
+        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException e) {
@@ -2063,13 +2063,13 @@ public class DataManager {
      * @param entityDataList the list of entity data to remove.
      */
     public void removeEntityData(List<EntityData> entityDataList) {
-        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
+        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
             try (Connection connection = getConnection()) {
                 for (EntityData entityData : entityDataList) {
                     Location loc = entityData.getLocation();
 
                     if (loc != null && loc.getWorld() != null) {
-                        plugin.getGravesXScheduler().execute(loc, () -> {
+                        plugin.getSchedulerManager().execute(loc, () -> {
                             ChunkData chunkData = getChunkData(loc);
                             if (chunkData != null) {
                                 chunkData.removeEntityData(entityData);
@@ -2155,7 +2155,7 @@ public class DataManager {
     public void addGrave(Grave grave) {
         Location deathLoc = grave.getLocationDeath();
         if (deathLoc != null && deathLoc.getWorld() != null) {
-            plugin.getGravesXScheduler().execute(deathLoc, () ->
+            plugin.getSchedulerManager().execute(deathLoc, () ->
                     plugin.getCacheManager().getGraveMap().put(grave.getUUID(), grave)
             );
         } else {
@@ -2199,7 +2199,7 @@ public class DataManager {
                         : null
         };
 
-        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
+        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException e) {
@@ -2224,7 +2224,7 @@ public class DataManager {
         if (grave != null) {
             Location deathLoc = grave.getLocationDeath();
             if (deathLoc != null && deathLoc.getWorld() != null) {
-                plugin.getGravesXScheduler().execute(deathLoc, () -> {
+                plugin.getSchedulerManager().execute(deathLoc, () -> {
                     plugin.getHologramManager().removeHologram(grave);
                 });
             } else {
@@ -2237,7 +2237,7 @@ public class DataManager {
         String deleteQuery = "DELETE FROM " + getStoragePrefix() + "grave WHERE uuid = ?";
         Object[] deleteParams = new Object[] { uuid };
 
-        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
+        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
             try {
                 plugin.debugMessage("Attempting to remove grave for UUID: " + uuid, 1);
                 executeUpdate(deleteQuery, deleteParams);
@@ -2260,7 +2260,7 @@ public class DataManager {
         String query = "UPDATE " + getStoragePrefix() + "grave SET " + column + " = ? WHERE uuid = ?";
         Object[] parameters = new Object[] { integer, grave.getUUID() };
 
-        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
+        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException e) {
@@ -2281,7 +2281,7 @@ public class DataManager {
         String query = "UPDATE " + getStoragePrefix() + "grave SET " + column + " = ? WHERE uuid = ?";
         Object[] parameters = new Object[] { string, grave.getUUID() };
 
-        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
+        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException e) {
@@ -2517,7 +2517,7 @@ public class DataManager {
      * @throws SQLException if a database access error occurs.
      */
     private void executeUpdate(String sql, Object[] parameters) throws SQLException {
-        plugin.getGravesXScheduler().runTaskAsynchronously(() -> {
+        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
             try (Connection connection = getConnection()) {
                 if (connection == null) {
                     plugin.getLogger().severe("Error executing SQL update: connection is null");
@@ -3110,7 +3110,7 @@ public class DataManager {
      * Keeps the database connection alive by periodically executing a query.
      */
     private void keepConnectionAlive() {
-        plugin.getGravesXScheduler().runTaskTimerAsynchronously(() -> {
+        plugin.getSchedulerManager().runTaskTimerAsynchronously(() -> {
             if (!isConnected()) {
                 return;
             }

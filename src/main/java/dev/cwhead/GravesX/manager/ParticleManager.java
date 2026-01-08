@@ -66,8 +66,8 @@ public class ParticleManager {
             final Location cur = start.clone();
 
             void scheduleNext() {
-                plugin.getGravesXScheduler().runTaskLater(() ->
-                                plugin.getGravesXScheduler().execute(cur, this::tick),
+                plugin.getSchedulerManager().runTaskLater(() ->
+                                plugin.getSchedulerManager().execute(cur, this::tick),
                         1L);
             }
 
@@ -235,7 +235,7 @@ public class ParticleManager {
             world.spawnParticle(particle, originNow, count, forward);
 
             Player backFrom = destEntity;
-            plugin.getGravesXScheduler().runTaskLater(() -> {
+            plugin.getSchedulerManager().runTaskLater(() -> {
                 Location backOrigin = backFrom.getLocation();
                 var back = new Vibration(
                         backOrigin,
@@ -254,7 +254,7 @@ public class ParticleManager {
             world.spawnParticle(particle, originNow, count, forward);
 
             Location playerBlockCenter = center(originNow);
-            plugin.getGravesXScheduler().runTaskLater(() -> {
+            plugin.getSchedulerManager().runTaskLater(() -> {
                 var back = new Vibration(
                         graveCenter,
                         new Vibration.Destination.BlockDestination(playerBlockCenter),

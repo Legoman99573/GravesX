@@ -1,6 +1,6 @@
 package com.ranull.graves.manager;
 
-import com.github.Anon8281.universalScheduler.scheduling.tasks.MyScheduledTask;
+import dev.cwhead.GravesX.manager.SchedulerManager;
 import com.ranull.graves.Graves;
 import dev.cwhead.GravesX.compatibility.CompatibilityParticleEnum;
 import dev.cwhead.GravesX.compatibility.CompatibilitySoundEnum;
@@ -339,7 +339,7 @@ public class EntityManager extends EntityDataManager {
                         }
                     };
 
-                    MyScheduledTask task = plugin.getGravesXScheduler().runTaskTimer(
+                    SchedulerManager.Task task = plugin.getSchedulerManager().returnable().runTaskTimer(
                             () -> executeRegion(player, tick), 0L, 20L);
                     cancelRef[0] = (Runnable) task::cancel;
 
@@ -406,7 +406,7 @@ public class EntityManager extends EntityDataManager {
                 });
 
                 if (delaySeconds > 0L) {
-                    plugin.getGravesXScheduler().runTaskLater(doTeleport, delaySeconds * 20L);
+                    plugin.getSchedulerManager().runTaskLater(doTeleport, delaySeconds * 20L);
                 } else {
                     doTeleport.run();
                 }
@@ -715,7 +715,7 @@ public class EntityManager extends EntityDataManager {
 
             if ((plugin.getVersionManager().is_v1_7() || plugin.getVersionManager().is_v1_8())
                     || !serverCommandEvent.isCancelled()) {
-                plugin.getGravesXScheduler().callSyncMethod(() -> plugin.getServer()
+                plugin.getSchedulerManager().callSyncMethod(() -> plugin.getServer()
                         .dispatchCommand(serverCommandEvent.getSender(), serverCommandEvent.getCommand()));
                 plugin.debugMessage("Running console command " + string, 1);
             }
@@ -1533,20 +1533,20 @@ public class EntityManager extends EntityDataManager {
     }
 
     private void executeRegion(Location loc, Runnable task) {
-        var sched = plugin.getGravesXScheduler();
+        var sched = plugin.getSchedulerManager();
         if (sched != null) {
             sched.execute(loc, task);
         } else {
-            plugin.getGravesXScheduler().runTask(task);
+            plugin.getSchedulerManager().runTask(task);
         }
     }
 
     private void executeRegion(Entity entity, Runnable task) {
-        var sched = plugin.getGravesXScheduler();
+        var sched = plugin.getSchedulerManager();
         if (sched != null) {
             sched.execute(entity, task);
         } else {
-            plugin.getGravesXScheduler().runTask(task);
+            plugin.getSchedulerManager().runTask(task);
         }
     }
 }
