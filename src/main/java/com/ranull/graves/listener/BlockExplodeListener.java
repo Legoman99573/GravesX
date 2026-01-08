@@ -78,7 +78,11 @@ public class BlockExplodeListener implements Listener {
      * @param grave     The grave associated with the block.
      * @param location  The location of the grave.
      */
-    private void handleGraveExplosion(BlockExplodeEvent event, Iterator<Block> iterator, Block block, Grave grave, Location location) {
+    private void handleGraveExplosion(BlockExplodeEvent event,
+                                      Iterator<Block> iterator,
+                                      Block block,
+                                      Grave grave,
+                                      Location location) {
         GraveExplodeEvent modern = new GraveExplodeEvent(location, null, grave);
         plugin.getServer().getPluginManager().callEvent(modern);
 
@@ -93,24 +97,29 @@ public class BlockExplodeListener implements Listener {
 
         Location effectiveLoc = location;
         try {
-            if (modern.hasLocation()) {
+            if (modern.hasLocation() && modern.getLocation() != null) {
                 effectiveLoc = modern.getLocation();
-            } else {
+            } else if (legacy.getLocation() != null) {
                 effectiveLoc = legacy.getLocation();
             }
         } catch (Throwable ignored) {
+            // ignored
         }
 
-        try {
-            Location deathLoc = grave.getLocationDeath();
-            Objects.requireNonNull(deathLoc.getWorld())
-                    .spawnParticle(plugin.getVersionManager().getParticleForVersion("EXPLOSION"), deathLoc, 1);
+        if (plugin.getConfigManager()
+                .getConfigSection("drop.looted-explosion-effect", grave)
+                .getBoolean("drop.looted-explosion-effect", false)) {
             try {
-                deathLoc.getWorld().playSound(deathLoc, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("ENTITY_GENERIC_EXPLODE")), 1.0f, 1.0f);
-            } catch (Exception e) {
-                deathLoc.getWorld().playSound(deathLoc, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("EXPLODE")), 1.0f, 1.0f);
+                Location deathLoc = grave.getLocationDeath();
+                Objects.requireNonNull(deathLoc.getWorld()).spawnParticle(plugin.getVersionManager().getParticleForVersion("EXPLOSION"), deathLoc, 1);
+                try {
+                    deathLoc.getWorld().playSound(deathLoc, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("ENTITY_GENERIC_EXPLODE")), 1.0f, 1.0f);
+                } catch (Exception e) {
+                    deathLoc.getWorld().playSound(deathLoc, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("EXPLODE")), 1.0f, 1.0f);
+                }
+            } catch (Exception ignored) {
+                // ignored
             }
-        } catch (Exception ignored) {
         }
 
         if (plugin.getConfigManager().getConfigSection("drop.explode", grave).getBoolean("drop.explode")) {
