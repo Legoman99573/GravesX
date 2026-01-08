@@ -65,6 +65,7 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
             switch (args[0].toLowerCase(Locale.ROOT)) {
                 case "list", "gui" -> handleListGuiCommand(commandSender, args);
                 case "teleport", "tp" -> handleTeleportCommand(commandSender, args);
+                case "virtual", "open" -> handleVirtualCommand(commandSender, args);
                 case "givetoken" -> handleGiveTokenCommand(commandSender, args);
                 case "reload" -> handleReloadCommand(commandSender);
                 case "dump" -> handleDumpCommand(commandSender);
@@ -86,90 +87,106 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
      * @param sender The command sender.
      */
     public void sendHelpMenu(CommandSender sender) {
-        sender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + plugin.getName() + " "
-                + ChatColor.DARK_GRAY + "v" + plugin.getVersion());
+        sender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RED + plugin.getName() + " " + ChatColor.DARK_GRAY + "v" + plugin.getVersion());
 
         if (sender instanceof Player player) {
+            // GUI main command
             if (plugin.getPermissionManager().hasGrantedPermission("graves.gui", player.getPlayer())) {
                 sender.sendMessage(ChatColor.RED + "/graves " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Graves GUI");
+            } else {
+                sender.sendMessage(ChatColor.RED + "/graves " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Main Command");
             }
 
+            // List / GUI (self)
             if (plugin.getPermissionManager().hasGrantedPermission("graves.gui", player.getPlayer())) {
-                if (plugin.getPermissionManager().hasGrantedPermission("graves.gui.other", player.getPlayer())) {
-                    sender.sendMessage(ChatColor.RED + "/graves list {player} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET +
-                            " View player graves");
-                } else {
-                    sender.sendMessage(ChatColor.RED + "/graves list " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET +
-                            " Player graves");
-                }
+                sender.sendMessage(ChatColor.RED + "/graves list " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Player graves");
             }
 
+            // List / GUI (others)
+            if (plugin.getPermissionManager().hasGrantedPermission("graves.gui.other", player.getPlayer())) {
+                sender.sendMessage(ChatColor.RED + "/graves list {player} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " View player graves");
+            }
+
+            // Teleport (self)
+            if (plugin.getPermissionManager().hasGrantedPermission("graves.teleport.command", player.getPlayer())) {
+                sender.sendMessage(ChatColor.RED + "/graves teleport " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Teleport to your latest grave");
+            }
+
+            // Teleport (others)
+            if (plugin.getPermissionManager().hasGrantedPermission("graves.teleport.command.others", player.getPlayer())) {
+                sender.sendMessage(ChatColor.RED + "/graves teleport {player} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Teleport to latest player grave");
+            }
+
+            // Virtual / Open (self)
+            if (plugin.getPermissionManager().hasGrantedPermission("graves.virtual.command", player.getPlayer())) {
+                sender.sendMessage(ChatColor.RED + "/graves virtual " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Open your latest grave virtually");
+            }
+
+            // Virtual / Open (others)
+            if (plugin.getPermissionManager().hasGrantedPermission("graves.virtual.command.others", player.getPlayer())) {
+                sender.sendMessage(ChatColor.RED + "/graves virtual {player} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Open latest player grave virtually");
+            }
+
+            // Give token
             if (plugin.getPermissionManager().hasGrantedPermission("graves.givetoken", player.getPlayer())) {
                 if (plugin.getConfig().getBoolean("settings.token")) {
-                    sender.sendMessage(ChatColor.RED + "/graves givetoken {player} {amount} " + ChatColor.DARK_GRAY + "-"
-                            + ChatColor.RESET + " Give grave token");
+                    sender.sendMessage(ChatColor.RED + "/graves givetoken {player} {amount} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Give grave token");
                 }
             }
 
+            // Reload
             if (plugin.getPermissionManager().hasGrantedPermission("graves.reload", player.getPlayer())) {
-                sender.sendMessage(ChatColor.RED + "/graves reload " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET
-                        + " Reload plugin");
+                sender.sendMessage(ChatColor.RED + "/graves reload " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Reload plugin");
             }
 
+            // Dump
             if (plugin.getPermissionManager().hasGrantedPermission("graves.dump", player.getPlayer())) {
-                sender.sendMessage(ChatColor.RED + "/graves dump " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET
-                        + " Dump server information");
+                sender.sendMessage(ChatColor.RED + "/graves dump " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Dump server information");
             }
 
+            // Debug
             if (plugin.getPermissionManager().hasGrantedPermission("graves.debug", player.getPlayer())) {
-                sender.sendMessage(ChatColor.RED + "/graves debug {level} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET
-                        + " Change debug level");
+                sender.sendMessage(ChatColor.RED + "/graves debug {level} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Change debug level");
             }
 
+            // Import
             if (plugin.getPermissionManager().hasGrantedPermission("graves.import", player.getPlayer())) {
-                sender.sendMessage(ChatColor.RED + "/graves import {plugin} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET
-                        + " Imports grave data from another grave plugin");
+                sender.sendMessage(ChatColor.RED + "/graves import {plugin} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Imports grave data from another grave plugin");
             }
 
+            // Purge
             if (plugin.getPermissionManager().hasGrantedPermission("graves.purge", player.getPlayer())) {
-                sender.sendMessage(ChatColor.RED + "/graves purge {type} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET
-                        + " Purges based on type");
+                sender.sendMessage(ChatColor.RED + "/graves purge {type} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Purges based on type");
             }
 
+            // Addon download
             if (plugin.getPermissionManager().hasGrantedPermission("graves.download.addons", player.getPlayer())) {
-                sender.sendMessage(ChatColor.RED + "/graves addon {addon} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET
-                        + " Downloads addon (Restart Required)");
+                sender.sendMessage(ChatColor.RED + "/graves addon {addon} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Downloads addon (Restart Required)");
             }
 
+            // Cleanup
             if (plugin.getPermissionManager().hasGrantedPermission("graves.cleanup", player.getPlayer())) {
-                sender.sendMessage(ChatColor.RED + "/graves cleanup " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET
-                        + " Purges all graves");
+                sender.sendMessage(ChatColor.RED + "/graves cleanup " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Purges all graves");
             }
         } else {
-            sender.sendMessage(ChatColor.RED + "/graves list {player} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET +
-                    " View player graves");
+            sender.sendMessage(ChatColor.RED + "/graves " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Main Command");
+            sender.sendMessage(ChatColor.RED + "/graves list {player} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " View player graves");
+            sender.sendMessage(ChatColor.RED + "/graves teleport {player} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Teleport to latest grave");
+            sender.sendMessage(ChatColor.RED + "/graves virtual {player} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Open latest grave virtually");
             if (plugin.getConfig().getBoolean("settings.token")) {
-                sender.sendMessage(ChatColor.RED + "/graves givetoken {player} {amount} " + ChatColor.DARK_GRAY + "-"
-                        + ChatColor.RESET + " Give grave token");
+                sender.sendMessage(ChatColor.RED + "/graves givetoken {player} {amount} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Give grave token");
             }
-            sender.sendMessage(ChatColor.RED + "/graves reload " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET
-                    + " Reload plugin");
-            sender.sendMessage(ChatColor.RED + "/graves dump " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET
-                    + " Dump server information");
-            sender.sendMessage(ChatColor.RED + "/graves debug {level} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET
-                    + " Change debug level");
-            sender.sendMessage(ChatColor.RED + "/graves import {plugin} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET
-                    + " Imports grave data from another grave plugin");
-            sender.sendMessage(ChatColor.RED + "/graves purge {type} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET
-                    + " Purges based on type");
-            sender.sendMessage(ChatColor.RED + "/graves addon {addon} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET
-                    + " Downloads addon (Restart Required)");
-            sender.sendMessage(ChatColor.RED + "/graves cleanup " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET
-                    + " Purges all graves");
+            sender.sendMessage(ChatColor.RED + "/graves reload " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Reload plugin");
+            sender.sendMessage(ChatColor.RED + "/graves dump " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Dump server information");
+            sender.sendMessage(ChatColor.RED + "/graves debug {level} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Change debug level");
+            sender.sendMessage(ChatColor.RED + "/graves import {plugin} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Imports grave data from another grave plugin");
+            sender.sendMessage(ChatColor.RED + "/graves purge {type} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Purges based on type");
+            sender.sendMessage(ChatColor.RED + "/graves addon {addon} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Downloads addon (Restart Required)");
+            sender.sendMessage(ChatColor.RED + "/graves cleanup " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Purges all graves");
         }
 
         sender.sendMessage(ChatColor.DARK_GRAY + "Author: " + ChatColor.RED + "Ranull");
-        sender.sendMessage(ChatColor.DARK_GRAY + "Maintenance: " + ChatColor.RED + "JaySmethers, Legoman99573");
+        sender.sendMessage(ChatColor.DARK_GRAY + "Maintainers: " + ChatColor.RED + "JaySmethers and Legoman99573");
     }
 
     @Override
@@ -184,6 +201,9 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
                     && plugin.getPermissionManager().hasGrantedPermission("graves.teleport.command", player.getPlayer())) {
                 stringList.add("teleport");
                 stringList.add("tp");
+                // offline teleport aliases share the same base permission
+                stringList.add("tpoffline");
+                stringList.add("teleportoffline");
             }
 
             if (commandSender instanceof Player player
@@ -195,6 +215,13 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
                     || plugin.getPermissionManager().hasGrantedPermission("graves.gui", ((Player) commandSender).getPlayer())) {
                 stringList.add("list");
                 stringList.add("gui");
+            }
+
+            // virtual / open (alias) – self virtual access
+            if (!(commandSender instanceof Player)
+                    || plugin.getPermissionManager().hasGrantedPermission("graves.virtual.command", ((Player) commandSender).getPlayer())) {
+                stringList.add("virtual");
+                stringList.add("open");
             }
 
             if (!(commandSender instanceof Player)
@@ -234,84 +261,187 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
                 stringList.add("givetoken");
             }
         } else if (args.length > 1) {
-            if ((args[0].equalsIgnoreCase("list") || args[0].equalsIgnoreCase("gui"))
-                    && (!(commandSender instanceof Player) || plugin.getPermissionManager().hasGrantedPermission("graves.gui.other", (Player) commandSender))) {
+            String sub = args[0].toLowerCase(Locale.ROOT);
 
-                String partial = args[args.length - 1].toLowerCase(Locale.ROOT);
+            switch (sub) {
+                case "list":
+                case "gui": {
+                    if (!(commandSender instanceof Player)
+                            || plugin.getPermissionManager().hasGrantedPermission("graves.gui.other", (Player) commandSender)) {
 
-                for (OfflinePlayer op : Bukkit.getOfflinePlayers()) {
-                    if (op == null || op.isOnline() || !op.hasPlayedBefore()) continue;
-
-                    String name = op.getName();
-                    if (name == null) continue;
-
-                    if (partial.isEmpty() || name.toLowerCase(Locale.ROOT).startsWith(partial)) {
-                        stringList.add(name);
-                    }
-                }
-            } else if ((args[0].equalsIgnoreCase("teleport") || args[0].equalsIgnoreCase("tp"))
-                    && (!(commandSender instanceof Player) || plugin.getPermissionManager().hasGrantedPermission("graves.teleport.command.others", (Player) commandSender))) {
-                plugin.getServer().getOnlinePlayers().forEach(player -> stringList.add(player.getName()));
-            } else if (args[0].equals("debug") && (!(commandSender instanceof Player) || plugin.getPermissionManager().hasGrantedPermission("graves.debug", ((Player) commandSender).getPlayer()))) {
-                stringList.add("0");
-                stringList.add("1");
-                stringList.add("2");
-            } else if (args[0].equals("import") && (!(commandSender instanceof Player) || plugin.getPermissionManager().hasGrantedPermission("graves.import", ((Player) commandSender).getPlayer()))) {
-                stringList.add("AngelChest");
-                stringList.add("angelchest");
-            } else if ((args[0].equals("addon") || args[0].equals("addons")) && (!(commandSender instanceof Player) || plugin.getPermissionManager().hasGrantedPermission("graves.download.addon", ((Player) commandSender).getPlayer()))) {
-                stringList.add("LandProtection");
-            } else if (args[0].equals("purge") && (!(commandSender instanceof Player) || plugin.getPermissionManager().hasGrantedPermission("graves.debug", ((Player) commandSender).getPlayer()))) {
-                if (args.length == 2) {
-                    stringList.add("graves");
-                    stringList.add("grave");
-                    stringList.add("player");
-                    stringList.add("offline-player");
-                    stringList.add("holograms");
-                    stringList.add("hologram");
-                    stringList.add("grave-specific");
-                    stringList.add("grave-uuid");
-                    stringList.add("abandon");
-                    stringList.add("abandoned");
-                }
-
-                if ((args.length == 3 && args[1].equals("offline-player")) || (args.length == 3 && args[1].equals("player"))) {
-                    String partialInput = args[2];
-                    plugin.getSchedulerManager().runTaskAsynchronously(() -> {
-                        for (OfflinePlayer offlinePlayer : Bukkit.getOfflinePlayers()) {
-                            if (offlinePlayer.hasPlayedBefore() && offlinePlayer.getName() != null) {
-                                String playerName = offlinePlayer.getName();
-                                if (playerName.startsWith(partialInput)) {
-                                    synchronized (stringList) {
-                                        stringList.add(offlinePlayer.getName());
+                        if (args.length == 2) {
+                            String partialInput = args[1];
+                            plugin.getSchedulerManager().runTaskAsynchronously(() -> {
+                                for (OfflinePlayer offlinePlayer : Bukkit.getOfflinePlayers()) {
+                                    if (offlinePlayer.hasPlayedBefore()
+                                            && offlinePlayer.getName() != null
+                                            && !offlinePlayer.isOnline()) {
+                                        String playerName = offlinePlayer.getName();
+                                        if (playerName.startsWith(partialInput)) {
+                                            synchronized (stringList) {
+                                                stringList.add(offlinePlayer.getName());
+                                            }
+                                        }
                                     }
+                                }
+                            });
+                        }
+                    }
+                    break;
+                }
+
+                case "teleport":
+                case "tp": {
+                    if (!(commandSender instanceof Player)
+                            || plugin.getPermissionManager().hasGrantedPermission("graves.teleport.command.others", (Player) commandSender)) {
+                        plugin.getServer().getOnlinePlayers().forEach(player -> stringList.add(player.getName()));
+                    }
+                    break;
+                }
+
+                case "tpoffline":
+                case "teleportoffline": {
+                    if (!(commandSender instanceof Player)
+                            || plugin.getPermissionManager().hasGrantedPermission("graves.teleport.command.others", (Player) commandSender)) {
+
+                        if (args.length == 2) {
+                            String partialInput = args[1];
+                            plugin.getSchedulerManager().runTaskAsynchronously(() -> {
+                                for (OfflinePlayer offlinePlayer : Bukkit.getOfflinePlayers()) {
+                                    if (offlinePlayer.hasPlayedBefore() && offlinePlayer.getName() != null) {
+                                        String playerName = offlinePlayer.getName();
+                                        if (playerName.startsWith(partialInput)) {
+                                            synchronized (stringList) {
+                                                stringList.add(offlinePlayer.getName());
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    }
+                    break;
+                }
+
+                case "virtual":
+                case "open": {
+                    if (!(commandSender instanceof Player) || plugin.getPermissionManager().hasGrantedPermission("graves.virtual.command.others", (Player) commandSender)) {
+                        if (args.length == 2) {
+                            String partialInput = args[1];
+                            plugin.getSchedulerManager().runTaskAsynchronously(() -> {
+                                for (OfflinePlayer offlinePlayer : Bukkit.getOfflinePlayers()) {
+                                    if (offlinePlayer.hasPlayedBefore() && offlinePlayer.getName() != null) {
+                                        String playerName = offlinePlayer.getName();
+                                        if (playerName.startsWith(partialInput)) {
+                                            synchronized (stringList) {
+                                                stringList.add(offlinePlayer.getName());
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    }
+                    break;
+                }
+
+                case "debug": {
+                    if (!(commandSender instanceof Player)
+                            || plugin.getPermissionManager().hasGrantedPermission("graves.debug", ((Player) commandSender).getPlayer())) {
+                        stringList.add("0");
+                        stringList.add("1");
+                        stringList.add("2");
+                    }
+                    break;
+                }
+
+                case "import": {
+                    if (!(commandSender instanceof Player)
+                            || plugin.getPermissionManager().hasGrantedPermission("graves.import", ((Player) commandSender).getPlayer())) {
+                        stringList.add("AngelChest");
+                        stringList.add("angelchest");
+                    }
+                    break;
+                }
+
+                case "addon":
+                case "addons": {
+                    if (!(commandSender instanceof Player)
+                            || plugin.getPermissionManager().hasGrantedPermission("graves.download.addon", ((Player) commandSender).getPlayer())) {
+                        stringList.add("LandProtection");
+                    }
+                    break;
+                }
+
+                case "purge": {
+                    if (!(commandSender instanceof Player)
+                            || plugin.getPermissionManager().hasGrantedPermission("graves.debug", ((Player) commandSender).getPlayer())) {
+
+                        if (args.length == 2) {
+                            stringList.add("graves");
+                            stringList.add("grave");
+                            stringList.add("player");
+                            stringList.add("offline-player");
+                            stringList.add("holograms");
+                            stringList.add("hologram");
+                            stringList.add("grave-specific");
+                            stringList.add("grave-uuid");
+                            stringList.add("abandon");
+                            stringList.add("abandoned");
+                        }
+
+                        if ((args.length == 3 && args[1].equals("offline-player"))
+                                || (args.length == 3 && args[1].equals("player"))) {
+                            String partialInput = args[2];
+                            plugin.getSchedulerManager().runTaskAsynchronously(() -> {
+                                for (OfflinePlayer offlinePlayer : Bukkit.getOfflinePlayers()) {
+                                    if (offlinePlayer.hasPlayedBefore() && offlinePlayer.getName() != null) {
+                                        String playerName = offlinePlayer.getName();
+                                        if (playerName.startsWith(partialInput)) {
+                                            synchronized (stringList) {
+                                                stringList.add(offlinePlayer.getName());
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        }
+
+                        if ((args.length == 3 && args[1].equals("grave-specific"))
+                                || (args.length == 3 && args[1].equals("grave-uuid"))) {
+                            String partialInput = args[2];
+                            List<Grave> graveList = new ArrayList<>(plugin.getCacheManager().getGraveMap().values());
+
+                            for (Grave grave : graveList) {
+                                String uuid = grave.getUUID().toString();
+                                if (uuid.startsWith(partialInput)) {
+                                    stringList.add(grave.getUUID().toString());
                                 }
                             }
                         }
-                    });
+                    }
+                    break;
                 }
 
-                if ((args.length == 3 && args[1].equals("grave-specific")) || (args.length == 3 && args[1].equals("grave-uuid"))) {
-                    String partialInput = args[2];
-                    List<Grave> graveList = new ArrayList<>(plugin.getCacheManager().getGraveMap().values());
+                case "givetoken": {
+                    if (plugin.getRecipeManager() != null
+                            && (!(commandSender instanceof Player)
+                            || plugin.getPermissionManager().hasGrantedPermission("graves.givetoken", ((Player) commandSender).getPlayer()))) {
 
-                    for (Grave grave : graveList) {
-                        String uuid = grave.getUUID().toString();
-                        if (uuid.startsWith(partialInput)) {
-                            stringList.add(grave.getUUID().toString());
+                        if (args.length == 2) {
+                            plugin.getServer().getOnlinePlayers().forEach(player -> stringList.add(player.getName()));
+                        } else if (args.length == 3) {
+                            stringList.addAll(plugin.getRecipeManager().getTokenList());
                         }
                     }
+                    break;
                 }
 
-            } else if (plugin.getRecipeManager() != null && args[0].equalsIgnoreCase("givetoken")
-                    && (!(commandSender instanceof Player) || plugin.getPermissionManager().hasGrantedPermission("graves.givetoken", ((Player) commandSender).getPlayer()))) {
-                if (args.length == 2) {
-                    plugin.getServer().getOnlinePlayers().forEach(player -> stringList.add(player.getName()));
-                } else if (args.length == 3) {
-                    stringList.addAll(plugin.getRecipeManager().getTokenList());
-                }
+                default:
+                    break;
             }
         }
+
         return stringList;
     }
 
@@ -367,6 +497,70 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
         } else {
             sendHelpMenu(commandSender);
         }
+    }
+
+    private void handleVirtualCommand(CommandSender commandSender, String[] args) {
+        if (!(commandSender instanceof Player player)) {
+            sendHelpMenu(commandSender);
+            return;
+        }
+
+        if (args.length == 1 || (args.length == 2 && args[1].equalsIgnoreCase(player.getName()))) {
+            if (!plugin.getPermissionManager().hasGrantedPermission("graves.virtual.command", player)) {
+                plugin.getEntityManager().sendMessage("message.permission-denied", player);
+                return;
+            }
+
+            var graves = plugin.getGraveManager().getGraveList(player);
+
+            Grave grave = graves.get(0);
+
+            if (grave == null) {
+                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » "
+                        + ChatColor.RESET + "You have no graves.");
+                return;
+            }
+
+            Location deathLoc = grave.getLocationDeath();
+            if (deathLoc == null || deathLoc.getWorld() == null) {
+                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » "
+                        + ChatColor.RESET + "Grave location is unavailable.");
+                return;
+            }
+
+            plugin.getGraveManager().openGrave(player, grave.getLocationDeath(), grave);
+            return;
+        }
+
+        if (args.length == 2 && !args[1].equalsIgnoreCase(player.getName())) {
+            if (!plugin.getPermissionManager().hasGrantedPermission("graves.virtual.command.others", player)) {
+                plugin.getEntityManager().sendMessage("message.permission-denied", player);
+                return;
+            }
+
+            OfflinePlayer targetPl = plugin.getServer().getOfflinePlayer(args[1]);
+            var graves = plugin.getGraveManager().getGraveList(targetPl);
+
+            Grave grave = graves.get(0);
+
+            if (grave == null) {
+                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET + ChatColor.RED + args[1] + ChatColor.RESET + " has no graves.");
+
+                return;
+            }
+
+            Location base = grave.getLocationDeath();
+            if (base == null || base.getWorld() == null) {
+                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » "
+                        + ChatColor.RESET + "Grave location is unavailable.");
+                return;
+            }
+
+            plugin.getGraveManager().openGrave(player, grave.getLocationDeath(), grave);
+            return;
+        }
+
+        sendHelpMenu(commandSender);
     }
 
     private void handleTeleportCommand(CommandSender commandSender, String[] args) {

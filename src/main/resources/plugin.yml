@@ -93,6 +93,14 @@ permissions:
     default: true
     description: Can open a grave
 
+  graves.virtual.command:
+    default: op
+    description: Virtually open your grave by command
+
+  graves.virtual.command.others:
+    default: op
+    description: Virtually open another players grave by command
+
   graves.autoloot:
     default: true
     description: Can Autoloot a grave
