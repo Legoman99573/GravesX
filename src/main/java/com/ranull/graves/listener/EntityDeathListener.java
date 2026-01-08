@@ -78,7 +78,7 @@ public class EntityDeathListener implements Listener {
             return;
         }
 
-        final List<String> permissionList = isPlayer ? plugin.getPermissionList(livingEntity) : null;
+        final List<String> permissionList = isPlayer ? plugin.getConfigManager().getPermissionList(livingEntity) : null;
 
         if (!isPlayer && livingEntity instanceof Zombie zombie) {
             if (isConfiguredZombieType(zombie) && hasGravesXMetadata(zombie)) {
@@ -88,7 +88,8 @@ public class EntityDeathListener implements Listener {
 
         if (!isEnabledGrave(livingEntity, permissionList, entityName)) return;
 
-        final List<String> worldList = plugin.getConfigManager().getConfigSection("world", livingEntity, permissionList).getStringList("world");
+        final List<String> worldList =
+                plugin.getConfigManager().getConfigSection("world", livingEntity, permissionList).getStringList("world");
         if (!isValidWorld(worldList, livingEntity, entityName)) return;
 
         if (!isValidDamageCause(livingEntity, permissionList, entityName)) return;
@@ -98,9 +99,11 @@ public class EntityDeathListener implements Listener {
         if (isPlayer) {
             if (handlePlayerDeath(player, entityName)) return;
 
-            if (pde != null && isKeepInventory(pde, entityName) &&
-                    !plugin.getPermissionManager().hasGrantedPermission("graves.keepinventory.bypass", player)) {
+            if (pde != null && isKeepInventory(pde, entityName) && !plugin.getPermissionManager().hasGrantedPermission("graves.keepinventory.bypass", player)) {
+                plugin.debugMessage("Grave not created for " + entityName + " because they had keep inventory. You can set a user to have the bypass permission.", 2);
                 return;
+            } else {
+                plugin.debugMessage("Grave created for " + entityName + " even though they have keep inventory. This may cause duplication bugs and no support will be provided.", 2);
             }
 
             if (pde != null && event.getDrops().isEmpty()) {
@@ -110,6 +113,41 @@ public class EntityDeathListener implements Listener {
         }
 
         if (!hasValidToken(livingEntity, permissionList, entityName, event.getDrops())) return;
+
+        if (isPlayer) {
+            int serverMax = plugin.getConfigManager().getConfigSection("grave.max", livingEntity, permissionList).getInt("grave.max");
+            int permsMax = getMaxGravesPermission(player);
+            int applicableMax = (permsMax > 0) ? permsMax : serverMax;
+
+            if (plugin.getGraveManager().getGraveList(livingEntity).size() >= applicableMax) {
+                if (plugin.getPermissionManager().hasGrantedPermission("graves.max.replace", player) && plugin.getConfigManager().getConfigSection("grave.replace-oldest", livingEntity, permissionList).getBoolean("grave.replace-oldest")) {
+                    plugin.getGraveManager().removeOldestGrave(livingEntity);
+                    plugin.getEntityManager().sendMessage("message.grave-oldest-replaced", livingEntity, livingEntity.getLocation(), permissionList);
+                    plugin.debugMessage("Grave replaced oldest for " + entityName + " because they reached maximum graves", 2);
+                } else if (plugin.getPermissionManager().hasGrantedPermission("graves.max.bypass", player)) {
+                    plugin.debugMessage("Grave created for " + entityName + " even though they reached the maximum graves cap", 2);
+                } else {
+                    plugin.getEntityManager().sendMessage("message.max", livingEntity, livingEntity.getLocation(), permissionList);
+                    plugin.debugMessage("Grave not created for " + entityName + " because they reached maximum graves.", 2);
+
+                    boolean keepInvOnMax = plugin.getConfigManager().getConfigSection("placement.failure-keep-inventory", livingEntity, permissionList).getBoolean("placement.failure-keep-inventory");
+
+                    if (keepInvOnMax && pde != null) {
+                        try {
+                            pde.setKeepLevel(true);
+                            pde.setKeepInventory(true);
+
+                            event.getDrops().clear();
+                            plugin.getEntityManager().sendMessage("message.failure-keep-inventory", livingEntity, location, permissionList);
+                        } catch (NoSuchMethodError ignored) {
+                            // Older APIs may not support keepInventory/keepLevel
+                        }
+                    }
+
+                    return;
+                }
+            }
+        }
 
         final List<ItemStack> ignoredItemStackList = new ArrayList<>();
         final List<ItemStack> graveItemStackList =
@@ -604,42 +642,7 @@ public class EntityDeathListener implements Listener {
                              Location location,
                              PlayerDeathEvent pde,
                              Player player) {
-
-        // Track ignored blocks associated with this grave creation.
         List<Block> ignoredBlockList = new ArrayList<>();
-
-        if (player != null) {
-            int serverMax = plugin.getConfigManager().getConfigSection("grave.max", livingEntity, permissionList).getInt("grave.max");
-            int permsMax = getMaxGravesPermission(player);
-            int applicableMax = (permsMax > 0) ? permsMax : serverMax;
-
-            if (plugin.getGraveManager().getGraveList(livingEntity).size() >= applicableMax) {
-                if (plugin.getPermissionManager().hasGrantedPermission("graves.max.replace", player)
-                        && plugin.getConfigManager().getConfigSection("grave.replace-oldest", livingEntity, permissionList).getBoolean("grave.replace-oldest")) {
-                    plugin.getGraveManager().removeOldestGrave(livingEntity);
-                    plugin.getEntityManager().sendMessage("message.grave-oldest-replaced", livingEntity, livingEntity.getLocation(), permissionList);
-                    plugin.debugMessage("Grave replaced oldest for " + entityName + " because they reached maximum graves", 2);
-                } else if (plugin.getPermissionManager().hasGrantedPermission("graves.max.bypass", player)) {
-                    plugin.debugMessage("Grave created for " + entityName + " even though they reached the maximum graves cap", 2);
-                } else {
-                    plugin.getEntityManager().sendMessage("message.max", livingEntity, livingEntity.getLocation(), permissionList);
-                    plugin.debugMessage("Grave not created for " + entityName + " because they reached maximum graves.", 2);
-
-                    if (!pde.getKeepInventory()) {
-                        if (removedItemStackList != null && !removedItemStackList.isEmpty()) {
-                            event.getDrops().addAll(removedItemStackList);
-                        }
-                        if (graveItemStackList != null && !graveItemStackList.isEmpty()) {
-                            event.getDrops().addAll(graveItemStackList);
-                        }
-                        if (ignoredItemStackList != null && !ignoredItemStackList.isEmpty()) {
-                            event.getDrops().addAll(ignoredItemStackList);
-                        }
-                    }
-                    return;
-                }
-            }
-        }
 
         Grave grave = new Grave(UUID.randomUUID());
         setupGrave(grave, livingEntity, entityName, permissionList);
