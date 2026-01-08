@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public final class ConfigManager {
 
-    public static final int CURRENT_CONFIG_VERSION = 24;
+    public static final int CURRENT_CONFIG_VERSION = 25;
 
     private final Graves plugin;
     private final Paths paths;
