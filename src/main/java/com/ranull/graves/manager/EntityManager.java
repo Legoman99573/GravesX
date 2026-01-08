@@ -1081,7 +1081,9 @@ public class EntityManager extends EntityDataManager {
 
     @SuppressWarnings("deprecation")
     private void spawnZombie(Location location, LivingEntity targetEntity, Grave grave) {
-        if (location == null || location.getWorld() == null || grave.getOwnerType() != EntityType.PLAYER) return;
+        if (location == null || location.getWorld() == null || grave.getOwnerType() != EntityType.PLAYER) {
+            return;
+        }
 
         GraveZombieSpawnEvent modern = new GraveZombieSpawnEvent(location, targetEntity, grave);
         plugin.getServer().getPluginManager().callEvent(modern);
@@ -1090,88 +1092,129 @@ public class EntityManager extends EntityDataManager {
                 new com.ranull.graves.event.GraveZombieSpawnEvent(location, targetEntity, grave);
         plugin.getServer().getPluginManager().callEvent(legacy);
 
-        if (!modern.isCancelled() || !modern.isAddon() || !legacy.isCancelled() || !legacy.isAddon()) {
-
-            Location locCopy = location.clone();
-            executeRegion(locCopy, () -> {
-                String zombieType = plugin.getConfigManager().getConfigSection("zombie.type", grave)
-                        .getString("zombie.type", "ZOMBIE").toUpperCase();
-                EntityType entityType = EntityType.ZOMBIE;
-                try {
-                    entityType = EntityType.valueOf(zombieType);
-                } catch (IllegalArgumentException ex) {
-                    plugin.debugMessage(zombieType + " is not a EntityType ENUM", 1);
-                }
-
-                if ("ZOMBIE".equals(entityType.name()) && MaterialUtil.isWater(locCopy.getBlock().getType())) {
-                    try {
-                        entityType = EntityType.valueOf("DROWNED");
-                    } catch (IllegalArgumentException ignored) {
-                    }
-                }
-
-                Entity entity = locCopy.getWorld().spawnEntity(locCopy, entityType);
-
-                if (entity instanceof LivingEntity livingEntity) {
-
-                    if (livingEntity.getEquipment() != null) {
-                        if (plugin.getConfigManager().getConfigSection("zombie.owner-head", grave).getBoolean("zombie.owner-head")) {
-                            livingEntity.getEquipment().setHelmet(plugin.getCompatibility().getSkullItemStack(grave, plugin));
-                        }
-                        livingEntity.getEquipment().setChestplate(null);
-                        livingEntity.getEquipment().setLeggings(null);
-                        livingEntity.getEquipment().setBoots(null);
-                    }
-
-                    livingEntity.setMetadata("GravesX", new FixedMetadataValue(plugin, true)); // don’t break other plugins
-
-                    double zombieHealth = plugin.getConfigManager().getConfigSection("zombie.health", grave).getDouble("zombie.health");
-                    if (zombieHealth >= 0.5) {
-                        livingEntity.setMaxHealth(zombieHealth);
-                        livingEntity.setHealth(zombieHealth);
-                    }
-
-                    if (!plugin.getConfigManager().getConfigSection("zombie.pickup", grave).getBoolean("zombie.pickup")) {
-                        livingEntity.setCanPickupItems(false);
-                    }
-
-                    String zombieName = StringUtil.parseString(
-                            plugin.getConfigManager().getConfigSection("zombie.name", grave).getString("zombie.name"),
-                            locCopy, grave, plugin
-                    );
-
-                    if (!zombieName.isEmpty()) {
-                        if (plugin.getIntegrationManager().hasMiniMessage()) {
-                            livingEntity.setCustomName(MiniMessage.parseString(zombieName));
-                        } else {
-                            livingEntity.setCustomName(zombieName);
-                        }
-                    }
-
-                    setDataByte(livingEntity, "graveZombie");
-                    setDataString(livingEntity, "graveUUID", grave.getUUID().toString());
-                    setDataString(livingEntity, "graveEntityType", grave.getOwnerType().name());
-                    runCommands("event.command.zombiespawn", targetEntity, locCopy, grave);
-
-                    if (grave.getPermissionList() != null && !grave.getPermissionList().isEmpty()) {
-                        setDataString(livingEntity, "gravePermissionList", String.join("|", grave.getPermissionList()));
-                    }
-
-                    if (livingEntity instanceof Mob mob) {
-                        if (targetEntity != null && !targetEntity.isInvulnerable()
-                                && (!(targetEntity instanceof Player p) || p.getGameMode() != GameMode.CREATIVE)) {
-                            mob.setTarget(targetEntity);
-                        }
-                    }
-
-                    if (livingEntity instanceof Zombie zombie) {
-                        if (zombie.isBaby()) zombie.setBaby(false);
-                    }
-                }
-
-                plugin.debugMessage("Zombie type " + getEntityName(entity) + " spawned for grave " + grave.getUUID(), 1);
-            });
+        if (modern.isCancelled() || modern.isAddon() || legacy.isCancelled() || legacy.isAddon()) {
+            return;
         }
+
+        Location locCopy = location.clone();
+        executeRegion(locCopy, () -> {
+            try {
+                World world = locCopy.getWorld();
+                if (world != null) {
+                    try {
+                        world.playSound(locCopy, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("BLOCK_BELL_USE")), 1.0f, 1.0f);
+                    } catch (Exception e1) {
+                        try {
+                            world.playSound(locCopy, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("BELL")), 1.0f, 1.0f);
+                        } catch (Exception ignored) {
+                            // no sound if bell not available
+                        }
+                    }
+
+                    try {
+                        plugin.getSchedulerManager().runTaskLater(locCopy, () -> {
+                            try {
+                                World w2 = locCopy.getWorld();
+                                if (w2 == null) return;
+
+                                try {
+                                    w2.playSound(locCopy, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("BLOCK_BELL_USE")), 1.0f, 0.75f);
+                                } catch (Exception e2) {
+                                    try {
+                                        w2.playSound(locCopy, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("BELL")), 1.0f, 0.75f);
+                                    } catch (Exception ignored2) {
+                                        // still no sound, just give up
+                                    }
+                                }
+                            } catch (Exception ignored3) {
+                                // ignored
+                            }
+                        }, 20L);
+                    } catch (Throwable ignoredSched) {
+                        // If your scheduler doesn't support region-delayed here, dong is skipped
+                    }
+                }
+            } catch (Exception ignored) {
+                // ignored
+            }
+
+            String zombieType = plugin.getConfigManager().getConfigSection("zombie.type", grave).getString("zombie.type", "ZOMBIE").toUpperCase();
+            EntityType entityType = EntityType.ZOMBIE;
+            try {
+                entityType = EntityType.valueOf(zombieType);
+            } catch (IllegalArgumentException ex) {
+                plugin.debugMessage(zombieType + " is not a EntityType ENUM", 1);
+            }
+
+            if ("ZOMBIE".equals(entityType.name()) && MaterialUtil.isWater(locCopy.getBlock().getType())) {
+                try {
+                    entityType = EntityType.valueOf("DROWNED");
+                } catch (IllegalArgumentException ignored) {
+                }
+            }
+
+            Entity entity = locCopy.getWorld().spawnEntity(locCopy, entityType);
+
+            if (entity instanceof LivingEntity livingEntity) {
+
+                if (livingEntity.getEquipment() != null) {
+                    if (plugin.getConfigManager().getConfigSection("zombie.owner-head", grave).getBoolean("zombie.owner-head")) {
+                        livingEntity.getEquipment().setHelmet(plugin.getCompatibility().getSkullItemStack(grave, plugin));
+                    }
+                    livingEntity.getEquipment().setChestplate(null);
+                    livingEntity.getEquipment().setLeggings(null);
+                    livingEntity.getEquipment().setBoots(null);
+                }
+
+                livingEntity.setMetadata("GravesX", new FixedMetadataValue(plugin, true)); // don’t break other plugins
+
+                double zombieHealth = plugin.getConfigManager().getConfigSection("zombie.health", grave).getDouble("zombie.health");
+                if (zombieHealth >= 0.5) {
+                    livingEntity.setMaxHealth(zombieHealth);
+                    livingEntity.setHealth(zombieHealth);
+                }
+
+                if (!plugin.getConfigManager().getConfigSection("zombie.pickup", grave).getBoolean("zombie.pickup")) {
+                    livingEntity.setCanPickupItems(false);
+                }
+
+                String zombieName = StringUtil.parseString(
+                        plugin.getConfigManager().getConfigSection("zombie.name", grave)
+                                .getString("zombie.name"),
+                        locCopy, grave, plugin
+                );
+
+                if (!zombieName.isEmpty()) {
+                    if (plugin.getIntegrationManager().hasMiniMessage()) {
+                        livingEntity.setCustomName(MiniMessage.parseString(zombieName));
+                    } else {
+                        livingEntity.setCustomName(zombieName);
+                    }
+                }
+
+                setDataByte(livingEntity, "graveZombie");
+                setDataString(livingEntity, "graveUUID", grave.getUUID().toString());
+                setDataString(livingEntity, "graveEntityType", grave.getOwnerType().name());
+                runCommands("event.command.zombiespawn", targetEntity, locCopy, grave);
+
+                if (grave.getPermissionList() != null && !grave.getPermissionList().isEmpty()) {
+                    setDataString(livingEntity, "gravePermissionList",
+                            String.join("|", grave.getPermissionList()));
+                }
+
+                if (livingEntity instanceof Mob mob) {
+                    if (!targetEntity.isInvulnerable() && (!(targetEntity instanceof Player p) || p.getGameMode() != GameMode.CREATIVE)) {
+                        mob.setTarget(targetEntity);
+                    }
+                }
+
+                if (livingEntity instanceof Zombie zombie) {
+                    if (zombie.isBaby()) zombie.setBaby(false);
+                }
+            }
+
+            plugin.debugMessage("Zombie type " + getEntityName(entity) + " spawned for grave " + grave.getUUID(), 1);
+        });
     }
 
     /**
