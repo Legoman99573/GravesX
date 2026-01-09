@@ -249,6 +249,15 @@ public class CacheManager {
     }
 
     /**
+     * Retrieves a {@link Grave} from the cache by its UUID
+     * @param graveUUID the UUID of the grave to retrieve
+     * @return the {@link Grave} associated with the UUID provided, or {@code null} if not present
+     */
+    public Grave getGrave(UUID graveUUID) {
+        return graveMap.get(graveUUID);
+    }
+
+    /**
      * Returns the oldest grave for a given player.
      * @param playerUUID The UUID of the player whose graves to consider.
      * @return The oldest grave for the specified player.
