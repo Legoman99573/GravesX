@@ -426,7 +426,7 @@ public class GraveManager {
 
                 if (hasGrave) {
                     if (entityData instanceof HologramData hologramData) {
-                        processHologramData(hologramData, location, entityDataRemoveList);
+                        processHologramData(hologramData, entityDataRemoveList);
                     }
                 } else {
                     entityDataRemoveList.add(entityData);
@@ -441,27 +441,29 @@ public class GraveManager {
      * Processes hologram data within the chunk.
      *
      * @param hologramData         the hologram data to be processed.
-     * @param location             the location representing the chunk coordinates.
      * @param entityDataRemoveList the list to which hologram data to be removed will be added.
      */
-    private void processHologramData(HologramData hologramData, Location location, List<EntityData> entityDataRemoveList) {
+    private void processHologramData(HologramData hologramData, List<EntityData> entityDataRemoveList) {
         try {
             Grave grave = plugin.getCacheManager().getGraveMap().get(hologramData.getUUIDGrave());
-            if (grave == null) return;
+            if (grave == null) {
+                plugin.debugMessage("[Hologram] Skipping update: grave not found for UUID " +
+                        hologramData.getUUIDGrave(), 2);
+                return;
+            }
 
-            List<String> lineList = new ArrayList<>(
-                    plugin.getConfigManager().getConfigSection("hologram.line", grave).getStringList("hologram.line")
-            );
+            List<String> lineList = new ArrayList<>(plugin.getConfigManager().getConfigSection("hologram.line", grave).getStringList("hologram.line"));
             Collections.reverse(lineList);
 
             Location holoLoc = hologramData.getLocation();
             if (holoLoc == null || holoLoc.getWorld() == null) {
-                plugin.debugMessage("HologramData has invalid location for grave " + grave.getUUID(), 2);
+                plugin.debugMessage("[Hologram] HologramData has invalid location for grave " + grave.getUUID(), 2);
                 return;
             }
 
             UUID targetId = hologramData.getUUIDEntity();
             if (targetId == null) {
+                plugin.debugMessage("[Hologram] HologramData has null entity UUID for grave " + grave.getUUID() + ", scheduling removal of hologram data entry.", 2);
                 synchronized (entityDataRemoveList) {
                     entityDataRemoveList.add(hologramData);
                 }
@@ -470,59 +472,55 @@ public class GraveManager {
 
             int lineIndex = hologramData.getLine();
             if (lineIndex < 0 || lineIndex >= lineList.size()) {
+                plugin.debugMessage("[Hologram] Invalid line index " + lineIndex + " for grave " + grave.getUUID() + " (available lines: " + lineList.size() + ")", 2);
                 return;
             }
 
-            World world = holoLoc.getWorld();
-            Location chunkAnchor = new Location(
-                    world,
-                    (hologramData.getChunkX() << 4) + 0.5D,
-                    holoLoc.getY(),
-                    (hologramData.getChunkZ() << 4) + 0.5D
-            );
+            Location anchor = holoLoc.clone();
+            String worldName = anchor.getWorld() != null ? anchor.getWorld().getName() : "unknown";
 
-            Runnable logic = () -> {
+            String anchorInfo = "[world=" + worldName + ", x=" + anchor.getX() + ", y=" + anchor.getY() + ", z=" + anchor.getZ() + "]";
+
+            plugin.getSchedulerManager().execute(anchor, () -> {
                 try {
-                    World w = chunkAnchor.getWorld();
-                    if (w == null) return;
+                    Entity target;
+                    try {
+                        target = Bukkit.getEntity(targetId);
+                    } catch (IllegalStateException ise) {
+                        plugin.debugMessage("[Hologram] IllegalState while resolving entity " + targetId + " for grave " + grave.getUUID() + " at " + anchorInfo + ": " + ise.getMessage(), 2);
+                        return;
+                    }
 
-                    Chunk chunk = w.getChunkAt(hologramData.getChunkX(), hologramData.getChunkZ());
+                    if (target == null || !target.isValid()) {
+                        plugin.debugMessage("[Hologram] Target entity " + targetId + " for grave " + grave.getUUID() + " is null or invalid; skipping hologram update.", 2);
+                        return;
+                    }
 
-                    Entity target = Arrays.stream(chunk.getEntities()).filter(e -> e != null && targetId.equals(e.getUniqueId())).findFirst().orElse(null);
-
-                    if (target == null) return;
-
-                    String lineText = StringUtil.parseString(lineList.get(lineIndex), location, grave, plugin);
-
-                    Runnable applyName = () -> {
+                    plugin.getSchedulerManager().execute(target, () -> {
                         try {
+                            Location contextLocation = target.getLocation();
+                            String lineText = StringUtil.parseString(lineList.get(lineIndex), contextLocation, grave, plugin);
+
                             if (plugin.getIntegrationManager().hasMiniMessage()) {
                                 target.setCustomName(MiniMessage.parseString(lineText));
                             } else {
                                 target.setCustomName(lineText);
                             }
+
                         } catch (Throwable t) {
-                            plugin.getLogger().severe(t.getMessage());
+                            plugin.getLogger().severe("[Hologram] Failed to apply hologram line " + lineIndex + " to entity " + target.getUniqueId() + " for grave " + grave.getUUID() + ": " + t.getMessage());
                             plugin.logStackTrace(t);
                         }
-                    };
-
-                    if (plugin.getSchedulerManager().isEntityThread(target)) {
-                        applyName.run();
-                    } else {
-                        plugin.getSchedulerManager().execute(target, applyName);
-                    }
+                    });
 
                 } catch (Throwable t) {
-                    plugin.getLogger().severe(t.getMessage());
+                    plugin.getLogger().severe("[Hologram] Unexpected error while resolving entity " + targetId + " for grave " + grave.getUUID() + " at anchor " + anchorInfo + " (line index " + lineIndex + "): " + t.getMessage());
                     plugin.logStackTrace(t);
                 }
-            };
-
-            plugin.getChunkManager().ensureLoadedAndExecute(chunkAnchor, holoLoc, true, false, logic);
+            });
 
         } catch (Throwable t) {
-            plugin.getLogger().severe(t.getMessage());
+            plugin.getLogger().severe("[Hologram] Top-level error in processHologramData for grave " + hologramData.getUUIDGrave() + " (line index " + hologramData.getLine() + "): " + t.getMessage());
             plugin.logStackTrace(t);
         }
     }
