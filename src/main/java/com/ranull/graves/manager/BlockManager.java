@@ -230,6 +230,11 @@ public class BlockManager {
             plugin.getIntegrationManager().getNexo().removeBlock(location);
         }
 
+        if (!isGraveBlock(location)) {
+            plugin.debugMessage("not grave block", 2);
+            return;
+        }
+
         if (location.getWorld() != null) {
             if (blockData.getReplaceMaterial() != null) {
                 Material material = Material.matchMaterial(blockData.getReplaceMaterial());
@@ -346,5 +351,23 @@ public class BlockManager {
             }
         }
         return rawName;
+    }
+
+    /**
+     * Determines whether the block at the given {@link Location} qualifies as a grave block.
+     *
+     * @param loc the location to check; must not be {@code null} and must have a valid world
+     * @return {@code true} if the block is a player head or player wall head, otherwise {@code false}
+     */
+    private boolean isGraveBlock(Location loc) {
+        if (loc == null) return false;
+
+        Block block = loc.getBlock();
+        Material mat = block.getType();
+
+        if (mat == Material.AIR)
+            return false;
+
+        return mat == Material.valueOf("PLAYER_HEAD") || mat == Material.valueOf("PLAYER_WALL_HEAD");
     }
 }
