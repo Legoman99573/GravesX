@@ -399,9 +399,9 @@ public class Graves extends JavaPlugin {
                 break;
         }
         libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-platform-bukkit", "4.4.1", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
-        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-api", "4.24.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
-        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-minimessage", "4.24.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
-        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-serializer-gson", "4.24.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
+        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-api", "4.26.1", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
+        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-minimessage", "4.26.1", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
+        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-serializer-gson", "4.26.1", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
         libraryLoaderUtil.loadLibrary("com{}github{}puregero", "multilib", "1.2.4", "com{}github{}puregero{}multilib", "com{}ranull{}graves{}libraries{}multilib", false, "https://repo.clojars.org/");
         libraryLoaderUtil.loadLibrary("org{}apache{}commons", "commons-text", "1.14.0", "org{}apache{}commons{}text", "com{}ranull{}graves{}libraries{}commonstext", false);
 
