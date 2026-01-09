@@ -645,10 +645,6 @@ public class EntityDeathListener implements Listener {
         List<Block> ignoredBlockList = new ArrayList<>();
 
         Grave grave = new Grave(UUID.randomUUID());
-        setupGrave(grave, livingEntity, entityName, permissionList);
-        setGraveExperience(grave, event, livingEntity, pde);
-        setupGraveKiller(grave, livingEntity);
-        setupGraveProtection(livingEntity, grave);
 
         GraveCreateEvent modern = new GraveCreateEvent(livingEntity, grave, graveItemStackList, ignoredItemStackList, ignoredBlockList);
 
@@ -711,6 +707,11 @@ public class EntityDeathListener implements Listener {
             }
         }
 
+        setupGrave(modern, grave, livingEntity, entityName, permissionList);
+        setGraveExperience(modern, grave, event, livingEntity, pde);
+        setupGraveKiller(modern, grave, livingEntity);
+        setupGraveProtection(modern, livingEntity, grave);
+
         boolean cancelled = modern.isCancelled() || legacy.isCancelled();
         boolean addon     = modern.isAddon()     || legacy.isAddon();
 
@@ -720,6 +721,24 @@ public class EntityDeathListener implements Listener {
         }
 
         if (!cancelled) {
+            grave.setOwnerType(modern.getOwnerType());
+            grave.setOwnerName(modern.getOwnerName());
+            grave.setOwnerNameDisplay(modern.getOwnerNameDisplay());
+            grave.setOwnerUUID(modern.getOwnerUUID());
+            grave.setPermissionList(modern.getPermissionList());
+            grave.setYaw(modern.getYaw());
+            grave.setPitch(modern.getPitch());
+            grave.setTimeAlive(modern.getTimeAlive());
+            grave.setOwnerTexture(modern.getOwnerTexture());
+            grave.setOwnerTextureSignature(modern.getOwnerTextureSignature());
+            grave.setExperience(modern.getExperience());
+            grave.setKillerName(modern.getKillerName());
+            grave.setKillerNameDisplay(modern.getKillerNameDisplay());
+            grave.setKillerUUID(modern.getKillerUUID());
+            grave.setKillerType(modern.getKillerType());
+            grave.setProtection(modern.getProtection());
+            grave.setTimeProtection(modern.getTimeProtection());
+
             Location placedLocation = placeGrave(
                     event, grave, graveItemStackList, removedItemStackList, location,
                     livingEntity, permissionList, player
@@ -780,38 +799,40 @@ public class EntityDeathListener implements Listener {
     /**
      * Sets up the basic properties of the grave.
      *
+     * @param graveCreateEvent The Grave Create Event that is set up.
      * @param grave         The grave to set up.
      * @param livingEntity  The entity that died.
      * @param entityName    The name of the entity.
      * @param permissionList The list of permissions.
      */
-    private void setupGrave(Grave grave, LivingEntity livingEntity, String entityName, List<String> permissionList) {
-        grave.setOwnerType(livingEntity.getType());
-        grave.setOwnerName(entityName);
-        grave.setOwnerNameDisplay(livingEntity instanceof Player p ? p.getDisplayName() : entityName);
-        grave.setOwnerUUID(livingEntity.getUniqueId());
-        grave.setPermissionList(permissionList);
-        grave.setYaw(livingEntity.getLocation().getYaw());
-        grave.setPitch(livingEntity.getLocation().getPitch());
-        grave.setTimeAlive(plugin.getConfigManager().getConfigSection("grave.time", grave).getInt("grave.time") * 1000L);
+    private void setupGrave(GraveCreateEvent graveCreateEvent, Grave grave, LivingEntity livingEntity, String entityName, List<String> permissionList) {
+        graveCreateEvent.setOwnerType(livingEntity.getType());
+        graveCreateEvent.setOwnerName(entityName);
+        graveCreateEvent.setOwnerNameDisplay(livingEntity instanceof Player p ? p.getDisplayName() : entityName);
+        graveCreateEvent.setOwnerUUID(livingEntity.getUniqueId());
+        graveCreateEvent.setPermissionList(permissionList);
+        graveCreateEvent.setYaw(livingEntity.getLocation().getYaw());
+        graveCreateEvent.setPitch(livingEntity.getLocation().getPitch());
+        graveCreateEvent.setTimeAlive(plugin.getConfigManager().getConfigSection("grave.time", grave).getInt("grave.time") * 1000L);
         if (!plugin.getVersionManager().is_v1_7()) {
             if (plugin.getVersionManager().isPost1_21_9()) {
-                grave.setOwnerTexture(SkinTextureUtil_post_1_21_9.getTexture(livingEntity));
+                graveCreateEvent.setOwnerTexture(SkinTextureUtil_post_1_21_9.getTexture(livingEntity));
             } else {
-                grave.setOwnerTexture(SkinTextureUtil.getTexture(livingEntity));
+                graveCreateEvent.setOwnerTexture(SkinTextureUtil.getTexture(livingEntity));
             }
-            grave.setOwnerTextureSignature(SkinSignatureUtil.getSignature(livingEntity));
+            graveCreateEvent.setOwnerTextureSignature(SkinSignatureUtil.getSignature(livingEntity));
         }
     }
 
     /**
      * Sets the experience for the grave.
      *
+     * @param graveCreateEvent The Grave Create Event that is set up.
      * @param grave        The grave to set the experience for.
      * @param event        The entity death event.
      * @param livingEntity The entity that died.
      */
-    private void setGraveExperience(Grave grave, EntityDeathEvent event, LivingEntity livingEntity, PlayerDeathEvent pde) {
+    private void setGraveExperience(GraveCreateEvent graveCreateEvent, Grave grave, EntityDeathEvent event, LivingEntity livingEntity, PlayerDeathEvent pde) {
         float pct = (float) plugin.getConfigManager().getConfigSection("experience.store", grave).getDouble("experience.store");
         plugin.debugMessage("Experience Percentage for " + grave.getUUID() + ": " + pct, 2);
         int vanillaDrop = event.getDroppedExp();
@@ -820,11 +841,11 @@ public class EntityDeathListener implements Listener {
             if (pct >= 0 && plugin.getPermissionManager().hasGrantedPermission("graves.experience", p)) {
                 int total = ExperienceUtil.getPlayerExperience(p);
                 int stored = ExperienceUtil.getDropPercent(total, pct);
-                grave.setExperience(stored);
+                graveCreateEvent.setExperience(stored);
                 plugin.debugMessage("Set Experience for player grave " + grave.getUUID() + ": " + stored, 2);
             } else {
                 // Either pct < 0 (default behavior) OR no permission: store vanilla drop amount
-                grave.setExperience(vanillaDrop);
+                graveCreateEvent.setExperience(vanillaDrop);
                 plugin.debugMessage("Set Experience for player grave " + grave.getUUID() + ": " + vanillaDrop, 2);
             }
             if (pde != null) {
@@ -833,10 +854,10 @@ public class EntityDeathListener implements Listener {
         } else {
             if (pct >= 0) {
                 int stored = ExperienceUtil.getDropPercent(vanillaDrop, pct);
-                grave.setExperience(stored);
+                graveCreateEvent.setExperience(stored);
                 plugin.debugMessage("Set Experience for non player grave " + grave.getUUID() + ": " + stored, 2);
             } else {
-                grave.setExperience(vanillaDrop);
+                graveCreateEvent.setExperience(vanillaDrop);
                 plugin.debugMessage("Set Experience for default grave " + grave.getUUID() + ": " + vanillaDrop, 2);
             }
         }
@@ -845,36 +866,39 @@ public class EntityDeathListener implements Listener {
     /**
      * Sets up the killer details for the grave.
      *
+     * @param graveCreateEvent The Grave Create Event that is set up.
      * @param grave        The grave to set up.
      * @param livingEntity The entity that died.
      */
-    private void setupGraveKiller(Grave grave, LivingEntity livingEntity) {
+    private void setupGraveKiller(GraveCreateEvent graveCreateEvent, Grave grave, LivingEntity livingEntity) {
         if (livingEntity.getKiller() != null) {
-            grave.setKillerType(EntityType.PLAYER);
-            grave.setKillerName(livingEntity.getKiller().getName());
-            grave.setKillerNameDisplay(livingEntity.getKiller().getDisplayName());
-            grave.setKillerUUID(livingEntity.getKiller().getUniqueId());
+            graveCreateEvent.setKillerType(EntityType.PLAYER);
+            graveCreateEvent.setKillerName(livingEntity.getKiller().getName());
+            graveCreateEvent.setKillerNameDisplay(livingEntity.getKiller().getDisplayName());
+            graveCreateEvent.setKillerUUID(livingEntity.getKiller().getUniqueId());
         } else if (livingEntity.getLastDamageCause() != null) {
             EntityDamageEvent e = livingEntity.getLastDamageCause();
             if (e.getCause() == EntityDamageEvent.DamageCause.ENTITY_ATTACK && e instanceof EntityDamageByEntityEvent by) {
-                grave.setKillerUUID(by.getDamager().getUniqueId());
-                grave.setKillerType(by.getDamager().getType());
-                grave.setKillerName(plugin.getEntityManager().getEntityName(by.getDamager()));
+                graveCreateEvent.setKillerUUID(by.getDamager().getUniqueId());
+                graveCreateEvent.setKillerType(by.getDamager().getType());
+                graveCreateEvent.setKillerName(plugin.getEntityManager().getEntityName(by.getDamager()));
             } else {
-                grave.setKillerUUID(null);
-                grave.setKillerType(null);
-                grave.setKillerName(plugin.getGraveManager().getDamageReason(e.getCause(), grave));
+                graveCreateEvent.setKillerUUID(null);
+                graveCreateEvent.setKillerType(null);
+                graveCreateEvent.setKillerName(plugin.getGraveManager().getDamageReason(e.getCause(), grave));
             }
-            grave.setKillerNameDisplay(grave.getKillerName());
+            graveCreateEvent.setKillerNameDisplay(graveCreateEvent.getKillerName());
         }
     }
 
     /**
      * Sets up the protection details for the grave.
      *
+     * @param graveCreateEvent The Grave Create Event that is set up.
+     * @param livingEntity The entity that died.
      * @param grave The grave to set up.
      */
-    private void setupGraveProtection(LivingEntity livingEntity, Grave grave) {
+    private void setupGraveProtection(GraveCreateEvent graveCreateEvent, LivingEntity livingEntity, Grave grave) {
         if (plugin.getConfigManager().getConfigSection("protection.enabled", grave).getBoolean("protection.enabled")) {
             GraveProtectionCreateEvent modern = new GraveProtectionCreateEvent(livingEntity, grave);
             plugin.getServer().getPluginManager().callEvent(modern);
@@ -884,8 +908,8 @@ public class EntityDeathListener implements Listener {
             plugin.getServer().getPluginManager().callEvent(legacy);
 
             if (!(modern.isCancelled() || modern.isAddon() || legacy.isCancelled() || legacy.isAddon())) {
-                grave.setProtection(true);
-                grave.setTimeProtection(plugin.getConfigManager().getConfigSection("protection.time", grave).getInt("protection.time") * 1000L);
+                graveCreateEvent.setProtection(true);
+                graveCreateEvent.setTimeProtection(plugin.getConfigManager().getConfigSection("protection.time", grave).getInt("protection.time") * 1000L);
             }
         }
     }

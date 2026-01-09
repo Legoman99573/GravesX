@@ -274,77 +274,113 @@ public class GraveCreationAPI {
         Map<Location, BlockData.BlockType> locationMap = new HashMap<>();
         Grave grave = graveManager.createGrave(victim, itemStackList);
 
-        grave.setOwnerType(victim.getType());
-        grave.setOwnerName(victim.getName());
-        grave.setOwnerNameDisplay(victim instanceof Player ? ((Player) victim).getDisplayName() : grave.getOwnerName());
-        grave.setOwnerUUID(victim.getUniqueId());
-        grave.setOwnerTexture(util.skinTexture(victim));
-        grave.setOwnerTextureSignature(util.skinSignature(victim));
-        grave.setPermissionList(null);
-        grave.setYaw(victim.getLocation().getYaw());
-        grave.setPitch(victim.getLocation().getPitch());
-        grave.setExperience(experience);
-        grave.setTimeCreation(System.currentTimeMillis());
-        long truetimeAliveRemaining = timeAliveRemaining > 0 ? timeAliveRemaining : plugin.getConfigManager().getConfigSection("grave.time", grave).getLong("grave.time");
-        grave.setTimeAlive(truetimeAliveRemaining);
-        grave.setTimeAliveRemaining(truetimeAliveRemaining);
-        Location finalLocationDeath = locationDeath != null ? locationDeath : locationManager.getSafeGraveLocation((LivingEntity) victim, victim.getLocation(), grave);
+        long defaultTimeAlive = plugin.getConfigManager().getConfigSection("grave.time", grave).getLong("grave.time");
+        long trueTimeAliveRemaining = timeAliveRemaining > 0 ? timeAliveRemaining : defaultTimeAlive;
 
+        Location defaultLocationDeath = locationDeath != null ? locationDeath : locationManager.getSafeGraveLocation((LivingEntity) victim, victim.getLocation(), grave);
+        GraveCreateEvent createGrave = new GraveCreateEvent(victim, grave, itemStackList, null, null);
+
+        createGrave.setOwnerType(victim.getType());
+        createGrave.setOwnerName(victim.getName());
+        createGrave.setOwnerNameDisplay(victim instanceof Player p ? p.getDisplayName() : victim.getName());
+        createGrave.setOwnerUUID(victim.getUniqueId());
+        createGrave.setOwnerTexture(util.skinTexture(victim));
+        createGrave.setOwnerTextureSignature(util.skinSignature(victim));
+        createGrave.setPermissionList(null);
+        createGrave.setYaw(victim.getLocation().getYaw());
+        createGrave.setPitch(victim.getLocation().getPitch());
+        createGrave.setExperience(experience);
+        createGrave.setTimeAlive(trueTimeAliveRemaining);
+        createGrave.setDeathLocation(defaultLocationDeath);
         if (killer != null) {
-            grave.setKillerType(killerEntityType != null ? killerEntityType : EntityType.PLAYER);
-            grave.setKillerName(killer.getName());
-            grave.setKillerNameDisplay(killer.getCustomName());
-            grave.setKillerUUID(killer.getUniqueId());
+            createGrave.setKillerType(killerEntityType != null ? killerEntityType : killer.getType());
+            createGrave.setKillerName(killer.getName());
+            createGrave.setKillerNameDisplay(killer.getCustomName());
+            createGrave.setKillerUUID(killer.getUniqueId());
         } else {
-            grave.setKillerUUID(victim.getUniqueId());
-            grave.setKillerType(EntityType.PLAYER);
-            EntityDamageEvent.DamageCause finalDamageCause = damageCause != null ? damageCause : EntityDamageEvent.DamageCause.valueOf("KILL");
-            grave.setKillerName(graveManager.getDamageReason(
-                    victim.getLastDamageCause() != null ? victim.getLastDamageCause().getCause() : finalDamageCause, grave));
-            grave.setKillerNameDisplay(grave.getKillerName());
+            createGrave.setKillerUUID(victim.getUniqueId());
+            createGrave.setKillerType(EntityType.PLAYER);
+            EntityDamageEvent.DamageCause finalDamageCause =
+                    (damageCause != null) ? damageCause : EntityDamageEvent.DamageCause.valueOf("KILL");
+            String killerName = graveManager.getDamageReason(
+                    victim.getLastDamageCause() != null
+                            ? victim.getLastDamageCause().getCause()
+                            : finalDamageCause,
+                    grave);
+            createGrave.setKillerName(killerName);
+            createGrave.setKillerNameDisplay(killerName);
         }
-
         if (graveProtection && plugin.getConfigManager().getConfigSection("protection.enabled", grave).getBoolean("protection.enabled")) {
+
             GraveProtectionCreateEvent gp = new GraveProtectionCreateEvent(victim, grave);
             plugin.getServer().getPluginManager().callEvent(gp);
-            grave.setProtection(true);
-            grave.setTimeProtection(graveProtectionTime > 0 ? graveProtectionTime : plugin.getConfigManager().getConfigSection("protection.time", grave).getInt("protection.time") * 1000L);
+
+            if (!gp.isCancelled() && !gp.isAddon()) {
+                createGrave.setProtection(true);
+                long protTime = graveProtectionTime > 0 ? graveProtectionTime : plugin.getConfigManager().getConfigSection("protection.time", grave).getInt("protection.time") * 1000L;
+                createGrave.setTimeProtection(protTime);
+            }
+        } else {
+            createGrave.setProtection(false);
+            createGrave.setTimeProtection(0L);
+        }
+
+        Bukkit.getPluginManager().callEvent(createGrave);
+        if (createGrave.isCancelled()) {
+            return;
         }
 
         try {
-            GraveCreateEvent createGrave = new GraveCreateEvent(victim, grave);
-            Bukkit.getPluginManager().callEvent(createGrave);
-            if (createGrave.isCancelled()) return;
+            grave.setOwnerType(createGrave.getOwnerType());
+            grave.setOwnerName(createGrave.getOwnerName());
+            grave.setOwnerNameDisplay(createGrave.getOwnerNameDisplay());
+            grave.setOwnerUUID(createGrave.getOwnerUUID());
+            grave.setOwnerTexture(createGrave.getOwnerTexture());
+            grave.setOwnerTextureSignature(createGrave.getOwnerTextureSignature());
+            grave.setPermissionList(createGrave.getPermissionList());
+            grave.setYaw(createGrave.getYaw());
+            grave.setPitch(createGrave.getPitch());
+            grave.setExperience(createGrave.getExperience());
+            grave.setTimeCreation(System.currentTimeMillis());
+
+            long finalTimeAlive = createGrave.getTimeAlive() > 0 ? createGrave.getTimeAlive() : trueTimeAliveRemaining;
+            grave.setTimeAlive(finalTimeAlive);
+            grave.setTimeAliveRemaining(finalTimeAlive);
+            grave.setKillerType(createGrave.getKillerType());
+            grave.setKillerName(createGrave.getKillerName());
+            grave.setKillerNameDisplay(createGrave.getKillerNameDisplay());
+            grave.setKillerUUID(createGrave.getKillerUUID());
+            grave.setProtection(createGrave.getProtection());
+            grave.setTimeProtection(createGrave.getTimeProtection());
+            Location finalLocationDeath = createGrave.getLocationDeath() != null ? createGrave.getLocationDeath() : defaultLocationDeath;
 
             locationMap.put(finalLocationDeath, BlockData.BlockType.DEATH);
-
             cacheManager.getGraveMap().put(grave.getUUID(), grave);
             grave.setLocationDeath(finalLocationDeath);
-            grave.setInventory(graveManager.getGraveInventory(
-                    grave, (LivingEntity) victim, itemStackList, getRemovedItemStacks((LivingEntity) victim), null));
-            grave.setEquipmentMap(equipmentMap != null ? equipmentMap :
-                    (!versionManager.is_v1_7() ? entityManager.getEquipmentMap((LivingEntity) victim, grave) : new HashMap<>()));
+            grave.setInventory(graveManager.getGraveInventory(grave, (LivingEntity) victim, itemStackList, getRemovedItemStacks((LivingEntity) victim), null));
+            grave.setEquipmentMap(equipmentMap != null ? equipmentMap : (!versionManager.is_v1_7() ? entityManager.getEquipmentMap((LivingEntity) victim, grave) : new HashMap<>()));
+
             dataManager.addGrave(grave);
 
-            if (victim instanceof Player) {
-                Player player = (Player) victim;
-                if (plugin.getConfigManager().getConfigSection("noteblockapi.enabled", grave).getBoolean("noteblockapi.enabled")
-                        && plugin.getIntegrationManager().hasNoteBlockAPI()) {
+            if (victim instanceof Player player) {
+                if (plugin.getConfigManager().getConfigSection("noteblockapi.enabled", grave).getBoolean("noteblockapi.enabled") && plugin.getIntegrationManager().hasNoteBlockAPI()) {
                     String deathReason = victim.getLastDamageCause() != null
                             ? victim.getLastDamageCause().getCause().name()
                             : "UNKNOWN";
                     String nbsSound = null;
-                    for (String cause : plugin.getConfigManager().getConfigSection("noteblockapi.death-causes", grave)
-                            .getStringList("noteblockapi.death-causes")) {
+
+                    for (String cause : plugin.getConfigManager().getConfigSection("noteblockapi.death-causes", grave).getStringList("noteblockapi.death-causes")) {
                         String[] parts = cause.split(": ");
                         if (parts.length == 2 && parts[0].equalsIgnoreCase(deathReason)) {
                             nbsSound = parts[1].trim();
                             break;
                         }
                     }
+
                     if (nbsSound == null) {
                         nbsSound = plugin.getConfigManager().getConfigSection("noteblockapi.nbs-sound", grave).getString("noteblockapi.nbs-sound");
                     }
+
                     if (plugin.getConfigManager().getConfigSection("noteblockapi.play-locally", grave).getBoolean("noteblockapi.play-locally")) {
                         plugin.getIntegrationManager().getNoteBlockAPI().playSongForPlayer(player, nbsSound);
                     } else {
