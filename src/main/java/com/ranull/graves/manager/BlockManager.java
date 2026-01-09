@@ -236,8 +236,6 @@ public class BlockManager {
                 if (material != null) {
                     location.getBlock().setType(material);
                 }
-            } else {
-                location.getBlock().setType(Material.AIR);
             }
 
             String raw = blockData.getReplaceData();
