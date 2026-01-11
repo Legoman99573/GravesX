@@ -34,7 +34,9 @@ public final class KeepInventoryDetector {
         } catch (Throwable t) {
             installed = false;
             plugin.getLogger().warning("[KeepInventoryDetector] Install failed: " + t.getClass().getSimpleName());
-            try { plugin.logStackTrace(t instanceof Exception ? (Exception) t : new Exception(t)); } catch (Throwable ignored) {}
+            try {
+                plugin.logStackTrace(t instanceof Exception ? (Exception) t : new Exception(t));
+            } catch (Throwable ignored) {}
         }
     }
 
@@ -114,7 +116,7 @@ public final class KeepInventoryDetector {
         for (World w : Bukkit.getWorlds()) {
             if (isKeepInventoryGameruleTrue(w)) {
                 plugin.debugMessage("[KeepInventoryDetector] World '" + w.getName()
-                        + "' has Keep Inventory Gamerule enabled. Graves will not spawn in this world without using a bypass permission.",2);
+                        + "' has Keep Inventory Gamerule enabled. Graves will not spawn in this world without using a bypass permission.", 2);
             }
         }
     }
@@ -144,24 +146,62 @@ public final class KeepInventoryDetector {
 
         @Override
         public void execute(@NotNull Listener l, @NotNull Event e) throws EventException {
-            if (!(e instanceof PlayerDeathEvent)) {
+            if (!(e instanceof PlayerDeathEvent pd)) {
                 delegate.execute(l, e);
                 return;
             }
-            PlayerDeathEvent pd = (PlayerDeathEvent) e;
 
-            boolean before = safeGetKeep(pd, false);
+            boolean beforeKeepInventory = safeGetKeepInventory(pd, false);
+            boolean beforeKeepLevel = safeGetKeepLevel(pd, false);
+
             delegate.execute(l, e);
-            boolean after = safeGetKeep(pd, before);
 
-            if (!before && after) {
-                plugin.debugMessage("[KeepInventoryDetector] Keep Inventory was allowed by plugin "
-                        + owner.getName() + " v." + owner.getDescription().getVersion() + " with priority " + priority + ". Graves will not spawn in this world without using our keepInventory bypass permission or editing " + owner.getName() + "'s configuration. If there is no way to disable keepInventory through configuration or permission, contact " + owner.getName()  + "'s plugin author(s) to suggest a configuration option or permission.", 2);
+            boolean afterKeepInventory = safeGetKeepInventory(pd, beforeKeepInventory);
+            boolean afterKeepLevel = safeGetKeepLevel(pd, beforeKeepLevel);
+
+            if (!beforeKeepInventory && afterKeepInventory) {
+                plugin.debugMessage(
+                        "[KeepInventoryDetector] Keep Inventory was allowed by plugin "
+                                + owner.getName() + " v." + owner.getDescription().getVersion()
+                                + " with priority " + priority
+                                + ". Graves will not spawn in this world without using our keepInventory bypass permission or editing "
+                                + owner.getName()
+                                + "'s configuration. If there is no way to disable keepInventory through configuration or permission, "
+                                + "contact " + owner.getName()
+                                + "'s plugin author(s) to suggest a configuration option or permission.",
+                        2
+                );
+            }
+
+            if (!beforeKeepLevel && afterKeepLevel) {
+                plugin.debugMessage(
+                        "[KeepInventoryDetector] Keep Experience Level was allowed by plugin "
+                                + owner.getName() + " v." + owner.getDescription().getVersion()
+                                + " with priority " + priority
+                                + ". Experience levels will not be dropped for Graves while this is enabled, unless using a bypass permission "
+                                + "or editing " + owner.getName()
+                                + "'s configuration. If there is no way to disable keep experience through configuration or permission, "
+                                + "contact " + owner.getName()
+                                + "'s plugin author(s) to suggest a configuration option or permission.",
+                        2
+                );
             }
         }
     }
 
-    private static boolean safeGetKeep(PlayerDeathEvent e, boolean fallback) {
-        try { return e.getKeepInventory(); } catch (Throwable ignored) { return fallback; }
+    private static boolean safeGetKeepInventory(PlayerDeathEvent e, boolean fallback) {
+        try {
+            return e.getKeepInventory();
+        } catch (Throwable ignored) {
+            return fallback;
+        }
+    }
+
+    private static boolean safeGetKeepLevel(PlayerDeathEvent e, boolean fallback) {
+        try {
+            return e.getKeepLevel();
+        } catch (Throwable ignored) {
+            return fallback;
+        }
     }
 }
