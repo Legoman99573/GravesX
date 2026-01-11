@@ -47,7 +47,7 @@ public final class ModuleManager {
      */
     private GravesXModuleController.LoadPhase currentPhase = GravesXModuleController.LoadPhase.STARTUP;
 
-    private enum InfoFlag {
+    public enum InfoFlag {
         FAILED_PREVIOUSLY,
         PENDING_PHASE,
         PENDING_PLUGINS,
@@ -573,11 +573,52 @@ public final class ModuleManager {
      * @param name Module name.
      * @return True if already enabled or enabled successfully.
      */
-    private boolean enable(String name) {
+    public boolean enable(String name) {
         LoadedModule lm = loaded.get(name);
         if (lm == null) {
             return false;
         }
+        return internalEnable(lm);
+    }
+
+    /**
+     * Enables a specific module by its class (GravesXModule extender).
+     *
+     * @param moduleClass Class of the module to enable.
+     * @return True if already enabled or enabled successfully.
+     */
+    public boolean enable(Class<? extends GravesXModule> moduleClass) {
+        LoadedModule lm = findByClass(moduleClass);
+        if (lm == null) {
+            return false;
+        }
+        return internalEnable(lm);
+    }
+
+    /**
+     * Enables a specific module by its instance (GravesXModule extender).
+     *
+     * @param module GravesXModule instance.
+     * @return True if already enabled or enabled successfully.
+     */
+    public boolean enable(GravesXModule module) {
+        if (module == null) return false;
+        LoadedModule lm = findByClass(module.getClass());
+        if (lm == null) {
+            return false;
+        }
+        return internalEnable(lm);
+    }
+
+    /**
+     * Shared internal enable logic, operating on a LoadedModule.
+     *
+     * @param lm loaded module bundle
+     * @return true if enabled or already enabled; false otherwise
+     */
+    private boolean internalEnable(LoadedModule lm) {
+        String name = lm.info.name();
+
         if (lm.failed) {
             info(lm.info, "Not enabling " + name + " because it previously failed to enable and was disabled.");
             return false;
@@ -598,9 +639,45 @@ public final class ModuleManager {
      * @param name Module name.
      * @return True if disabled, false if not found.
      */
-    private boolean disable(String name) {
+    public boolean disable(String name) {
         LoadedModule lm = loaded.get(name);
         if (lm == null) return false;
+        return internalDisable(lm);
+    }
+
+    /**
+     * Disables and unloads a specific module by its class (GravesXModule extender).
+     *
+     * @param moduleClass Class of the module to disable.
+     * @return True if disabled, false if not found.
+     */
+    public boolean disable(Class<? extends GravesXModule> moduleClass) {
+        LoadedModule lm = findByClass(moduleClass);
+        if (lm == null) return false;
+        return internalDisable(lm);
+    }
+
+    /**
+     * Disables and unloads a specific module by its instance (GravesXModule extender).
+     *
+     * @param module GravesXModule instance.
+     * @return True if disabled, false if not found.
+     */
+    public boolean disable(GravesXModule module) {
+        if (module == null) return false;
+        LoadedModule lm = findByClass(module.getClass());
+        if (lm == null) return false;
+        return internalDisable(lm);
+    }
+
+    /**
+     * Shared internal disable logic, operating on a LoadedModule.
+     *
+     * @param lm loaded module bundle
+     * @return true if disabled; false otherwise
+     */
+    private boolean internalDisable(LoadedModule lm) {
+        String name = lm.info.name();
         info(lm.info, "Disabling Module " + name);
 
         try { lm.context._internalPreDisable(); } catch (Throwable ignored) {}
@@ -829,6 +906,17 @@ public final class ModuleManager {
             if (p != null && !p.isEnabled()) inactive.add(req);
         }
         return inactive;
+    }
+
+    /** Finds a loaded module by its GravesXModule implementation class. */
+    private LoadedModule findByClass(Class<? extends GravesXModule> moduleClass) {
+        if (moduleClass == null) return null;
+        for (LoadedModule lm : loaded.values()) {
+            if (lm.instance != null && lm.instance.getClass().equals(moduleClass)) {
+                return lm;
+            }
+        }
+        return null;
     }
 
     /** Case-insensitive match by module.yml name, simple class name, or FQCN. */
