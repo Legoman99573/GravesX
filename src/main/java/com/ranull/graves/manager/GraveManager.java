@@ -964,8 +964,8 @@ public class GraveManager {
                     plugin.getIntegrationManager().getFancyNpcs().removeCorpse(grave);
                 }
 
-                if (finalAnchor.getBlock().getType() == Material.valueOf(plugin.getConfigManager().getConfigSection("block.material", grave).getString("block.material", "PLAYER_HEAD"))) {
-                    finalAnchor.getBlock().setType(Material.valueOf("AIR"));
+                if (grave.getLocationDeath().getBlock().getType() == Material.valueOf(plugin.getConfigManager().getConfigSection("block.material", grave).getString("block.material", "PLAYER_HEAD"))) {
+                    grave.getLocationDeath().getBlock().setType(Material.valueOf("AIR"));
                 }
 
                 plugin.getCacheManager().getGraveMap().remove(grave.getUUID());
@@ -1713,6 +1713,9 @@ public class GraveManager {
             try {
                 dropGraveItems(anchor, grave);
                 dropGraveExperience(anchor, grave);
+                if (grave.getLocationDeath().getBlock().getType() == Material.valueOf(plugin.getConfigManager().getConfigSection("block.material", grave).getString("block.material", "PLAYER_HEAD"))) {
+                    grave.getLocationDeath().getBlock().setType(Material.valueOf("AIR"));
+                }
             } catch (Throwable t) {
                 plugin.debugMessage("Error while dropping items/XP for grave " + grave.getUUID() + ": " + t.getMessage(), 2);
                 plugin.logStackTrace(t);

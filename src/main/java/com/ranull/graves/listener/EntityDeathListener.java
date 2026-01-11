@@ -850,6 +850,7 @@ public class EntityDeathListener implements Listener {
                         playerDisplay = "Unknown";
                     }
                 }
+                pde.setNewExp(event.getDroppedExp());
                 pde.setKeepLevel(true);
                 plugin.debugMessage("Set Experience not applied to " + grave.getUUID() + " because " + playerDisplay  + " has keep experience.", 2);
             } else if (pct >= 0 && plugin.getPermissionManager().hasGrantedPermission("graves.experience", p.getPlayer())) {
