@@ -321,4 +321,14 @@ public class StringUtil {
         }
         return string;
     }
+
+    /**
+     * Determines if a string is null or empty.
+     *
+     * @param string the string
+     * @return {@return true} if empty. {@return false} if there is a string.
+     */
+    public static boolean isStringEmpty(String string) {
+        return string == null || string.isEmpty();
+    }
 }

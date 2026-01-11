@@ -659,13 +659,20 @@ public class EntityManager extends EntityDataManager {
         if (entity instanceof Player player) {
             String originalConfigString = string;
             if (grave != null) {
+                if (StringUtil.isStringEmpty(plugin.getConfigManager().getConfigSection(string, grave).getString(originalConfigString))) {
+                    plugin.debugMessage(string + " was either null or empty. Not sending message out.", 2);
+                    return;
+                }
                 string = plugin.getConfigManager().getConfigSection(string, grave).getString(string);
             } else {
+                if (StringUtil.isStringEmpty(plugin.getConfigManager().getConfigSection(string, entity.getType(), permissionList).getString(originalConfigString))) {
+                    plugin.debugMessage(string + " was either null or empty. Not sending message out.", 2);
+                    return;
+                }
                 string = plugin.getConfigManager().getConfigSection(string, entity.getType(), permissionList).getString(string);
             }
 
-            String prefix = plugin.getConfigManager().getConfigSection("message.prefix", entity.getType(), permissionList)
-                    .getString("message.prefix");
+            String prefix = plugin.getConfigManager().getConfigSection("message.prefix", entity.getType(), permissionList).getString("message.prefix");
 
             if (string != null && !string.isEmpty()) {
                 if (prefix != null && !prefix.isEmpty()) {
