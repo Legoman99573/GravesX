@@ -741,7 +741,7 @@ public class EntityDeathListener implements Listener {
 
             Location placedLocation = placeGrave(
                     event, grave, graveItemStackList, removedItemStackList, location,
-                    livingEntity, permissionList, player
+                    livingEntity, permissionList, player, modern
             );
 
             plugin.getServer().getPluginManager().callEvent(
@@ -947,7 +947,7 @@ public class EntityDeathListener implements Listener {
                                 Location location,
                                 LivingEntity livingEntity,
                                 List<String> permissionList,
-                                Player player) {
+                                Player player, GraveCreateEvent graveCreateEvent) {
 
         Map<Location, BlockData.BlockType> locationMap = new HashMap<>();
         if (plugin.getConfigManager().getConfigSection("placement.safe-location", grave).getBoolean("placement.safe-location", true)) {
@@ -959,7 +959,7 @@ public class EntityDeathListener implements Listener {
                 location = plugin.getLocationManager().getNewLocationIfCachedGraveExists(livingEntity, location, grave);
             }
 
-            grave.setLocationDeath(safeLocation != null ? LocationUtil.roundLocation(safeLocation) : LocationUtil.roundLocation(location));
+            graveCreateEvent.setDeathLocation(safeLocation != null ? LocationUtil.roundLocation(safeLocation) : LocationUtil.roundLocation(location));
         } else {
             event.setDroppedExp(0);
 
@@ -973,8 +973,10 @@ public class EntityDeathListener implements Listener {
                 return null;
             }
 
-            grave.setLocationDeath(LocationUtil.roundLocation(location));
+            graveCreateEvent.setDeathLocation(LocationUtil.roundLocation(location));
         }
+
+        grave.setLocationDeath(graveCreateEvent.getLocationDeath());
 
         grave.getLocationDeath().setYaw(grave.getYaw());
         grave.getLocationDeath().setPitch(grave.getPitch());
