@@ -711,6 +711,36 @@ public class EntityDeathListener implements Listener {
         setGraveExperience(modern, grave, event, livingEntity, pde);
         setupGraveKiller(modern, grave, livingEntity);
         setupGraveProtection(modern, livingEntity, grave);
+        if (plugin.getConfigManager().getConfigSection("placement.safe-location", grave).getBoolean("placement.safe-location", true)) {
+            Location safeLocation = plugin.getLocationManager().getSafeGraveLocation(livingEntity, location, grave);
+            event.setDroppedExp(0);
+            if (safeLocation != null && plugin.getLocationManager().hasCachedGraveAt(safeLocation)) {
+                safeLocation = plugin.getLocationManager().getNewLocationIfCachedGraveExists(livingEntity, location, grave);
+            } else {
+                location = plugin.getLocationManager().getNewLocationIfCachedGraveExists(livingEntity, location, grave);
+            }
+
+            if (safeLocation == null) {
+                handleFailedGravePlacement(event, grave, location, livingEntity, removedItemStackList, graveItemStackList);
+                return;
+            }
+
+            modern.setDeathLocation(LocationUtil.roundLocation(safeLocation));
+        } else {
+            event.setDroppedExp(0);
+
+            if (plugin.getLocationManager().hasCachedGraveAt(location)) {
+                location = plugin.getLocationManager().getNewLocationIfCachedGraveExists(livingEntity, location, grave);
+            }
+
+            World world = location.getWorld();
+            if (world != null && location.getY() < world.getMinHeight()) {
+                handleFailedGravePlacement(event, grave, location, livingEntity, removedItemStackList, graveItemStackList);
+                return;
+            }
+        }
+
+        modern.setDeathLocation(LocationUtil.roundLocation(location));
 
         boolean cancelled = modern.isCancelled() || legacy.isCancelled();
         boolean addon     = modern.isAddon()     || legacy.isAddon();
@@ -738,10 +768,11 @@ public class EntityDeathListener implements Listener {
             grave.setKillerType(modern.getKillerType());
             grave.setProtection(modern.getProtection());
             grave.setTimeProtection(modern.getTimeProtection());
+            grave.setLocationDeath(modern.getLocationDeath());
 
             Location placedLocation = placeGrave(
                     event, grave, graveItemStackList, removedItemStackList, location,
-                    livingEntity, permissionList, player, modern
+                    livingEntity, permissionList, player
             );
 
             plugin.getServer().getPluginManager().callEvent(
@@ -947,36 +978,9 @@ public class EntityDeathListener implements Listener {
                                 Location location,
                                 LivingEntity livingEntity,
                                 List<String> permissionList,
-                                Player player, GraveCreateEvent graveCreateEvent) {
+                                Player player) {
 
         Map<Location, BlockData.BlockType> locationMap = new HashMap<>();
-        if (plugin.getConfigManager().getConfigSection("placement.safe-location", grave).getBoolean("placement.safe-location", true)) {
-            Location safeLocation = plugin.getLocationManager().getSafeGraveLocation(livingEntity, location, grave);
-            event.setDroppedExp(0);
-            if (safeLocation != null && plugin.getLocationManager().hasCachedGraveAt(safeLocation)) {
-                safeLocation = plugin.getLocationManager().getNewLocationIfCachedGraveExists(livingEntity, location, grave);
-            } else {
-                location = plugin.getLocationManager().getNewLocationIfCachedGraveExists(livingEntity, location, grave);
-            }
-
-            graveCreateEvent.setDeathLocation(safeLocation != null ? LocationUtil.roundLocation(safeLocation) : LocationUtil.roundLocation(location));
-        } else {
-            event.setDroppedExp(0);
-
-            if (plugin.getLocationManager().hasCachedGraveAt(location)) {
-                location = plugin.getLocationManager().getNewLocationIfCachedGraveExists(livingEntity, location, grave);
-            }
-
-            World world = location.getWorld();
-            if (world != null && location.getY() < world.getMinHeight()) {
-                handleFailedGravePlacement(event, grave, location, livingEntity, removedItemStackList, graveItemStackList);
-                return null;
-            }
-
-            graveCreateEvent.setDeathLocation(LocationUtil.roundLocation(location));
-        }
-
-        grave.setLocationDeath(graveCreateEvent.getLocationDeath());
 
         grave.getLocationDeath().setYaw(grave.getYaw());
         grave.getLocationDeath().setPitch(grave.getPitch());
