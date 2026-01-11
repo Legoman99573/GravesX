@@ -496,10 +496,20 @@ public final class ModuleContext {
      *
      * @param service  Service interface class.
      * @param provider Service implementation instance.
+     */
+    public <T> void registerService(Class<T> service, T provider) {
+        registerService(service, provider, ServicePriority.Normal);
+    }
+
+    /**
+     * Registers a Bukkit service and tracks it for automatic unregister.
+     *
+     * @param service  Service interface class.
+     * @param provider Service implementation instance.
      * @param prio     Registration priority.
      */
     public <T> void registerService(Class<T> service, T provider, ServicePriority prio) {
-        org.bukkit.Bukkit.getServicesManager().register(service, provider, plugin, prio);
+        plugin.getServer().getServicesManager().register(service, provider, plugin, prio);
         services.add(new ServiceReg(service, provider));
     }
 
@@ -557,7 +567,7 @@ public final class ModuleContext {
 
         for (ServiceReg reg : snapshot(services)) {
             try {
-                Bukkit.getServicesManager().unregister(reg.type, reg.provider);
+                plugin.getServer().getServicesManager().unregister(reg.type, reg.provider);
             } catch (Throwable ignored) {}
         }
         services.clear();
