@@ -126,6 +126,80 @@ public final class ModuleContext {
     }
 
     /**
+     * Opens an embedded resource from the module JAR using the module class loader.
+     *
+     * @param path resource path inside the module JAR
+     * @return input stream for the resource, or {@code null} if not found.
+     */
+    public InputStream getResource(String path) {
+        Objects.requireNonNull(path, "path");
+        return moduleClassLoader.getResourceAsStream(path);
+    }
+
+    /**
+     * Opens an embedded text resource as UTF-8.
+     *
+     * @param path resource path inside the module JAR
+     * @return reader for the resource, or {@code null} if not found.
+     */
+    public Reader getTextResource(String path) {
+        InputStream in = getResource(path);
+        return (in == null ? null : new InputStreamReader(in, StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Resolves a file under this module's data folder.
+     *
+     * @param relativePath path relative to {@link #getDataFolder()}
+     * @return resolved file
+     */
+    public File resolveFile(String relativePath) {
+        Objects.requireNonNull(relativePath, "relativePath");
+        return new File(dataFolder, relativePath);
+    }
+
+    /**
+     * Ensures a subfolder exists under the module data folder and returns it.
+     *
+     * @param name subfolder name (e.g. "languages", "cache")
+     * @return the subfolder
+     */
+    public File ensureSubfolder(String name) {
+        Objects.requireNonNull(name, "name");
+        File f = new File(dataFolder, name);
+        if (!f.exists() && !f.mkdirs()) {
+            logger.warning("[Modules] Could not create subfolder '" + name + "' for " + moduleName + " at " + f.getPath());
+        }
+        return f;
+    }
+
+    /**
+     * Loads a YAML file from the module data folder.
+     *
+     * @param relativePath path relative to data folder (e.g. "languages/en_us.yml")
+     */
+    public YamlConfiguration loadYaml(String relativePath) {
+        File file = resolveFile(relativePath);
+        return YamlConfiguration.loadConfiguration(file);
+    }
+
+    /**
+     * Saves a YAML configuration to the module data folder.
+     *
+     * @param relativePath path relative to data folder
+     * @param yaml         configuration to save
+     */
+    public void saveYaml(String relativePath, YamlConfiguration yaml) {
+        Objects.requireNonNull(yaml, "yaml");
+        File file = resolveFile(relativePath);
+        try {
+            yaml.save(file);
+        } catch (IOException e) {
+            logger.warning("[Modules] Failed to save YAML '" + relativePath + "' for " + moduleName + ": " + e.getMessage());
+        }
+    }
+
+    /**
      * Whether this module declares Folia support in {@code module.yml} via {@code supportsFolia: true}.
      *
      * <p>This is a convenience that forwards to the underlying {@link GravesXModuleDescriptor}

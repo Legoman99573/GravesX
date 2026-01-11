@@ -47,6 +47,14 @@ public final class ModuleManager {
      */
     private GravesXModuleController.LoadPhase currentPhase = GravesXModuleController.LoadPhase.STARTUP;
 
+    private enum InfoFlag {
+        FAILED_PREVIOUSLY,
+        PENDING_PHASE,
+        PENDING_PLUGINS,
+        PENDING_MODULES,
+        ENABLED
+    }
+
     /**
      * Holds a loaded module instance and its metadata.
      */
@@ -67,6 +75,9 @@ public final class ModuleManager {
          */
         public boolean failed;
 
+        /** Info messages that have already been logged for this module. */
+        public EnumSet<InfoFlag> infoFlags = EnumSet.noneOf(InfoFlag.class);
+
         /**
          * Creates a loaded module bundle.
          *
@@ -82,6 +93,7 @@ public final class ModuleManager {
             this.context = ctx;
         }
     }
+
 
     /**
      * Read-only adapter that exposes a module's {@code module.yml} metadata
@@ -658,16 +670,18 @@ public final class ModuleManager {
      */
     private boolean attemptEnable(LoadedModule lm) {
         if (lm.failed) {
-            info(lm.info, lm.info.name() + " will not be enabled because it previously failed.");
+            infoOnce(lm, InfoFlag.FAILED_PREVIOUSLY,
+                    lm.info.name() + " will not be enabled because it previously failed.");
             return false;
         }
 
         // Phase gate: do not enable modules earlier than their declared phase.
         if (!shouldAttemptInCurrentPhase(lm)) {
             pending.add(lm.info.name());
-            info(lm.info, "Pending " + lm.info.name() + " (waiting for load phase: "
-                    + (lm.info.loadPhase() != null ? lm.info.loadPhase() : GravesXModuleController.LoadPhase.COMPLETED)
-                    + ", current phase: " + currentPhase + ")");
+            infoOnce(lm, InfoFlag.PENDING_PHASE,
+                    "Pending " + lm.info.name() + " (waiting for load phase: "
+                            + (lm.info.loadPhase() != null ? lm.info.loadPhase() : GravesXModuleController.LoadPhase.COMPLETED)
+                            + ", current phase: " + currentPhase + ")");
             return false;
         }
 
@@ -682,8 +696,9 @@ public final class ModuleManager {
         List<String> inactivePlugins = inactiveRequiredPlugins(lm.info);
         if (!inactivePlugins.isEmpty()) {
             pending.add(lm.info.name());
-            info(lm.info, "Pending " + lm.info.name() + " (waiting for required plugins to enable: "
-                    + String.join(", ", inactivePlugins) + ")");
+            infoOnce(lm, InfoFlag.PENDING_PLUGINS,
+                    "Pending " + lm.info.name() + " (waiting for required plugins to enable: "
+                            + String.join(", ", inactivePlugins) + ")");
             warnPostworldPendingRecommendation(lm.info, "plugins", inactivePlugins);
             return false;
         }
@@ -696,7 +711,8 @@ public final class ModuleManager {
 
         if (!missingMods.isEmpty()) {
             pending.add(lm.info.name());
-            info(lm.info, "Pending " + lm.info.name() + " (waiting for modules: " + String.join(", ", missingMods) + ")");
+            infoOnce(lm, InfoFlag.PENDING_MODULES,
+                    "Pending " + lm.info.name() + " (waiting for modules: " + String.join(", ", missingMods) + ")");
             warnPostworldPendingRecommendation(lm.info, "modules", missingMods);
             return false;
         }
@@ -724,7 +740,7 @@ public final class ModuleManager {
                 disable(lm.info.name());
                 return false;
             }
-            info(lm.info, "Enabled Module " + lm.info.name());
+            infoOnce(lm, InfoFlag.ENABLED, "Enabled Module " + lm.info.name());
             return true;
         } catch (Throwable t) {
             lm.failed = true;
@@ -829,6 +845,19 @@ public final class ModuleManager {
             if (norm(simple).equals(k) || norm(fqcn).equals(k)) return lm;
         }
         return null;
+    }
+
+    /**
+     * Log an info message for the given module only once per logical flag.
+     *
+     * @param lm      loaded module
+     * @param flag    logical bucket for this message
+     * @param message message to log
+     */
+    private void infoOnce(LoadedModule lm, InfoFlag flag, String message) {
+        if (lm.infoFlags.add(flag)) {
+            info(lm.info, message);
+        }
     }
 
     private static String norm(String s) {
