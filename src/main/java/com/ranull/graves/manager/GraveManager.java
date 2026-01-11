@@ -964,6 +964,10 @@ public class GraveManager {
                     plugin.getIntegrationManager().getFancyNpcs().removeCorpse(grave);
                 }
 
+                if (finalAnchor.getBlock().getType() == Material.valueOf(plugin.getConfigManager().getConfigSection("block.material", grave).getString("block.material", "PLAYER_HEAD"))) {
+                    finalAnchor.getBlock().setType(Material.valueOf("AIR"));
+                }
+
                 plugin.getCacheManager().getGraveMap().remove(grave.getUUID());
                 plugin.debugMessage("Grave " + grave.getUUID() + " removed from cache", 1);
             } catch (Throwable t) {
