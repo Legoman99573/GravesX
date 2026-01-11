@@ -33,7 +33,7 @@ public class ProjectileHitListener implements Listener {
         Block block = event.getHitBlock();
         if (block == null) return;
 
-        Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
+        Grave grave = plugin.getCacheManager().getGrave(block);
         if (grave == null) return;
         if (!plugin.getConfigManager().getConfigSection("drop.projectile.enabled", grave).getBoolean("drop.projectile.enabled")) return;
 

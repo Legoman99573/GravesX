@@ -86,7 +86,7 @@ public class InventoryClickListener implements Listener {
         if (item.getType() == Material.valueOf(String.valueOf(plugin.getVersionManager().getMaterialForVersion("RECOVERY_COMPASS")))) {
             UUID graveUUID = getGraveUUIDFromItemStack(item);
             if (graveUUID != null) {
-                Grave grave = plugin.getCacheManager().getGraveMap().get(graveUUID);
+                Grave grave = plugin.getCacheManager().getGrave(graveUUID);
                 if (grave != null) {
                     String compassName = plugin.getIntegrationManager().hasMiniMessage()
                             ? MiniMessage.parseString(StringUtil.parseString("&f" + plugin.getConfigManager().getConfigSection("compass.name", grave).getString("compass.name"), grave, plugin))
@@ -121,7 +121,7 @@ public class InventoryClickListener implements Listener {
         if (item.getType() == Material.valueOf(String.valueOf(plugin.getVersionManager().getMaterialForVersion("RECOVERY_COMPASS")))) {
             UUID graveUUID = getGraveUUIDFromItemStack(item);
             if (graveUUID != null) {
-                Grave grave = plugin.getCacheManager().getGraveMap().get(graveUUID);
+                Grave grave = plugin.getCacheManager().getGrave(graveUUID);
                 if (grave != null) {
                     String compassName = plugin.getIntegrationManager().hasMiniMessage()
                             ? MiniMessage.parseString(StringUtil.parseString("&f" + plugin.getConfigManager().getConfigSection("compass.name", grave).getString("compass.name"), grave, plugin))

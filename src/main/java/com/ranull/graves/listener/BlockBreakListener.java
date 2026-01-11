@@ -46,7 +46,7 @@ public class BlockBreakListener implements Listener {
     public void onBlockBreak(BlockBreakEvent event) {
         Player player = event.getPlayer();
         Block block = event.getBlock();
-        Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
+        Grave grave = plugin.getCacheManager().getGrave(block);
 
         if (grave != null) {
             if (isGraveBreakAllowed(grave)) {
@@ -61,7 +61,6 @@ public class BlockBreakListener implements Listener {
             }
         } else if (plugin.getGraveManager().isNearGrave(block.getLocation(), player)) {
             event.setCancelled(true);
-            plugin.getEntityManager().sendMessage("message.grave-protection-break-deny", player);
         }
     }
 

@@ -138,7 +138,7 @@ public class PlayerMoveListener implements Listener {
 
         if (blockData == null) return;
 
-        Grave grave = plugin.getCacheManager().getGraveMap().get(blockData.getGraveUUID());
+        Grave grave = plugin.getCacheManager().getGrave(blockData.getGraveUUID());
         if (grave == null) return;
 
         if (plugin.getConfigManager().getConfigSection("block.walk-over", grave).getBoolean("block.walk-over")

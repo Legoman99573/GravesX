@@ -32,14 +32,12 @@ public class BlockPlaceListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockPlace(BlockPlaceEvent event) {
         Block block = event.getBlock();
-        Player player = event.getPlayer();
-        Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
+        Grave grave = plugin.getCacheManager().getGrave(block);
 
         if (isGraveBlock(grave) || isTokenItem(event)) {
             event.setCancelled(true);
         } else if (plugin.getGraveManager().isNearGrave(block.getLocation())) {
             event.setCancelled(true);
-            plugin.getEntityManager().sendMessage("message.grave-protection-build-deny", player);
         }
     }
 

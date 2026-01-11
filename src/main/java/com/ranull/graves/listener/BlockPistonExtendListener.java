@@ -44,7 +44,7 @@ public class BlockPistonExtendListener implements Listener {
         for (Block pushedBlock : blocks) {
             Block destination = pushedBlock.getRelative(direction);
 
-            Grave grave = plugin.getBlockManager().getGraveFromBlock(destination);
+            Grave grave = plugin.getCacheManager().getGrave(destination);
             if (grave != null) {
                 handleGravePistonMove(event, grave, piston, direction, blocks);
                 return;

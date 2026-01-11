@@ -77,7 +77,7 @@ public class InventoryDragListener implements Listener {
                     UUID graveUUID = getGraveUUIDFromItemStack(item);
                     if (graveUUID == null) continue;
 
-                    Grave grave = plugin.getCacheManager().getGraveMap().get(graveUUID);
+                    Grave grave = plugin.getCacheManager().getGrave(graveUUID);
                     if (grave == null) continue;
 
                     String configured = plugin.getConfigManager().getConfigSection("compass.name", grave).getString("compass.name");

@@ -368,12 +368,18 @@ public class EntityManager extends EntityDataManager {
 
                                     firePostTeleportAndRollbackIfCancelled(grave, player, from, actualTo);
 
-                                    if (player.getLocation().getWorld() != null && player.getLocation().distanceSquared(from) < 0.01) {
-                                        plugin.getEntityManager().sendMessage("message.teleport-cancelled", player, from, grave);
-                                    } else {
+                                    try {
+                                        if (player.getLocation().getWorld() != null && player.getLocation().distanceSquared(from) < 0.01) {
+                                            plugin.getEntityManager().sendMessage("message.teleport-cancelled", player, from, grave);
+                                        } else {
+                                            plugin.getEntityManager().sendMessage("message.teleport", player, actualTo, grave);
+                                            plugin.getEntityManager().playPlayerSound("sound.teleport", player, actualTo, grave);
+                                        }
+                                    } catch (IllegalArgumentException e) {
                                         plugin.getEntityManager().sendMessage("message.teleport", player, actualTo, grave);
                                         plugin.getEntityManager().playPlayerSound("sound.teleport", player, actualTo, grave);
                                     }
+
                                 } else {
                                     plugin.getEntityManager().sendMessage("message.teleport-cancelled", player, player.getLocation(), grave);
                                 }

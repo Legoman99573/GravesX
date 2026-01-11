@@ -3,6 +3,7 @@ package com.ranull.graves.manager;
 import com.ranull.graves.data.ChunkData;
 import com.ranull.graves.type.Grave;
 import org.bukkit.Location;
+import org.bukkit.block.Block;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.HashMap;
@@ -258,6 +259,34 @@ public class CacheManager {
     }
 
     /**
+     * Convenience method to retrieve a {@link Grave} from the cache based on a {@link Block}.
+     * <p>
+     * Internally delegates to {@link #getGrave(Location)} using the block's location.
+     * </p>
+     *
+     * @param block the block to check
+     * @return the matching {@link Grave}, or {@code null} if none is found
+     */
+    public Grave getGrave(Block block) {
+        for (Grave grave : graveMap.values()) {
+            if (grave == null) {
+                continue;
+            }
+
+            Location graveLocation = grave.getLocationDeath();
+            if (graveLocation == null || graveLocation.getWorld() == null) {
+                continue;
+            }
+
+            if (graveLocation.getWorld().equals(block.getWorld()) && graveLocation.getBlockX() == block.getX() && graveLocation.getBlockY() == block.getY() && graveLocation.getBlockZ() == block.getZ()) {
+                return grave;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Returns the oldest grave for a given player.
      * @param playerUUID The UUID of the player whose graves to consider.
      * @return The oldest grave for the specified player.
@@ -277,5 +306,37 @@ public class CacheManager {
         }
 
         return oldestGrave;
+    }
+
+    /**
+     * Retrieves the {@link Grave} whose block is located at the given {@link Location}.
+     * <p>
+     * This compares block coordinates (world + block X/Y/Z) instead of raw double coordinates
+     * to ensure it matches the actual block the grave is placed on.
+     * </p>
+     *
+     * @param location the location of the grave block
+     * @return the matching {@link Grave}, or {@code null} if none is found
+     */
+    public Grave getGrave(Location location) {
+        if (location == null || location.getWorld() == null) {
+            return null;
+        }
+
+        for (Grave grave : graveMap.values()) {
+            Location graveLocation = grave.getLocationDeath();
+            if (graveLocation == null || graveLocation.getWorld() == null) {
+                continue;
+            }
+
+            if (graveLocation.getWorld().equals(location.getWorld())
+                    && graveLocation.getBlockX() == location.getBlockX()
+                    && graveLocation.getBlockY() == location.getBlockY()
+                    && graveLocation.getBlockZ() == location.getBlockZ()) {
+                return grave;
+            }
+        }
+
+        return null;
     }
 }

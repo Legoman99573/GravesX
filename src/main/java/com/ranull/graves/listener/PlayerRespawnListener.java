@@ -33,7 +33,7 @@ public class PlayerRespawnListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         final Player player = event.getPlayer();
-        final List<String> permissionList = plugin.getPermissionList(player);
+        final List<String> permissionList = plugin.getConfigManager().getPermissionList(player);
         final List<Grave> graveList = plugin.getGraveManager().getGraveList(player);
 
         if (graveList.isEmpty()) return;

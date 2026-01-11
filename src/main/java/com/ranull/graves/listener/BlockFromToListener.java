@@ -40,6 +40,6 @@ public class BlockFromToListener implements Listener {
      * @return True if the destination block is a grave block, false otherwise.
      */
     private boolean isGraveBlock(BlockFromToEvent event) {
-        return plugin.getBlockManager().getGraveFromBlock(event.getToBlock()) != null;
+        return plugin.getCacheManager().getGrave(event.getToBlock()) != null;
     }
 }

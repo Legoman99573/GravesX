@@ -111,12 +111,12 @@ public class PlayerInteractListener implements Listener {
      * @param block  The block being interacted with.
      */
     private void handleGraveInteraction(PlayerInteractEvent event, Player player, Block block) {
-        Grave grave = plugin.getBlockManager().getGraveFromBlock(block);
+        Grave grave = plugin.getCacheManager().getGrave(block);
 
         if (grave == null) {
             Block blockRelative = block.getRelative(event.getBlockFace());
             if (!blockRelative.getType().isSolid()) {
-                grave = plugin.getBlockManager().getGraveFromBlock(blockRelative);
+                grave = plugin.getCacheManager().getGrave(blockRelative);
             }
         }
 

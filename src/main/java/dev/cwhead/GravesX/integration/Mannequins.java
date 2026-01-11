@@ -100,8 +100,6 @@ public final class Mannequins extends EntityDataManager {
             if (grave.getOwnerType() != EntityType.PLAYER) return;
             if (location == null || location.getWorld() == null) return;
 
-            try { location.getBlock().setType(Material.AIR); } catch (Throwable ignored) {}
-
             Location mannequinLocation = location.clone();
             try {
                 double x = plugin.getConfigManager().getConfigSection("mannequins.corpse.offset.x", grave).getDouble("mannequins.corpse.offset.x");

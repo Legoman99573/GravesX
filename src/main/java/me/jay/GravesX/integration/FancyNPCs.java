@@ -47,7 +47,6 @@ public final class FancyNPCs extends EntityDataManager {
             if (!plugin.getConfigManager().getConfigSection("fancynpcs.corpse.enabled", grave).getBoolean("fancynpcs.corpse.enabled")
                     || grave.getOwnerType() != EntityType.PLAYER) return;
 
-            location.getBlock().setType(Material.AIR);
             Location npcLocation = location.clone();
 
             try {
@@ -103,7 +102,6 @@ public final class FancyNPCs extends EntityDataManager {
             if (!plugin.getConfigManager().getConfigSection("fancynpcs.corpse.enabled", grave).getBoolean("fancynpcs.corpse.enabled")
                     || grave.getOwnerType() != EntityType.PLAYER) return;
 
-            location.getBlock().setType(Material.AIR);
             Location npcLocation = location.clone();
 
             try {

@@ -1380,6 +1380,21 @@ public class GraveManager {
      * @param location the location to place the grave.
      * @param grave    the grave to be placed.
      */
+    /**
+     * Places a grave at a specified location.
+     *
+     * <p>Order of operations:
+     * <ol>
+     *     <li>Create hologram and armor stand immediately.</li>
+     *     <li>Run registered {@link GraveProvider}s. If any provider reports {@code isPlaced(grave) == true},
+     *         no default block / item frame / integrations are created.</li>
+     *     <li>If no provider handled the grave, fall back to built-in block, item frame,
+     *         and non-BlockData integrations (furniture, corpses, etc.).</li>
+     * </ol>
+     *
+     * @param location the location to place the grave.
+     * @param grave    the grave to be placed.
+     */
     public void placeGrave(Location location, Grave grave) {
         if (location == null || location.getWorld() == null || grave == null) return;
 
@@ -1387,74 +1402,151 @@ public class GraveManager {
 
         plugin.getSchedulerManager().execute(anchor, () -> {
             try {
-                plugin.getBlockManager().createBlock(anchor, grave);
-                plugin.getHologramManager().createHologram(anchor, grave);
-                plugin.getEntityManager().createArmorStand(anchor, grave);
-                plugin.getEntityManager().createItemFrame(anchor, grave);
-
                 List<GraveProvider> providers = RegisterGraveProviders.getAll();
                 if (!providers.isEmpty()) {
                     for (GraveProvider p : providers) {
                         try {
-                            p.place(anchor, grave);
+                            try {
+                                plugin.getHologramManager().createHologram(anchor, grave);
+                                p.place(anchor, grave);
+                            } catch (Throwable t) {
+                                throw new GravesXGraveProviderException("An error occurred with placing from current provider.");
+                            }
                             if (p.isPlaced(grave)) {
                                 plugin.debugMessage("[CustomGraveProvider " + p.id() + " (order=" + p.order() + ")] placed successfully.", 1);
                                 return;
                             } else {
-                                GravesXGraveProviderException noOp = GravesXGraveProviderException.forProvider(p, anchor, grave, "isPlaced=false", null);
-                                plugin.debugMessage(noOp.getMessage(), 2);
+                                throw new GravesXGraveProviderException("Failure to place grave.");
                             }
-                        } catch (Throwable t) {
-                            GravesXGraveProviderException wrapped = GravesXGraveProviderException.forProvider(p, anchor, grave, t);
-                            plugin.getLogger().log(Level.WARNING, wrapped.getMessage(), wrapped);
+                        } catch (GravesXGraveProviderException e) {
+                            plugin.getLogger().severe("Failed to place grave from GraveProvider " + p.id() + " with order " + p.order() + ". Caused by " + e.getMessage());
+                            plugin.logStackTrace(e);
                         }
                     }
                 }
 
-                if (plugin.getIntegrationManager().hasFurnitureLib()) {
-                    plugin.getIntegrationManager().getFurnitureLib().createFurniture(anchor, grave);
-                }
-                if (plugin.getIntegrationManager().hasFurnitureEngine()) {
-                    plugin.getIntegrationManager().getFurnitureEngine().createFurniture(anchor, grave);
-                }
-                if (plugin.getIntegrationManager().hasItemsAdder()) {
-                    plugin.getIntegrationManager().getItemsAdder().createFurniture(anchor, grave);
-                }
-                if (plugin.getIntegrationManager().hasOraxen()) {
-                    plugin.getIntegrationManager().getOraxen().createFurniture(anchor, grave);
-                }
-                if (plugin.getIntegrationManager().hasNexo()) {
-                    plugin.getIntegrationManager().getNexo().createFurniture(anchor, grave);
-                }
-                if (plugin.getIntegrationManager().hasPlayerNPC()) {
-                    plugin.getIntegrationManager().getPlayerNPC().createCorpse(anchor, grave);
-                }
-                if (plugin.getIntegrationManager().hasMannequins()) {
-                    plugin.getIntegrationManager().getMannequins().createCorpse(grave.getUUID(), grave.getLocationDeath(), grave);
-                }
-                if (plugin.getIntegrationManager().hasFancyNpcs() && !plugin.getIntegrationManager().hasFloodgate()) {
-                    plugin.getIntegrationManager().getFancyNpcs().createCorpse(grave.getUUID(), grave.getLocationDeath(), grave);
-                }
-                if (plugin.getIntegrationManager().hasFancyNpcs() && plugin.getIntegrationManager().hasFloodgate()) {
-                    try {
-                        if (plugin.getIntegrationManager().getFloodgate().isFloodgateId(grave.getOwnerUUID())) {
-                            plugin.getIntegrationManager().getFancyNpcs().createBedrockcompatCorpse(
-                                    grave.getUUID(), grave.getLocationDeath(), grave);
-                        } else {
-                            plugin.getIntegrationManager().getFancyNpcs().createCorpse(
-                                    grave.getUUID(), grave.getLocationDeath(), grave);
-                        }
-                    } catch (Throwable ignored) {
-                        plugin.getIntegrationManager().getFancyNpcs().createCorpse(
-                                grave.getUUID(), grave.getLocationDeath(), grave);
-                    }
-                }
+                createGraveIntegrations(anchor, grave);
 
             } catch (Throwable t) {
                 plugin.getLogger().warning("Failed to place grave " + grave.getUUID() + ": " + t.getMessage());
                 plugin.logStackTrace(t);
             }
         });
+    }
+
+    /**
+     * Public helper to create or replace the grave block at the given location.
+     *
+     * @param location the location to place the block at
+     * @param grave  the associated grave
+     */
+    public void createGraveBlock(@NotNull Location location, @NotNull Grave grave) {
+        try {
+            plugin.getCompatibility().setBlockData(location, location.getBlock().getBlockData().getMaterial(), grave, plugin);
+        } catch (Throwable t) {
+            String world = location.getWorld() != null ? location.getWorld().getName() : null;
+            plugin.getLogger().warning("Failed to create grave block for " + grave.getUUID() + " at " + world + ", " + location.getBlockX() + "x, " + location.getBlockY() + "y, " + location.getBlockZ() + "z: " + t.getMessage());
+            plugin.logStackTrace(t);
+        }
+    }
+
+    /**
+     * Invokes integrations that only require a {@link Location} and {@link Grave},
+     * not {@link com.ranull.graves.data.BlockData}.
+     *
+     * @param anchor the anchor location for the grave (already rounded/offset)
+     * @param grave  the grave being placed
+     */
+    private void createGraveIntegrations(@NotNull Location anchor, @NotNull Grave grave) {
+        if (plugin.getIntegrationManager().hasFurnitureLib() && plugin.getConfigManager().getConfigSection("furniturelib.enabled", grave).getBoolean("furniturelib.enabled", true)) {
+            plugin.debugMessage("Creating FurnitureLib furniture grave for " + grave.getUUID(), 1);
+            createGraveBlock(anchor, grave);
+            plugin.getHologramManager().createHologram(anchor, grave);
+            plugin.getIntegrationManager().getFurnitureLib().createFurniture(anchor, grave);
+        } else if (plugin.getIntegrationManager().hasFurnitureEngine() && plugin.getConfigManager().getConfigSection("furnitureengine.enabled", grave).getBoolean("furnitureengine.enabled", true)) {
+            plugin.debugMessage("Creating FurnitureEngine furniture grave for " + grave.getUUID(), 1);
+            plugin.getHologramManager().createHologram(anchor, grave);
+            plugin.getIntegrationManager().getFurnitureEngine().createFurniture(anchor, grave);
+        } else if (plugin.getIntegrationManager().hasItemsAdder() && plugin.getConfigManager().getConfigSection("itemsadder.furniture.enabled", grave).getBoolean("itemsadder.furniture.enabled", true)) {
+            plugin.debugMessage("Creating ItemsAdder furniture grave for " + grave.getUUID(), 1);
+            createGraveBlock(anchor, grave);
+            plugin.getHologramManager().createHologram(anchor, grave);
+            plugin.getIntegrationManager().getItemsAdder().createFurniture(anchor, grave);
+        } else if (plugin.getIntegrationManager().hasItemsAdder() && plugin.getConfigManager().getConfigSection("itemsadder.block.enabled", grave).getBoolean("itemsadder.block.enabled", true)) {
+            plugin.debugMessage("Creating ItemsAdder block grave for " + grave.getUUID(), 1);
+            createGraveBlock(anchor, grave);
+            plugin.getHologramManager().createHologram(anchor, grave);
+            plugin.getIntegrationManager().getItemsAdder().createBlock(anchor, grave);
+        } else if (plugin.getIntegrationManager().hasOraxen() && plugin.getConfigManager().getConfigSection("oraxen.furniture.enabled", grave).getBoolean("oraxen.furniture.enabled", true)) {
+            plugin.debugMessage("Creating Oraxen furniture grave for " + grave.getUUID(), 1);
+            createGraveBlock(anchor, grave);
+            plugin.getHologramManager().createHologram(anchor, grave);
+            plugin.getIntegrationManager().getOraxen().createFurniture(anchor, grave);
+        } else if (plugin.getIntegrationManager().hasOraxen() && plugin.getConfigManager().getConfigSection("oraxen.block.enabled", grave).getBoolean("oraxen.block.enabled", true)) {
+            plugin.debugMessage("Creating Oraxen block grave for " + grave.getUUID(), 1);
+            createGraveBlock(anchor, grave);
+            plugin.getHologramManager().createHologram(anchor, grave);
+            plugin.getIntegrationManager().getOraxen().createBlock(anchor, grave);
+        } else if (plugin.getIntegrationManager().hasNexo() && plugin.getConfigManager().getConfigSection("nexo.furniture.enabled", grave).getBoolean("nexo.furniture.enabled", true)) {
+            plugin.debugMessage("Creating Nexo furniture grave for " + grave.getUUID(), 1);
+            createGraveBlock(anchor, grave);
+            plugin.getHologramManager().createHologram(anchor, grave);
+            plugin.getIntegrationManager().getNexo().createFurniture(anchor, grave);
+        } else if (plugin.getIntegrationManager().hasNexo() && plugin.getConfigManager().getConfigSection("nexo.block.enabled", grave).getBoolean("nexo.block.enabled", true)) {
+            plugin.debugMessage("Creating Nexo block grave for " + grave.getUUID(), 1);
+            createGraveBlock(anchor, grave);
+            plugin.getHologramManager().createHologram(anchor, grave);
+            plugin.getIntegrationManager().getNexo().createBlock(anchor, grave);
+        } else if (plugin.getIntegrationManager().hasPlayerNPC() && plugin.getConfigManager().getConfigSection("playernpc.corpse.enabled", grave).getBoolean("playernpc.corpse.enabled", true)) {
+            plugin.debugMessage("Creating PlayerNPC corpse grave for " + grave.getUUID(), 1);
+            plugin.getHologramManager().createHologram(anchor, grave);
+            plugin.getIntegrationManager().getPlayerNPC().createCorpse(anchor, grave);
+        } else if (plugin.getIntegrationManager().hasMannequins() && plugin.getConfigManager().getConfigSection("mannequins.corpse.enabled", grave).getBoolean("mannequins.corpse.enabled", true)) {
+            plugin.debugMessage("Creating Mannequins corpse grave for " + grave.getUUID(), 1);
+            plugin.getIntegrationManager().getMannequins().createCorpse(grave.getUUID(), grave.getLocationDeath(), grave);
+            plugin.getHologramManager().createHologram(anchor, grave);
+        } else if (plugin.getIntegrationManager().hasFancyNpcs() && plugin.getConfigManager().getConfigSection("fancynpcs.corpse.enabled", grave).getBoolean("fancynpcs.corpse.enabled", true)) {
+            if (!plugin.getIntegrationManager().hasFloodgate()) {
+                plugin.debugMessage("Creating FancyNPCs corpse grave for " + grave.getUUID() + " (no Floodgate)", 1);
+                plugin.getHologramManager().createHologram(anchor, grave);
+                plugin.getIntegrationManager().getFancyNpcs().createCorpse(grave.getUUID(), grave.getLocationDeath(), grave);
+            } else {
+                try {
+                    if (plugin.getIntegrationManager().getFloodgate().isFloodgateId(grave.getOwnerUUID())) {
+                        plugin.debugMessage("Creating FancyNPCs Bedrock-compatible corpse grave for " + grave.getUUID(), 1);
+                        plugin.getHologramManager().createHologram(anchor, grave);
+                        plugin.getIntegrationManager().getFancyNpcs().createBedrockcompatCorpse(grave.getUUID(), grave.getLocationDeath(), grave);
+                    } else {
+                        plugin.debugMessage("Creating FancyNPCs corpse grave for " + grave.getUUID() + " (Java player)", 1);
+                        plugin.getHologramManager().createHologram(anchor, grave);
+                        plugin.getIntegrationManager().getFancyNpcs().createCorpse(grave.getUUID(), grave.getLocationDeath(), grave);
+                    }
+                } catch (Throwable ignored) {
+                    plugin.debugMessage("FancyNPCs Floodgate check failed; falling back to standard corpse for " + grave.getUUID(), 1);
+                    plugin.getHologramManager().createHologram(anchor, grave);
+                    plugin.getIntegrationManager().getFancyNpcs().createCorpse(grave.getUUID(), grave.getLocationDeath(), grave);
+                }
+            }
+        } else {
+            if (plugin.getConfigManager().getConfigSection("armor-stand.enabled", grave).getBoolean("armor-stand.enabled", false)) {
+                plugin.debugMessage("Creating ArmorStand grave for " + grave.getUUID(), 1);
+                createGraveBlock(anchor, grave);
+                plugin.getHologramManager().createHologram(anchor, grave);
+                plugin.getEntityManager().createArmorStand(anchor, grave);
+            } else if (plugin.getConfigManager().getConfigSection("item-frame.enabled", grave).getBoolean("item-frame.enabled", false)) {
+                plugin.debugMessage("Creating ItemFrame grave for " + grave.getUUID(), 1);
+                createGraveBlock(anchor, grave);
+                plugin.getHologramManager().createHologram(anchor, grave);
+                plugin.getEntityManager().createItemFrame(anchor, grave);
+            } else {
+                plugin.debugMessage("Creating Block grave for " + grave.getUUID(), 1);
+                Block block = anchor.getBlock();
+                block.setType(Material.valueOf(plugin.getConfigManager().getConfigSection("block.material", grave).getString("block.material", "PLAYER_HEAD")));
+
+                createGraveBlock(anchor, grave);
+                plugin.getHologramManager().createHologram(anchor, grave);
+            }
+        }
     }
 
     /**
