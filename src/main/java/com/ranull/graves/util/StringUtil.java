@@ -1,6 +1,7 @@
 package com.ranull.graves.util;
 
 import com.ranull.graves.Graves;
+import com.ranull.graves.integration.MineDown;
 import com.ranull.graves.type.Grave;
 import me.clip.placeholderapi.PlaceholderAPI;
 import me.imdanix.text.MiniTranslator;
@@ -161,7 +162,7 @@ public class StringUtil {
                 .replace("%spigot_id%", String.valueOf(plugin.getSpigotID()));
 
         if (plugin.getIntegrationManager().hasMineDown()) {
-            string = plugin.getIntegrationManager().getMineDown().parseString(string);
+            string = MineDown.parseString(string);
         }
 
         Pattern pattern = Pattern.compile("&#[A-Fa-f0-9]{6}");

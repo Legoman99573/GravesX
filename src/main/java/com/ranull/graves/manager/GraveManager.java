@@ -1123,7 +1123,7 @@ public class GraveManager {
      * @return the created grave.
      */
     public Grave createGrave(Entity entity, List<ItemStack> itemStackList) {
-        return createGrave(entity, itemStackList, plugin.getPermissionList(entity));
+        return createGrave(entity, itemStackList, plugin.getConfigManager().getPermissionList(entity));
     }
 
     /**
@@ -1407,10 +1407,18 @@ public class GraveManager {
                     for (GraveProvider p : providers) {
                         try {
                             try {
-                                plugin.getHologramManager().createHologram(anchor, grave);
+                                if (p.shouldUseGraveHead()) {
+                                    Block block = anchor.getBlock();
+                                    block.setType(Material.valueOf(plugin.getConfigManager().getConfigSection("block.material", grave).getString("block.material", "PLAYER_HEAD")));
+
+                                    createGraveBlock(anchor, grave);
+                                    plugin.getHologramManager().createHologram(anchor, grave);
+                                } else {
+                                    plugin.getHologramManager().createHologram(anchor, grave);
+                                }
                                 p.place(anchor, grave);
                             } catch (Throwable t) {
-                                throw new GravesXGraveProviderException("An error occurred with placing from current provider.");
+                                throw new GravesXGraveProviderException("An error occurred with placing from provider " + p.id() + ".");
                             }
                             if (p.isPlaced(grave)) {
                                 plugin.debugMessage("[CustomGraveProvider " + p.id() + " (order=" + p.order() + ")] placed successfully.", 1);

@@ -589,7 +589,7 @@ public class EntityManager extends EntityDataManager {
      */
     public void sendMessage(String string, CommandSender commandSender) {
         if (commandSender instanceof Player player) {
-            sendMessage(string, player, player.getLocation(), null, plugin.getPermissionList(player));
+            sendMessage(string, player, player.getLocation(), null, plugin.getConfigManager().getPermissionList(player));
         }
     }
 
@@ -600,7 +600,7 @@ public class EntityManager extends EntityDataManager {
      * @param entity the entity to send the message to.
      */
     public void sendMessage(String string, Entity entity) {
-        sendMessage(string, entity, entity.getLocation(), null, plugin.getPermissionList(entity));
+        sendMessage(string, entity, entity.getLocation(), null, plugin.getConfigManager().getPermissionList(entity));
     }
 
     /**

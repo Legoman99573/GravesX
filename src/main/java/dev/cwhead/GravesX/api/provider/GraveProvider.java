@@ -49,6 +49,15 @@ public interface GraveProvider {
     boolean isPlaced(Grave grave);
 
     /**
+     * Should a grave provider utilize the grave head?
+     *
+     * @return true if the grave is placed. False otherwise.
+     */
+    default boolean shouldUseGraveHead() {
+        return false;
+    }
+
+    /**
      * Return true if this provider recognizes the given CUSTOM entity data.
      * (E.g. check a metadata field or namespaced tag your module wrote.)
      *
