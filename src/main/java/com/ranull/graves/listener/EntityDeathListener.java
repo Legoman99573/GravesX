@@ -838,18 +838,31 @@ public class EntityDeathListener implements Listener {
         int vanillaDrop = event.getDroppedExp();
         event.setDroppedExp(0);
         if (livingEntity instanceof Player p) {
-            if (pct >= 0 && plugin.getPermissionManager().hasGrantedPermission("graves.experience", p)) {
+            if (pde.getKeepLevel() && !plugin.getPermissionManager().hasGrantedPermission("graves.keepinventory.bypass", p.getPlayer())) {
+                graveCreateEvent.setExperience(0);
+                String playerDisplay;
+                try {
+                    playerDisplay = p.getPlayer().getDisplayName();
+                } catch (NullPointerException e) {
+                    try {
+                        playerDisplay = p.getPlayer().getName();
+                    } catch (NullPointerException e2) {
+                        playerDisplay = "Unknown";
+                    }
+                }
+                pde.setKeepLevel(true);
+                plugin.debugMessage("Set Experience not applied to " + grave.getUUID() + " because " + playerDisplay  + " has keep experience.", 2);
+            } else if (pct >= 0 && plugin.getPermissionManager().hasGrantedPermission("graves.experience", p.getPlayer())) {
                 int total = ExperienceUtil.getPlayerExperience(p);
                 int stored = ExperienceUtil.getDropPercent(total, pct);
                 graveCreateEvent.setExperience(stored);
                 plugin.debugMessage("Set Experience for player grave " + grave.getUUID() + ": " + stored, 2);
+                pde.setKeepLevel(false);
             } else {
                 // Either pct < 0 (default behavior) OR no permission: store vanilla drop amount
                 graveCreateEvent.setExperience(vanillaDrop);
-                plugin.debugMessage("Set Experience for player grave " + grave.getUUID() + ": " + vanillaDrop, 2);
-            }
-            if (pde != null) {
                 pde.setKeepLevel(false);
+                plugin.debugMessage("Set Experience for player grave " + grave.getUUID() + ": " + vanillaDrop, 2);
             }
         } else {
             if (pct >= 0) {
