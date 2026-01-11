@@ -392,9 +392,31 @@ public final class ModuleContext {
      * @return The same listener for chaining.
      */
     public <T extends Listener> T registerListener(T listener) {
+        Objects.requireNonNull(listener, "listener");
         org.bukkit.Bukkit.getPluginManager().registerEvents(listener, plugin);
         listeners.add(listener);
         return listener;
+    }
+
+    /**
+     * Unregisters a previously registered listener and removes it from tracking.
+     *
+     * @param listener Listener to unregister.
+     */
+    public void unregisterListener(Listener listener) {
+        if (listener == null) return;
+        HandlerList.unregisterAll(listener);
+        listeners.remove(listener);
+    }
+
+    /**
+     * Unregisters all listeners registered via this context.
+     */
+    private void unregisterAllListeners() {
+        for (Listener listener : snapshot(listeners)) {
+            HandlerList.unregisterAll(listener);
+        }
+        listeners.clear();
     }
 
     private Runnable guard(final Runnable r) {
@@ -531,14 +553,11 @@ public final class ModuleContext {
         }
         shutdownHooks.clear();
 
-        for (Listener l : snapshot(listeners)) {
-            HandlerList.unregisterAll(l);
-        }
-        listeners.clear();
+        unregisterAllListeners();
 
         for (ServiceReg reg : snapshot(services)) {
             try {
-                org.bukkit.Bukkit.getServicesManager().unregister(reg.type, reg.provider);
+                Bukkit.getServicesManager().unregister(reg.type, reg.provider);
             } catch (Throwable ignored) {}
         }
         services.clear();
