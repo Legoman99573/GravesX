@@ -104,14 +104,18 @@ public class GraveManager {
         for (Grave grave : new ArrayList<>(graves)) {
             long remainingTime = grave.getTimeAliveRemaining();
 
+
             // -1 = unlimited / disabled timer
-            if (remainingTime == -1L) {
+            if (remainingTime == -1 || grave.isAbandoned()) {
+                grave.setTimeAliveRemaining(-1);
                 continue;
             }
 
+            grave.setTimeAliveRemaining(remainingTime);
+
             plugin.debugMessage(
-                    "Checking grave: " + grave.getUUID() + " with remaining time: " + remainingTime,
-                    2
+                    "Checking grave: " + grave.getUUID() + " with remaining time: " + formatMillis(remainingTime),
+                    1
             );
 
             if (remainingTime <= 0L) {
@@ -127,6 +131,38 @@ public class GraveManager {
             }
         }
     }
+
+    /**
+     * Converts Grave time from milliseconds to human-readable time
+     * @param millis the amount of milliseconds raw
+     *
+     * @return the remaining time for a grave in human-readable format.
+     */
+    public static String formatMillis(long millis) {
+        long totalSeconds = millis / 1000;
+
+        if (totalSeconds < 0) {
+            return "Unlimited";
+        }
+
+        long hours = totalSeconds / 3600;
+        long minutes = (totalSeconds % 3600) / 60;
+        long seconds = totalSeconds % 60;
+
+        StringBuilder sb = new StringBuilder();
+
+        if (hours > 0) {
+            sb.append(hours).append("h ");
+        }
+        if (minutes > 0) {
+            sb.append(minutes).append("m ");
+        }
+
+        sb.append(seconds).append("s");
+
+        return sb.toString().trim();
+    }
+
 
     /**
      * Handles the timeout or abandonment of a grave by firing the
