@@ -513,6 +513,12 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
 
             var graves = plugin.getGraveManager().getGraveList(player);
 
+            if (graves == null || graves.isEmpty()) {
+                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » "
+                        + ChatColor.RESET + "You have no graves.");
+                return;
+            }
+
             Grave grave = graves.get(0);
 
             if (grave == null) {
@@ -541,11 +547,17 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
             OfflinePlayer targetPl = plugin.getServer().getOfflinePlayer(args[1]);
             var graves = plugin.getGraveManager().getGraveList(targetPl);
 
+            if (graves == null || graves.isEmpty()) {
+                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » "
+                        + ChatColor.RESET + ChatColor.RED + args[1] + ChatColor.RESET + " has no graves.");
+                return;
+            }
+
             Grave grave = graves.get(0);
 
             if (grave == null) {
-                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET + ChatColor.RED + args[1] + ChatColor.RESET + " has no graves.");
-
+                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » "
+                        + ChatColor.RESET + ChatColor.RED + args[1] + ChatColor.RESET + " has no graves.");
                 return;
             }
 
