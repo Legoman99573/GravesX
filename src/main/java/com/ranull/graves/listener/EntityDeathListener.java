@@ -716,31 +716,21 @@ public class EntityDeathListener implements Listener {
             event.setDroppedExp(0);
             if (safeLocation != null && plugin.getLocationManager().hasCachedGraveAt(safeLocation)) {
                 safeLocation = plugin.getLocationManager().getNewLocationIfCachedGraveExists(livingEntity, location, grave);
+                modern.setDeathLocation(LocationUtil.roundLocation(safeLocation));
             } else {
-                location = plugin.getLocationManager().getNewLocationIfCachedGraveExists(livingEntity, location, grave);
+                if (plugin.getLocationManager().hasCachedGraveAt(location)) {
+                    location = plugin.getLocationManager().getNewLocationIfCachedGraveExists(livingEntity, location, grave);
+                }
+                modern.setDeathLocation(LocationUtil.roundLocation(location));
             }
-
-            if (safeLocation == null) {
-                handleFailedGravePlacement(event, grave, location, livingEntity, removedItemStackList, graveItemStackList);
-                return;
-            }
-
-            modern.setDeathLocation(LocationUtil.roundLocation(safeLocation));
         } else {
             event.setDroppedExp(0);
 
             if (plugin.getLocationManager().hasCachedGraveAt(location)) {
                 location = plugin.getLocationManager().getNewLocationIfCachedGraveExists(livingEntity, location, grave);
             }
-
-            World world = location.getWorld();
-            if (world != null && location.getY() < world.getMinHeight()) {
-                handleFailedGravePlacement(event, grave, location, livingEntity, removedItemStackList, graveItemStackList);
-                return;
-            }
+            modern.setDeathLocation(LocationUtil.roundLocation(location));
         }
-
-        modern.setDeathLocation(LocationUtil.roundLocation(location));
 
         boolean cancelled = modern.isCancelled() || legacy.isCancelled();
         boolean addon     = modern.isAddon()     || legacy.isAddon();
@@ -769,6 +759,12 @@ public class EntityDeathListener implements Listener {
             grave.setProtection(modern.getProtection());
             grave.setTimeProtection(modern.getTimeProtection());
             grave.setLocationDeath(modern.getLocationDeath());
+
+            World world = Objects.requireNonNull(modern.getLocationDeath()).getWorld();
+            if (world != null && location.getY() < world.getMinHeight()) {
+                handleFailedGravePlacement(event, grave, location, livingEntity, removedItemStackList, graveItemStackList);
+                return;
+            }
 
             Location placedLocation = placeGrave(
                     event, grave, graveItemStackList, removedItemStackList, location,
