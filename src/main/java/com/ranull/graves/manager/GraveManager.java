@@ -111,8 +111,6 @@ public class GraveManager {
                 continue;
             }
 
-            grave.setTimeAliveRemaining(remainingTime);
-
             plugin.debugMessage(
                     "Checking grave: " + grave.getUUID() + " with remaining time: " + formatMillis(remainingTime),
                     1
