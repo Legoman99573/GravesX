@@ -45,6 +45,7 @@ settings:
         # If the entity dies in lava should the grave float to the top.
         lava-top: true
         # If the entity drowns in water should the grave float to the top.
+        # If the entity drowns in water should the grave float to the top.
         water-top: false
         # If the entity dies in lava, try place the grave on the last solid block they stood on. (Only works for players)
         lava-smart: true
@@ -230,7 +231,7 @@ settings:
       # If store is false it will store what Minecraft would normally drop, if you want to fully disable it, set store to 0.0
       # Valid values between 0.01 - 1.00
       experience:
-        store: 0.8
+        store: 0.4
 
       ###########
       # Respawn #
