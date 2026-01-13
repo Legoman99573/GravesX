@@ -68,7 +68,7 @@
                   <shadedPattern>com.ranull.graves.bundledlibraries.libby</shadedPattern>
                 </relocation>
                 <relocation>
-                  <pattern>me.corabeast.scheduler</pattern>
+                  <pattern>me.croabeast.scheduler</pattern>
                   <shadedPattern>com.ranull.graves.bundledlibraries.scheduler</shadedPattern>
                 </relocation>
                 <relocation>
@@ -154,7 +154,7 @@
                   <shadedPattern>com.ranull.graves.bundledlibraries.libby</shadedPattern>
                 </relocation>
                 <relocation>
-                  <pattern>me.corabeast.scheduler</pattern>
+                  <pattern>me.croabeast.scheduler</pattern>
                   <shadedPattern>com.ranull.graves.bundledlibraries.scheduler</shadedPattern>
                 </relocation>
                 <relocation>
@@ -220,6 +220,7 @@
                     <exclude>config/**</exclude>
                     <exclude>data/**</exclude>
                     <exclude>google/**</exclude>
+                    <exclude>META-INF/**</exclude>
                     <exclude>plugin.yml</exclude>
                     <exclude>mariadb.properties</exclude>
                     <exclude>driver.properties</exclude>
