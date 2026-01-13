@@ -713,23 +713,27 @@ public class EntityDeathListener implements Listener {
         setupGraveProtection(modern, livingEntity, grave);
         if (plugin.getConfigManager().getConfigSection("placement.safe-location", grave).getBoolean("placement.safe-location", true)) {
             Location safeLocation = plugin.getLocationManager().getSafeGraveLocation(livingEntity, location, grave);
+            Location target = safeLocation != null ? safeLocation : location;
             event.setDroppedExp(0);
-            if (safeLocation != null && plugin.getLocationManager().hasCachedGraveAt(safeLocation)) {
-                safeLocation = plugin.getLocationManager().getNewLocationIfCachedGraveExists(livingEntity, location, grave);
-                modern.setDeathLocation(LocationUtil.roundLocation(safeLocation));
-            } else {
-                if (plugin.getLocationManager().hasCachedGraveAt(location)) {
-                    location = plugin.getLocationManager().getNewLocationIfCachedGraveExists(livingEntity, location, grave);
+            if (plugin.getLocationManager().hasCachedGraveAt(target)) {
+                Location newLoc = plugin.getLocationManager()
+                        .getNewLocationIfCachedGraveExists(livingEntity, target, grave);
+                if (newLoc != null) {
+                    target = newLoc;
                 }
-                modern.setDeathLocation(LocationUtil.roundLocation(location));
             }
+            modern.setDeathLocation(LocationUtil.roundLocation(target));
         } else {
             event.setDroppedExp(0);
-
-            if (plugin.getLocationManager().hasCachedGraveAt(location)) {
-                location = plugin.getLocationManager().getNewLocationIfCachedGraveExists(livingEntity, location, grave);
+            Location target = location;
+            if (plugin.getLocationManager().hasCachedGraveAt(target)) {
+                Location newLoc = plugin.getLocationManager()
+                        .getNewLocationIfCachedGraveExists(livingEntity, target, grave);
+                if (newLoc != null) {
+                    target = newLoc;
+                }
             }
-            modern.setDeathLocation(LocationUtil.roundLocation(location));
+            modern.setDeathLocation(LocationUtil.roundLocation(target));
         }
 
         boolean cancelled = modern.isCancelled() || legacy.isCancelled();
