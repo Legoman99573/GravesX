@@ -393,6 +393,9 @@ public final class ModuleContext {
      */
     public <T extends Listener> T registerListener(T listener) {
         Objects.requireNonNull(listener, "listener");
+        if (disabling) {
+            return listener;
+        }
         org.bukkit.Bukkit.getPluginManager().registerEvents(listener, plugin);
         listeners.add(listener);
         return listener;
@@ -419,9 +422,14 @@ public final class ModuleContext {
         listeners.clear();
     }
 
+    /**
+     * Wraps a task so it won't execute once the module enters disabling/disabled state.
+     */
     private Runnable guard(final Runnable r) {
         return () -> {
-            if (!disabling) r.run();
+            if (!disabling) {
+                r.run();
+            }
         };
     }
 
@@ -431,6 +439,7 @@ public final class ModuleContext {
      * @param r Task to run.
      */
     public void runTask(Runnable r) {
+        if (disabling) return;
         plugin.getSchedulerManager().runTask(guard(r));
     }
 
@@ -441,6 +450,7 @@ public final class ModuleContext {
      * @param delay Delay in ticks before first run.
      */
     public void runTaskLater(Runnable r, long delay) {
+        if (disabling) return;
         plugin.getSchedulerManager().runTaskLater(guard(r), delay);
     }
 
@@ -452,6 +462,7 @@ public final class ModuleContext {
      * @param period Period in ticks between runs.
      */
     public void runTaskTimer(Runnable r, long delay, long period) {
+        if (disabling) return;
         plugin.getSchedulerManager().runTaskTimer(guard(r), delay, period);
     }
 
@@ -461,6 +472,7 @@ public final class ModuleContext {
      * @param r Task to run.
      */
     public void runTaskAsync(Runnable r) {
+        if (disabling) return;
         plugin.getSchedulerManager().runTaskAsynchronously(guard(r));
     }
 
@@ -472,6 +484,7 @@ public final class ModuleContext {
      * @param period Period in ticks between runs.
      */
     public void runTaskTimerAsync(Runnable r, long delay, long period) {
+        if (disabling) return;
         plugin.getSchedulerManager().runTaskTimerAsynchronously(guard(r), delay, period);
     }
 
@@ -488,6 +501,7 @@ public final class ModuleContext {
      */
     public void executeRegion(Location location, Runnable r) {
         if (location == null || r == null) return;
+        if (disabling) return;
         plugin.getSchedulerManager().execute(location, guard(r));
     }
 
@@ -509,6 +523,7 @@ public final class ModuleContext {
      * @param prio     Registration priority.
      */
     public <T> void registerService(Class<T> service, T provider, ServicePriority prio) {
+        if (disabling) return;
         plugin.getServer().getServicesManager().register(service, provider, plugin, prio);
         services.add(new ServiceReg(service, provider));
     }
@@ -521,6 +536,7 @@ public final class ModuleContext {
      * @return The same resource for chaining.
      */
     public <T extends AutoCloseable> T registerCloseable(T closeable) {
+        if (disabling) return closeable;
         closeables.add(closeable);
         return closeable;
     }
@@ -531,6 +547,7 @@ public final class ModuleContext {
      * @param hook Runnable to execute on shutdown.
      */
     public void addShutdownHook(Runnable hook) {
+        if (disabling) return;
         shutdownHooks.add(Objects.requireNonNull(hook, "hook"));
     }
 
@@ -540,6 +557,7 @@ public final class ModuleContext {
      * @param coordinates One or more coordinates (implementation-defined).
      */
     public void importLibrary(String coordinates) {
+        if (disabling) return;
         if (importer != null) {
             importer.importLibrary(this, coordinates);
         } else {
@@ -594,6 +612,10 @@ public final class ModuleContext {
      */
     public GravesXModuleController getGravesXModules() {
         return controller;
+    }
+
+    boolean _internalIsDisablingOrDisabled() {
+        return disabling;
     }
 
     private static <T> List<T> snapshot(List<T> list) {
