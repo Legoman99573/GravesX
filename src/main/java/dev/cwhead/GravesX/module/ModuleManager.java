@@ -212,14 +212,6 @@ public final class ModuleManager {
 
     /**
      * Controller exposed to modules via {@link ModuleContext#getGravesXModules()}.
-     *
-     * Implements {@link GravesXModuleController} by delegating lifecycle operations and
-     * lookups to the enclosing {@code ModuleManager}. Supports both:
-     * <ul>
-     *   <li>acting on <em>this</em> module (the one owning the context)</li>
-     *   <li>acting on a target module identified by key (module.yml name, simple class, or FQCN)</li>
-     * </ul>
-     * All enable/disable operations are idempotent.
      */
     private final class ControllerImpl implements GravesXModuleController {
         private final LoadedModule self;
@@ -329,6 +321,86 @@ public final class ModuleManager {
                     .stream()
                     .map(DescriptorImpl::new)
                     .collect(Collectors.toUnmodifiableList());
+        }
+
+        // =========================
+        // New instance/class overloads
+        // =========================
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public boolean isEnabled(GravesXModule module) {
+            if (module == null) return false;
+            LoadedModule lm = findByClass(module.getClass());
+            return lm != null && lm.enabled;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public boolean isEnabled(Class<? extends GravesXModule> moduleClass) {
+            if (moduleClass == null) return false;
+            LoadedModule lm = findByClass(moduleClass);
+            return lm != null && lm.enabled;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public boolean disableModule(GravesXModule module) {
+            if (module == null) return false;
+            return ModuleManager.this.disable(module);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public boolean disableModule(Class<? extends GravesXModule> moduleClass) {
+            if (moduleClass == null) return false;
+            return ModuleManager.this.disable(moduleClass);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public boolean enableModule(GravesXModule module) {
+            if (module == null) return false;
+            return ModuleManager.this.enable(module);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public boolean enableModule(Class<? extends GravesXModule> moduleClass) {
+            if (moduleClass == null) return false;
+            return ModuleManager.this.enable(moduleClass);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public GravesXModuleDescriptor getModule(GravesXModule module) {
+            if (module == null) return null;
+            LoadedModule lm = findByClass(module.getClass());
+            return (lm != null) ? new DescriptorImpl(lm) : null;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public GravesXModuleDescriptor getModule(Class<? extends GravesXModule> moduleClass) {
+            if (moduleClass == null) return null;
+            LoadedModule lm = findByClass(moduleClass);
+            return (lm != null) ? new DescriptorImpl(lm) : null;
         }
     }
 

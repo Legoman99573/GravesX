@@ -139,6 +139,74 @@ public interface GravesXModuleController {
     GravesXModuleDescriptor getThisModule();
 
     /**
+     * Returns whether the given module instance is enabled.
+     *
+     * @param module module instance (e.g. {@code this} or another module)
+     * @return {@code true} if the module is enabled, {@code false} otherwise
+     */
+    boolean isEnabled(GravesXModule module);
+
+    /**
+     * Returns whether the module with the given implementation class is enabled.
+     *
+     * @param moduleClass implementation class of the module
+     * @return {@code true} if the module is enabled, {@code false} otherwise
+     */
+    boolean isEnabled(Class<? extends GravesXModule> moduleClass);
+
+    /**
+     * Disables the target module instance.
+     *
+     * @param module module instance to disable
+     * @return {@code true} if the module was found and is now disabled (or already disabled);
+     *         {@code false} if not found
+     */
+    boolean disableModule(GravesXModule module);
+
+    /**
+     * Disables the module with the given implementation class.
+     *
+     * @param moduleClass implementation class of the module to disable
+     * @return {@code true} if the module was found and is now disabled (or already disabled);
+     *         {@code false} if not found
+     */
+    boolean disableModule(Class<? extends GravesXModule> moduleClass);
+
+    /**
+     * Enables the target module instance.
+     *
+     * @param module module instance to enable
+     * @return {@code true} if the module was found and is now enabled (or already enabled);
+     *         {@code false} if not found
+     */
+    boolean enableModule(GravesXModule module);
+
+    /**
+     * Enables the module with the given implementation class.
+     *
+     * @param moduleClass implementation class of the module to enable
+     * @return {@code true} if the module was found and is now enabled (or already enabled);
+     *         {@code false} if not found
+     */
+    boolean enableModule(Class<? extends GravesXModule> moduleClass);
+
+    /**
+     * Looks up a module descriptor by its instance.
+     *
+     * @param module module instance
+     * @return descriptor for the target module, or {@code null} if unknown
+     */
+    GravesXModuleDescriptor getModule(GravesXModule module);
+
+    /**
+     * Looks up a module descriptor by its implementation class.
+     *
+     * @param moduleClass implementation class of the module
+     * @return descriptor for the target module, or {@code null} if unknown
+     */
+    GravesXModuleDescriptor getModule(Class<? extends GravesXModule> moduleClass);
+
+    /**
      * Returns descriptors for all discovered modules, regardless of enablement.
      *
      * @return a collection view of all module descriptors (may be empty, never {@code null})
