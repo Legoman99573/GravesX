@@ -57,6 +57,7 @@ public class BlockPlaceListener implements Listener {
      * @param event The BlockPlaceEvent.
      * @return True if the item is a token, false otherwise.
      */
+    @Deprecated (forRemoval = true, since = "4.9.10.10")
     private boolean isTokenItem(BlockPlaceEvent event) {
         return plugin.getRecipeManager() != null && plugin.getRecipeManager().isToken(event.getItemInHand());
     }

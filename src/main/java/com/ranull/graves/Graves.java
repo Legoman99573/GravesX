@@ -879,6 +879,7 @@ public class Graves extends JavaPlugin {
     /**
      * @return the {@link RecipeManager} responsible for managing custom recipes.
      */
+    @Deprecated (forRemoval = true, since = "4.9.10.10")
     public RecipeManager getRecipeManager() {
         return recipeManager;
     }

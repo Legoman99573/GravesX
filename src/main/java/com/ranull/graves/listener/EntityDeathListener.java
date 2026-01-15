@@ -417,6 +417,8 @@ public class EntityDeathListener implements Listener {
     }
 
     /**
+     * @deprecated Use GravesXModule: Tokens instead
+     *
      * Checks if the entity has a valid grave token.
      *
      * @param livingEntity  The entity to check.
@@ -425,6 +427,7 @@ public class EntityDeathListener implements Listener {
      * @param drops         The list of item drops.
      * @return True if the entity has a valid grave token, false otherwise.
      */
+    @Deprecated (forRemoval = true, since = "4.9.10.10")
     private boolean hasValidToken(LivingEntity livingEntity, List<String> permissionList, String entityName, List<ItemStack> drops) {
         if (plugin.getVersionManager().hasPersistentData()
                 && plugin.getConfigManager().getConfigSection("token.enabled", livingEntity, permissionList).getBoolean("token.enabled")) {

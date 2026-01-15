@@ -22,10 +22,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-/**6
+/**
+ * @deprecated Use GravesX Module: Tokens instead
  * Manages custom recipes for the Graves plugin.
  */
+@Deprecated (forRemoval = true, since = "4.9.10.10")
 public class RecipeManager {
+
     /**
      * The main plugin instance associated with Graves.
      * <p>
@@ -49,6 +52,7 @@ public class RecipeManager {
      *
      * @param plugin The plugin instance.
      */
+    @Deprecated (forRemoval = true, since = "4.9.10.10")
     public RecipeManager(Graves plugin) {
         this.plugin = plugin;
         this.namespacedKeyList = new ArrayList<>();
@@ -58,6 +62,7 @@ public class RecipeManager {
     /**
      * Reloads the recipes.
      */
+    @Deprecated (forRemoval = true, since = "4.9.10.10")
     public void reload() {
         unload();
         load();
@@ -66,6 +71,7 @@ public class RecipeManager {
     /**
      * Loads the recipes from the configuration.
      */
+    @Deprecated (forRemoval = true, since = "4.9.10.10")
     public void load() {
         ConfigurationSection configurationSection = plugin.getConfig().getConfigurationSection("settings.token");
 
@@ -82,6 +88,7 @@ public class RecipeManager {
     /**
      * Unloads the custom recipes.
      */
+    @Deprecated (forRemoval = true, since = "4.9.10.10")
     public void unload() {
         try {
             Iterator<Recipe> iterator = Bukkit.recipeIterator();
@@ -107,6 +114,7 @@ public class RecipeManager {
      * @param token The token identifier.
      * @return The token item.
      */
+    @Deprecated (forRemoval = true, since = "4.9.10.10")
     public ItemStack getToken(String token) {
         if (plugin.getConfig().isConfigurationSection("settings.token." + token)) {
             Material material = Material.matchMaterial(
@@ -171,6 +179,7 @@ public class RecipeManager {
      *
      * @return The list of token identifiers.
      */
+    @Deprecated (forRemoval = true, since = "4.9.10.10")
     public List<String> getTokenList() {
         List<String> stringList = new ArrayList<>();
         ConfigurationSection configurationSection = plugin.getConfig().getConfigurationSection("settings.token");
@@ -188,6 +197,7 @@ public class RecipeManager {
      * @param token     The token identifier.
      * @param itemStack The item stack representing the token.
      */
+    @Deprecated (forRemoval = true, since = "4.9.10.10")
     public void addTokenRecipe(String token, ItemStack itemStack) {
         NamespacedKey namespacedKey = new NamespacedKey(plugin, token + "GraveToken");
 
@@ -252,6 +262,7 @@ public class RecipeManager {
      * @param itemStackList The list of item stacks in the player's inventory.
      * @return The token item stack, or null if not found.
      */
+    @Deprecated (forRemoval = true, since = "4.9.10.10")
     public ItemStack getGraveTokenFromPlayer(String token, List<ItemStack> itemStackList) {
         for (ItemStack itemStack : itemStackList) {
             if (itemStack != null && isToken(token, itemStack)) {
@@ -268,6 +279,7 @@ public class RecipeManager {
      * @param token     The token identifier.
      * @param itemStack The item stack.
      */
+    @Deprecated (forRemoval = true, since = "4.9.10.10")
     public void setRecipeData(String token, ItemStack itemStack) {
         if (plugin.getVersionManager().hasPersistentData()) {
             ItemMeta itemMeta = itemStack.getItemMeta();
@@ -290,6 +302,7 @@ public class RecipeManager {
      * @param itemStack The item stack.
      * @return True if the item stack is a token of the specified type, otherwise false.
      */
+    @Deprecated (forRemoval = true, since = "4.9.10.10")
     public boolean isToken(String token, ItemStack itemStack) {
         if (plugin.getVersionManager().hasPersistentData()) {
             if (itemStack.getItemMeta() != null && itemStack.getItemMeta().getPersistentDataContainer()
@@ -322,6 +335,7 @@ public class RecipeManager {
      * @param itemStack The item stack.
      * @return The token name, or null if not found.
      */
+    @Deprecated (forRemoval = true, since = "4.9.10.10")
     public String getTokenName(ItemStack itemStack) {
         if (plugin.getVersionManager().hasPersistentData()) {
             if (itemStack.getItemMeta() != null && itemStack.getItemMeta().getPersistentDataContainer()
@@ -340,6 +354,7 @@ public class RecipeManager {
      * @param itemStack The item stack.
      * @return True if the item stack is a token, otherwise false.
      */
+    @Deprecated (forRemoval = true, since = "4.9.10.10")
     public boolean isToken(ItemStack itemStack) {
         return plugin.getVersionManager().hasPersistentData()
                 && itemStack.getItemMeta() != null
@@ -353,6 +368,7 @@ public class RecipeManager {
      * @param count The count.
      * @return The character for the recipe slot.
      */
+    @Deprecated (forRemoval = true, since = "4.9.10.10")
     private char getChar(int count) {
         return switch (count) {
             case 1 -> 'A';
