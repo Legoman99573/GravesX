@@ -5,33 +5,62 @@ labels:
   - bug
 assignees:
   - Legoman99573
+
 body:
   - type: markdown
     attributes:
       value: |
         ## Bug Report
 
+        Please fill out **all required fields**. Incomplete reports, outdated versions, and unsupported environments
+        (hybrid jars, plugin managers, very old or underpowered hardware) may be closed without investigation.
+
   - type: input
     id: mc_server_version
     attributes:
       label: Minecraft Server Version
-      description: Provide the version of Minecraft server you are using
+      description: >
+        Run `/version` in your server console and paste the **full line** that shows your server implementation
+        and version. Do NOT just write "1.21.1".
+      placeholder: "This server is running Paper version git-Paper-123 (MC: 1.21.1) ..."
+    validations:
+      required: true
+
+  - type: input
+    id: graves_version
+    attributes:
+      label: GravesX Version
+      description: "Provide the exact GravesX version from the JAR file name."
+      placeholder: "e.g. GravesX-4.9.10.5-286.jar"
     validations:
       required: true
 
   - type: input
     id: graves_dump
     attributes:
-      label: "`/graves dump` output"
-      description: "Provide the output of the `/graves dump` command. We will accept mclo.gs or other log based."
+      label: `/graves dump` output
+      description: "Provide the output of the `/graves dump` command. Paste a link (e.g. mclo.gs, hastebin, etc.) rather than raw text."
+      placeholder: "https://mclo.gs/your-log-here"
     validations:
       required: true
+
+  - type: input
+    id: spark_profile
+    attributes:
+      label: Spark Profile / Performance Dump
+      description: >
+        Required **only** when reporting TPS or performance issues.
+        Please include a Spark profile link or similar performance report.
+        Note: most performance problems are caused by outdated or underpowered hardware,
+        oversized worlds, or overloaded servers, which are generally outside the scope of GravesX support.
+      placeholder: "https://spark.lucko.me/your-profile-here"
 
   - type: textarea
     id: summary
     attributes:
       label: Summary of the bug
-      description: A brief description of the issue
+      description: "A short, clear summary of the issue."
+      placeholder: "e.g. Grave was supposed to spawn."
     validations:
       required: true
 
@@ -39,7 +68,12 @@ body:
     id: steps_to_reproduce
     attributes:
       label: Steps to Reproduce
-      description: List all steps to reproduce the issue
+      description: "List all steps to reliably reproduce the issue."
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+        4. ...
     validations:
       required: true
 
@@ -47,7 +81,8 @@ body:
     id: expected_result
     attributes:
       label: Expected Result
-      description: Describe what you expected to happen
+      description: "Describe what you expected to happen."
+      placeholder: "e.g. Grave went to the heavens and never spawned in."
     validations:
       required: true
 
@@ -55,43 +90,66 @@ body:
     id: actual_result
     attributes:
       label: Actual Result
-      description: Describe what actually happened
+      description: "Describe what actually happened, including any errors or missing behavior."
+      placeholder: "e.g. Grave went to the heavens and never spawned in nor my items."
     validations:
       required: true
 
   - type: textarea
     id: screenshots
     attributes:
-      label: Screenshots
-      description: If applicable, add screenshots to help explain your problem
+      label: Screenshots / Videos
+      description: "If applicable, add screenshots or video links to help explain your problem."
 
   - type: textarea
     id: additional_info
     attributes:
-      label: Additional Information
-      description: Add any other context about the problem here
+      label: Additional Information / Full Stack Trace
+      description: >
+        **If your issue involves any errors or exceptions, you MUST include the
+        full, uncut stack trace here.**
+        Do NOT paste only the first line (e.g. "NullPointerException") or a
+        cropped screenshot. Copy everything relevant from your console or latest.log and
+        paste it inside a code block.
+        
+        You may also include:
+        - Relevant config sections (with secrets removed)
+        - Links to full logs (mclo.gs, etc.)
+        - Any extra context that might help reproduce the issue
+      placeholder: |
+        ---- BEGIN FULL STACK TRACE ----
+        [paste entire stack trace here, not snippets as it helps nobody]
+        ---- END FULL STACK TRACE ----
+
+        Additional context:
+        - ...
+        - ...
+    validations:
+      required: true
 
   - type: checkboxes
     id: version_confirmation
     attributes:
-      label: Version Confirmation
-      description: Confirm that the issue is with the latest GravesX spigot release or development build only and not an outdated version.
+      label: Environment & Support Confirmation
+      description: "Please confirm all of the following to ensure this report is supportable."
       options:
-        - label: I confirm that the issue is present in the latest GravesX Spigot Release or Development Builds.
+        - label: I confirm this issue occurs on the latest GravesX release or development build, not an outdated version.
           required: true
-        - label: If I use development builds in a production environment, I am aware that I will not receive support if I lose data.
+        - label: I understand that if I use development builds in a production environment and lose data, I will not receive support for that data loss.
           required: true
-        - label: If the issue is caused by another fork or Graves 4.9, then I expect to not get support here and my issue will be closed.
+        - label: I understand that issues caused by other forks or Graves 4.9 are not supported here and may be closed.
           required: true
-        - label: I am not running an outdated version of GravesX when reporting
+        - label: I am not running an outdated version of GravesX for this report.
           required: true
-        - label: If I use any sort of Plugin Manager/Management plugin that I will not receive support. (Plugin Managers causes alot of behavioral issues and causes more problems than it resolves)
+        - label: I am not using a Plugin Manager/Management plugin to load/unload GravesX. I understand these cause many behavioral issues and are not supported.
           required: true
-        - label: My issue is not a duplicate of another issue reported.
+        - label: I have checked existing issues and confirmed this is not a duplicate.
           required: true
-        - label: If I do not provide enough information in my bug report or using an outdated version when reporting a bug, my issue will be closed. You may re-open a new issue if the issue still occurs.
+        - label: I understand that reports with insufficient information or using outdated versions may be closed. I may open a new report after updating and providing full details.
           required: true
-        - label: I agree that I am running some sort of Spigot, Paper, or a Folia server and not a hybrid of either (Hybrid jars, like Mohist, cause breaking bugs and we will not provide support.)
+        - label: I am running a supported server type (Spigot, Paper, Folia, etc.) and not a hybrid jar (e.g. Mohist), which is not supported.
           required: true
-        - label: "I am not just clicking checkboxes randomly without reading them. If I don't check this, then I did read everything."
+        - label: I have tested with only GravesX installed (or with minimal plugins) to rule out plugin conflicts where possible.
+          required: true
+        - label: I am not just clicking checkboxes at random; I have read and understood the above.
           required: false

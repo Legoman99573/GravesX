@@ -1,0 +1,32 @@
+# .github/workflows/lock-on-close.yml
+name: Lock issues and PRs on close
+
+on:
+  issues:
+    types: [closed]
+  pull_request:
+    types: [closed]
+
+permissions:
+  issues: write
+
+jobs:
+  lock-thread:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Lock issue or pull request when closed
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const isIssueEvent = !!context.payload.issue;
+            const number = isIssueEvent ? context.payload.issue.number : context.payload.pull_request.number;
+
+            await github.rest.issues.lock({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: number,
+              lock_reason: "resolved", // "off-topic" | "too heated" | "resolved" | "spam"
+            });
+
+            core.info(`Locked ${isIssueEvent ? "issue" : "pull request"} #${number}`);
