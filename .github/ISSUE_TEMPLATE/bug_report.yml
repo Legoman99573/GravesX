@@ -38,7 +38,7 @@ body:
   - type: input
     id: graves_dump
     attributes:
-      label: `/graves dump` output
+      label: "`/graves dump` output"
       description: "Provide the output of the `/graves dump` command. Paste a link (e.g. mclo.gs, hastebin, etc.) rather than raw text."
       placeholder: "https://mclo.gs/your-log-here"
     validations:
