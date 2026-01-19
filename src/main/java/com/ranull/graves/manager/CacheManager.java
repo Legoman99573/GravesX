@@ -7,7 +7,6 @@ import org.bukkit.block.Block;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -173,15 +172,12 @@ public class CacheManager {
      *
      * @param graveUUID  the grave UUID
      * @param viewerUUID the player's UUID
-     * @return {@code true} if the lock was cleared, {@code false} if it was held by someone else or not set
      */
-    public boolean stopViewingGrave(UUID graveUUID, UUID viewerUUID) {
+    public void stopViewingGrave(UUID graveUUID, UUID viewerUUID) {
         UUID current = graveViewerMap.get(graveUUID);
         if (current != null && current.equals(viewerUUID)) {
             graveViewerMap.remove(graveUUID);
-            return true;
         }
-        return false;
     }
 
     /**
@@ -199,19 +195,9 @@ public class CacheManager {
      * Useful to call on PlayerQuitEvent.
      *
      * @param viewerUUID the player's UUID
-     * @return number of locks removed
      */
-    public int clearAllGraveViewersFor(UUID viewerUUID) {
-        int removed = 0;
-        Iterator<Map.Entry<UUID, UUID>> it = graveViewerMap.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry<UUID, UUID> e = it.next();
-            if (viewerUUID.equals(e.getValue())) {
-                it.remove();
-                removed++;
-            }
-        }
-        return removed;
+    public void clearAllGraveViewersFor(UUID viewerUUID) {
+        graveViewerMap.entrySet().removeIf(e -> viewerUUID.equals(e.getValue()));
     }
 
     /**

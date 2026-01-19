@@ -1750,12 +1750,12 @@ public class GraveManager {
                 if (grave.getLocationDeath().getBlock().getType() == Material.valueOf(plugin.getConfigManager().getConfigSection("block.material", grave).getString("block.material", "PLAYER_HEAD"))) {
                     grave.getLocationDeath().getBlock().setType(Material.valueOf("AIR"));
                 }
-            } catch (Throwable t) {
-                plugin.debugMessage("Error while dropping items/XP for grave " + grave.getUUID() + ": " + t.getMessage(), 2);
-                plugin.logStackTrace(t);
-            } finally {
                 removeGrave(grave);
                 plugin.debugMessage("Grave " + grave.getUUID() + " broken", 1);
+            } catch (Throwable t) {
+                plugin.debugMessage("Grave " + grave.getUUID() + " failed to break due to an error", 2);
+                plugin.getLogger().severe("Error while dropping items/XP for grave " + grave.getUUID() + ": " + t.getMessage());
+                plugin.logStackTrace(t);
             }
         });
     }
