@@ -117,7 +117,10 @@ final class ModuleCommandRegistrar {
         if (defs == null || defs.isEmpty()) return;
 
         SimpleCommandMap map = commandMap();
-        if (map == null) return;
+        if (map == null) {
+            plugin.debugMessage("CommandMap is null; cannot register YAML commands for module " + lm.info.name(), 2);
+            return;
+        }
 
         var out = new ArrayList<PluginCommand>();
 
@@ -126,7 +129,10 @@ final class ModuleCommandRegistrar {
             String name = def.name();
 
             PluginCommand pc = newPluginCommand(name, plugin);
-            if (pc == null) continue;
+            if (pc == null) {
+                plugin.debugMessage("Failed to create PluginCommand for '" + name + "' (module " + lm.info.name() + ")", 2);
+                continue;
+            }
 
             String yamlDesc = Optional.ofNullable(def.description()).orElse("");
             String yamlUsage = Optional.ofNullable(def.usage()).orElse("/" + name);
@@ -168,11 +174,12 @@ final class ModuleCommandRegistrar {
             }
 
             if (map.register(plugin.getName().toLowerCase(Locale.ROOT), pc)) {
-                out.add(pc);
+                cmds.computeIfAbsent(lm.info.name(), k -> new ArrayList<>()).add(pc);
+                plugin.debugMessage("Registered YAML command '/" + name + "' for module " + lm.info.name(), 1);
+            } else {
+                plugin.debugMessage("Failed to register YAML command '/" + name + "' for module " + lm.info.name() + " (command map rejected registration)", 2);
             }
         }
-
-        if (!out.isEmpty()) cmds.put(lm.info.name(), out);
     }
 
     /**
@@ -298,10 +305,16 @@ final class ModuleCommandRegistrar {
         if (lm == null || command == null || name == null || name.isBlank()) return;
 
         SimpleCommandMap map = commandMap();
-        if (map == null) return;
+        if (map == null) {
+            plugin.debugMessage("CommandMap is null; cannot register dynamic command '/" + name + "' for module " + lm.info.name(), 2);
+            return;
+        }
 
         PluginCommand pc = newPluginCommand(name, plugin);
-        if (pc == null) return;
+        if (pc == null) {
+            plugin.debugMessage("Failed to create PluginCommand for dynamic '/" + name + "' (module " + lm.info.name() + ")", 2);
+            return;
+        }
 
         // Metadata from GravesXModuleCommand
         String desc = Optional.ofNullable(command.getDescription()).orElse("");
@@ -339,6 +352,9 @@ final class ModuleCommandRegistrar {
 
         if (map.register(plugin.getName().toLowerCase(Locale.ROOT), pc)) {
             cmds.computeIfAbsent(lm.info.name(), k -> new ArrayList<>()).add(pc);
+            plugin.debugMessage("Registered dynamic command '/" + name + "' for module " + lm.info.name(), 1);
+        } else {
+            plugin.debugMessage("Failed to register dynamic command '/" + name + "' for module " + lm.info.name() + " (command map rejected registration)", 2);
         }
     }
 
@@ -355,14 +371,19 @@ final class ModuleCommandRegistrar {
         if (lm == null || commandClass == null || name == null || name.isBlank()) return;
 
         SimpleCommandMap map = commandMap();
-        if (map == null) return;
+        if (map == null) {
+            plugin.debugMessage("CommandMap is null; cannot register dynamic class-based command '/" + name + "' for module " + lm.info.name(), 2);
+            return;
+        }
 
         PluginCommand pc = newPluginCommand(name, plugin);
-        if (pc == null) return;
+        if (pc == null) {
+            plugin.debugMessage("Failed to create PluginCommand for dynamic class-based '/" + name + "' (module " + lm.info.name() + ")", 2);
+            return;
+        }
 
         GravesXModuleCommand command;
         try {
-            // Reuse your existing instantiate() helper; it prefers (ModuleContext) then no-arg
             command = instantiate(commandClass, lm.context, GravesXModuleCommand.class);
         } catch (Exception t) {
             plugin.getLogger().severe("Dynamic command instantiation failed for " + commandClass.getName() + ": " + t.getMessage());
@@ -406,6 +427,9 @@ final class ModuleCommandRegistrar {
 
         if (map.register(plugin.getName().toLowerCase(Locale.ROOT), pc)) {
             cmds.computeIfAbsent(lm.info.name(), k -> new ArrayList<>()).add(pc);
+            plugin.debugMessage("Registered dynamic class-based command '/" + name + "' for module " + lm.info.name(), 1);
+        } else {
+            plugin.debugMessage("Failed to register dynamic class-based command '/" + name + "' for module " + lm.info.name() + " (command map rejected registration)", 2);
         }
     }
 }
