@@ -1,5 +1,7 @@
 package dev.cwhead.GravesX.module;
 
+import dev.cwhead.GravesX.module.command.GravesXModuleCommand;
+
 import java.util.Collection;
 import java.util.List;
 
@@ -212,6 +214,34 @@ public interface GravesXModuleController {
      * @return a collection view of all module descriptors (may be empty, never {@code null})
      */
     Collection<GravesXModuleDescriptor> listModules();
+
+    /**
+     * Registers a command owned by this module with the GravesX command dispatcher.
+     *
+     * <p>The exact wiring to Bukkit's command map is implementation-defined; the
+     * intent is that modules can expose lightweight, module-scoped commands
+     * without touching the core plugin's {@code plugin.yml}.</p>
+     *
+     * @param label   primary command label (without leading {@code /})
+     * @param command module command implementation
+     * @throws IllegalArgumentException if {@code label} is invalid or already in use
+     */
+    void registerCommand(String label, GravesXModuleCommand command);
+
+    /**
+     * Registers a command owned by this module with the GravesX command dispatcher,
+     * using a command implementation class.
+     *
+     * <p>The host is responsible for instantiating the command class (for example via
+     * a no-arg constructor or dependency injection). This allows any class that
+     * implements {@link GravesXModuleCommand} to be registered without the module
+     * having to manage the instance lifecycle itself.</p>
+     *
+     * @param label        primary command label (without leading {@code /})
+     * @param commandClass implementation class of the command
+     * @throws IllegalArgumentException if {@code label} is invalid or already in use
+     */
+    void registerCommand(String label, Class<? extends GravesXModuleCommand> commandClass);
 
     /**
      * Convenience accessor for {@code getModule(moduleKey).getName()}.

@@ -286,4 +286,126 @@ final class ModuleCommandRegistrar {
         } catch (Throwable ignored) {
         }
     }
+
+    /**
+     * Dynamically registers a command for a module using a command instance.
+     *
+     * @param lm      Loaded module container.
+     * @param name    Primary command label (without leading /).
+     * @param command Command implementation.
+     */
+    void registerDynamicCommand(LoadedModule lm, String name, GravesXModuleCommand command) {
+        if (lm == null || command == null || name == null || name.isBlank()) return;
+
+        SimpleCommandMap map = commandMap();
+        if (map == null) return;
+
+        PluginCommand pc = newPluginCommand(name, plugin);
+        if (pc == null) return;
+
+        // Metadata from GravesXModuleCommand
+        String desc = Optional.ofNullable(command.getDescription()).orElse("");
+        String usage = Optional.ofNullable(command.getUsage()).orElse("/" + name);
+        String perm = Optional.ofNullable(command.getPermission()).orElse("");
+        List<String> aliases = new ArrayList<>();
+        if (command.getAliases() != null) {
+            aliases.addAll(command.getAliases());
+        }
+
+        String providedName = command.getName();
+        if (providedName != null && !providedName.isEmpty()
+                && !providedName.equalsIgnoreCase(name)
+                && !aliases.contains(providedName)) {
+            aliases.add(providedName);
+        }
+
+        pc.setDescription(desc);
+        pc.setUsage(usage);
+        pc.setPermission(perm);
+        if (!aliases.isEmpty()) {
+            pc.setAliases(aliases);
+        }
+
+        GravesXModuleTabCompleter tab = null;
+        if (command instanceof GravesXModuleTabCompleter gmtc) {
+            tab = gmtc;
+        }
+
+        pc.setExecutor(command);
+        if (tab != null) {
+            pc.setTabCompleter(tab);
+            tab.onRegister(lm.context, pc);
+        }
+
+        if (map.register(plugin.getName().toLowerCase(Locale.ROOT), pc)) {
+            cmds.computeIfAbsent(lm.info.name(), k -> new ArrayList<>()).add(pc);
+        }
+    }
+
+    /**
+     * Dynamically registers a command for a module using a command class.
+     *
+     * Any class that implements {@link GravesXModuleCommand} is accepted.
+     *
+     * @param lm           Loaded module container.
+     * @param name         Primary command label (without leading /).
+     * @param commandClass Implementation class of the command.
+     */
+    void registerDynamicCommand(LoadedModule lm, String name, Class<? extends GravesXModuleCommand> commandClass) {
+        if (lm == null || commandClass == null || name == null || name.isBlank()) return;
+
+        SimpleCommandMap map = commandMap();
+        if (map == null) return;
+
+        PluginCommand pc = newPluginCommand(name, plugin);
+        if (pc == null) return;
+
+        GravesXModuleCommand command;
+        try {
+            // Reuse your existing instantiate() helper; it prefers (ModuleContext) then no-arg
+            command = instantiate(commandClass, lm.context, GravesXModuleCommand.class);
+        } catch (Exception t) {
+            plugin.getLogger().severe("Dynamic command instantiation failed for " + commandClass.getName() + ": " + t.getMessage());
+            plugin.logStackTrace(t);
+            return;
+        }
+
+        // Metadata from GravesXModuleCommand
+        String desc = Optional.ofNullable(command.getDescription()).orElse("");
+        String usage = Optional.ofNullable(command.getUsage()).orElse("/" + name);
+        String perm = Optional.ofNullable(command.getPermission()).orElse("");
+        List<String> aliases = new ArrayList<>();
+        if (command.getAliases() != null) {
+            aliases.addAll(command.getAliases());
+        }
+
+        String providedName = command.getName();
+        if (providedName != null && !providedName.isEmpty()
+                && !providedName.equalsIgnoreCase(name)
+                && !aliases.contains(providedName)) {
+            aliases.add(providedName);
+        }
+
+        pc.setDescription(desc);
+        pc.setUsage(usage);
+        pc.setPermission(perm);
+        if (!aliases.isEmpty()) {
+            pc.setAliases(aliases);
+        }
+
+        GravesXModuleTabCompleter tab = null;
+        if (command instanceof GravesXModuleTabCompleter gmtc) {
+            tab = gmtc;
+        }
+
+        pc.setExecutor(command);
+        if (tab != null) {
+            pc.setTabCompleter(tab);
+            tab.onRegister(lm.context, pc);
+        }
+
+        if (map.register(plugin.getName().toLowerCase(Locale.ROOT), pc)) {
+            cmds.computeIfAbsent(lm.info.name(), k -> new ArrayList<>()).add(pc);
+        }
+    }
 }

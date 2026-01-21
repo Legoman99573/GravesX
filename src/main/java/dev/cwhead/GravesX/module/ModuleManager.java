@@ -1,6 +1,7 @@
 package dev.cwhead.GravesX.module;
 
 import com.ranull.graves.Graves;
+import dev.cwhead.GravesX.module.command.GravesXModuleCommand;
 import dev.cwhead.GravesX.module.util.LibraryImporter;
 import dev.cwhead.GravesX.module.util.ModuleClassLoader;
 import dev.cwhead.GravesX.module.util.ModuleInfo;
@@ -401,6 +402,34 @@ public final class ModuleManager {
             if (moduleClass == null) return null;
             LoadedModule lm = findByClass(moduleClass);
             return (lm != null) ? new DescriptorImpl(lm) : null;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public void registerCommand(String label, GravesXModuleCommand command) {
+            if (label == null || label.isBlank()) {
+                throw new IllegalArgumentException("label must not be null/blank");
+            }
+            if (command == null) {
+                throw new IllegalArgumentException("command must not be null");
+            }
+            ModuleManager.this.registerCommand(self, label, command);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public void registerCommand(String label, Class<? extends GravesXModuleCommand> commandClass) {
+            if (label == null || label.isBlank()) {
+                throw new IllegalArgumentException("label must not be null/blank");
+            }
+            if (commandClass == null) {
+                throw new IllegalArgumentException("commandClass must not be null");
+            }
+            ModuleManager.this.registerCommand(self, label, commandClass);
         }
     }
 
@@ -1005,6 +1034,14 @@ public final class ModuleManager {
             if (norm(simple).equals(k) || norm(fqcn).equals(k)) return lm;
         }
         return null;
+    }
+
+    void registerCommand(LoadedModule owner, String label, GravesXModuleCommand command) {
+        commandRegistrar.registerDynamicCommand(owner, label, command);
+    }
+
+    void registerCommand(LoadedModule owner, String label, Class<? extends GravesXModuleCommand> commandClass) {
+        commandRegistrar.registerDynamicCommand(owner, label, commandClass);
     }
 
     /**
