@@ -97,8 +97,13 @@ public class BlockBreakListener implements Listener {
             boolean dropItemsFinal = modern.isDropItems() && legacy.isDropItems();
             modern.setDropItems(dropItemsFinal);
 
-            if (plugin.getConfigManager().getConfigSection("drop.auto-loot.enabled", grave).getBoolean("drop.auto-loot.enabled")) {
-                handleAutoLoot(event, player, block, grave, modern);
+            if (plugin.getConfigManager().getConfigSection("drop.auto-loot.enabled", grave).getBoolean("drop.auto-loot.enabled") && plugin.getConfigManager().getConfigSection("drop.auto-loot.break", grave).getBoolean("drop.auto-loot.break")) {
+                if (player.isSneaking()) {
+                    handleAutoLoot(event, player, block, grave, modern);
+                } else {
+                    explodeEffectGrave(grave);
+                    plugin.getGraveManager().breakGrave(block.getLocation(), grave);
+                }
             } else if (dropItemsFinal) {
                 explodeEffectGrave(grave);
                 plugin.getGraveManager().breakGrave(block.getLocation(), grave);
@@ -150,9 +155,7 @@ public class BlockBreakListener implements Listener {
             return;
         }
 
-        plugin.getGraveManager().autoLootGrave(player, hitLoc, grave, false);
-
-        if (graveBreakEvent.isDropItems() && plugin.getConfig("drop.auto-loot.break", grave).getBoolean("drop.auto-loot.break")) {
+        if (graveBreakEvent.isDropItems()) {
             try {
                 Location loc = grave.getLocationDeath();
                 Objects.requireNonNull(loc.getWorld()).spawnParticle(CompatibilityParticleEnum.valueOf("EXPLOSION"), loc, 1);
@@ -165,7 +168,7 @@ public class BlockBreakListener implements Listener {
                 // ignored
             }
 
-            plugin.getGraveManager().breakGrave(hitLoc, grave);
+            plugin.getGraveManager().autoLootGrave(player, hitLoc, grave, false);
 
             if (plugin.getIntegrationManager().hasNoteBlockAPI()) {
                 if (plugin.getIntegrationManager().getNoteBlockAPI().isSongPlayingForPlayer(player)) {
