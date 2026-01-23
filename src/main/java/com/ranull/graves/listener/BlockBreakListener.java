@@ -7,7 +7,6 @@ import dev.cwhead.GravesX.compatibility.CompatibilitySoundEnum;
 import dev.cwhead.GravesX.event.GraveAutoLootEvent;
 import dev.cwhead.GravesX.event.GraveBreakEvent;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -35,10 +34,6 @@ public class BlockBreakListener implements Listener {
 
     /**
      * Handles BlockBreakEvent to manage interactions with grave blocks when a block is broken.
-     *
-     * Checks if the broken block is associated with a grave. If so, verifies if breaking the grave
-     * is allowed and if the player has permission to do so. If not a grave block, it checks if
-     * the block is within a 15-block radius of any grave and cancels the event if so.
      *
      * @param event The BlockBreakEvent to handle.
      */
@@ -155,7 +150,7 @@ public class BlockBreakListener implements Listener {
             return;
         }
 
-        plugin.getGraveManager().autoLootGrave(player, hitLoc, grave);
+        plugin.getGraveManager().autoLootGrave(player, hitLoc, grave, false);
 
         if (graveBreakEvent.isDropItems() && plugin.getConfig("drop.auto-loot.break", grave).getBoolean("drop.auto-loot.break")) {
             try {
