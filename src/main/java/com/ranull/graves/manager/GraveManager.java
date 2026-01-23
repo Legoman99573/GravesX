@@ -1129,7 +1129,7 @@ public class GraveManager {
                 } catch (Throwable ignored) {
                     // Defensive: ensure we don't break the loop
                 }
-                plugin.debugMessage("Closing grave " + grave.getUUID() + " for " + humanEntity.getName(), 1);
+                plugin.debugMessage("Closing grave inventory " + grave.getUUID() + " on viewer " + humanEntity.getName(), 1);
             }
         }
 
@@ -1149,6 +1149,7 @@ public class GraveManager {
                 if (graveMenu.getGrave() != null
                         && graveMenu.getGrave().getUUID().equals(grave.getUUID())) {
                     player.closeInventory();
+                    plugin.debugMessage("Closing grave inventory " + grave.getUUID() + " on viewer " + player.getName(), 1);
                 }
             }
         }
