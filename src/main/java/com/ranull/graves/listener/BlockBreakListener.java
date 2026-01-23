@@ -142,59 +142,6 @@ public class BlockBreakListener implements Listener {
      * @param grave           The grave associated with the block.
      * @param graveBreakEvent The GraveBreakEvent.
      */
-    private void handleAutoLoot(BlockBreakEvent event, Player player, Block block, Grave grave, com.ranull.graves.event.GraveBreakEvent graveBreakEvent) {
-        Location hitLoc = block.getLocation();
-
-        GraveAutoLootEvent modern = new GraveAutoLootEvent(player, hitLoc, grave);
-        plugin.getServer().getPluginManager().callEvent(modern);
-
-        com.ranull.graves.event.GraveAutoLootEvent legacy = new com.ranull.graves.event.GraveAutoLootEvent(player, hitLoc, grave);
-        plugin.getServer().getPluginManager().callEvent(legacy);
-
-        if (modern.isCancelled() || modern.isAddon() || legacy.isCancelled() || legacy.isAddon()) {
-            return;
-        }
-
-        plugin.getGraveManager().autoLootGrave(player, hitLoc, grave);
-
-        if (graveBreakEvent.isDropItems()
-                && plugin.getConfig("drop.auto-loot.break", grave).getBoolean("drop.auto-loot.break")) {
-            try {
-                Location loc = grave.getLocationDeath();
-                Objects.requireNonNull(loc.getWorld()).spawnParticle(CompatibilityParticleEnum.valueOf("EXPLOSION"), loc, 1);
-                try {
-                    loc.getWorld().playSound(loc, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("ENTITY_GENERIC_EXPLODE")), 1.0f, 1.0f);
-                } catch (Exception e) {
-                    loc.getWorld().playSound(loc, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("EXPLODE")), 1.0f, 1.0f); // pre 1.9
-                }
-            } catch (Exception ignored) {
-                // ignored
-            }
-
-            plugin.getGraveManager().breakGrave(hitLoc, grave);
-
-            if (plugin.getIntegrationManager().hasNoteBlockAPI()) {
-                if (plugin.getIntegrationManager().getNoteBlockAPI().isSongPlayingForPlayer(player)) {
-                    plugin.getIntegrationManager().getNoteBlockAPI().stopSongForPlayer(player);
-                }
-                if (plugin.getIntegrationManager().getNoteBlockAPI().isSongPlayingForAllPlayers()) {
-                    plugin.getIntegrationManager().getNoteBlockAPI().stopSongForAllPlayers();
-                }
-            }
-        } else {
-            event.setCancelled(true);
-        }
-    }
-
-    /**
-     * Handles the auto-loot process when breaking a grave.
-     *
-     * @param event           The BlockBreakEvent.
-     * @param player          The player breaking the block.
-     * @param block           The block being broken.
-     * @param grave           The grave associated with the block.
-     * @param graveBreakEvent The GraveBreakEvent.
-     */
     private void handleAutoLoot(BlockBreakEvent event, Player player, Block block, Grave grave, GraveBreakEvent graveBreakEvent) {
         Location hitLoc = block.getLocation();
 
@@ -210,8 +157,7 @@ public class BlockBreakListener implements Listener {
 
         plugin.getGraveManager().autoLootGrave(player, hitLoc, grave);
 
-        if (graveBreakEvent.isDropItems()
-                && plugin.getConfig("drop.auto-loot.break", grave).getBoolean("drop.auto-loot.break")) {
+        if (graveBreakEvent.isDropItems() && plugin.getConfig("drop.auto-loot.break", grave).getBoolean("drop.auto-loot.break")) {
             try {
                 Location loc = grave.getLocationDeath();
                 Objects.requireNonNull(loc.getWorld()).spawnParticle(CompatibilityParticleEnum.valueOf("EXPLOSION"), loc, 1);
