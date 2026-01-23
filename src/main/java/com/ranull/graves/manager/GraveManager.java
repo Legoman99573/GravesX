@@ -17,6 +17,7 @@ import dev.cwhead.GravesX.api.provider.RegisterGraveProviders;
 import dev.cwhead.GravesX.event.*;
 import dev.cwhead.GravesX.exception.GravesXGraveProviderException;
 import dev.cwhead.GravesX.exception.GravesXNullPointerException;
+import dev.cwhead.GravesX.keys.GraveHologramKeys;
 import me.jay.GravesX.util.pluginsWithoutMavenReposOrUsefulApiDocsThatCauseBugs.ReflectSupportAE;
 import com.ranull.graves.util.StringUtil;
 import org.bukkit.*;
@@ -30,6 +31,7 @@ import org.bukkit.inventory.*;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Field;
@@ -480,54 +482,262 @@ public class GraveManager {
      */
     private void processHologramData(HologramData hologramData, Location location, List<EntityData> entityDataRemoveList) {
         try {
-            Grave grave = plugin.getCacheManager().getGraveMap().get(hologramData.getUUIDGrave());
-            if (grave == null) return;
+            if (!plugin.getCacheManager().getGraveMap().containsKey(hologramData.getUUIDGrave())) {
+                entityDataRemoveList.add(hologramData);
+                return;
+            }
 
-            List<String> lineList = plugin.getConfigManager().getConfigSection("hologram.line", grave).getStringList("hologram.line");
-            Collections.reverse(lineList);
+            Grave grave = plugin.getCacheManager().getGraveMap().get(hologramData.getUUIDGrave());
+            if (grave == null) {
+                entityDataRemoveList.add(hologramData);
+                return;
+            }
 
             if (plugin.getVersionManager().isFolia()) {
                 plugin.getSchedulerManager().execute(location, () -> {
                     Chunk chunk = hologramData.getLocation().getChunk();
+                    Entity target = null;
+
                     for (Entity entity : chunk.getEntities()) {
-                        if (!entity.getUniqueId().equals(hologramData.getUUIDEntity())) continue;
+                        if (!entity.getUniqueId().equals(hologramData.getUUIDEntity())) {
+                            continue;
+                        }
 
-                        int lineIndex = hologramData.getLine();
-                        if (lineIndex < lineList.size()) {
-                            String lineText = StringUtil.parseString(lineList.get(lineIndex), location, grave, plugin);
+                        boolean valid = true;
 
-                            if (plugin.getIntegrationManager().hasMiniMessage()) {
-                                entity.setCustomName(MiniMessage.parseString(lineText));
-                            } else {
-                                entity.setCustomName(lineText);
+                        if (plugin.getVersionManager().hasPersistentData() && entity instanceof ArmorStand) {
+                            PersistentDataContainer pdc = entity.getPersistentDataContainer();
+                            String graveUuidStr = pdc.get(GraveHologramKeys.GRAVE_UUID, PersistentDataType.STRING);
+                            if (graveUuidStr != null) {
+                                try {
+                                    UUID pdcUuid = UUID.fromString(graveUuidStr);
+                                    if (!pdcUuid.equals(hologramData.getUUIDGrave())) {
+                                        valid = false;
+                                    }
+                                } catch (IllegalArgumentException ignored) {
+                                    valid = false;
+                                }
                             }
-                        } else {
+                        } else if (!plugin.getVersionManager().hasPersistentData() && plugin.getVersionManager().hasScoreboardTags() && entity instanceof ArmorStand) {
+                            boolean hasMatchingTag = false;
+                            for (String tag : entity.getScoreboardTags()) {
+                                if (!tag.startsWith("graveHologramGraveUUID:")) continue;
+                                String uuidStr = tag.substring("graveHologramGraveUUID:".length());
+                                try {
+                                    UUID tagUuid = UUID.fromString(uuidStr);
+                                    if (tagUuid.equals(hologramData.getUUIDGrave())) {
+                                        hasMatchingTag = true;
+                                        break;
+                                    }
+                                } catch (IllegalArgumentException ignored) {
+                                    // ignore malformed tag
+                                }
+                            }
+                            if (!hasMatchingTag) {
+                                valid = false;
+                            }
+                        }
+
+                        if (!valid) {
                             entityDataRemoveList.add(hologramData);
+                            return;
+                        }
+
+                        target = entity;
+                        break;
+                    }
+
+                    if (target == null) {
+                        if (plugin.getVersionManager().hasPersistentData()) {
+                            for (Entity entity : chunk.getEntities()) {
+                                if (!(entity instanceof ArmorStand)) continue;
+                                PersistentDataContainer pdc = entity.getPersistentDataContainer();
+                                String graveUuidStr = pdc.get(GraveHologramKeys.GRAVE_UUID, PersistentDataType.STRING);
+                                if (graveUuidStr == null) continue;
+
+                                try {
+                                    UUID pdcUuid = UUID.fromString(graveUuidStr);
+                                    if (pdcUuid.equals(hologramData.getUUIDGrave())) {
+                                        target = entity;
+                                        break;
+                                    }
+                                } catch (IllegalArgumentException ignored) {
+                                    // ignore malformed
+                                }
+                            }
+                        } else if (plugin.getVersionManager().hasScoreboardTags()) {
+                            for (Entity entity : chunk.getEntities()) {
+                                if (!(entity instanceof ArmorStand)) continue;
+
+                                boolean match = false;
+                                for (String tag : entity.getScoreboardTags()) {
+                                    if (!tag.startsWith("graveHologramGraveUUID:")) continue;
+                                    String uuidStr = tag.substring("graveHologramGraveUUID:".length());
+                                    try {
+                                        UUID tagUuid = UUID.fromString(uuidStr);
+                                        if (tagUuid.equals(hologramData.getUUIDGrave())) {
+                                            match = true;
+                                            break;
+                                        }
+                                    } catch (IllegalArgumentException ignored) {
+                                        // ignore malformed tag
+                                    }
+                                }
+
+                                if (match) {
+                                    target = entity;
+                                    break;
+                                }
+                            }
                         }
                     }
-                });
-            } else {
-                Chunk chunk = hologramData.getLocation().getChunk();
-                for (Entity entity : chunk.getEntities()) {
-                    if (!entity.getUniqueId().equals(hologramData.getUUIDEntity())) continue;
+
+                    if (target == null) {
+                        entityDataRemoveList.add(hologramData);
+                        return;
+                    }
+
+                    List<String> lineList = plugin.getConfigManager().getConfigSection("hologram.line", grave).getStringList("hologram.line");
+                    Collections.reverse(lineList);
 
                     int lineIndex = hologramData.getLine();
                     if (lineIndex < lineList.size()) {
-                        String lineText = StringUtil.parseString(lineList.get(lineIndex), location, grave, plugin);
+                        String lineText = StringUtil.parseString(
+                                lineList.get(lineIndex), location, grave, plugin
+                        );
 
                         if (plugin.getIntegrationManager().hasMiniMessage()) {
-                            entity.setCustomName(MiniMessage.parseString(lineText));
+                            target.setCustomName(MiniMessage.parseString(lineText));
                         } else {
-                            entity.setCustomName(lineText);
+                            target.setCustomName(lineText);
                         }
                     } else {
                         entityDataRemoveList.add(hologramData);
                     }
+                });
+            } else {
+                Chunk chunk = hologramData.getLocation().getChunk();
+                Entity target = null;
+
+                for (Entity entity : chunk.getEntities()) {
+                    if (!entity.getUniqueId().equals(hologramData.getUUIDEntity())) {
+                        continue;
+                    }
+
+                    boolean valid = true;
+
+                    if (plugin.getVersionManager().hasPersistentData() && entity instanceof ArmorStand) {
+                        PersistentDataContainer pdc = entity.getPersistentDataContainer();
+                        String graveUuidStr = pdc.get(GraveHologramKeys.GRAVE_UUID, PersistentDataType.STRING);
+                        if (graveUuidStr != null) {
+                            try {
+                                UUID pdcUuid = UUID.fromString(graveUuidStr);
+                                if (!pdcUuid.equals(hologramData.getUUIDGrave())) {
+                                    valid = false;
+                                }
+                            } catch (IllegalArgumentException ignored) {
+                                valid = false;
+                            }
+                        }
+                    } else if (!plugin.getVersionManager().hasPersistentData() && plugin.getVersionManager().hasScoreboardTags() && entity instanceof ArmorStand) {
+                        boolean hasMatchingTag = false;
+                        for (String tag : entity.getScoreboardTags()) {
+                            if (!tag.startsWith("graveHologramGraveUUID:")) continue;
+                            String uuidStr = tag.substring("graveHologramGraveUUID:".length());
+                            try {
+                                UUID tagUuid = UUID.fromString(uuidStr);
+                                if (tagUuid.equals(hologramData.getUUIDGrave())) {
+                                    hasMatchingTag = true;
+                                    break;
+                                }
+                            } catch (IllegalArgumentException ignored) {
+                                // ignore
+                            }
+                        }
+                        if (!hasMatchingTag) {
+                            valid = false;
+                        }
+                    }
+
+                    if (!valid) {
+                        entityDataRemoveList.add(hologramData);
+                        return;
+                    }
+
+                    target = entity;
+                    break;
+                }
+
+                if (target == null) {
+                    if (plugin.getVersionManager().hasPersistentData()) {
+                        for (Entity entity : chunk.getEntities()) {
+                            if (!(entity instanceof ArmorStand)) continue;
+                            PersistentDataContainer pdc = ((ArmorStand) entity).getPersistentDataContainer();
+                            String graveUuidStr = pdc.get(GraveHologramKeys.GRAVE_UUID, PersistentDataType.STRING);
+                            if (graveUuidStr == null) continue;
+
+                            try {
+                                UUID pdcUuid = UUID.fromString(graveUuidStr);
+                                if (pdcUuid.equals(hologramData.getUUIDGrave())) {
+                                    target = entity;
+                                    break;
+                                }
+                            } catch (IllegalArgumentException ignored) {
+                                // ignore malformed
+                            }
+                        }
+                    } else if (plugin.getVersionManager().hasScoreboardTags()) {
+                        for (Entity entity : chunk.getEntities()) {
+                            if (!(entity instanceof ArmorStand)) continue;
+
+                            boolean match = false;
+                            for (String tag : entity.getScoreboardTags()) {
+                                if (!tag.startsWith("graveHologramGraveUUID:")) continue;
+                                String uuidStr = tag.substring("graveHologramGraveUUID:".length());
+                                try {
+                                    UUID tagUuid = UUID.fromString(uuidStr);
+                                    if (tagUuid.equals(hologramData.getUUIDGrave())) {
+                                        match = true;
+                                        break;
+                                    }
+                                } catch (IllegalArgumentException ignored) {
+                                    // ignore
+                                }
+                            }
+
+                            if (match) {
+                                target = entity;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (target == null) {
+                    entityDataRemoveList.add(hologramData);
+                    return;
+                }
+
+                List<String> lineList = plugin.getConfigManager().getConfigSection("hologram.line", grave).getStringList("hologram.line");
+                Collections.reverse(lineList);
+
+                int lineIndex = hologramData.getLine();
+                if (lineIndex < lineList.size()) {
+                    String lineText = StringUtil.parseString(
+                            lineList.get(lineIndex), location, grave, plugin
+                    );
+
+                    if (plugin.getIntegrationManager().hasMiniMessage()) {
+                        target.setCustomName(MiniMessage.parseString(lineText));
+                    } else {
+                        target.setCustomName(lineText);
+                    }
+                } else {
+                    entityDataRemoveList.add(hologramData);
                 }
             }
-
         } catch (ArrayIndexOutOfBoundsException | IllegalStateException ignored) {
-
+            entityDataRemoveList.add(hologramData);
         }
     }
 
