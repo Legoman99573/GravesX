@@ -112,10 +112,6 @@ public class BlockBreakListener implements Listener {
                 plugin.getGraveManager().removeGrave(grave);
             }
 
-            if (grave.getExperience() > 0) {
-                plugin.getGraveManager().dropGraveExperience(block.getLocation(), grave);
-            }
-
             finalizeGraveBreak(player, block, grave);
         } else if (cancelled && !addon) {
             event.setCancelled(true);

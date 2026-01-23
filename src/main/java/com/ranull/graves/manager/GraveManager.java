@@ -16,6 +16,7 @@ import dev.cwhead.GravesX.api.provider.GraveProvider;
 import dev.cwhead.GravesX.api.provider.RegisterGraveProviders;
 import dev.cwhead.GravesX.event.*;
 import dev.cwhead.GravesX.exception.GravesXGraveProviderException;
+import dev.cwhead.GravesX.exception.GravesXNullPointerException;
 import me.jay.GravesX.util.pluginsWithoutMavenReposOrUsefulApiDocsThatCauseBugs.ReflectSupportAE;
 import com.ranull.graves.util.StringUtil;
 import org.bukkit.*;
@@ -1859,15 +1860,16 @@ public class GraveManager {
             try {
                 World world = anchor.getWorld();
                 if (world == null) {
-                    return;
+                    throw new GravesXNullPointerException("World returned null for grave " + grave.getUUID());
                 }
 
                 ExperienceOrb experienceOrb = (ExperienceOrb) world.spawnEntity(anchor, EntityType.EXPERIENCE_ORB);
 
                 experienceOrb.setExperience(xp);
+                plugin.debugMessage("Dropping experience for grave " + grave.getUUID() + " in the amount of " + grave.getExperience(), 1);
                 grave.setExperience(0);
             } catch (Throwable t) {
-                plugin.debugMessage("dropGraveExperience failed for " + grave.getUUID() + ": " + t.getMessage(), 2);
+                plugin.getLogger().severe("Unable to drop grave experience in the total of " + grave.getExperience() + ": " + t.getMessage());
                 plugin.logStackTrace(t);
             }
         });
