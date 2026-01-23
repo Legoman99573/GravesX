@@ -168,7 +168,7 @@ public class BlockBreakListener implements Listener {
                 // ignored
             }
 
-            plugin.getGraveManager().autoLootGrave(player, hitLoc, grave, false);
+            plugin.getGraveManager().autoLootGrave(player, hitLoc, grave);
 
             if (plugin.getIntegrationManager().hasNoteBlockAPI()) {
                 if (plugin.getIntegrationManager().getNoteBlockAPI().isSongPlayingForPlayer(player)) {

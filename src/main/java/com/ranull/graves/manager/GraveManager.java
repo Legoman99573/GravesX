@@ -2182,27 +2182,11 @@ public class GraveManager {
     /**
      * Automatically loots a grave for a player.
      *
-     * {@link #autoLootGrave(org.bukkit.entity.Entity, org.bukkit.Location, Grave, boolean)}
-     * to control the behaviour via the {@code doDropGraveItems} flag.
-     * </p>
-     *
      * @param entity   the entity looting the grave.
      * @param location the location of the grave.
      * @param grave    the grave to be looted.
      */
     public void autoLootGrave(Entity entity, Location location, Grave grave) {
-        autoLootGrave(entity, location, grave, true);
-    }
-
-    /**
-     * Automatically loots a grave for a player.
-     *
-     * @param entity   the entity looting the grave.
-     * @param location the location of the grave.
-     * @param grave    the grave to be looted.
-     * @param doDropGraveItems whether to drop items or not
-     */
-    public void autoLootGrave(Entity entity, Location location, Grave grave, boolean doDropGraveItems) {
         if (!(entity instanceof Player player)) {
             return;
         }
@@ -2271,10 +2255,8 @@ public class GraveManager {
                 plugin.getEntityManager().sendMessage("message.looted", player, location, grave);
                 plugin.getEntityManager().playWorldSound("sound.close", location, grave);
                 plugin.getEntityManager().spawnZombie(location, player, player, grave);
-                if (doDropGraveItems) {
-                    giveGraveExperience(player, grave);
-                }
 
+                giveGraveExperience(player, grave);
                 playEffect("effect.loot", location, grave);
 
                 removeGrave(grave);

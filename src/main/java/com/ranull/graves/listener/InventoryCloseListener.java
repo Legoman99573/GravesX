@@ -113,6 +113,7 @@ public class InventoryCloseListener implements Listener {
                 }
             }
 
+            plugin.getGraveManager().giveGraveExperience(player, grave);
             plugin.getGraveManager().removeGrave(grave);
 
             if (plugin.getIntegrationManager().hasNoteBlockAPI()) {
