@@ -33,6 +33,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.MetadataValue;
+import org.bukkit.plugin.Plugin;
 
 import java.util.*;
 
@@ -303,10 +304,12 @@ public class EntityDeathListener implements Listener {
      * @return True if a grave should not be created, false otherwise.
      */
     private boolean handlePlayerDeath(Player player, String entityName) {
+        Plugin essentials = plugin.getServer().getPluginManager().getPlugin("Essentials");
+
         if (!plugin.getPermissionManager().hasGrantedPermission("graves.place", player)) {
             plugin.debugMessage("Grave not created for " + entityName + " because they don't have permission to place graves", 2);
             return true;
-        } else if (plugin.getPermissionManager().hasGrantedPermission("essentials.keepinv", player)) {
+        } else if ((essentials != null && essentials.isEnabled()) && plugin.getPermissionManager().hasGrantedPermission("essentials.keepinv", player)) {
             plugin.debugMessage(entityName + " has essentials.keepinv", 2);
         }
         return false;
@@ -719,8 +722,7 @@ public class EntityDeathListener implements Listener {
             Location target = safeLocation != null ? safeLocation : location;
             event.setDroppedExp(0);
             if (plugin.getLocationManager().hasCachedGraveAt(target)) {
-                Location newLoc = plugin.getLocationManager()
-                        .getNewLocationIfCachedGraveExists(livingEntity, target, grave);
+                Location newLoc = plugin.getLocationManager().getNewLocationIfCachedGraveExists(livingEntity, target, grave);
                 if (newLoc != null) {
                     target = newLoc;
                 }
@@ -730,8 +732,7 @@ public class EntityDeathListener implements Listener {
             event.setDroppedExp(0);
             Location target = location;
             if (plugin.getLocationManager().hasCachedGraveAt(target)) {
-                Location newLoc = plugin.getLocationManager()
-                        .getNewLocationIfCachedGraveExists(livingEntity, target, grave);
+                Location newLoc = plugin.getLocationManager().getNewLocationIfCachedGraveExists(livingEntity, target, grave);
                 if (newLoc != null) {
                     target = newLoc;
                 }
@@ -872,7 +873,9 @@ public class EntityDeathListener implements Listener {
         int vanillaDrop = event.getDroppedExp();
         event.setDroppedExp(0);
         if (livingEntity instanceof Player p) {
-            if (pde.getKeepLevel() && !plugin.getPermissionManager().hasGrantedPermission("graves.keepinventory.bypass", p.getPlayer())) {
+            Plugin essentials = plugin.getServer().getPluginManager().getPlugin("Essentials");
+
+            if ((essentials != null && essentials.isEnabled()) && plugin.getPermissionManager().hasGrantedPermission("essentials.keepxp", p.getPlayer())) {
                 graveCreateEvent.setExperience(0);
                 String playerDisplay;
                 try {
@@ -885,6 +888,23 @@ public class EntityDeathListener implements Listener {
                     }
                 }
                 pde.setNewExp(event.getDroppedExp());
+                graveCreateEvent.setExperience(0);
+                pde.setKeepLevel(true);
+                plugin.debugMessage("Set Experience not applied to " + grave.getUUID() + " because " + playerDisplay  + " has essentials.keepxp.", 2);
+            } else if (pde.getKeepLevel() && !plugin.getPermissionManager().hasGrantedPermission("graves.keepinventory.bypass", p.getPlayer())) {
+                graveCreateEvent.setExperience(0);
+                String playerDisplay;
+                try {
+                    playerDisplay = p.getPlayer().getDisplayName();
+                } catch (NullPointerException e) {
+                    try {
+                        playerDisplay = p.getPlayer().getName();
+                    } catch (NullPointerException e2) {
+                        playerDisplay = "Unknown";
+                    }
+                }
+                pde.setNewExp(event.getDroppedExp());
+                graveCreateEvent.setExperience(0);
                 pde.setKeepLevel(true);
                 plugin.debugMessage("Set Experience not applied to " + grave.getUUID() + " because " + playerDisplay  + " has keep experience.", 2);
             } else if (pct >= 0 && plugin.getPermissionManager().hasGrantedPermission("graves.experience", p.getPlayer())) {
