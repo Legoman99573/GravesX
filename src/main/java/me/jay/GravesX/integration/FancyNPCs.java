@@ -78,7 +78,13 @@ public final class FancyNPCs extends EntityDataManager {
             npc.spawnForAll();
 
             NpcAttribute poseAttribute = FancyNpcsPlugin.get().getAttributeManager().getAttributeByName(EntityType.PLAYER, POSE_ATTRIBUTE_NAME);
-            npc.getData().getAttributes().put(poseAttribute, "swimming");
+            try {
+                npc.getData().getAttributes().put(poseAttribute, plugin.getConfigManager().getConfigSection("fancynpcs.corpse.pose", grave).getString("fancynpcs.corpse.pose", "swimming").toLowerCase());
+            } catch (Exception e) {
+                plugin.getLogger().severe("Failed to use pose " + plugin.getConfigManager().getConfigSection("fancynpcs.corpse.pose", grave).getString("fancynpcs.corpse.pose", "swimming").toLowerCase() + ". " + e.getMessage());
+                plugin.logStackTrace(e);
+                npc.getData().getAttributes().put(poseAttribute, "swimming");
+            }
             npc.getData().setCollidable(false);
             npc.getData().setShowInTab(false);
             npc.getData().setDisplayName("<empty>");
@@ -133,7 +139,13 @@ public final class FancyNPCs extends EntityDataManager {
 
             NpcAttribute poseAttribute = FancyNpcsPlugin.get().getAttributeManager()
                     .getAttributeByName(EntityType.PLAYER, POSE_ATTRIBUTE_NAME);
-            npc.getData().getAttributes().put(poseAttribute, "swimming");
+            try {
+                npc.getData().getAttributes().put(poseAttribute, plugin.getConfigManager().getConfigSection("fancynpcs.corpse.pose", grave).getString("fancynpcs.corpse.pose", "swimming").toLowerCase());
+            } catch (Exception e) {
+                plugin.getLogger().severe("Failed to use pose " + plugin.getConfigManager().getConfigSection("fancynpcs.corpse.pose", grave).getString("fancynpcs.corpse.pose", "swimming").toLowerCase() + ". " + e.getMessage());
+                plugin.logStackTrace(e);
+                npc.getData().getAttributes().put(poseAttribute, "swimming");
+            }
             npc.getData().setCollidable(false);
             npc.getData().setShowInTab(false);
             npc.getData().setDisplayName("<empty>");

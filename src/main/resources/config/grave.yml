@@ -635,6 +635,8 @@ settings:
             z: -0.5
           armor: true
           hand: true
+          # Must use a valid pose for FancyNpcs or else it will resort to an error and revert to swimming
+          pose: "SWIMMING"
 
       ##############
       # Mannequins #
@@ -651,6 +653,8 @@ settings:
           # Copy the dead player's equipment onto the mannequin
           armor: true
           hand: true
+          # Must use a valid player pose or else it will resort to an error and revert to swimming
+          pose: "SWIMMING"
 
       ################
       # NoteBlockAPI #

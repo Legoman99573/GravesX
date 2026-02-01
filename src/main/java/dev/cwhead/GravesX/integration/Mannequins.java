@@ -150,7 +150,7 @@ public final class Mannequins extends EntityDataManager {
                 if (setImmovable != null) setImmovable.invoke(living, true);
             } catch (Throwable ignored) {}
 
-            applySwimmingPose(living);
+            applyMannequinPose(living, plugin.getConfigManager().getConfigSection("mannequins.corpse.pose", grave).getString("mannequins.corpse.pose", "SWIMMING").toUpperCase());
 
             try {
                 createEntityData(living.getLocation(), living.getUniqueId(), grave.getUUID(), EntityData.Type.MANNEQUIN);
@@ -272,21 +272,41 @@ public final class Mannequins extends EntityDataManager {
         return e.getScoreboardTags().contains(tag);
     }
 
-    private void applySwimmingPose(LivingEntity mannequin) {
+    private void applyMannequinPose(LivingEntity mannequin, String pose) {
         try {
             if (mannequinSetPose != null) {
-                mannequinSetPose.invoke(mannequin, Pose.SWIMMING);
+                try {
+                    mannequinSetPose.invoke(mannequin, Pose.valueOf(pose));
+                } catch (Exception e) {
+                    plugin.getLogger().severe("There was an issue using pose " + pose + ". Cause:" + e.getMessage());
+                    plugin.logStackTrace(e);
+                    mannequinSetPose.invoke(mannequin, Pose.SWIMMING);
+                }
                 return;
             }
             if (entitySetPoseFixed != null) {
-                entitySetPoseFixed.invoke(mannequin, Pose.SWIMMING, true);
+                try {
+                    entitySetPoseFixed.invoke(mannequin, Pose.valueOf(pose), true);
+                } catch (Exception e) {
+                    plugin.getLogger().severe("There was an issue using pose " + pose + ". Cause:" + e.getMessage());
+                    plugin.logStackTrace(e);
+                    entitySetPoseFixed.invoke(mannequin, Pose.SWIMMING, true);
+                }
                 return;
             }
             if (entitySetPose != null) {
-                entitySetPose.invoke(mannequin, Pose.SWIMMING);
+                try {
+                    entitySetPose.invoke(mannequin, Pose.valueOf(pose));
+                } catch (Exception e) {
+                    plugin.getLogger().severe("There was an issue using pose " + pose + ". Cause:" + e.getMessage());
+                    plugin.logStackTrace(e);
+                    entitySetPose.invoke(mannequin, Pose.SWIMMING);
+                }
                 return;
             }
-            mannequin.setSwimming(true);
+            if (Objects.equals(pose, "SWIMMING")) {
+                mannequin.setSwimming(true);
+            }
         } catch (Throwable ignored) {}
     }
 
