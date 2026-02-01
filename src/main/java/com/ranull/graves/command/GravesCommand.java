@@ -862,7 +862,7 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
                         return;
                     }
 
-                    UUID graveUUIDTarget;
+                    final UUID graveUUIDTarget;
                     try {
                         graveUUIDTarget = UUID.fromString(args[2]);
                     } catch (IllegalArgumentException e) {
@@ -871,81 +871,29 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
                         return;
                     }
 
-                    AtomicBoolean graveFound = new AtomicBoolean(false);
+                    Grave target = null;
                     for (Grave grave : plugin.getCacheManager().getGraveMap().values()) {
-                        if (grave.getUUID().equals(graveUUIDTarget)) {
-                            int experience = grave.getExperience();
-                            if (experience > 0) {
-                                grave.getLocationDeath().getWorld().spawn(grave.getLocationDeath(), ExperienceOrb.class,
-                                        orb -> orb.setExperience(experience));
-                            }
-
-                            Map<EquipmentSlot, ItemStack> items = grave.getEquipmentMap();
-                            ItemStack[] graveInventory = grave.getInventory().getContents();
-
-                            // Create a CountDownLatch to wait for both async tasks to finish
-                            CountDownLatch latch = new CountDownLatch(2);
-
-                            if (items != null && !items.isEmpty()) {
-                                plugin.getSchedulerManager().runTaskAsynchronously(() -> {
-                                    List<ItemStack> validItems = new ArrayList<>();
-                                    for (ItemStack item : items.values()) {
-                                        if (item != null && item.getType() != Material.AIR) {
-                                            validItems.add(item);
-                                        }
-                                    }
-
-                                    plugin.getSchedulerManager().runTask(() -> {
-                                        for (ItemStack item : validItems) {
-                                            if (validItems.isEmpty()) break;
-                                            grave.getLocationDeath().getWorld().dropItem(grave.getLocationDeath(), item);
-                                        }
-                                        // Signal that the task is done
-                                        latch.countDown();
-                                    });
-                                });
-                            } else {
-                                latch.countDown(); // If no items, count down immediately
-                            }
-
-                            if (graveInventory != null && graveInventory.length > 0) {
-                                plugin.getSchedulerManager().runTaskAsynchronously(() -> {
-                                    for (ItemStack item : graveInventory) {
-                                        if (item != null && item.getAmount() > 0) {
-                                            grave.getLocationDeath().getWorld().dropItem(grave.getLocationDeath(), item);
-                                        }
-                                    }
-                                    // Signal that the task is done
-                                    latch.countDown();
-                                });
-                            } else {
-                                latch.countDown(); // If no grave inventory, count down immediately
-                            }
-
-                            // Wait for both async tasks to complete
-                            plugin.getSchedulerManager().runTask(() -> {
-                                try {
-                                    latch.await(); // Wait until both tasks complete
-                                } catch (InterruptedException e) {
-                                    Thread.currentThread().interrupt();
-                                }
-
-                                // After both async tasks are finished, remove the grave
-                                plugin.getGraveManager().removeGrave(grave);
-                                graveFound.set(true);
-                            });
-
+                        if (graveUUIDTarget.equals(grave.getUUID())) {
+                            target = grave;
                             break;
                         }
                     }
 
-                    if (graveFound.get()) {
-                        commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
-                                + "Grave UUID " + graveUUIDTarget + " purged.");
-                    } else {
+                    if (target == null) {
                         commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
                                 + "No graves found for UUID " + args[2] + ".");
+                        return;
                     }
+
+                    final Grave grave = target;
+
+                    // Purge must be performed on the main/region-safe thread (no blocking)
+                    plugin.getSchedulerManager().runTask(() -> {
+                        plugin.getGraveManager().removeGrave(grave);
+
+                        commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
+                                + "Grave UUID " + graveUUIDTarget + " purged.");
+                    });
                 }
                 case "abandon", "abandoned" -> {
                     int purged = 0;
