@@ -220,19 +220,20 @@ settings:
       ###########
       # How the items are saved in graves.
       storage:
-        # COMPACT - stacks all items and puts them into a small as possible inventory
-        # EXACT - matches the player's inventory exactly.
+        # COMPACT - stacks all items and puts them into a small as possible inventory. Autoloot will not place armor back in armor slots with this setting.
+        # EXACT - matches the player's inventory exactly. Autoloot will put armor back in the correct slot with this option
         # CHESTSORT - Automatically sorts all items in graves in a neat fashion. This will not have the same behavior as EXACT. Acts more like COMPACT, but sorts it all if needed. (ChestSort must be installed)
         mode: EXACT
 
       ##############
       # Experience #
       ##############
-      # If store is false it will store what Minecraft would normally drop, if you want to fully disable it, set store to 0.0
-      # Valid values between 0.01 - 1.00
-      # Note: Experience may double if you go above 0.5
+      # If store-in-grave is false it will drop experience in the world instead of placing them in a grave, if you want to fully disable this plugins experience calculation, set store to 0.0 to use the default vanilla calculation.
+      # Valid values between 0.01 - 1.0
+      # Note: Experience may double (dupe) if you go above 1.0
       experience:
-        store: 0.4
+        store-in-grave: true
+        store: 0.7
 
       ###########
       # Respawn #

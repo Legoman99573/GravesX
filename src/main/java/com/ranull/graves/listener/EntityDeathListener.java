@@ -869,64 +869,126 @@ public class EntityDeathListener implements Listener {
      */
     private void setGraveExperience(GraveCreateEvent graveCreateEvent, Grave grave, EntityDeathEvent event, LivingEntity livingEntity, PlayerDeathEvent pde) {
         float pct = (float) plugin.getConfigManager().getConfigSection("experience.store", grave).getDouble("experience.store");
+        boolean storeExp = plugin.getConfigManager().getConfigSection("experience.store-in-grave", grave).getBoolean("experience.store-in-grave", true);
         plugin.debugMessage("Experience Percentage for " + grave.getUUID() + ": " + pct, 2);
         int vanillaDrop = event.getDroppedExp();
         event.setDroppedExp(0);
+
         if (livingEntity instanceof Player p) {
             Plugin essentials = plugin.getServer().getPluginManager().getPlugin("Essentials");
 
-            if ((essentials != null && essentials.isEnabled()) && plugin.getPermissionManager().hasGrantedPermission("essentials.keepxp", p.getPlayer())) {
-                graveCreateEvent.setExperience(0);
-                String playerDisplay;
-                try {
-                    playerDisplay = p.getPlayer().getDisplayName();
-                } catch (NullPointerException e) {
+            if (!storeExp) {
+                if ((essentials != null && essentials.isEnabled()) && plugin.getPermissionManager().hasGrantedPermission("essentials.keepxp", p.getPlayer())) {
+                    graveCreateEvent.setExperience(0);
+                    String playerDisplay;
                     try {
-                        playerDisplay = p.getPlayer().getName();
-                    } catch (NullPointerException e2) {
-                        playerDisplay = "Unknown";
+                        playerDisplay = p.getPlayer().getDisplayName();
+                    } catch (NullPointerException e) {
+                        try {
+                            playerDisplay = p.getPlayer().getName();
+                        } catch (NullPointerException e2) {
+                            playerDisplay = "Unknown";
+                        }
                     }
-                }
-                pde.setNewExp(event.getDroppedExp());
-                graveCreateEvent.setExperience(0);
-                pde.setKeepLevel(true);
-                plugin.debugMessage("Set Experience not applied to " + grave.getUUID() + " because " + playerDisplay  + " has essentials.keepxp.", 2);
-            } else if (pde.getKeepLevel() && !plugin.getPermissionManager().hasGrantedPermission("graves.keepinventory.bypass", p.getPlayer())) {
-                graveCreateEvent.setExperience(0);
-                String playerDisplay;
-                try {
-                    playerDisplay = p.getPlayer().getDisplayName();
-                } catch (NullPointerException e) {
+                    pde.setNewExp(event.getDroppedExp());
+                    graveCreateEvent.setExperience(0);
+                    pde.setKeepLevel(true);
+                    plugin.debugMessage("Set Dropped Experience not applied to " + grave.getUUID() + " because " + playerDisplay  + " has essentials.keepxp.", 2);
+                } else if (pde.getKeepLevel() && !plugin.getPermissionManager().hasGrantedPermission("graves.keepinventory.bypass", p.getPlayer())) {
+                    graveCreateEvent.setExperience(0);
+                    String playerDisplay;
                     try {
-                        playerDisplay = p.getPlayer().getName();
-                    } catch (NullPointerException e2) {
-                        playerDisplay = "Unknown";
+                        playerDisplay = p.getPlayer().getDisplayName();
+                    } catch (NullPointerException e) {
+                        try {
+                            playerDisplay = p.getPlayer().getName();
+                        } catch (NullPointerException e2) {
+                            playerDisplay = "Unknown";
+                        }
                     }
+                    pde.setNewExp(event.getDroppedExp());
+                    graveCreateEvent.setExperience(0);
+                    pde.setKeepLevel(true);
+                    plugin.debugMessage("Set Dropped Experience not applied to " + grave.getUUID() + " because " + playerDisplay  + " has keep experience.", 2);
+                } else if (pct >= 0 && plugin.getPermissionManager().hasGrantedPermission("graves.experience", p.getPlayer())) {
+                    int total = ExperienceUtil.getPlayerExperience(p);
+                    int stored = ExperienceUtil.getDropPercent(total, pct);
+                    graveCreateEvent.setExperience(0);
+                    pde.setDroppedExp(stored);
+                    plugin.debugMessage("Set Dropped Experience for player grave " + grave.getUUID() + ": " + stored, 1);
+                    pde.setKeepLevel(false);
+                } else {
+                    graveCreateEvent.setExperience(0);
+                    pde.setDroppedExp(vanillaDrop);
+                    pde.setKeepLevel(false);
+                    plugin.debugMessage("Set Dropped Experience for player grave " + grave.getUUID() + ": " + vanillaDrop, 1);
                 }
-                pde.setNewExp(event.getDroppedExp());
-                graveCreateEvent.setExperience(0);
-                pde.setKeepLevel(true);
-                plugin.debugMessage("Set Experience not applied to " + grave.getUUID() + " because " + playerDisplay  + " has keep experience.", 2);
-            } else if (pct >= 0 && plugin.getPermissionManager().hasGrantedPermission("graves.experience", p.getPlayer())) {
-                int total = ExperienceUtil.getPlayerExperience(p);
-                int stored = ExperienceUtil.getDropPercent(total, pct);
-                graveCreateEvent.setExperience(stored);
-                plugin.debugMessage("Set Experience for player grave " + grave.getUUID() + ": " + stored, 2);
-                pde.setKeepLevel(false);
             } else {
-                // Either pct < 0 (default behavior) OR no permission: store vanilla drop amount
-                graveCreateEvent.setExperience(vanillaDrop);
-                pde.setKeepLevel(false);
-                plugin.debugMessage("Set Experience for player grave " + grave.getUUID() + ": " + vanillaDrop, 2);
+                if ((essentials != null && essentials.isEnabled()) && plugin.getPermissionManager().hasGrantedPermission("essentials.keepxp", p.getPlayer())) {
+                    graveCreateEvent.setExperience(0);
+                    String playerDisplay;
+                    try {
+                        playerDisplay = p.getPlayer().getDisplayName();
+                    } catch (NullPointerException e) {
+                        try {
+                            playerDisplay = p.getPlayer().getName();
+                        } catch (NullPointerException e2) {
+                            playerDisplay = "Unknown";
+                        }
+                    }
+                    pde.setNewExp(event.getDroppedExp());
+                    graveCreateEvent.setExperience(0);
+                    pde.setKeepLevel(true);
+                    plugin.debugMessage("Set Grave Experience not applied to " + grave.getUUID() + " because " + playerDisplay  + " has essentials.keepxp.", 2);
+                } else if (pde.getKeepLevel() && !plugin.getPermissionManager().hasGrantedPermission("graves.keepinventory.bypass", p.getPlayer())) {
+                    graveCreateEvent.setExperience(0);
+                    String playerDisplay;
+                    try {
+                        playerDisplay = p.getPlayer().getDisplayName();
+                    } catch (NullPointerException e) {
+                        try {
+                            playerDisplay = p.getPlayer().getName();
+                        } catch (NullPointerException e2) {
+                            playerDisplay = "Unknown";
+                        }
+                    }
+                    pde.setNewExp(event.getDroppedExp());
+                    graveCreateEvent.setExperience(0);
+                    pde.setKeepLevel(true);
+                    plugin.debugMessage("Set Grave Experience not applied to " + grave.getUUID() + " because " + playerDisplay  + " has keep experience.", 2);
+                } else if (pct >= 0 && plugin.getPermissionManager().hasGrantedPermission("graves.experience", p.getPlayer())) {
+                    int total = ExperienceUtil.getPlayerExperience(p);
+                    int stored = ExperienceUtil.getDropPercent(total, pct);
+                    graveCreateEvent.setExperience(stored);
+                    plugin.debugMessage("Set Grave Experience for player grave " + grave.getUUID() + ": " + stored, 1);
+                    pde.setKeepLevel(false);
+                } else {
+                    graveCreateEvent.setExperience(vanillaDrop);
+                    pde.setKeepLevel(false);
+                    plugin.debugMessage("Set Grave Experience for player grave " + grave.getUUID() + ": " + vanillaDrop, 1);
+                }
             }
         } else {
-            if (pct >= 0) {
-                int stored = ExperienceUtil.getDropPercent(vanillaDrop, pct);
-                graveCreateEvent.setExperience(stored);
-                plugin.debugMessage("Set Experience for non player grave " + grave.getUUID() + ": " + stored, 2);
+            if (!storeExp) {
+                if (pct >= 0) {
+                    int stored = ExperienceUtil.getDropPercent(vanillaDrop, pct);
+                    graveCreateEvent.setExperience(0);
+                    pde.setDroppedExp(stored);
+                    plugin.debugMessage("Set Dropped Experience for non player grave " + grave.getUUID() + ": " + stored, 1);
+                } else {
+                    graveCreateEvent.setExperience(0);
+                    pde.setDroppedExp(vanillaDrop);
+                    plugin.debugMessage("Set Dropped Experience for default grave " + grave.getUUID() + ": " + vanillaDrop, 1);
+                }
             } else {
-                graveCreateEvent.setExperience(vanillaDrop);
-                plugin.debugMessage("Set Experience for default grave " + grave.getUUID() + ": " + vanillaDrop, 2);
+                if (pct >= 0) {
+                    int stored = ExperienceUtil.getDropPercent(vanillaDrop, pct);
+                    graveCreateEvent.setExperience(stored);
+                    plugin.debugMessage("Set Grave Experience for non player grave " + grave.getUUID() + ": " + stored, 1);
+                } else {
+                    graveCreateEvent.setExperience(vanillaDrop);
+                    plugin.debugMessage("Set Grave Experience for default grave " + grave.getUUID() + ": " + vanillaDrop, 1);
+                }
             }
         }
     }
