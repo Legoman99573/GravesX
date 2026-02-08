@@ -11,13 +11,13 @@ import com.ranull.graves.inventory.GraveList;
 import com.ranull.graves.inventory.GraveMenu;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.InventoryUtil;
+import com.ranull.graves.util.LocationUtil;
 import com.ranull.graves.util.MaterialUtil;
 import dev.cwhead.GravesX.api.provider.GraveProvider;
 import dev.cwhead.GravesX.api.provider.RegisterGraveProviders;
 import dev.cwhead.GravesX.event.*;
 import dev.cwhead.GravesX.exception.GravesXGraveProviderException;
 import dev.cwhead.GravesX.exception.GravesXNullPointerException;
-import dev.cwhead.GravesX.keys.GraveHologramKeys;
 import me.jay.GravesX.util.pluginsWithoutMavenReposOrUsefulApiDocsThatCauseBugs.ReflectSupportAE;
 import com.ranull.graves.util.StringUtil;
 import org.bukkit.*;
@@ -31,10 +31,8 @@ import org.bukkit.inventory.*;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
-import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.BiConsumer;
@@ -481,263 +479,89 @@ public class GraveManager {
      * @param entityDataRemoveList the list to which hologram data to be removed will be added.
      */
     private void processHologramData(HologramData hologramData, Location location, List<EntityData> entityDataRemoveList) {
-        try {
-            if (!plugin.getCacheManager().getGraveMap().containsKey(hologramData.getUUIDGrave())) {
-                entityDataRemoveList.add(hologramData);
-                return;
-            }
+        UUID graveUuid = hologramData.getUUIDGrave();
+        if (graveUuid == null) return;
 
-            Grave grave = plugin.getCacheManager().getGraveMap().get(hologramData.getUUIDGrave());
-            if (grave == null) {
-                entityDataRemoveList.add(hologramData);
-                return;
-            }
+        Grave grave = plugin.getCacheManager().getGraveMap().get(graveUuid);
+        if (grave == null) return;
 
-            if (plugin.getVersionManager().isFolia()) {
-                plugin.getSchedulerManager().execute(location, () -> {
-                    Chunk chunk = hologramData.getLocation().getChunk();
-                    Entity target = null;
+        Location anchor = grave.getLocationDeath();
+        if (anchor == null || anchor.getWorld() == null) return;
 
-                    for (Entity entity : chunk.getEntities()) {
-                        if (!entity.getUniqueId().equals(hologramData.getUUIDEntity())) {
-                            continue;
-                        }
+        Runnable task = () -> {
+            try {
+                Entity target = plugin.getServer().getEntity(hologramData.getUUIDEntity());
+                if (target == null) return;
 
-                        boolean valid = true;
+                double offsetX = plugin.getConfigManager().getConfigSection("hologram.offset.x", grave).getDouble("hologram.offset.x");
+                double offsetY = plugin.getConfigManager().getConfigSection("hologram.offset.y", grave).getDouble("hologram.offset.y");
+                double offsetZ = plugin.getConfigManager().getConfigSection("hologram.offset.z", grave).getDouble("hologram.offset.z");
+                boolean marker = plugin.getConfigManager().getConfigSection("hologram.marker", grave).getBoolean("hologram.marker");
+                double lineHeight = plugin.getConfigManager().getConfigSection("hologram.height-line", grave).getDouble("hologram.height-line", 0.28D);
 
-                        if (plugin.getVersionManager().hasPersistentData() && entity instanceof ArmorStand) {
-                            PersistentDataContainer pdc = entity.getPersistentDataContainer();
-                            String graveUuidStr = pdc.get(GraveHologramKeys.GRAVE_UUID, PersistentDataType.STRING);
-                            if (graveUuidStr != null) {
-                                try {
-                                    UUID pdcUuid = UUID.fromString(graveUuidStr);
-                                    if (!pdcUuid.equals(hologramData.getUUIDGrave())) {
-                                        valid = false;
-                                    }
-                                } catch (IllegalArgumentException ignored) {
-                                    valid = false;
-                                }
-                            }
-                        } else if (!plugin.getVersionManager().hasPersistentData() && plugin.getVersionManager().hasScoreboardTags() && entity instanceof ArmorStand) {
-                            boolean hasMatchingTag = false;
-                            for (String tag : entity.getScoreboardTags()) {
-                                if (!tag.startsWith("graveHologramGraveUUID:")) continue;
-                                String uuidStr = tag.substring("graveHologramGraveUUID:".length());
-                                try {
-                                    UUID tagUuid = UUID.fromString(uuidStr);
-                                    if (tagUuid.equals(hologramData.getUUIDGrave())) {
-                                        hasMatchingTag = true;
-                                        break;
-                                    }
-                                } catch (IllegalArgumentException ignored) {
-                                    // ignore malformed tag
-                                }
-                            }
-                            if (!hasMatchingTag) {
-                                valid = false;
-                            }
-                        }
+                List<String> cfgLines = new ArrayList<>(
+                        plugin.getConfigManager().getConfigSection("hologram.line", grave).getStringList("hologram.line")
+                );
+                if (cfgLines.isEmpty()) return;
 
-                        if (!valid) {
-                            entityDataRemoveList.add(hologramData);
-                            return;
-                        }
+                List<String> lineListReversed = new ArrayList<>(cfgLines);
+                Collections.reverse(lineListReversed);
 
-                        target = entity;
-                        break;
-                    }
+                Location base = LocationUtil.roundLocation(anchor).add(offsetX + 0.5, offsetY + (marker ? 0.49 : -0.49), offsetZ + 0.5);
 
-                    if (target == null) {
-                        if (plugin.getVersionManager().hasPersistentData()) {
-                            for (Entity entity : chunk.getEntities()) {
-                                if (!(entity instanceof ArmorStand)) continue;
-                                PersistentDataContainer pdc = entity.getPersistentDataContainer();
-                                String graveUuidStr = pdc.get(GraveHologramKeys.GRAVE_UUID, PersistentDataType.STRING);
-                                if (graveUuidStr == null) continue;
-
-                                try {
-                                    UUID pdcUuid = UUID.fromString(graveUuidStr);
-                                    if (pdcUuid.equals(hologramData.getUUIDGrave())) {
-                                        target = entity;
-                                        break;
-                                    }
-                                } catch (IllegalArgumentException ignored) {
-                                    // ignore malformed
-                                }
-                            }
-                        } else if (plugin.getVersionManager().hasScoreboardTags()) {
-                            for (Entity entity : chunk.getEntities()) {
-                                if (!(entity instanceof ArmorStand)) continue;
-
-                                boolean match = false;
-                                for (String tag : entity.getScoreboardTags()) {
-                                    if (!tag.startsWith("graveHologramGraveUUID:")) continue;
-                                    String uuidStr = tag.substring("graveHologramGraveUUID:".length());
-                                    try {
-                                        UUID tagUuid = UUID.fromString(uuidStr);
-                                        if (tagUuid.equals(hologramData.getUUIDGrave())) {
-                                            match = true;
-                                            break;
-                                        }
-                                    } catch (IllegalArgumentException ignored) {
-                                        // ignore malformed tag
-                                    }
-                                }
-
-                                if (match) {
-                                    target = entity;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    if (target == null) {
-                        entityDataRemoveList.add(hologramData);
+                try {
+                    Class<?> textDisplayClass = Class.forName("org.bukkit.entity.TextDisplay");
+                    if (textDisplayClass.isInstance(target)) {
+                        plugin.getTextDisplayManager().updateTextDisplay(target, cfgLines, lineHeight, base, grave);
                         return;
                     }
-
-                    List<String> lineList = plugin.getConfigManager().getConfigSection("hologram.line", grave).getStringList("hologram.line");
-                    Collections.reverse(lineList);
-
-                    int lineIndex = hologramData.getLine();
-                    if (lineIndex < lineList.size()) {
-                        String lineText = StringUtil.parseString(
-                                lineList.get(lineIndex), location, grave, plugin
-                        );
-
-                        if (plugin.getIntegrationManager().hasMiniMessage()) {
-                            target.setCustomName(MiniMessage.parseString(lineText));
-                        } else {
-                            target.setCustomName(lineText);
-                        }
-                    } else {
-                        entityDataRemoveList.add(hologramData);
-                    }
-                });
-            } else {
-                Chunk chunk = hologramData.getLocation().getChunk();
-                Entity target = null;
-
-                for (Entity entity : chunk.getEntities()) {
-                    if (!entity.getUniqueId().equals(hologramData.getUUIDEntity())) {
-                        continue;
-                    }
-
-                    boolean valid = true;
-
-                    if (plugin.getVersionManager().hasPersistentData() && entity instanceof ArmorStand) {
-                        PersistentDataContainer pdc = entity.getPersistentDataContainer();
-                        String graveUuidStr = pdc.get(GraveHologramKeys.GRAVE_UUID, PersistentDataType.STRING);
-                        if (graveUuidStr != null) {
-                            try {
-                                UUID pdcUuid = UUID.fromString(graveUuidStr);
-                                if (!pdcUuid.equals(hologramData.getUUIDGrave())) {
-                                    valid = false;
-                                }
-                            } catch (IllegalArgumentException ignored) {
-                                valid = false;
-                            }
-                        }
-                    } else if (!plugin.getVersionManager().hasPersistentData() && plugin.getVersionManager().hasScoreboardTags() && entity instanceof ArmorStand) {
-                        boolean hasMatchingTag = false;
-                        for (String tag : entity.getScoreboardTags()) {
-                            if (!tag.startsWith("graveHologramGraveUUID:")) continue;
-                            String uuidStr = tag.substring("graveHologramGraveUUID:".length());
-                            try {
-                                UUID tagUuid = UUID.fromString(uuidStr);
-                                if (tagUuid.equals(hologramData.getUUIDGrave())) {
-                                    hasMatchingTag = true;
-                                    break;
-                                }
-                            } catch (IllegalArgumentException ignored) {
-                                // ignore
-                            }
-                        }
-                        if (!hasMatchingTag) {
-                            valid = false;
-                        }
-                    }
-
-                    if (!valid) {
-                        entityDataRemoveList.add(hologramData);
-                        return;
-                    }
-
-                    target = entity;
-                    break;
+                } catch (ClassNotFoundException ignored) {
+                    // pre-1.19: TextDisplay doesn't exist
                 }
 
-                if (target == null) {
-                    if (plugin.getVersionManager().hasPersistentData()) {
-                        for (Entity entity : chunk.getEntities()) {
-                            if (!(entity instanceof ArmorStand)) continue;
-                            PersistentDataContainer pdc = ((ArmorStand) entity).getPersistentDataContainer();
-                            String graveUuidStr = pdc.get(GraveHologramKeys.GRAVE_UUID, PersistentDataType.STRING);
-                            if (graveUuidStr == null) continue;
 
-                            try {
-                                UUID pdcUuid = UUID.fromString(graveUuidStr);
-                                if (pdcUuid.equals(hologramData.getUUIDGrave())) {
-                                    target = entity;
-                                    break;
-                                }
-                            } catch (IllegalArgumentException ignored) {
-                                // ignore malformed
-                            }
-                        }
-                    } else if (plugin.getVersionManager().hasScoreboardTags()) {
-                        for (Entity entity : chunk.getEntities()) {
-                            if (!(entity instanceof ArmorStand)) continue;
-
-                            boolean match = false;
-                            for (String tag : entity.getScoreboardTags()) {
-                                if (!tag.startsWith("graveHologramGraveUUID:")) continue;
-                                String uuidStr = tag.substring("graveHologramGraveUUID:".length());
-                                try {
-                                    UUID tagUuid = UUID.fromString(uuidStr);
-                                    if (tagUuid.equals(hologramData.getUUIDGrave())) {
-                                        match = true;
-                                        break;
-                                    }
-                                } catch (IllegalArgumentException ignored) {
-                                    // ignore
-                                }
-                            }
-
-                            if (match) {
-                                target = entity;
-                                break;
-                            }
-                        }
+                int lineIndex = hologramData.getLine();
+                if (lineIndex < 0 || lineIndex >= lineListReversed.size()) {
+                    synchronized (entityDataRemoveList) {
+                        entityDataRemoveList.add(hologramData);
                     }
-                }
-
-                if (target == null) {
-                    entityDataRemoveList.add(hologramData);
                     return;
                 }
 
-                List<String> lineList = plugin.getConfigManager().getConfigSection("hologram.line", grave).getStringList("hologram.line");
-                Collections.reverse(lineList);
+                Location expectedLineLoc = base.clone().add(0.0D, (lineIndex + 1) * lineHeight, 0.0D);
 
-                int lineIndex = hologramData.getLine();
-                if (lineIndex < lineList.size()) {
-                    String lineText = StringUtil.parseString(
-                            lineList.get(lineIndex), location, grave, plugin
-                    );
-
-                    if (plugin.getIntegrationManager().hasMiniMessage()) {
-                        target.setCustomName(MiniMessage.parseString(lineText));
-                    } else {
-                        target.setCustomName(lineText);
+                try {
+                    Location cur = target.getLocation();
+                    if (cur.getWorld() != null && expectedLineLoc.getWorld() != null && cur.getWorld().equals(expectedLineLoc.getWorld())) {
+                        double dx = cur.getX() - expectedLineLoc.getX();
+                        double dy = cur.getY() - expectedLineLoc.getY();
+                        double dz = cur.getZ() - expectedLineLoc.getZ();
+                        if ((dx * dx + dy * dy + dz * dz) > 0.0001D) {
+                            target.teleport(expectedLineLoc);
+                        }
                     }
+                } catch (Throwable ignored) {}
+
+                String lineTextRaw = lineListReversed.get(lineIndex);
+                String parsed = StringUtil.parseString(lineTextRaw, expectedLineLoc, grave, plugin);
+
+                if (plugin.getIntegrationManager().hasMiniMessage()) {
+                    target.setCustomName(MiniMessage.parseString(parsed));
                 } else {
+                    target.setCustomName(parsed);
+                }
+
+            } catch (Throwable t) {
+                synchronized (entityDataRemoveList) {
                     entityDataRemoveList.add(hologramData);
                 }
             }
-        } catch (ArrayIndexOutOfBoundsException | IllegalStateException ignored) {
-            entityDataRemoveList.add(hologramData);
+        };
+
+        if (plugin.getVersionManager().isFolia()) {
+            plugin.getSchedulerManager().execute(anchor, task);
+        } else {
+            task.run();
         }
     }
 

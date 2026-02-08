@@ -833,32 +833,24 @@ public class DataManager {
      * @param chunkData the chunk data to remove.
      */
     public void removeChunkData(ChunkData chunkData) {
-        if (chunkData == null) {
-            return;
-        }
+        if (chunkData == null) return;
+
+        World world = chunkData.getWorld();
+        if (world == null) return;
 
         boolean isFolia = plugin.getVersionManager().isFolia();
 
-        String key;
         if (isFolia) {
-            String worldName = chunkData.getWorld() != null ? chunkData.getWorld().getName() : null;
-            if (worldName == null) {
-                return;
-            }
-            key = worldName + ":" + chunkData.getX() + "," + chunkData.getZ();
-        } else {
-            Location loc = chunkData.getLocation();
-            if (loc == null && chunkData.getWorld() != null) {
-                int bx = chunkData.getX() << 4;
-                int bz = chunkData.getZ() << 4;
-                loc = new Location(chunkData.getWorld(), bx, 0, bz);
-            }
-            if (loc == null) {
-                return;
-            }
-            key = LocationUtil.chunkToString(loc);
+            String key = world.getName() + ":" + chunkData.getX() + "," + chunkData.getZ();
+            plugin.getCacheManager().getChunkMap().remove(key);
+            return;
         }
 
+        int bx = chunkData.getX() << 4;
+        int bz = chunkData.getZ() << 4;
+        Location loc = new Location(world, bx, 0, bz);
+
+        String key = LocationUtil.chunkToString(loc);
         plugin.getCacheManager().getChunkMap().remove(key);
     }
 
@@ -1338,14 +1330,16 @@ public class DataManager {
                                 + "uuid_entity VARCHAR(255),"
                                 + "uuid_grave VARCHAR(255),"
                                 + "line INT(16),"
-                                + "location VARCHAR(255)"
+                                + "location VARCHAR(255),"
+                                + "backend VARCHAR(255)"
                                 + ");";
                 case SQLITE, POSTGRESQL, H2 ->
                         "CREATE TABLE IF NOT EXISTS " + name + " ("
                                 + "uuid_entity VARCHAR(255),"
                                 + "uuid_grave VARCHAR(255),"
                                 + "line INTEGER,"
-                                + "location VARCHAR(255)"
+                                + "location VARCHAR(255),"
+                                + "backend VARCHAR(255)"
                                 + ");";
                 case MSSQL ->
                         "IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = '" + name + "')"
@@ -1353,7 +1347,8 @@ public class DataManager {
                                 + "uuid_entity NVARCHAR(255),"
                                 + "uuid_grave NVARCHAR(255),"
                                 + "line INT,"
-                                + "location NVARCHAR(255)"
+                                + "location NVARCHAR(255),"
+                                + "backend NVARCHAR(255)"
                                 + ");";
                 default -> {
                     plugin.getLogger().severe("Unsupported database type: " + type);
@@ -1388,6 +1383,18 @@ public class DataManager {
 
         addColumnIfNotExists(name, "location", varcharDef);
         alterColumnIfExists(name, "location", varcharDef);
+
+        addColumnIfNotExists(name, "backend", varcharDef);
+        alterColumnIfExists(name, "backend", varcharDef);
+
+        String backfillBackend = switch (type) {
+            case MYSQL, MARIADB, POSTGRESQL, SQLITE, H2, MSSQL -> "UPDATE " + name + " SET backend='ARMOR_STAND' " + "WHERE backend IS NULL OR TRIM(backend)='';";
+            default -> null;
+        };
+
+        if (backfillBackend != null) {
+            executeUpdate(backfillBackend, new Object[0]);
+        }
     }
 
     /**
@@ -1688,16 +1695,31 @@ public class DataManager {
                         continue;
                     }
 
+                    String backendString = null;
+                    try {
+                        backendString = resultSet.getString("backend");
+                    } catch (SQLException ignored) {
+                        // Column does not exist (older schema).
+                    }
+
                     try {
                         UUID uuidEntity = UUID.fromString(uuidEntityString);
                         UUID uuidGrave = UUID.fromString(uuidGraveString);
                         int line = resultSet.getInt("line");
 
-                        getChunkData(location).addEntityData(new HologramData(location, uuidEntity, uuidGrave, line));
+                        HologramData.Backend backend = HologramData.Backend.ARMOR_STAND;
+                        if (backendString != null && !backendString.isBlank()) {
+                            try {
+                                backend = HologramData.Backend.valueOf(backendString.trim().toUpperCase());
+                            } catch (IllegalArgumentException ignored) {
+                                // Unknown value in DB; keep default.
+                            }
+                        }
+
+                        getChunkData(location).addEntityData(new HologramData(location, uuidEntity, uuidGrave, line, backend));
                         hologramCount++;
                     } catch (IllegalArgumentException ex) {
-                        plugin.getLogger().warning("Hologram row skipped: malformed UUIDs (entity=" + uuidEntityString
-                                + ", grave=" + uuidGraveString + ").");
+                        plugin.getLogger().warning("Hologram row skipped: malformed UUIDs (entity=" + uuidEntityString + ", grave=" + uuidGraveString + ").");
                     }
                 }
 
@@ -1875,11 +1897,6 @@ public class DataManager {
     /**
      * Removes block data from the database.
      *
-     * @param location the location of the block data to remove.
-     */
-    /**
-     * Removes block data from the database.
-     *
      * <p>Uses GravesXScheduler (UniversalScheduler) to run the in-memory cache update
      * at the block's location (Folia-safe). The database delete runs asynchronously.</p>
      *
@@ -1920,22 +1937,22 @@ public class DataManager {
      */
     public void addHologramData(HologramData hologramData) {
         Location loc = hologramData.getLocation();
-
-        if (loc != null && loc.getWorld() != null) {
-            plugin.getSchedulerManager().execute(loc, () -> getChunkData(loc).addEntityData(hologramData));
-        } else {
-            Objects.requireNonNull(getChunkData(loc)).addEntityData(hologramData);
+        if (loc == null || loc.getWorld() == null) {
+            plugin.getLogger().warning("Skipped adding hologram data: location/world is null.");
+            return;
         }
 
-        String query =
-                "INSERT INTO " + getStoragePrefix()
-                        + "hologram (uuid_entity, uuid_grave, line, location) VALUES (?, ?, ?, ?)";
+        plugin.getSchedulerManager().execute(loc, () -> getChunkData(loc).addEntityData(hologramData));
+
+        String query = "INSERT INTO " + getStoragePrefix()
+                + "hologram (uuid_entity, uuid_grave, line, location, backend) VALUES (?, ?, ?, ?, ?)";
 
         Object[] parameters = new Object[] {
                 hologramData.getUUIDEntity().toString(),
                 hologramData.getUUIDGrave().toString(),
                 hologramData.getLine(),
-                LocationUtil.locationToString(hologramData.getLocation())
+                LocationUtil.locationToString(loc),
+                hologramData.getBackend().name()
         };
 
         plugin.getSchedulerManager().runTaskAsynchronously(() -> {
@@ -1956,7 +1973,7 @@ public class DataManager {
      */
     public void removeHologramData(Grave grave) {
         plugin.getSchedulerManager().runTaskAsynchronously(() -> {
-            String selectSql = "SELECT uuid_entity, location FROM " + getStoragePrefix() + "hologram WHERE uuid_grave = ?";
+            String selectSql = "SELECT uuid_entity, location, line, backend FROM " + getStoragePrefix() + "hologram WHERE uuid_grave = ?";
             String deleteSql = "DELETE FROM " + getStoragePrefix() + "hologram WHERE uuid_grave = ?";
 
             int scheduledRemovals = 0;
@@ -1982,19 +1999,38 @@ public class DataManager {
                             continue;
                         }
 
-                        Location location = LocationUtil.deserializeLocation(locString);
-                        if (location == null || location.getWorld() == null) {
+                        Location location = LocationUtil.stringToLocation(locString);
+                        if (location.getWorld() == null) {
                             continue;
                         }
 
-                        EntityData.Type type = EntityData.Type.HOLOGRAM;
-                        EntityData entityData = new EntityData(location, uuidEntity, grave.getUUID(), type);
+                        int line = 0;
+                        try {
+                            line = rs.getInt("line");
+                        } catch (SQLException ignored) {
+                            // Older schema may not have "line" (unlikely for your table, but keep safe)
+                        }
+
+                        String backendString = null;
+                        try {
+                            backendString = rs.getString("backend");
+                        } catch (SQLException ignored) {
+                            // Older schema: no "backend" column
+                        }
+
+                        HologramData.Backend backend = HologramData.Backend.ARMOR_STAND;
+                        if (backendString != null && !backendString.isBlank()) {
+                            try {
+                                backend = HologramData.Backend.valueOf(backendString.trim().toUpperCase());
+                            } catch (IllegalArgumentException ignored) {
+                                // Older schema: use ArmorStand Backend
+                            }
+                        }
+
+                        HologramData hologramData = new HologramData(location, uuidEntity, grave.getUUID(), line, backend);
 
                         plugin.getSchedulerManager().execute(location, () -> {
-                            ChunkData chunkData = getChunkData(location);
-                            if (chunkData != null) {
-                                chunkData.removeEntityData(entityData);
-                            }
+                            getChunkData(location).removeEntityData(hologramData);
                         });
                         scheduledRemovals++;
                     }
@@ -2021,21 +2057,20 @@ public class DataManager {
      */
     public void addEntityData(EntityData entityData) {
         Location loc = entityData.getLocation();
-
-        if (loc != null && loc.getWorld() != null) {
-            plugin.getSchedulerManager().execute(loc, () -> getChunkData(loc).addEntityData(entityData));
-        } else {
-            Objects.requireNonNull(getChunkData(loc)).addEntityData(entityData);
+        if (loc == null || loc.getWorld() == null) {
+            plugin.getLogger().warning("Skipped adding entity data: location/world is null (type=" + entityData.getType() + ").");
+            return;
         }
+
+        plugin.getSchedulerManager().execute(loc, () -> getChunkData(loc).addEntityData(entityData));
 
         String table = entityDataTypeTable(entityData.getType());
         String query = "INSERT INTO " + getStoragePrefix() + table + " (location, uuid_entity, uuid_grave) VALUES (?, ?, ?)";
 
-        String locationString = LocationUtil.locationToString(entityData.getLocation());
         Object[] parameters = new Object[] {
-                locationString,
-                entityData.getUUIDEntity(),
-                entityData.getUUIDGrave()
+                LocationUtil.locationToString(loc),
+                entityData.getUUIDEntity().toString(),
+                entityData.getUUIDGrave().toString()
         };
 
         plugin.getSchedulerManager().runTaskAsynchronously(() -> {
@@ -2064,30 +2099,22 @@ public class DataManager {
      */
     public void removeEntityData(List<EntityData> entityDataList) {
         plugin.getSchedulerManager().runTaskAsynchronously(() -> {
-            try (Connection connection = getConnection()) {
+            try {
                 for (EntityData entityData : entityDataList) {
                     Location loc = entityData.getLocation();
 
                     if (loc != null && loc.getWorld() != null) {
                         plugin.getSchedulerManager().execute(loc, () -> {
-                            ChunkData chunkData = getChunkData(loc);
-                            if (chunkData != null) {
-                                chunkData.removeEntityData(entityData);
-                            }
+                            getChunkData(loc).removeEntityData(entityData);
                             plugin.getHologramManager().removeHologram(entityData);
                         });
                     } else {
-                        ChunkData chunkData = getChunkData(loc);
-                        if (chunkData != null) {
-                            chunkData.removeEntityData(entityData);
-                        }
                         plugin.getHologramManager().removeHologram(entityData);
                     }
 
                     String table = entityDataTypeTable(entityData.getType());
                     String query = "DELETE FROM " + getStoragePrefix() + table + " WHERE uuid_entity = ?";
-                    Object[] parameters = new Object[] { entityData.getUUIDEntity() };
-                    executeUpdate(query, parameters);
+                    executeUpdate(query, new Object[] { entityData.getUUIDEntity().toString() });
 
                     plugin.debugMessage("Removing " + getStoragePrefix() + table + " for grave " + entityData.getUUIDGrave(), 1);
                 }

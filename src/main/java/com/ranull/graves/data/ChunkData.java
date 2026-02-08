@@ -142,7 +142,7 @@ public class ChunkData implements Serializable {
      * @return The location of the chunk.
      */
     public Location getLocation() {
-        return new Location(world, x >> 4, 0, z >> 4);
+        return new Location(world, (x << 4), 0, (z << 4));
     }
 
     /**
@@ -187,6 +187,7 @@ public class ChunkData implements Serializable {
      * @param entityData The entity data to add.
      */
     public void addEntityData(EntityData entityData) {
+        if (entityData == null || entityData.getUUIDEntity() == null) return;
         entityDataMap.put(entityData.getUUIDEntity(), entityData);
     }
 
@@ -196,6 +197,7 @@ public class ChunkData implements Serializable {
      * @param entityData The entity data to remove.
      */
     public void removeEntityData(EntityData entityData) {
+        if (entityData == null || entityData.getUUIDEntity() == null) return;
         entityDataMap.remove(entityData.getUUIDEntity());
     }
 }

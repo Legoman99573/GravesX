@@ -1,5 +1,7 @@
 package com.ranull.graves;
 
+import dev.cwhead.GravesX.exception.GravesXIllegalArgumentException;
+import dev.cwhead.GravesX.exception.GravesXMethodNotSupportedException;
 import dev.cwhead.GravesX.listener.BlockEntityExplodeListener;
 import me.croabeast.scheduler.GlobalScheduler;
 import com.ranull.graves.command.GravesCommand;
@@ -70,6 +72,8 @@ public class Graves extends JavaPlugin {
     private SchedulerManager graveScheduler;
     private ModuleManager moduleManager;
     private boolean deferModuleLoad;
+    private ArmorStandManager armorStandManager;
+    private TextDisplayManager textDisplayManager;
 
     @Override
     public void onLoad() {
@@ -198,6 +202,13 @@ public class Graves extends JavaPlugin {
 
         if (deferModuleLoad) {
             moduleManager.loadAll();
+        }
+
+        if (versionManager.isHasTextDisplays()) {
+            textDisplayManager = new TextDisplayManager(this);
+            armorStandManager = new ArmorStandManager(this);
+        } else {
+            armorStandManager = new ArmorStandManager(this);
         }
 
         moduleManager.enableAll(GravesXModuleController.LoadPhase.STARTUP);
@@ -821,8 +832,11 @@ public class Graves extends JavaPlugin {
     }
 
     /**
+     * @deprecated Use {@link TextDisplayManager} or {@link ArmorStandManager} directly for proper hologram functionality. Retained for backwards compatibility.
+     *
      * @return the {@link HologramManager} for displaying holographic text or elements above graves.
      */
+    @Deprecated (since = "4.9.11.1")
     public HologramManager getHologramManager() {
         return hologramManager;
     }
@@ -938,6 +952,24 @@ public class Graves extends JavaPlugin {
      */
     public SchedulerManager getSchedulerManager() {
         return graveScheduler;
+    }
+
+    /**
+     * @return the {@link TextDisplayManager} that manages Text Displays used by this plugin.
+     */
+    public TextDisplayManager getTextDisplayManager() {
+        if (textDisplayManager != null) {
+            return textDisplayManager;
+        } else {
+            throw new GravesXMethodNotSupportedException("TextDisplay is not supported on " + getVersionManager().getVersion() + ".");
+        }
+    }
+
+    /**
+     * @return the {@link ArmorStandManager} that manages ArmorStands used by this plugin.
+     */
+    public ArmorStandManager getArmorStandManager() {
+        return armorStandManager;
     }
 
     /**

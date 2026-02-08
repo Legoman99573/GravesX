@@ -172,6 +172,11 @@ public class VersionManager {
     private boolean isLegacyVersion;
 
     /**
+     * Indicates whether the server has text displays.
+     */
+    private final boolean hasTextDisplays;
+
+    /**
      * Initializes a new instance of the VersionManager class.
      */
     public VersionManager() {
@@ -198,6 +203,8 @@ public class VersionManager {
                 && !is_v1_13() && !is_v1_14() && !is_v1_15() && !is_v1_16() && !is_v1_17() && !is_v1_18() && !is_v1_19() && !is_v1_20();
         this.isPost1_21_9 = !is_v1_7() && !is_v1_8() && !is_v1_9() && !is_v1_10() && !is_v1_11() && !is_v1_12()
                 && !is_v1_13() && !is_v1_14() && !is_v1_15() && !is_v1_16() && !is_v1_17() && !is_v1_18() && !is_v1_19() && !is_v1_20() && !is_v1_21();
+
+        this.hasTextDisplays = !is_v1_7() && !is_v1_8() && !is_v1_9() && !is_v1_10() && !is_v1_11() && !is_v1_12() && !is_v1_13() && !is_v1_14() && !is_v1_15() && !is_v1_16() && !is_v1_17() && !is_v1_18();
 
         try {
             Class.forName("org.spigotmc.SpigotConfig", false, getClass().getClassLoader());
@@ -554,16 +561,43 @@ public class VersionManager {
         return version.matches("(?i)v1_21_R1|(?i)v1_21_R2|(?i)v1_21_R3|(?i)v1_21_R4");
     }
 
+    /**
+     * Indicates whether the server version is at or after Minecraft 1.20.5.
+     *
+     * <p>This flag is typically precomputed during version detection and can be used to gate
+     * features or API calls introduced in 1.20.5+.</p>
+     *
+     * @return {@code true} if the server is running Minecraft 1.20.5 or newer; {@code false} otherwise
+     */
     public boolean isPost1_20_5() {
         return isPost1_20_5;
     }
 
+    /**
+     * Indicates whether the server version is at or after API v1_21_R5.
+     *
+     * @return True if the server version is API v1_21_R5 or newer. False otherwise.
+     */
     public boolean is_v1_21_R5() {
         return version.matches("(?i)v1_21_R5");
     }
 
+    /**
+     * Indicates whether the server version is at or after Minecraft 1.21.9.
+     *
+     * @return {@code true} if the server is running Minecraft 1.21.9 or newer; {@code false} otherwise
+     */
     public boolean isPost1_21_9() {
         return isPost1_21_9;
+    }
+
+    /**
+     * Indicates whether the server supports {@code TextDisplay} entities.
+     *
+     * @return {@code true} if {@code TextDisplay} is available on this server; {@code false} otherwise
+     */
+    public boolean isHasTextDisplays() {
+        return hasTextDisplays;
     }
 
     /**
