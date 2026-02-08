@@ -195,7 +195,7 @@ public class TextDisplayManager extends EntityDataManager {
         updateTextDisplay(td, cfgLines, lineHeight, base, grave);
     }
 
-    public void updateTextDisplay(TextDisplay textDisplay, List<String> cfgLines, double lineHeight, Location base, Grave grave) {
+    private void updateTextDisplay(TextDisplay textDisplay, List<String> cfgLines, double lineHeight, Location base, Grave grave) {
         applyDisplayOptions(textDisplay, grave);
 
         List<String> cfgLinesOriginalOrder = new ArrayList<>(cfgLines);
@@ -213,7 +213,9 @@ public class TextDisplayManager extends EntityDataManager {
                     textDisplay.teleport(expectedLoc);
                 }
             }
-        } catch (Throwable ignored) {}
+        } catch (Throwable t) {
+            plugin.debugMessage("Failed to get Target Location for grave " + grave.getUUID() + ". Holograms will not update. \n" + Arrays.toString(t.getStackTrace()), 2);
+        }
 
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < lineCount; i++) {

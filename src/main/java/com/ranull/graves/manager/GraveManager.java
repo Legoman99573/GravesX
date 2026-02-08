@@ -485,13 +485,13 @@ public class GraveManager {
         Grave grave = plugin.getCacheManager().getGraveMap().get(graveUuid);
         if (grave == null) return;
 
-        Location anchor = grave.getLocationDeath();
-        if (anchor == null || anchor.getWorld() == null) return;
-
-        Runnable task = () -> {
+        Entity target = plugin.getServer().getEntity(hologramData.getUUIDEntity());
+        if (target == null || target.getWorld() == null) {
+            plugin.debugMessage("Failed to update target for " + hologramData.getUUIDEntity() + " for grave " + grave.getUUID() + ". Holograms will not update.", 2);
+            return;
+        }
+        plugin.getSchedulerManager().execute(target,  () -> {
             try {
-                Entity target = plugin.getServer().getEntity(hologramData.getUUIDEntity());
-                if (target == null) return;
 
                 double offsetX = plugin.getConfigManager().getConfigSection("hologram.offset.x", grave).getDouble("hologram.offset.x");
                 double offsetY = plugin.getConfigManager().getConfigSection("hologram.offset.y", grave).getDouble("hologram.offset.y");
@@ -507,7 +507,7 @@ public class GraveManager {
                 List<String> lineListReversed = new ArrayList<>(cfgLines);
                 Collections.reverse(lineListReversed);
 
-                Location base = LocationUtil.roundLocation(anchor).add(offsetX + 0.5, offsetY + (marker ? 0.49 : -0.49), offsetZ + 0.5);
+                Location base = LocationUtil.roundLocation(grave.getLocationDeath()).add(offsetX + 0.5, offsetY + (marker ? 0.49 : -0.49), offsetZ + 0.5);
 
                 try {
                     Class<?> textDisplayClass = Class.forName("org.bukkit.entity.TextDisplay");
@@ -540,7 +540,9 @@ public class GraveManager {
                             target.teleport(expectedLineLoc);
                         }
                     }
-                } catch (Throwable ignored) {}
+                } catch (Throwable t) {
+                    plugin.debugMessage("Failed to get Target Location for grave " + grave.getUUID() + ". Holograms will not update. \n" + Arrays.toString(t.getStackTrace()), 2);
+                }
 
                 String lineTextRaw = lineListReversed.get(lineIndex);
                 String parsed = StringUtil.parseString(lineTextRaw, expectedLineLoc, grave, plugin);
@@ -556,13 +558,7 @@ public class GraveManager {
                     entityDataRemoveList.add(hologramData);
                 }
             }
-        };
-
-        if (plugin.getVersionManager().isFolia()) {
-            plugin.getSchedulerManager().execute(anchor, task);
-        } else {
-            task.run();
-        }
+        });
     }
 
     /**
