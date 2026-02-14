@@ -64,14 +64,21 @@ public class GraveManager {
      */
     public GraveManager(@NotNull Graves plugin) {
         this.plugin = plugin;
-        startGraveTimer();
+        plugin.getSchedulerManager().runTask(this::startGraveTimer);
     }
 
     /**
      * Starts the grave timer task that periodically checks and updates graves.
      */
     private void startGraveTimer() {
-        plugin.getSchedulerManager().runTaskTimer(this::checkAndUpdateGraves, 20L, 20L);
+        plugin.getSchedulerManager().runTaskTimer(() -> {
+            try {
+                plugin.debugMessage("Scheduling grave tick task. (This is just debug. Not a bug.)" ,1);
+                checkAndUpdateGraves();
+            } catch (Throwable t) {
+                plugin.debugMessage("Failed to tick grave task. Graves may not update this tick. (This is normal for servers that are having TPS loss.)" ,2);
+            }
+        }, 20L, 20L);
     }
 
     /**
@@ -85,6 +92,8 @@ public class GraveManager {
         processGraves(graveRemoveList);
 
         processChunks(entityDataRemoveList, blockDataRemoveList);
+
+        processHologramDataTick(entityDataRemoveList);
 
         removeExpiredElements(graveRemoveList, entityDataRemoveList, blockDataRemoveList);
 
@@ -364,6 +373,44 @@ public class GraveManager {
     }
 
     /**
+     * Ticks all holograms separately from chunk processing.
+     *
+     * No chunk region scheduling happens here.
+     * Each hologram update schedules itself on the hologram entity's region thread
+     * inside processHologramData().
+     */
+    private void processHologramDataTick(List<EntityData> entityDataRemoveList) {
+        Collection<ChunkData> chunks = plugin.getCacheManager().getChunkMap().values();
+
+        for (ChunkData chunkData : chunks) {
+            if (chunkData == null || !chunkData.isLoaded()) continue;
+
+            Collection<EntityData> snapshot;
+            try {
+                snapshot = new ArrayList<>(chunkData.getEntityDataMap().values());
+            } catch (Throwable ignored) {
+                continue;
+            }
+
+            for (EntityData entityData : snapshot) {
+                if (!(entityData instanceof HologramData hologramData)) continue;
+
+                UUID graveId = hologramData.getUUIDGrave();
+                if (graveId == null) continue;
+
+                if (!plugin.getCacheManager().getGraveMap().containsKey(graveId)) {
+                    synchronized (entityDataRemoveList) {
+                        entityDataRemoveList.add(hologramData);
+                    }
+                    continue;
+                }
+
+                processHologramData(hologramData, entityDataRemoveList);
+            }
+        }
+    }
+
+    /**
      * Removes expired graves, entities, and blocks from the system.
      *
      * @param graveRemoveList       the list of graves to be removed.
@@ -457,18 +504,14 @@ public class GraveManager {
                     continue;
                 }
 
-                boolean hasGrave = entityData.getUUIDGrave() != null && plugin.getCacheManager().getGraveMap().containsKey(entityData.getUUIDGrave());
+                UUID graveId = entityData.getUUIDGrave();
+                boolean hasGrave = graveId != null && plugin.getCacheManager().getGraveMap().containsKey(graveId);
 
-                if (hasGrave) {
-                    if (entityData instanceof HologramData hologramData) {
-                        processHologramData(hologramData, location, entityDataRemoveList);
-                    }
-                } else {
+                if (!hasGrave) {
                     entityDataRemoveList.add(entityData);
                 }
             }
         } catch (ArrayIndexOutOfBoundsException ignored) {
-            // ignored
         }
     }
 
@@ -478,7 +521,7 @@ public class GraveManager {
      * @param hologramData         the hologram data to be processed.
      * @param entityDataRemoveList the list to which hologram data to be removed will be added.
      */
-    private void processHologramData(HologramData hologramData, Location location, List<EntityData> entityDataRemoveList) {
+    private void processHologramData(HologramData hologramData, List<EntityData> entityDataRemoveList) {
         UUID graveUuid = hologramData.getUUIDGrave();
         if (graveUuid == null) return;
 
@@ -486,39 +529,51 @@ public class GraveManager {
         if (grave == null) return;
 
         Entity target = plugin.getServer().getEntity(hologramData.getUUIDEntity());
-        if (target == null || target.getWorld() == null) {
-            plugin.debugMessage("Failed to update target for " + hologramData.getUUIDEntity() + " for grave " + grave.getUUID() + ". Holograms will not update.", 2);
+        if (target == null) {
+            plugin.debugMessage("Failed to update target for " + hologramData.getUUIDEntity() + " for grave " + grave.getUUID() + ". Holograms will not update or may linger in the world.", 2);
             return;
         }
-        plugin.getSchedulerManager().execute(target,  () -> {
-            try {
 
-                double offsetX = plugin.getConfigManager().getConfigSection("hologram.offset.x", grave).getDouble("hologram.offset.x");
-                double offsetY = plugin.getConfigManager().getConfigSection("hologram.offset.y", grave).getDouble("hologram.offset.y");
-                double offsetZ = plugin.getConfigManager().getConfigSection("hologram.offset.z", grave).getDouble("hologram.offset.z");
-                boolean marker = plugin.getConfigManager().getConfigSection("hologram.marker", grave).getBoolean("hologram.marker");
-                double lineHeight = plugin.getConfigManager().getConfigSection("hologram.height-line", grave).getDouble("hologram.height-line", 0.28D);
+        plugin.getSchedulerManager().execute(target, () -> {
+            try {
+                if (!target.isValid()) {
+                    synchronized (entityDataRemoveList) {
+                        entityDataRemoveList.add(hologramData);
+                    }
+                    return;
+                }
+
+                Grave g = plugin.getCacheManager().getGraveMap().get(graveUuid);
+                if (g == null) {
+                    synchronized (entityDataRemoveList) {
+                        entityDataRemoveList.add(hologramData);
+                    }
+                    return;
+                }
+
+                Location death = g.getLocationDeath();
+                if (death == null || death.getWorld() == null) return;
+
+                double offsetX = plugin.getConfigManager().getConfigSection("hologram.offset.x", g).getDouble("hologram.offset.x");
+                double offsetY = plugin.getConfigManager().getConfigSection("hologram.offset.y", g).getDouble("hologram.offset.y");
+                double offsetZ = plugin.getConfigManager().getConfigSection("hologram.offset.z", g).getDouble("hologram.offset.z");
+                boolean marker = plugin.getConfigManager().getConfigSection("hologram.marker", g).getBoolean("hologram.marker");
+                double lineHeight = plugin.getConfigManager().getConfigSection("hologram.height-line", g).getDouble("hologram.height-line", 0.28D);
 
                 List<String> cfgLines = new ArrayList<>(
-                        plugin.getConfigManager().getConfigSection("hologram.line", grave).getStringList("hologram.line")
+                        plugin.getConfigManager().getConfigSection("hologram.line", g).getStringList("hologram.line")
                 );
                 if (cfgLines.isEmpty()) return;
 
-                List<String> lineListReversed = new ArrayList<>(cfgLines);
-                Collections.reverse(lineListReversed);
+                Location base = LocationUtil.roundLocation(death).add(offsetX + 0.5, offsetY + (marker ? 0.49 : -0.49), offsetZ + 0.5);
 
-                Location base = LocationUtil.roundLocation(grave.getLocationDeath()).add(offsetX + 0.5, offsetY + (marker ? 0.49 : -0.49), offsetZ + 0.5);
-
-                try {
-                    Class<?> textDisplayClass = Class.forName("org.bukkit.entity.TextDisplay");
-                    if (textDisplayClass.isInstance(target)) {
-                        plugin.getTextDisplayManager().updateTextDisplay(target, cfgLines, lineHeight, base, grave);
-                        return;
-                    }
-                } catch (ClassNotFoundException ignored) {
-                    // pre-1.19: TextDisplay doesn't exist
+                if (plugin.getVersionManager().isHasTextDisplays()) {
+                    plugin.getTextDisplayManager().updateTextDisplay(target, cfgLines, lineHeight, base, g);
+                    return;
                 }
 
+                List<String> lineListReversed = new ArrayList<>(cfgLines);
+                Collections.reverse(lineListReversed);
 
                 int lineIndex = hologramData.getLine();
                 if (lineIndex < 0 || lineIndex >= lineListReversed.size()) {
@@ -541,11 +596,11 @@ public class GraveManager {
                         }
                     }
                 } catch (Throwable t) {
-                    plugin.debugMessage("Failed to get Target Location for grave " + grave.getUUID() + ". Holograms will not update. \n" + Arrays.toString(t.getStackTrace()), 2);
+                    plugin.debugMessage("Failed to get Target Location for grave " + g.getUUID() + ". Holograms will not update. \n" + Arrays.toString(t.getStackTrace()), 2);
                 }
 
                 String lineTextRaw = lineListReversed.get(lineIndex);
-                String parsed = StringUtil.parseString(lineTextRaw, expectedLineLoc, grave, plugin);
+                String parsed = StringUtil.parseString(lineTextRaw, expectedLineLoc, g, plugin);
 
                 if (plugin.getIntegrationManager().hasMiniMessage()) {
                     target.setCustomName(MiniMessage.parseString(parsed));

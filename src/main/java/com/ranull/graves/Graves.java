@@ -77,6 +77,7 @@ public class Graves extends JavaPlugin {
 
     @Override
     public void onLoad() {
+        graveScheduler = new SchedulerManager(this);
         debugManager = new DebugManager(this);
         configManager = new ConfigManager(this);
 
