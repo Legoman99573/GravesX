@@ -73,7 +73,6 @@ public class GraveManager {
     private void startGraveTimer() {
         plugin.getSchedulerManager().runTaskTimer(() -> {
             try {
-                plugin.debugMessage("Scheduling grave tick task. (This is just debug. Not a bug.)" ,1);
                 checkAndUpdateGraves();
             } catch (Throwable t) {
                 plugin.debugMessage("Failed to tick grave task. Graves may not update this tick. (This is normal for servers that are having TPS loss.)" ,2);
