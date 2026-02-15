@@ -58,6 +58,7 @@ public class Graves extends JavaPlugin {
     private EntityManager entityManager;
     private RecipeManager recipeManager;
     private LocationManager locationManager;
+    private SafeLocationManager safeLocationManager;
     private GraveManager graveManager;
     private ParticleManager particleManager;
     private DebugManager debugManager;
@@ -173,6 +174,7 @@ public class Graves extends JavaPlugin {
         guiManager = new GUIManager(this);
         entityManager = new EntityManager(this);
         locationManager = new LocationManager(this);
+        safeLocationManager = new SafeLocationManager(this);
         graveManager = new GraveManager(this);
         particleManager = new ParticleManager(this);
         permissionManager = new PermissionManager(this);
@@ -904,6 +906,13 @@ public class Graves extends JavaPlugin {
      */
     public LocationManager getLocationManager() {
         return locationManager;
+    }
+
+    /**
+     * @return the {@link SafeLocationManager} that handles efficient safe location serialization and retrieval.
+     */
+    public SafeLocationManager getSafeLocationManager() {
+        return safeLocationManager;
     }
 
     /**

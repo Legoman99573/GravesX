@@ -398,9 +398,7 @@ public class GraveManager {
                 if (graveId == null) continue;
 
                 if (!plugin.getCacheManager().getGraveMap().containsKey(graveId)) {
-                    synchronized (entityDataRemoveList) {
-                        entityDataRemoveList.add(hologramData);
-                    }
+                    entityDataRemoveList.add(hologramData);
                     continue;
                 }
 
