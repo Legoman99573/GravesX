@@ -47,16 +47,13 @@ public class PlayerMoveListener implements Listener {
 
     /**
      * Handles the PlayerMoveEvent to manage interactions with graves and update player locations.
-     * This method checks if the player has moved and whether the new location is inside a border and safe.
-     * It then updates the player's last known solid location if applicable.
-     * Additionally, if the player is moving over a location that is known to contain a grave,
-     * and if the grave's configuration allows walking over it, the grave is automatically looted
-     * if the player is allowed to open it.
      *
      * @param event The PlayerMoveEvent to handle.
      */
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerMove(PlayerMoveEvent event) {
+        if (event.isCancelled()) return;
+
         Player player = event.getPlayer();
 
         if (isNotSpectatorMode(player)) {
@@ -71,7 +68,6 @@ public class PlayerMoveListener implements Listener {
                     handleGraveAutoLootOnWalk(event, player, location);
                 }
 
-                // Remove the specific type of compass if within 10 blocks of a grave
                 removeSpecificCompassNearGrave(player, location);
             }
         }
@@ -141,8 +137,7 @@ public class PlayerMoveListener implements Listener {
         Grave grave = plugin.getCacheManager().getGrave(blockData.getGraveUUID());
         if (grave == null) return;
 
-        if (plugin.getConfigManager().getConfigSection("block.walk-over", grave).getBoolean("block.walk-over")
-                && plugin.getEntityManager().canOpenGrave(player, grave)) {
+        if (plugin.getConfigManager().getConfigSection("block.walk-over", grave).getBoolean("block.walk-over")) {
 
             plugin.getGraveManager().cleanupCompasses(player, grave);
 
