@@ -168,7 +168,7 @@ settings:
           - "&7%time_alive_remaining_formatted% &r| %state_protection%"
           - "&fKilled By &c%killer_name_display%"
 
-        # Options for Text-Displays only (This will not work on ArmorStands (Legacy)
+        # Options for Text-Displays only (This will not work on ArmorStands (Legacy))
         text-display:
           # Should Hologram be See Through?
           see-through: false
