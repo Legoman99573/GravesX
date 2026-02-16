@@ -71,10 +71,16 @@ public class DataManager {
 
         switch (this.type) {
             case SQLITE -> {
-                plugin.getLogger().warning("Database Option SQLITE is set for removal in a future release. Use H2 Database option instead for better reliance.");
-                loadType(Type.SQLITE);
+                plugin.getLogger().warning("Database Option SQLITE is no longer supported. Migrating data to H2.");
+                if (testDatabaseConnection()) {
+                loadType(Type.H2);
+                migrate();
                 load();
                 keepConnectionAlive(); // If we don't enable this, connection will close or time out :/
+                } else {
+                    plugin.getLogger().severe("Failed to connect to " + Type.H2 + " database. Disabling plugin...");
+                    plugin.getServer().getPluginManager().disablePlugin(this.plugin);
+                }
             }
             case H2, POSTGRESQL, MYSQL, MARIADB -> {
                 loadType(this.type);
@@ -107,9 +113,8 @@ public class DataManager {
 
     public String getType() {
         return switch (type) {
-            case H2 -> "H2";
+            case H2, SQLITE -> "H2";
             case MYSQL -> "MySQL";
-            case SQLITE -> "SQLite";
             case MARIADB -> "MariaDB";
             case POSTGRESQL -> "PostgreSQL";
             case MSSQL -> "Microsoft SQL Server";
@@ -126,7 +131,7 @@ public class DataManager {
         /**
          * SQLite database system.
          * <p>
-         * This type represents an SQLite database, a self-contained, serverless SQL database engine.
+         * This type is no longer supported and will now use H2 instead.
          * </p>
          */
         SQLITE,
