@@ -183,10 +183,10 @@ settings:
           alignment: "CENTER"
 
           # Max line width (pixels) before wrapping; 0 = don't set / server default
-          line-width: 100
+          line-width: 1024
 
           # Center Bias for Text-Display Holograms (to match ArmorStand Behavior)
-          center-bias-lines: 0.5
+          center-bias-lines: 2
 
           # Background handling
           default-background: false
@@ -196,7 +196,7 @@ settings:
 
           # ARGB hex; "" disables custom background
           # "#80000000" = 50% transparent black, "#80FF0000" = 50% transparent red, etc.
-          background: "#80000000"
+          background: "#00000000"
 
       ##############
       # Protection #
