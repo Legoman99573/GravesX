@@ -769,7 +769,9 @@ public class EntityDeathListener implements Listener {
             grave.setLocationDeath(modern.getLocationDeath());
 
             World world = Objects.requireNonNull(modern.getLocationDeath()).getWorld();
-            if (world != null && location.getY() < world.getMinHeight()) {
+            if ((world != null && location.getY() < world.getMinHeight())
+                    || (world != null && location.getY() > world.getMaxHeight())
+                    || (world != null && world.getEnvironment() == World.Environment.NETHER && plugin.getSafeLocationManager().isAboveNetherRoof(grave.getLocationDeath(), grave))) {
                 handleFailedGravePlacement(event, grave, location, livingEntity, removedItemStackList, graveItemStackList);
                 return;
             }
