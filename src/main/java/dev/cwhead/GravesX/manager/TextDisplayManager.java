@@ -9,6 +9,7 @@ import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.LocationUtil;
 import com.ranull.graves.util.StringUtil;
 import dev.cwhead.GravesX.keys.GraveHologramKeys;
+import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -109,7 +110,7 @@ public class TextDisplayManager extends EntityDataManager {
                 display.setText(finalText);
             }
 
-            HologramData hologramData = new HologramData(spawnLoc, display.getUniqueId(), grave.getUUID(), 0);
+            HologramData hologramData = new HologramData(spawnLoc, display.getUniqueId(), grave.getUUID(), 0, HologramData.Backend.TEXT_DISPLAY);
             plugin.getDataManager().addHologramData(hologramData);
 
             if (plugin.getIntegrationManager().hasMultiPaper()) {
@@ -130,56 +131,42 @@ public class TextDisplayManager extends EntityDataManager {
     public void removeHologram(Map<EntityData, Entity> entityDataMap) {
         if (entityDataMap == null || entityDataMap.isEmpty()) return;
 
-        Map.Entry<EntityData, Entity> first = entityDataMap.entrySet().iterator().next();
-        EntityData data = first.getKey();
-        Entity entity = first.getValue();
-
+        Map.Entry<EntityData, Entity> entry = entityDataMap.entrySet().iterator().next();
+        EntityData data = entry.getKey();
         if (data == null) return;
 
-        try {
-            if (entity != null && entity.isValid()) entity.remove();
-        } catch (Throwable ignored) {}
+        if (data instanceof HologramData hd && hd.getBackend() != HologramData.Backend.TEXT_DISPLAY) {
+            return;
+        }
 
-        Location graveLocation = data.getLocation();
-        if (graveLocation != null && graveLocation.getWorld() != null) {
-            String locKey = toLocKey(graveLocation);
-            String locTag = "graveHologramGraveLocation:" + locKey;
+        UUID entityUuid = data.getUUIDEntity();
 
-            executeRegion(graveLocation, () -> {
-                try {
-                    for (Entity e : graveLocation.getWorld().getEntities()) {
-                        if (!(e instanceof TextDisplay td)) continue;
-                        if (!td.isValid()) continue;
-                        if (!td.getLocation().equals(graveLocation)) continue;
+        Entity entity = entry.getValue();
+        if (entity == null && entityUuid != null) {
+            try { entity = Bukkit.getEntity(entityUuid); } catch (Throwable ignored) {}
+        }
 
-                        boolean remove = false;
+        Entity finalEntity = entity;
 
-                        try {
-                            if (plugin.getVersionManager().hasScoreboardTags()) {
-                                if (td.getScoreboardTags().contains(locTag)) remove = true;
-                            }
-                        } catch (Throwable ignored) {}
-
-                        try {
-                            if (plugin.getVersionManager().hasPersistentData()) {
-                                PersistentDataContainer pdc = td.getPersistentDataContainer();
-                                String storedLoc = pdc.get(GraveHologramKeys.GRAVE_LOCATION, PersistentDataType.STRING);
-                                if (storedLoc != null && storedLoc.equals(locKey)) remove = true;
-                            }
-                        } catch (Throwable ignored) {}
-
-                        if (remove) td.remove();
-                    }
-                } catch (Throwable t) {
-                    plugin.getLogger().severe(
-                            "Failed removing TextDisplay holograms at world: " + graveLocation.getWorld().getName() +
-                                    ", x: " + graveLocation.getBlockX() +
-                                    ", y: " + graveLocation.getBlockY() +
-                                    ", z: " + graveLocation.getBlockZ() + "."
-                    );
-                    plugin.logStackTrace(t);
+        Runnable remover = () -> {
+            try {
+                if (finalEntity != null && finalEntity.isValid()) {
+                    finalEntity.remove();
                 }
-            });
+            } catch (Throwable ignored) {}
+        };
+
+        if (finalEntity != null) {
+            executeRegion(finalEntity, remover);
+        } else {
+            Location loc = null;
+            try { loc = data.getLocation(); } catch (Throwable ignored) {}
+
+            if (loc != null && loc.getWorld() != null) {
+                executeRegion(loc, remover);
+            } else {
+                plugin.getServer().getScheduler().runTask(plugin, remover);
+            }
         }
 
         plugin.getDataManager().removeEntityData(Collections.singletonList(data));
