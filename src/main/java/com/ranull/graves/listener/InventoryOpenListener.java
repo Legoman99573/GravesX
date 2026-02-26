@@ -4,6 +4,7 @@ import com.ranull.graves.Graves;
 import com.ranull.graves.compatibility.CompatibilityInventoryView;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.GraveOpenEvent;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -61,12 +62,10 @@ public class InventoryOpenListener implements Listener {
 
         if (!(holder instanceof Grave grave) || !(event.getPlayer() instanceof Player player)) return;
 
-        GraveOpenEvent modern =
-                new GraveOpenEvent(event.getView(), grave, player);
+        GraveOpenEvent modern = new GraveOpenEvent(event.getView(), grave, player);
         plugin.getServer().getPluginManager().callEvent(modern);
 
-        com.ranull.graves.event.GraveOpenEvent legacy =
-                new com.ranull.graves.event.GraveOpenEvent(event.getView(), grave, player);
+        com.ranull.graves.event.GraveOpenEvent legacy = new com.ranull.graves.event.GraveOpenEvent(event.getView(), grave, player);
         plugin.getServer().getPluginManager().callEvent(legacy);
 
         boolean cancelled = modern.isCancelled() || legacy.isCancelled();
@@ -74,6 +73,14 @@ public class InventoryOpenListener implements Listener {
 
         if (cancelled && !addon) {
             event.setCancelled(true);
+            return;
+        }
+
+        if (plugin.getConfigManager().getConfigSection("zombie.open", grave).getBoolean("zombie.open", false)) {
+            Location spawnAt = grave.getLocationDeath();
+            if (spawnAt != null && spawnAt.getWorld() != null) {
+                plugin.getEntityManager().spawnZombie(spawnAt, player, player, grave);
+            }
         }
     }
 }

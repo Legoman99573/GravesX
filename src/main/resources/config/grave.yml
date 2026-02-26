@@ -467,6 +467,8 @@ settings:
         only-break: false
         # Should a grave spawn a zombie if it is blown up, this only works if the grave can be blown up.
         explode: false
+        # Should a grave spawn a zombie if they open a grave inventory?
+        open: false
         # Will the zombie have the owner's head on.
         owner-head: true
         # How much health the zombie has.
