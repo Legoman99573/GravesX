@@ -405,7 +405,7 @@ public class Graves extends JavaPlugin {
             case "MYSQL":
                 libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.4.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
                 break;
-            case "H2":
+            case "SQLITE", "H2":
                 libraryLoaderUtil.loadLibrary("com{}h2database", "h2", "2.4.240", "org{}h2", "com{}ranull{}graves{}libraries{}h2", false, "https://repo1.maven.org/maven2/");
                 break;
             case "MSSQL":
