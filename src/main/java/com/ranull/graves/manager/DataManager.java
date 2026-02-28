@@ -72,11 +72,11 @@ public class DataManager {
         switch (this.type) {
             case SQLITE -> {
                 plugin.getLogger().warning("Database Option SQLITE is no longer supported. Migrating data to H2.");
-                if (testDatabaseConnection()) {
                 loadType(Type.H2);
-                migrate();
-                load();
-                keepConnectionAlive(); // If we don't enable this, connection will close or time out :/
+                if (testDatabaseConnection()) {
+                    migrate();
+                    load();
+                    keepConnectionAlive(); // If we don't enable this, connection will close or time out :/
                 } else {
                     plugin.getLogger().severe("Failed to connect to " + Type.H2 + " database. Disabling plugin...");
                     plugin.getServer().getPluginManager().disablePlugin(this.plugin);
