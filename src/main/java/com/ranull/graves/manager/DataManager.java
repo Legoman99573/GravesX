@@ -1,6 +1,7 @@
 package com.ranull.graves.manager;
 
 import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariCredentialsProvider;
 import com.zaxxer.hikari.HikariDataSource;
 import com.ranull.graves.Graves;
 import com.ranull.graves.data.*;
@@ -8,6 +9,7 @@ import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.*;
 import dev.cwhead.GravesX.api.provider.GraveProvider;
 import dev.cwhead.GravesX.api.provider.RegisterGraveProviders;
+import dev.cwhead.GravesX.manager.db.CredentialsProviderFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.bukkit.Location;
 import org.bukkit.Bukkit;
@@ -407,22 +409,21 @@ public class DataManager {
 
         switch (type) {
             case POSTGRESQL -> configurePostgreSQL(config);
-            case SQLITE -> {
-                migrateRootDataSubData();
-                configureSQLite(config);
-            }
+            case SQLITE -> { migrateRootDataSubData(); configureSQLite(config); }
             case H2 -> configureH2(config);
             case MSSQL -> configureMSSQL(config);
             case MARIADB, MYSQL -> configureMySQLOrMariaDB(config, type);
             default -> throw new IllegalArgumentException("Unsupported database type: " + type);
         }
 
+        HikariCredentialsProvider provider = CredentialsProviderFactory.forType(plugin, type);
+        if (provider != null) {
+            config.setCredentialsProvider(provider);
+        }
+
         dataSource = new HikariDataSource(config);
         checkAndUnlockDatabase();
-
-        if (type == Type.MYSQL) {
-            checkMariaDBasMySQL();
-        }
+        if (type == Type.MYSQL) checkMariaDBasMySQL();
     }
 
     private void checkMariaDBasMySQL() {
@@ -499,7 +500,7 @@ public class DataManager {
 
         config.setJdbcUrl(jdbcUrl);
         config.setDriverClassName("org.sqlite.JDBC");
-        config.setPoolName("Graves SQLite");
+        config.setPoolName("GravesX SQLite");
 
         config.setMaximumPoolSize(10);
         config.setMinimumIdle(1);
@@ -520,8 +521,6 @@ public class DataManager {
     private void configurePostgreSQL(HikariConfig config) {
         String host = plugin.getConfig().getString("settings.storage.postgresql.host", "localhost");
         int port = plugin.getConfig().getInt("settings.storage.postgresql.port", 5432);
-        String user = plugin.getConfig().getString("settings.storage.postgresql.username", "username");
-        String password = plugin.getConfig().getString("settings.storage.postgresql.password", "password");
         String database = plugin.getConfig().getString("settings.storage.postgresql.database", "graves");
         long maxLifetime = plugin.getConfig().getLong("settings.storage.postgresql.maxLifetime", 1800000);
         int maxConnections = plugin.getConfig().getInt("settings.storage.postgresql.maxConnections", 20);
@@ -547,9 +546,8 @@ public class DataManager {
         String jdbcUrl = String.format("jdbc:postgresql://%s:%d/%s?%s", host, port, database, params);
 
         config.setJdbcUrl(jdbcUrl);
-        config.setUsername(user);
-        config.setPassword(password);
         config.setDriverClassName("com.ranull.graves.libraries.postgresql.Driver");
+        config.setPoolName("GravesX PostgreSQL");
 
         config.setMaximumPoolSize(maxConnections);
         config.setMinimumIdle(Math.min(2, maxConnections));
@@ -599,8 +597,6 @@ public class DataManager {
         File file = new File(dataDir, "graves.data");
         String filePath = file.getAbsolutePath();
 
-        String username = plugin.getConfig().getString("settings.storage.h2.username", "sa");
-        String password = plugin.getConfig().getString("settings.storage.h2.password", "");
         long maxLifetime = plugin.getConfig().getLong("settings.storage.h2.maxLifetime", 1800000);
         int maxConnections = plugin.getConfig().getInt("settings.storage.h2.maxConnections", 50); // Increased pool size
         long connectionTimeout = plugin.getConfig().getLong("settings.storage.h2.connectionTimeout", 30000);
@@ -608,10 +604,8 @@ public class DataManager {
         String jdbcUrl = "jdbc:h2:file:" + filePath + ";AUTO_SERVER=FALSE;DB_CLOSE_DELAY=-1;";
 
         config.setJdbcUrl(jdbcUrl);
-        config.setUsername(username);
-        config.setPassword(password);
         config.setDriverClassName("com.ranull.graves.libraries.h2.Driver");
-        config.setPoolName("Graves H2");
+        config.setPoolName("GravesX h2");
 
         config.setMaximumPoolSize(maxConnections);
         config.setMinimumIdle(Math.min(2, maxConnections));
@@ -635,8 +629,6 @@ public class DataManager {
     private void configureMySQLOrMariaDB(HikariConfig config, Type type) {
         String host = plugin.getConfig().getString("settings.storage.mysql.host", "localhost");
         int port = plugin.getConfig().getInt("settings.storage.mysql.port", 3306);
-        String user = plugin.getConfig().getString("settings.storage.mysql.username", "username");
-        String password = plugin.getConfig().getString("settings.storage.mysql.password", "password");
         String database = plugin.getConfig().getString("settings.storage.mysql.database", "graves");
         long maxLifetime = plugin.getConfig().getLong("settings.storage.mysql.maxLifetime", 1800000);
         int maxConnections = plugin.getConfig().getInt("settings.storage.mysql.maxConnections", 20);
@@ -650,13 +642,14 @@ public class DataManager {
                 : String.format("jdbc:mysql://%s:%d/%s", host, port, database);
 
         config.setJdbcUrl(jdbcUrl);
-        config.setUsername(user);
-        config.setPassword(password);
         config.setDriverClassName(
                 type == Type.MARIADB
                         ? "com.ranull.graves.libraries.mariadb.jdbc.Driver"
                         : "com.ranull.graves.libraries.mysql.cj.jdbc.Driver"
         );
+        config.setPoolName(type == Type.MARIADB
+                ? "GravesX MariaDB"
+                : "GravesX MySQL");
 
         config.setMaximumPoolSize(maxConnections);
         config.setMinimumIdle(Math.min(2, maxConnections));
@@ -698,8 +691,6 @@ public class DataManager {
     private void configureMSSQL(HikariConfig config) {
         String host = plugin.getConfig().getString("settings.storage.mssql.host", "localhost");
         int port = plugin.getConfig().getInt("settings.storage.mssql.port", 1433);
-        String user = plugin.getConfig().getString("settings.storage.mssql.username", "username");
-        String password = plugin.getConfig().getString("settings.storage.mssql.password", "password");
         String database = plugin.getConfig().getString("settings.storage.mssql.database", "graves");
         long maxLifetime = plugin.getConfig().getLong("settings.storage.mssql.maxLifetime", 1800000);
         int maxConnections = plugin.getConfig().getInt("settings.storage.mssql.maxConnections", 20);
@@ -713,10 +704,8 @@ public class DataManager {
         );
 
         config.setJdbcUrl(jdbcUrl);
-        config.setUsername(user);
-        config.setPassword(password);
         config.setDriverClassName("com.ranull.graves.libraries.microsoft.sqlserver.jdbc.SQLServerDriver");
-        config.setPoolName("Graves MSSQL");
+        config.setPoolName("GravesX Microsoft SQL");
 
         config.setMaximumPoolSize(maxConnections);
         config.setMinimumIdle(Math.min(2, maxConnections));
