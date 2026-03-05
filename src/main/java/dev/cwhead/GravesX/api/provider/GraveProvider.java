@@ -51,10 +51,19 @@ public interface GraveProvider {
     /**
      * Should a grave provider utilize the grave head?
      *
-     * @return true if the grave is placed. False otherwise.
+     * @return true if the grave uses the Grave Head. False otherwise.
      */
     default boolean shouldUseGraveHead() {
         return false;
+    }
+
+    /**
+     * Should a grave provider replace a block and be replaced back when looted?
+     *
+     * @return true if the grave is placed as a replaceable block. False otherwise.
+     */
+    default boolean shouldBlockBeReplaceable() {
+        return true;
     }
 
     /**

@@ -54,6 +54,9 @@ public class DataManager {
      */
     private HikariDataSource dataSource;
 
+    private volatile Set<String> customProviderSanitizedIds = Set.of();
+    private volatile List<String> customProviderKeysSnapshot = List.of();
+
     /**
      * Initializes the DataManager with the specified plugin instance and sets up the database connection.
      *
@@ -192,6 +195,20 @@ public class DataManager {
      * Loads data from the database asynchronously.
      */
     private void load() {
+        try {
+            try {
+                RegisterGraveProviders.bootstrapFromServices();
+            } catch (Throwable ignored) {}
+            snapshotCustomProviders();
+        } catch (Throwable t) {
+            plugin.getLogger().severe("Failed while snapshotting GraveProviders (sync).");
+            plugin.logStackTrace(t);
+            customProviderSanitizedIds = Set.of();
+            customProviderKeysSnapshot = List.of();
+        }
+
+        final List<String> customProviderKeys = customProviderKeysSnapshot;
+
         plugin.getSchedulerManager().runTaskAsynchronously(() -> {
             try {
                 loadTables();
@@ -213,41 +230,42 @@ public class DataManager {
             integrationMap.put("nexo", EntityData.Type.NEXO);
             integrationMap.put("playernpc", EntityData.Type.PLAYERNPC);
             integrationMap.put("mannequins", EntityData.Type.MANNEQUIN);
+
             for (Map.Entry<String, EntityData.Type> entry : integrationMap.entrySet()) {
                 String integration = entry.getKey();
                 EntityData.Type type = entry.getValue();
 
-                if (isIntegrationEnabled(integration)) {
+                if (!isIntegrationEnabled(integration)) continue;
+
+                try {
                     createEntityDataMapTable(integration);
                     loadEntityDataMap(integration, type);
-                    if (integration.equals("playernpc")) {
-                        plugin.getIntegrationManager().getPlayerNPC().createCorpses();
-                    }
+                } catch (Throwable t) {
+                    plugin.getLogger().severe("Failed initializing integration entity data map for: " + integration);
+                    plugin.logStackTrace(t);
+                }
+
+                if ("playernpc".equals(integration)) {
+                    try {
+                        plugin.getSchedulerManager().runTask(() -> {
+                            try {
+                                plugin.getIntegrationManager().getPlayerNPC().createCorpses();
+                            } catch (Throwable t) {
+                                plugin.getLogger().severe("PlayerNPC createCorpses failed.");
+                                plugin.logStackTrace(t);
+                            }
+                        });
+                    } catch (Throwable ignored) {}
                 }
             }
 
-            List<GraveProvider> providers = RegisterGraveProviders.getAll();
-            if (providers.isEmpty()) return;
-
-            Set<String> seen = new LinkedHashSet<>();
-            for (GraveProvider p : providers) {
-                if (p == null) continue;
-
-                String id = p.id();
-                if (id == null || id.isBlank()) {
-                    plugin.getLogger().warning("Skipping GraveProvider with empty id: " + p.getClass().getName());
-                    continue;
-                }
-
-                String key = "custom_" + sanitizeKey(id);
-                if (!seen.add(key)) continue;
-
+            for (String key : customProviderKeys) {
                 try {
                     createEntityDataMapTable(key);
                     loadEntityDataMap(key, EntityData.Type.CUSTOM);
-                } catch (Exception e) {
+                } catch (Throwable t) {
                     plugin.getLogger().severe("Failed initializing custom provider for key: " + key);
-                    plugin.logStackTrace(e);
+                    plugin.logStackTrace(t);
                 }
             }
         });
@@ -260,6 +278,7 @@ public class DataManager {
      */
     private boolean isIntegrationEnabled(String integration) {
         String key = sanitizeKey(integration);
+
         return switch (key) {
             case "furniturelib" -> plugin.getIntegrationManager().hasFurnitureLib();
             case "furnitureengine" -> plugin.getIntegrationManager().hasFurnitureEngine();
@@ -271,21 +290,10 @@ public class DataManager {
             default -> {
                 if (key.startsWith("custom_")) {
                     String expected = key.substring("custom_".length());
-                    List<GraveProvider> providers = RegisterGraveProviders.getAll();
-                    if (providers.isEmpty()) {
-                        yield false;
-                    }
-                    boolean found = false;
-                    for (GraveProvider p : providers) {
-                        if (p == null) continue;
-                        String id = p.id();
-                        if (id == null || id.isBlank()) continue;
-                        if (sanitizeKey(id).equals(expected)) {
-                            found = true;
-                            break;
-                        }
-                    }
-                    yield found;
+
+                    // O(1) lookup, no loops, no ServicesManager access
+                    Set<String> snap = customProviderSanitizedIds;
+                    yield snap.contains(expected);
                 }
                 yield false;
             }
@@ -327,19 +335,8 @@ public class DataManager {
             }
         }
 
-        List<GraveProvider> providers = RegisterGraveProviders.getAll();
-        if (providers.isEmpty()) return;
-
-        Set<String> seen = new LinkedHashSet<>();
-        for (GraveProvider p : providers) {
-            if (p == null) continue;
-            String id = p.id();
-            if (id == null || id.isBlank()) continue;
-
-            String key = "custom_" + sanitizeKey(id);
-            if (seen.add(key)) {
-                setupEntityTable(key);
-            }
+        for (String key : customProviderKeysSnapshot) {
+            setupEntityTable(key);
         }
     }
 
@@ -1084,7 +1081,8 @@ public class DataManager {
                                 + "time_alive BIGINT,"
                                 + "time_protection BIGINT,"
                                 + "time_creation BIGINT,"
-                                + "permissions TEXT"
+                                + "permissions TEXT,"
+                                + "provider_id VARCHAR(255)"
                                 + ");";
                 case MSSQL ->
                         "IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = '" + name + "')"
@@ -1111,7 +1109,8 @@ public class DataManager {
                                 + "time_alive BIGINT,"
                                 + "time_protection BIGINT,"
                                 + "time_creation BIGINT,"
-                                + "permissions NVARCHAR(MAX)"
+                                + "permissions NVARCHAR(MAX),"
+                                + "provider_id NVARCHAR(255)"
                                 + ");";
                 default ->
                         "CREATE TABLE IF NOT EXISTS " + name + " ("
@@ -1137,7 +1136,8 @@ public class DataManager {
                                 + "time_alive BIGINT,"
                                 + "time_protection BIGINT,"
                                 + "time_creation BIGINT,"
-                                + "permissions LONGTEXT"
+                                + "permissions LONGTEXT,"
+                                + "provider_id VARCHAR(255)"
                                 + ");";
             };
             executeUpdate(create, new Object[0]);
@@ -1274,6 +1274,14 @@ public class DataManager {
                 addColumnIfNotExists(name, "permissions", "LONGTEXT");
                 alterColumnIfExists(name, "permissions", "LONGTEXT");
             }
+        }
+
+        if (Objects.requireNonNull(type) == Type.MSSQL) {
+            addColumnIfNotExists(name, "provider_id", "NVARCHAR(255)");
+            alterColumnIfExists(name, "provider_id", "NVARCHAR(255)");
+        } else {
+            addColumnIfNotExists(name, "provider_id", "VARCHAR(255)");
+            alterColumnIfExists(name, "provider_id", "VARCHAR(255)");
         }
     }
 
@@ -2185,16 +2193,31 @@ public class DataManager {
      * @param grave the grave to add.
      */
     public void addGrave(Grave grave) {
-        Location deathLoc = grave.getLocationDeath();
+        Location deathLoc = null;
+        try {
+            deathLoc = grave.getLocationDeath();
+        } catch (Throwable ignored) {}
+
         if (deathLoc != null && deathLoc.getWorld() != null) {
-            plugin.getSchedulerManager().execute(deathLoc, () ->
+            Location finalDeathLoc = deathLoc;
+            plugin.getSchedulerManager().execute(finalDeathLoc, () ->
                     plugin.getCacheManager().getGraveMap().put(grave.getUUID(), grave)
             );
         } else {
             plugin.getCacheManager().getGraveMap().put(grave.getUUID(), grave);
         }
+        String query =
+                "INSERT INTO " + getStoragePrefix() + "grave "
+                        + "(uuid, owner_type, owner_name, owner_name_display, owner_uuid, owner_texture, owner_texture_signature, "
+                        + "killer_type, killer_name, killer_name_display, killer_uuid, "
+                        + "location_death, yaw, pitch, inventory, equipment, experience, protection, is_abandoned, "
+                        + "time_alive, time_protection, time_creation, permissions, provider_id) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        String query = "INSERT INTO " + getStoragePrefix() + "grave (uuid, owner_type, owner_name, owner_name_display, owner_uuid, owner_texture, owner_texture_signature, killer_type, killer_name, killer_name_display, killer_uuid, location_death, yaw, pitch, inventory, equipment, experience, protection, is_abandoned, time_alive, time_protection, time_creation, permissions) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String providerId = null;
+        try {
+            providerId = grave.getProviderId();
+        } catch (Throwable ignored) {}
 
         Object[] parameters = new Object[] {
                 grave.getUUID(),
@@ -2208,7 +2231,7 @@ public class DataManager {
                 grave.getKillerName() != null ? grave.getKillerName().replace("'", "''") : null,
                 grave.getKillerNameDisplay() != null ? grave.getKillerNameDisplay().replace("'", "''") : null,
                 grave.getKillerUUID(),
-                grave.getLocationDeath() != null ? LocationUtil.locationToString(grave.getLocationDeath()) : null,
+                deathLoc != null ? LocationUtil.locationToString(deathLoc) : null,
                 grave.getYaw(),
                 grave.getPitch(),
                 InventoryUtil.inventoryToString(grave.getInventory()),
@@ -2228,7 +2251,8 @@ public class DataManager {
                 grave.getTimeCreation(),
                 grave.getPermissionList() != null && !grave.getPermissionList().isEmpty()
                         ? StringUtils.join(grave.getPermissionList(), "|")
-                        : null
+                        : null,
+                providerId
         };
 
         plugin.getSchedulerManager().runTaskAsynchronously(() -> {
@@ -2449,6 +2473,7 @@ public class DataManager {
             if (!invalidationReason.isEmpty()) {
                 plugin.logInvalidGraveSite(uuidString, graveLocation, invalidationReason);
             }
+            grave.setProviderId(resultSet.getString("provider_id") != null ? resultSet.getString("provider_id") : null);
 
             return grave;
         } catch (SQLException exception) {
@@ -3314,5 +3339,31 @@ public class DataManager {
             return "";
         }
         return prefix.trim();
+    }
+
+    private void snapshotCustomProviders() {
+        // MUST be called on the main thread (ServicesManager access).
+        Set<String> idSet = new HashSet<>();
+        List<String> keyList = new ArrayList<>();
+        Set<String> seenKeys = new LinkedHashSet<>();
+
+        List<GraveProvider> providers = RegisterGraveProviders.getAll();
+        for (GraveProvider p : providers) {
+            if (p == null) continue;
+
+            String id = p.id();
+            if (id == null || id.isBlank()) continue;
+
+            String sanitizedId = sanitizeKey(id);
+            idSet.add(sanitizedId);
+
+            String key = "custom_" + sanitizedId;
+            if (seenKeys.add(key)) {
+                keyList.add(key);
+            }
+        }
+
+        customProviderSanitizedIds = Set.copyOf(idSet);
+        customProviderKeysSnapshot = List.copyOf(keyList);
     }
 }

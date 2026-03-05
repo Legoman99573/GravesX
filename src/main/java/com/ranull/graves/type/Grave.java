@@ -148,6 +148,12 @@ public class Grave implements InventoryHolder, Serializable {
     private boolean isPreview;
 
     /**
+     * The GraveProvider that placed this grave (namespaced id, e.g. "myaddon:furniture").
+     * Used to reliably resolve which provider to remove later.
+     */
+    private String providerId;
+
+    /**
      * Constructs a new Grave with the specified UUID.
      *
      * @param uuid The UUID of the grave.
@@ -712,6 +718,24 @@ public class Grave implements InventoryHolder, Serializable {
      */
     public boolean getGravePreview() {
         return isPreview;
+    }
+
+    /**
+     * Gets the provider id that placed this grave.
+     *
+     * @return the provider id, or null if none/unknown.
+     */
+    public String getProviderId() {
+        return providerId;
+    }
+
+    /**
+     * Sets the provider id that placed this grave.
+     *
+     * @param providerId the provider id (namespaced), or null to clear.
+     */
+    public void setProviderId(String providerId) {
+        this.providerId = (providerId != null && !providerId.isBlank()) ? providerId : null;
     }
 
     /**

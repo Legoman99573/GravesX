@@ -1008,85 +1008,129 @@ public class GraveManager {
 
         plugin.debugMessage("Starting removal of grave: " + grave.getUUID(), 1);
 
-        if (plugin.getConfigManager().getConfigSection("grave.check-missing-graves", grave).getBoolean("grave.check-missing-graves", false)) {
-            knownGraves.remove(grave.getUUID());
-        }
         Location anchor = null;
-        try {
-            anchor = grave.getLocationDeath();
-        } catch (Throwable ignored) {}
+        try { anchor = grave.getLocationDeath(); } catch (Throwable ignored) {}
 
-        Location finalAnchor = anchor;
+        final Location finalAnchor = anchor;
+
         Runnable work = () -> {
             try {
-                closeGrave(grave);
+                try { closeGrave(grave); } catch (Throwable ignored) {}
 
-                plugin.getBlockManager().removeBlock(grave);
-                plugin.getHologramManager().removeHologram(grave);
-                plugin.getEntityManager().removeEntity(grave);
+                String providerId = null;
+                try { providerId = grave.getProviderId(); } catch (Throwable ignored) {}
 
-                plugin.getDataManager().removeGrave(grave);
+                boolean removedByProvider = false;
 
-                List<GraveProvider> providers = RegisterGraveProviders.getAll();
-                if (!providers.isEmpty()) {
-                    for (GraveProvider p : providers) {
+                if (providerId != null && !providerId.isBlank()) {
+                    GraveProvider matched = RegisterGraveProviders.getById(providerId);
+                    if (matched != null) {
                         try {
-                            p.remove(grave);
-                            if (!p.isPlaced(grave)) {
-                                plugin.debugMessage("[CustomGraveProvider " + p.id()
-                                        + " (order=" + p.order() + ")] removed successfully.", 1);
-
-                                plugin.getDataManager().removeGrave(grave);
-                                plugin.getCacheManager().getGraveMap().remove(grave.getUUID());
-                                plugin.debugMessage("Grave " + grave.getUUID() + " removed from cache", 1);
-                            } else {
-                                GravesXGraveProviderException stillThere =
-                                        GravesXGraveProviderException.forProvider(p, finalAnchor, grave, "isPlaced=true after remove()", null);
-                                plugin.getLogger().log(Level.WARNING, stillThere.getMessage(), stillThere);
-                            }
+                            removeWithProvider(finalAnchor, grave, matched);
+                            removedByProvider = true;
                         } catch (Throwable t) {
-                            GravesXGraveProviderException wrapped =
-                                    GravesXGraveProviderException.forProvider(p, finalAnchor, grave, t);
-                            plugin.getLogger().log(Level.WARNING, wrapped.getMessage(), wrapped);
+                            plugin.getLogger().warning("Provider removal failed for provider_id='" + providerId
+                                    + "' grave=" + grave.getUUID() + ": " + t.getMessage());
                         }
+                    } else {
+                        plugin.getLogger().warning("provider_id='" + providerId + "' set for grave " + grave.getUUID()
+                                + " but no matching GraveProvider is registered. Skipping provider removal.");
                     }
                 }
 
-                if (plugin.getIntegrationManager().hasMultiPaper()) {
-                    plugin.getIntegrationManager().getMultiPaper().notifyGraveRemoval(grave);
-                }
-                if (plugin.getIntegrationManager().hasFurnitureLib()) {
-                    plugin.getIntegrationManager().getFurnitureLib().removeFurniture(grave);
-                }
-                if (plugin.getIntegrationManager().hasFurnitureEngine()) {
-                    plugin.getLogger().warning("You have FurnitureEngine enabled. ");
-                    plugin.getIntegrationManager().getFurnitureEngine().removeFurniture(grave);
-                }
-                if (plugin.getIntegrationManager().hasItemsAdder()) {
-                    plugin.getIntegrationManager().getItemsAdder().removeFurniture(grave);
-                }
-                if (plugin.getIntegrationManager().hasOraxen()) {
-                    plugin.getIntegrationManager().getOraxen().removeFurniture(grave);
-                }
-                if (plugin.getIntegrationManager().hasNexo()) {
-                    plugin.getIntegrationManager().getNexo().removeFurniture(grave);
-                }
-                if (plugin.getIntegrationManager().hasPlayerNPC()) {
-                    plugin.getIntegrationManager().getPlayerNPC().removeCorpse(grave);
-                }
-                if (plugin.getIntegrationManager().hasMannequins()) {
-                    plugin.getIntegrationManager().getMannequins().removeCorpse(grave);
-                }
-                if (plugin.getIntegrationManager().hasFancyNpcs()) {
-                    plugin.getIntegrationManager().getFancyNpcs().removeCorpse(grave);
+                try {
+                    if (plugin.getIntegrationManager().hasMultiPaper()) {
+                        plugin.getIntegrationManager().getMultiPaper().notifyGraveRemoval(grave);
+                    }
+                } catch (Throwable ignored) {}
+
+                if (!removedByProvider) {
+                    try {
+                        if (plugin.getIntegrationManager().hasFurnitureLib()) {
+                            plugin.getIntegrationManager().getFurnitureLib().removeFurniture(grave);
+                        }
+                    } catch (Throwable ignored) {}
+
+                    try {
+                        if (plugin.getIntegrationManager().hasFurnitureEngine()) {
+                            plugin.getLogger().warning("You have FurnitureEngine enabled.");
+                            plugin.getIntegrationManager().getFurnitureEngine().removeFurniture(grave);
+                        }
+                    } catch (Throwable ignored) {}
+
+                    try {
+                        if (plugin.getIntegrationManager().hasItemsAdder()) {
+                            plugin.getIntegrationManager().getItemsAdder().removeFurniture(grave);
+                        }
+                    } catch (Throwable ignored) {}
+
+                    try {
+                        if (plugin.getIntegrationManager().hasOraxen()) {
+                            plugin.getIntegrationManager().getOraxen().removeFurniture(grave);
+                        }
+                    } catch (Throwable ignored) {}
+
+                    try {
+                        if (plugin.getIntegrationManager().hasNexo()) {
+                            plugin.getIntegrationManager().getNexo().removeFurniture(grave);
+                        }
+                    } catch (Throwable ignored) {}
+
+                    try {
+                        if (plugin.getIntegrationManager().hasPlayerNPC()) {
+                            plugin.getIntegrationManager().getPlayerNPC().removeCorpse(grave);
+                        }
+                    } catch (Throwable ignored) {}
+
+                    try {
+                        if (plugin.getIntegrationManager().hasMannequins()) {
+                            plugin.getIntegrationManager().getMannequins().removeCorpse(grave);
+                        }
+                    } catch (Throwable ignored) {}
+
+                    try {
+                        if (plugin.getIntegrationManager().hasFancyNpcs()) {
+                            plugin.getIntegrationManager().getFancyNpcs().removeCorpse(grave);
+                        }
+                    } catch (Throwable ignored) {}
                 }
 
-                if (grave.getLocationDeath().getBlock().getType() == Material.valueOf(plugin.getConfigManager().getConfigSection("block.material", grave).getString("block.material", "PLAYER_HEAD"))) {
-                    grave.getLocationDeath().getBlock().setType(Material.valueOf("AIR"));
+                try { plugin.getBlockManager().removeBlock(grave); } catch (Throwable ignored) {}
+                try { plugin.getHologramManager().removeHologram(grave); } catch (Throwable ignored) {}
+                try { plugin.getEntityManager().removeEntity(grave); } catch (Throwable ignored) {}
+
+                try {
+                    if (finalAnchor != null && finalAnchor.getWorld() != null) {
+                        String matName = plugin.getConfigManager()
+                                .getConfigSection("block.material", grave)
+                                .getString("block.material", "PLAYER_HEAD");
+
+                        Material configured = null;
+                        try { configured = Material.valueOf(matName); } catch (Throwable ignored) {}
+
+                        if (configured != null && finalAnchor.getBlock().getType() == configured) {
+                            finalAnchor.getBlock().setType(Material.AIR);
+                        }
+                    }
+                } catch (Throwable ignored) {}
+
+                try {
+                    plugin.getDataManager().removeGrave(grave);
+                } catch (Throwable t) {
+                    plugin.getLogger().warning("DataManager removeGrave failed for " + grave.getUUID() + ": " + t.getMessage());
                 }
 
-                plugin.getCacheManager().getGraveMap().remove(grave.getUUID());
-                plugin.debugMessage("Grave " + grave.getUUID() + " removed from cache", 1);
+                try {
+                    plugin.getCacheManager().getGraveMap().remove(grave.getUUID());
+                    plugin.debugMessage("Grave " + grave.getUUID() + " removed from cache", 1);
+                } catch (Throwable ignored) {}
+
+                try {
+                    if (plugin.getConfigManager().getConfigSection("grave.check-missing-graves", grave).getBoolean("grave.check-missing-graves", false)) {
+                        knownGraves.remove(grave.getUUID());
+                    }
+                } catch (Throwable ignored) {}
+
             } catch (Throwable t) {
                 plugin.getLogger().warning("Error while removing grave " + grave.getUUID() + ": " + t.getMessage());
             }
@@ -1096,6 +1140,34 @@ public class GraveManager {
             plugin.getSchedulerManager().execute(anchor, work);
         } else {
             plugin.getSchedulerManager().runTask(work);
+        }
+    }
+
+    /**
+     * Provider removal helper with verification + logging.
+     */
+    private void removeWithProvider(Location anchor, Grave grave, GraveProvider p) {
+        try {
+            p.remove(grave);
+
+            boolean stillPlaced;
+            try {
+                stillPlaced = p.isPlaced(grave);
+            } catch (Throwable t) {
+                stillPlaced = true;
+                GravesXGraveProviderException wrapped = GravesXGraveProviderException.forProvider(p, anchor, grave, "isPlaced() threw after remove()", t);
+                plugin.getLogger().log(Level.WARNING, wrapped.getMessage(), wrapped);
+            }
+
+            if (!stillPlaced) {
+                plugin.debugMessage("[CustomGraveProvider " + p.id() + " (order=" + p.order() + ")] removed successfully.", 1);
+            } else {
+                GravesXGraveProviderException stillThere = GravesXGraveProviderException.forProvider(p, anchor, grave, "isPlaced=true after remove()", null);
+                plugin.getLogger().log(Level.WARNING, stillThere.getMessage(), stillThere);
+            }
+        } catch (Throwable t) {
+            GravesXGraveProviderException wrapped = GravesXGraveProviderException.forProvider(p, anchor, grave, t);
+            plugin.getLogger().log(Level.WARNING, wrapped.getMessage(), wrapped);
         }
     }
 
@@ -1110,13 +1182,13 @@ public class GraveManager {
             return;
         }
 
-        org.bukkit.Location anchor = null;
+        Location anchor = null;
         try {
             anchor = entityData.getLocation();
         } catch (java.lang.Throwable ignored) {
         }
 
-        java.lang.Runnable work = () -> {
+        Runnable work = () -> {
             switch (entityData.getType()) {
                 case HOLOGRAM: {
                     plugin.getHologramManager().removeHologram(entityData);
@@ -1147,6 +1219,33 @@ public class GraveManager {
                     break;
                 }
                 case CUSTOM: {
+                    UUID graveId = null;
+                    try { graveId = entityData.getUUIDGrave(); } catch (Throwable ignored) {}
+
+                    String providerId = null;
+                    if (graveId != null) {
+                        Grave g = plugin.getCacheManager().getGraveMap().get(graveId);
+                        if (g != null) {
+                            try { providerId = g.getProviderId(); } catch (Throwable ignored) {}
+                        }
+                    }
+
+                    if (providerId != null && !providerId.isBlank()) {
+                        GraveProvider p = RegisterGraveProviders.getById(providerId);
+                        if (p != null) {
+                            try {
+                                if (p.supports(entityData) && p.removeEntityData(entityData)) {
+                                    plugin.getHologramManager().removeHologram(entityData);
+                                    return;
+                                }
+                            } catch (Throwable t) {
+                                plugin.getLogger().warning("[CustomGraveProvider " + providerId + "] removeEntityData() failed: " + t.getMessage());
+                                plugin.logStackTrace(t);
+                            }
+                        }
+                        break;
+                    }
+
                     List<GraveProvider> providers = RegisterGraveProviders.getAll();
                     if (providers.isEmpty()) {
                         break;
@@ -1165,7 +1264,7 @@ public class GraveManager {
                             String pid;
                             try {
                                 pid = String.valueOf(p.id());
-                            } catch (java.lang.Throwable ignored) {
+                            } catch (Throwable ignored) {
                                 pid = p.getClass().getName();
                             }
 
@@ -1376,17 +1475,18 @@ public class GraveManager {
         if (location == null || location.getWorld() == null) return false;
 
         try {
-            List<GraveProvider> providers = RegisterGraveProviders.getAll();
-            if (providers != null) {
-                for (GraveProvider p : providers) {
-                    if (p != null) {
-                        try {
-                            if (p.isPlaced(grave)) {
-                                knownGraves.add(id);
-                                return true;
-                            }
-                        } catch (Throwable ignored) {}
-                    }
+            String pid = null;
+            try { pid = grave.getProviderId(); } catch (Throwable ignored) {}
+
+            if (pid != null && !pid.isBlank()) {
+                GraveProvider p = RegisterGraveProviders.getById(pid);
+                if (p != null) {
+                    try {
+                        if (p.isPlaced(grave)) {
+                            knownGraves.add(id);
+                            return true;
+                        }
+                    } catch (Throwable ignored) {}
                 }
             }
         } catch (Throwable ignored) {}
@@ -1502,21 +1602,6 @@ public class GraveManager {
      * @param location the location to place the grave.
      * @param grave    the grave to be placed.
      */
-    /**
-     * Places a grave at a specified location.
-     *
-     * <p>Order of operations:
-     * <ol>
-     *     <li>Create hologram and armor stand immediately.</li>
-     *     <li>Run registered {@link GraveProvider}s. If any provider reports {@code isPlaced(grave) == true},
-     *         no default block / item frame / integrations are created.</li>
-     *     <li>If no provider handled the grave, fall back to built-in block, item frame,
-     *         and non-BlockData integrations (furniture, corpses, etc.).</li>
-     * </ol>
-     *
-     * @param location the location to place the grave.
-     * @param grave    the grave to be placed.
-     */
     public void placeGrave(Location location, Grave grave) {
         if (location == null || location.getWorld() == null || grave == null) return;
 
@@ -1524,36 +1609,39 @@ public class GraveManager {
 
         plugin.getSchedulerManager().execute(anchor, () -> {
             try {
-                List<GraveProvider> providers = RegisterGraveProviders.getAll();
+                List<GraveProvider> providers = new ArrayList<>(RegisterGraveProviders.getAll());
                 if (!providers.isEmpty()) {
-                    for (GraveProvider p : providers) {
-                        try {
-                            try {
-                                if (p.shouldUseGraveHead()) {
-                                    Block block = anchor.getBlock();
-                                    block.setType(Material.valueOf(plugin.getConfigManager().getConfigSection("block.material", grave).getString("block.material", "PLAYER_HEAD")));
+                    providers.sort(Comparator.comparingInt(GraveProvider::order));
 
-                                    createGraveBlock(anchor, grave);
-                                    plugin.getHologramManager().createHologram(anchor, grave);
-                                } else {
-                                    plugin.getHologramManager().createHologram(anchor, grave);
-                                }
-                                p.place(anchor, grave);
-                            } catch (Throwable t) {
-                                throw new GravesXGraveProviderException("An error occurred with placing from provider " + p.id() + ".");
-                            }
-                            if (p.isPlaced(grave)) {
-                                plugin.debugMessage("[CustomGraveProvider " + p.id() + " (order=" + p.order() + ")] placed successfully.", 1);
+                    String preferredId = null;
+                    try {
+                        preferredId = grave.getProviderId();
+                    } catch (Throwable ignored) {}
+
+                    if (preferredId != null && !preferredId.isBlank()) {
+                        GraveProvider preferred = RegisterGraveProviders.getById(preferredId);
+                        if (preferred != null) {
+                            if (tryPlaceWithProvider(anchor, grave, preferred)) {
                                 return;
-                            } else {
-                                throw new GravesXGraveProviderException("Failure to place grave.");
                             }
-                        } catch (GravesXGraveProviderException e) {
-                            plugin.getLogger().severe("Failed to place grave from GraveProvider " + p.id() + " with order " + p.order() + ". Caused by " + e.getMessage());
-                            plugin.logStackTrace(e);
+                        }
+                    }
+
+                    for (GraveProvider p : providers) {
+                        if (p == null) continue;
+
+                        if (preferredId != null && preferredId.equalsIgnoreCase(p.id())) {
+                            continue;
+                        }
+
+                        if (tryPlaceWithProvider(anchor, grave, p)) {
+                            return;
                         }
                     }
                 }
+
+                grave.setProviderId(null);
+                plugin.getDataManager().updateGrave(grave, "provider_id", null);
 
                 createGraveIntegrations(anchor, grave);
 
@@ -1562,6 +1650,66 @@ public class GraveManager {
                 plugin.logStackTrace(t);
             }
         });
+    }
+
+    /**
+     * Attempts to place a grave using a single provider, including post-success default head/hologram behavior.
+     *
+     * @return true if placed successfully by this provider; false otherwise
+     */
+    private boolean tryPlaceWithProvider(Location anchor, Grave grave, GraveProvider p) {
+        try {
+            p.place(anchor, grave);
+
+            boolean placed;
+            try {
+                placed = p.isPlaced(grave);
+            } catch (Throwable t) {
+                placed = false;
+                GravesXGraveProviderException wrapped = GravesXGraveProviderException.forProvider(p, anchor, grave, "isPlaced() threw after place()", t);
+                plugin.getLogger().log(Level.WARNING, wrapped.getMessage(), wrapped);
+            }
+
+            if (!placed) {
+                throw GravesXGraveProviderException.forProvider(p, anchor, grave, "isPlaced=false after place()", null);
+            }
+
+            grave.setProviderId(p.id());
+            plugin.getDataManager().updateGrave(grave, "provider_id", p.id());
+
+            if (p.shouldUseGraveHead()) {
+                String matName = plugin.getConfigManager().getConfigSection("block.material", grave).getString("block.material", "PLAYER_HEAD");
+
+                Material headMat = null;
+                try { headMat = Material.valueOf(matName); } catch (Throwable ignored) {}
+                if (headMat == null) { try { headMat = Material.valueOf("PLAYER_HEAD"); } catch (Throwable ignored) {} }
+                if (headMat == null) { try { headMat = Material.valueOf("SKULL"); } catch (Throwable ignored) {} }
+                if (headMat == null) { try { headMat = Material.valueOf("LEGACY_SKULL"); } catch (Throwable ignored) {} }
+
+                if (headMat != null) {
+                    Block block = anchor.getBlock();
+                    block.setType(headMat);
+                } else {
+                    plugin.getLogger().warning("Could not resolve head material for grave " + grave.getUUID() + " (config=" + matName + "). Skipping head placement.");
+                }
+
+                if (p.shouldBlockBeReplaceable()) {
+                    createGraveBlock(anchor, grave);
+                }
+            }
+
+            plugin.getHologramManager().createHologram(anchor, grave);
+
+            plugin.debugMessage("[CustomGraveProvider " + p.id() + " (order=" + p.order() + ")] placed successfully.", 1);
+            return true;
+
+        } catch (Throwable t) {
+            GravesXGraveProviderException wrapped = (t instanceof GravesXGraveProviderException) ? (GravesXGraveProviderException) t : GravesXGraveProviderException.forProvider(p, anchor, grave, t);
+
+            plugin.getLogger().severe("Failed to place grave from GraveProvider " + p.id() + " (order=" + p.order() + "): " + wrapped.getMessage());
+            plugin.logStackTrace(wrapped);
+            return false;
+        }
     }
 
     /**
