@@ -1658,7 +1658,30 @@ public class GraveManager {
      * @return true if placed successfully by this provider; false otherwise
      */
     private boolean tryPlaceWithProvider(Location anchor, Grave grave, GraveProvider p) {
+        boolean hologramCreated = false;
+        boolean headPlaced = false;
+        Material headMat = null;
+
         try {
+            if (p.shouldUseGraveHead()) {
+                String matName = plugin.getConfigManager().getConfigSection("block.material", grave).getString("block.material", "PLAYER_HEAD");
+
+                try { headMat = Material.valueOf(matName); } catch (Throwable ignored) {}
+                if (headMat == null) { try { headMat = Material.valueOf("PLAYER_HEAD"); } catch (Throwable ignored) {} }
+
+                if (headMat != null) {
+                    anchor.getBlock().setType(headMat);
+                    headPlaced = true;
+                }
+
+                createGraveBlock(anchor, grave);
+                plugin.getHologramManager().createHologram(anchor, grave);
+                hologramCreated = true;
+            } else {
+                plugin.getHologramManager().createHologram(anchor, grave);
+                hologramCreated = true;
+            }
+
             p.place(anchor, grave);
 
             boolean placed;
@@ -1671,36 +1694,14 @@ public class GraveManager {
             }
 
             if (!placed) {
-                throw GravesXGraveProviderException.forProvider(p, anchor, grave, "isPlaced=false after place()", null);
+                plugin.debugMessage("[CustomGraveProvider " + p.id() + " (order=" + p.order() + ")] place() returned without error, but isPlaced=false at " + anchor + ". Assuming success. Provider should implement a reliable isPlaced().", 2);
+            } else {
+                plugin.debugMessage("[CustomGraveProvider " + p.id() + " (order=" + p.order() + ")] placed successfully.", 1);
             }
 
             grave.setProviderId(p.id());
             plugin.getDataManager().updateGrave(grave, "provider_id", p.id());
 
-            if (p.shouldUseGraveHead()) {
-                String matName = plugin.getConfigManager().getConfigSection("block.material", grave).getString("block.material", "PLAYER_HEAD");
-
-                Material headMat = null;
-                try { headMat = Material.valueOf(matName); } catch (Throwable ignored) {}
-                if (headMat == null) { try { headMat = Material.valueOf("PLAYER_HEAD"); } catch (Throwable ignored) {} }
-                if (headMat == null) { try { headMat = Material.valueOf("SKULL"); } catch (Throwable ignored) {} }
-                if (headMat == null) { try { headMat = Material.valueOf("LEGACY_SKULL"); } catch (Throwable ignored) {} }
-
-                if (headMat != null) {
-                    Block block = anchor.getBlock();
-                    block.setType(headMat);
-                } else {
-                    plugin.getLogger().warning("Could not resolve head material for grave " + grave.getUUID() + " (config=" + matName + "). Skipping head placement.");
-                }
-
-                if (p.shouldBlockBeReplaceable()) {
-                    createGraveBlock(anchor, grave);
-                }
-            }
-
-            plugin.getHologramManager().createHologram(anchor, grave);
-
-            plugin.debugMessage("[CustomGraveProvider " + p.id() + " (order=" + p.order() + ")] placed successfully.", 1);
             return true;
 
         } catch (Throwable t) {
@@ -1708,6 +1709,21 @@ public class GraveManager {
 
             plugin.getLogger().severe("Failed to place grave from GraveProvider " + p.id() + " (order=" + p.order() + "): " + wrapped.getMessage());
             plugin.logStackTrace(wrapped);
+
+            try {
+                if (hologramCreated) plugin.getHologramManager().removeHologram(grave);
+            } catch (Throwable ignored) {}
+
+            try {
+                if (headPlaced && anchor.getBlock().getType() == headMat) {
+                    anchor.getBlock().setType(Material.AIR);
+                }
+            } catch (Throwable ignored) {}
+
+            try {
+                plugin.getBlockManager().removeBlock(grave);
+            } catch (Throwable ignored) {}
+
             return false;
         }
     }
