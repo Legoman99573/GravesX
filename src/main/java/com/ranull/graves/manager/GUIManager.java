@@ -264,8 +264,9 @@ public class GUIManager {
                 );
             }
 
-            Inventory inventory = plugin.getServer()
-                    .createInventory(graveMenu, InventoryUtil.getInventorySize(5), title);
+            int size = computeGraveMenuSize(grave);
+
+            Inventory inventory = plugin.getServer().createInventory(graveMenu, size, title);
 
             setGraveMenuItems(inventory, grave);
             graveMenu.setInventory(inventory);
@@ -286,15 +287,21 @@ public class GUIManager {
     public void setGraveMenuItems(Inventory inventory, Grave grave) {
         inventory.clear();
 
-        ConfigurationSection configurationSection = plugin.getConfigManager().getConfigSection("gui.menu.grave.slot", grave)
+        ConfigurationSection configurationSection = plugin.getConfigManager()
+                .getConfigSection("gui.menu.grave.slot", grave)
                 .getConfigurationSection("gui.menu.grave.slot");
 
         if (configurationSection != null) {
             for (String string : configurationSection.getKeys(false)) {
                 try {
                     int slot = Integer.parseInt(string);
-                    if (plugin.getConfigManager().getConfigSection("gui.menu.grave.slot." + slot + ".enabled", grave)
-                            .getBoolean("gui.menu.grave.slot." + slot + ".enabled")) {
+
+                    if (slot < 0 || slot >= inventory.getSize()) {
+                        plugin.getLogger().warning("[GUI] Grave menu slot " + slot + " out of bounds (size=" + inventory.getSize() + "). Check gui.menu.grave.slot.*");
+                        continue;
+                    }
+
+                    if (plugin.getConfigManager().getConfigSection("gui.menu.grave.slot." + slot + ".enabled", grave).getBoolean("gui.menu.grave.slot." + slot + ".enabled")) {
                         inventory.setItem(slot, plugin.getItemStackManager().createGraveMenuItemStack(slot, grave));
                     }
                 } catch (NumberFormatException exception) {
@@ -302,5 +309,42 @@ public class GUIManager {
                 }
             }
         }
+    }
+
+    /**
+     * Computes the inventory size needed to fit the configured grave menu slots.
+     * Rounds up to a multiple of 9 and clamps to 54.
+     */
+    private int computeGraveMenuSize(Grave grave) {
+        ConfigurationSection slots = plugin.getConfigManager().getConfigSection("gui.menu.grave.slot", grave).getConfigurationSection("gui.menu.grave.slot");
+
+        int maxSlot = -1;
+
+        if (slots != null) {
+            for (String key : slots.getKeys(false)) {
+                try {
+                    int slot = Integer.parseInt(key);
+                    if (slot < 0) continue;
+
+                    boolean enabled = plugin.getConfigManager().getConfigSection("gui.menu.grave.slot." + slot + ".enabled", grave).getBoolean("gui.menu.grave.slot." + slot + ".enabled");
+
+                    if (enabled) {
+                        maxSlot = Math.max(maxSlot, slot);
+                    }
+                } catch (NumberFormatException ignored) {
+                }
+            }
+        }
+
+        int required = Math.max(9, (maxSlot >= 0 ? (maxSlot + 1) : 9));
+
+        int size = ((required + 8) / 9) * 9;
+
+        if (size > 54) {
+            plugin.getLogger().warning("[GUI] Grave menu requires " + size + " slots (maxSlot=" + maxSlot + "). Clamping to 54.");
+            size = 54;
+        }
+
+        return size;
     }
 }

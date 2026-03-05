@@ -50,21 +50,35 @@ public class InventoryClickListener implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onInventoryClick(InventoryClickEvent event) {
-        InventoryHolder inventoryHolder = event.getInventory().getHolder();
         Player player = (Player) event.getWhoClicked();
 
-        if (inventoryHolder != null) {
-            if (inventoryHolder instanceof Grave grave) {
-                handleGraveInventoryClick(event, player, grave);
-            } else if (event.getWhoClicked() instanceof Player) {
-                handlePlayerInventoryClick(event, player, inventoryHolder);
-            }
-            ClickType clickType = event.getClick();
-            if (clickType == ClickType.SHIFT_LEFT || clickType == ClickType.SHIFT_RIGHT) {
-                handleShiftClick(event);
-            }
-            isCompassItem(event);
+        Inventory clicked = event.getClickedInventory();
+        if (clicked == null) return;
+
+        Inventory top = CompatibilityInventoryView.getTopInventory(player);
+        InventoryHolder topHolder = top.getHolder();
+
+        if (clicked.getHolder() instanceof Grave grave) {
+            handleGraveInventoryClick(event, player, grave);
         }
+
+        if (topHolder instanceof GraveList graveList) {
+            if (event.getRawSlot() >= 0 && event.getRawSlot() < top.getSize()) {
+                handleGraveListClick(event, player, graveList, event.getRawSlot());
+            }
+            event.setCancelled(true);
+        } else if (topHolder instanceof GraveMenu graveMenu) {
+            if (event.getRawSlot() >= 0 && event.getRawSlot() < top.getSize()) {
+                handleGraveMenuClick(event, player, graveMenu, event.getRawSlot());
+            }
+            event.setCancelled(true);
+        }
+
+        ClickType clickType = event.getClick();
+        if (clickType == ClickType.SHIFT_LEFT || clickType == ClickType.SHIFT_RIGHT) {
+            handleShiftClick(event);
+        }
+        isCompassItem(event);
     }
 
     /**
@@ -226,22 +240,6 @@ public class InventoryClickListener implements Listener {
         }
     }
 
-
-    /**
-     * Handles inventory clicks when the player interacts with GraveList or GraveMenu inventories.
-     *
-     * @param event           The InventoryClickEvent.
-     * @param player          The player interacting with the inventory.
-     * @param inventoryHolder The inventory holder.
-     */
-    private void handlePlayerInventoryClick(InventoryClickEvent event, Player player, InventoryHolder inventoryHolder) {
-        if (inventoryHolder instanceof GraveList graveList) {
-            handleGraveListClick(event, player, graveList);
-        } else if (inventoryHolder instanceof GraveMenu graveMenu) {
-            handleGraveMenuClick(event, player, graveMenu);
-        }
-    }
-
     /**
      * Handles inventory clicks for GraveList inventories.
      *
@@ -249,16 +247,14 @@ public class InventoryClickListener implements Listener {
      * @param player    The player interacting with the inventory.
      * @param graveList The GraveList inventory holder.
      */
-    private void handleGraveListClick(InventoryClickEvent event, Player player, GraveList graveList) {
-        Grave grave = graveList.getGrave(event.getSlot());
-
+    private void handleGraveListClick(InventoryClickEvent event, Player player, GraveList graveList, int slot) {
+        Grave grave = graveList.getGrave(slot);
         if (grave != null) {
             if (event.getClick() == ClickType.SHIFT_LEFT) {
-                event.setCancelled(true); // Prevents items from being put in inventory
+                event.setCancelled(true);
                 return;
             }
 
-            // Run function associated with the clicked slot in GraveList
             plugin.getEntityManager().runFunction(player, plugin.getConfigManager().getConfigSection("gui.menu.list.function", grave).getString("gui.menu.list.function", "menu"), grave);
             plugin.getGUIManager().setGraveListItems(graveList.getInventory(), graveList.getUUID());
         }
@@ -273,30 +269,34 @@ public class InventoryClickListener implements Listener {
      * @param player    The player interacting with the inventory.
      * @param graveMenu The GraveMenu inventory holder.
      */
-    private void handleGraveMenuClick(InventoryClickEvent event, Player player, GraveMenu graveMenu) {
+    private void handleGraveMenuClick(InventoryClickEvent event, Player player, GraveMenu graveMenu, int slot) {
         Grave grave = graveMenu.getGrave();
-        try {
-            if (grave != null) {
-                if (event.getClick() == ClickType.SHIFT_LEFT) {
-                    event.setCancelled(true); // Prevents items from being put in inventory
-                    return;
-                }
-
-                // Run function associated with the clicked slot in GraveMenu
-                if (plugin.getConfigManager().getConfigSection("gui.menu.grave.slot." + event.getSlot() + ".enabled", grave).getBoolean("gui.menu.grave.slot." + event.getSlot() + ".enabled")) {
-                    plugin.getEntityManager().runFunction(player,
-                            plugin.getConfigManager().getConfigSection("gui.menu.grave.slot." + event.getSlot() + ".function", grave)
-                                    .getString("gui.menu.grave.slot." + event.getSlot()
-                                            + ".function", "none"), grave);
-                    plugin.getGUIManager().setGraveMenuItems(graveMenu.getInventory(), grave);
-                }
-            }
-
-            event.setCancelled(true);
-        } catch (NullPointerException | IllegalArgumentException ignored) {
-            // Likely grave doesn't exist. Ignore this.
+        if (grave == null) {
             event.getWhoClicked().closeInventory();
             event.setCancelled(true);
+            return;
         }
+
+        if (event.getClick() == ClickType.SHIFT_LEFT) {
+            event.setCancelled(true);
+            return;
+        }
+
+        if (plugin.getConfigManager()
+                .getConfigSection("gui.menu.grave.slot." + slot + ".enabled", grave)
+                .getBoolean("gui.menu.grave.slot." + slot + ".enabled")) {
+
+            plugin.getEntityManager().runFunction(
+                    player,
+                    plugin.getConfigManager()
+                            .getConfigSection("gui.menu.grave.slot." + slot + ".function", grave)
+                            .getString("gui.menu.grave.slot." + slot + ".function", "none"),
+                    grave
+            );
+
+            plugin.getGUIManager().setGraveMenuItems(graveMenu.getInventory(), grave);
+        }
+
+        event.setCancelled(true);
     }
 }
