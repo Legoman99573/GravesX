@@ -1,5 +1,6 @@
 package com.ranull.graves;
 
+import dev.cwhead.GravesX.api.provider.RegisterGraveProviders;
 import dev.cwhead.GravesX.exception.GravesXIllegalArgumentException;
 import dev.cwhead.GravesX.exception.GravesXMethodNotSupportedException;
 import dev.cwhead.GravesX.listener.BlockEntityExplodeListener;
@@ -41,8 +42,10 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Graves extends JavaPlugin {
     private VersionManager versionManager;
@@ -75,6 +78,8 @@ public class Graves extends JavaPlugin {
     private boolean deferModuleLoad;
     private ArmorStandManager armorStandManager;
     private TextDisplayManager textDisplayManager;
+
+    private final AtomicBoolean reloading = new AtomicBoolean(false);
 
     @Override
     public void onLoad() {
@@ -439,23 +444,271 @@ public class Graves extends JavaPlugin {
     }
 
     public void reload() {
+        if (!reloading.compareAndSet(false, true)) {
+            getLogger().warning("Reload already in progress.");
+            return;
+        }
+
+        long started = System.currentTimeMillis();
+        getLogger().info("==== Reloading " + getName() + " ====");
+
+        try {
+            unloadAllForReload();
+
+            loadAllAfterReload();
+
+            long took = System.currentTimeMillis() - started;
+            infoMessage(getName() + " reloaded. (" + took + "ms)");
+        } finally {
+            reloading.set(false);
+        }
+    }
+
+    private void unloadAllForReload() {
+        try {
+            if (cacheManager != null && dataManager != null) {
+                getLogger().info("Saving Grave inventories before reload...");
+                for (Grave grave : getCacheManager().getGraveMap().values()) {
+                    try {
+                        getDataManager().updateGraveMainThread(
+                                grave, "inventory", InventoryUtil.inventoryToString(grave.getInventory())
+                        );
+                        debugMessage("Saved inventory for grave UUID " + grave.getUUID() + " successfully", 2);
+                    } catch (Exception e) {
+                        getLogger().severe("Failed to save grave " + grave.getUUID() + " during reload: " + e.getMessage());
+                        logStackTrace(e);
+                    }
+                }
+                getLogger().info("Grave inventories saved.");
+            }
+        } catch (Exception e) {
+            getLogger().warning("Failed to flush inventories during reload: " + e.getMessage());
+            logStackTrace(e);
+        }
+
+        try {
+            getSchedulerManager().cancelAll(this);
+        } catch (Throwable ignored) {
+        }
+        tryUnload(graveScheduler, "SchedulerManager", "cancelAll", "shutdown", "close", "unload");
+        try {
+            if (graveScheduler != null) graveScheduler.cancelAll(this);
+        } catch (Exception ignored) {
+        }
+
+        if (moduleManager != null) {
+            try {
+                getLogger().info("[Modules] Disabling modules...");
+                moduleManager.disableAll();
+                getLogger().info("[Modules] Modules disabled.");
+            } catch (Exception e) {
+                getLogger().severe("[Modules] Failed disabling modules during reload: " + e.getMessage());
+                logStackTrace(e);
+            }
+        }
+
+        try {
+            HandlerList.unregisterAll(this);
+        } catch (Exception e) {
+            getLogger().warning("Failed to unregister all listeners: " + e.getMessage());
+            logStackTrace(e);
+        }
+
+        try {
+            unregisterListeners();
+        } catch (Exception ignored) {
+        }
+
+        tryUnload(graveManager, "GraveManager", "unload", "shutdown", "close");
+        try {
+            if (graveManager != null) graveManager.unload();
+        } catch (Exception e) {
+            getLogger().severe("Failed to unload GraveManager during reload.");
+            logStackTrace(e);
+        }
+
+        tryUnload(integrationManager, "IntegrationManager", "unload", "shutdown", "close");
+        try {
+            if (integrationManager != null) {
+                integrationManager.unload();
+                if (getIntegrationManager().hasSkript()) {
+                    integrationManager.unloadNoReload();
+                }
+            }
+        } catch (Exception e) {
+            getLogger().severe("Failed to unload IntegrationManager during reload.");
+            logStackTrace(e);
+        }
+
+        tryUnload(recipeManager, "RecipeManager", "unload", "reload", "shutdown", "close");
+
+        tryUnload(chunkManager, "ChunkManager", "unload", "shutdown", "close", "disable");
+        tryUnload(permissionManager, "PermissionManager", "unload", "shutdown", "close", "disable");
+        tryUnload(particleManager, "ParticleManager", "unload", "shutdown", "close", "disable");
+        tryUnload(entityManager, "EntityManager", "unload", "shutdown", "close", "disable");
+        tryUnload(guiManager, "GUIManager", "unload", "shutdown", "close", "disable");
+        tryUnload(hologramManager, "HologramManager", "unload", "shutdown", "close", "disable");
+        tryUnload(entityDataManager, "EntityDataManager", "unload", "shutdown", "close", "disable");
+        tryUnload(itemStackManager, "ItemStackManager", "unload", "shutdown", "close", "disable");
+        tryUnload(blockManager, "BlockManager", "unload", "shutdown", "close", "disable");
+        tryUnload(importManager, "ImportManager", "unload", "shutdown", "close", "disable");
+        tryUnload(safeLocationManager, "SafeLocationManager", "unload", "shutdown", "close", "disable");
+        tryUnload(locationManager, "LocationManager", "unload", "shutdown", "close", "disable");
+        tryUnload(cacheManager, "CacheManager", "unload", "clear", "shutdown", "close", "disable");
+
+        tryUnload(textDisplayManager, "TextDisplayManager", "unload", "shutdown", "close", "disable");
+        tryUnload(armorStandManager, "ArmorStandManager", "unload", "shutdown", "close", "disable");
+
+        try {
+            if (dataManager != null) {
+                getLogger().info("Closing DataManager (DB) for reload...");
+                dataManager.closeConnection();
+                getLogger().info("DataManager closed.");
+            }
+        } catch (Exception e) {
+            getLogger().severe("Failed to close DataManager during reload.");
+            logStackTrace(e);
+        }
+
+        recipeManager = null;
+        graveManager = null;
+        chunkManager = null;
+        permissionManager = null;
+        particleManager = null;
+        entityManager = null;
+        guiManager = null;
+        hologramManager = null;
+        entityDataManager = null;
+        itemStackManager = null;
+        blockManager = null;
+        importManager = null;
+        safeLocationManager = null;
+        locationManager = null;
+        cacheManager = null;
+        dataManager = null;
+        textDisplayManager = null;
+        armorStandManager = null;
+        graveScheduler = null;
+
+        moduleManager = null;
+
+        getLogger().info("All managers unloaded and cleared.");
+    }
+
+    private void loadAllAfterReload() {
+        RegisterGraveProviders.clear();
         getConfigManager().ensureDefaultsExist();
         getConfigManager().updateIfNeeded(isPluginDevelopmentBuild());
         getConfigManager().reload();
         saveTextFiles();
-        unregisterListeners();
-        registerListeners();
-        // dataManager.reload();
-        integrationManager.reload();
-        try {
-            registerRecipes();
-        } catch (Exception e) {
-            if (recipeManager != null) {
-                recipeManager.reload();
+
+        loadLibraries();
+
+        graveScheduler = new SchedulerManager(this);
+
+        versionManager = new VersionManager();
+
+        integrationManager.load();
+        if (getIntegrationManager().hasSkript()) {
+            integrationManager.loadNoReload();
+        }
+
+        cacheManager = new CacheManager();
+        dataManager = new DataManager(this);
+        importManager = new ImportManager(this);
+        blockManager = new BlockManager(this);
+        itemStackManager = new ItemStackManager(this);
+        entityDataManager = new EntityDataManager(this);
+        hologramManager = new HologramManager(this);
+        guiManager = new GUIManager(this);
+        entityManager = new EntityManager(this);
+        locationManager = new LocationManager(this);
+        safeLocationManager = new SafeLocationManager(this);
+        graveManager = new GraveManager(this);
+        particleManager = new ParticleManager(this);
+        permissionManager = new PermissionManager(this);
+        chunkManager = new ChunkManager(this);
+
+        getLogger().info("[Modules] Loading GravesX Modules...");
+
+        moduleManager = new ModuleManager(this);
+        moduleManager.setLibraryImporter(new LibbyImporter(this));
+        deferModuleLoad = moduleManager.shouldDeferLoadOnExternalPlugins();
+
+        List<ModuleInfo> detected = moduleManager.detectModules();
+        if (detected.isEmpty()) {
+            getLogger().info("[Modules] Detected 0 module(s).");
+        } else {
+            getLogger().info("[Modules] Detected " + detected.size() + " module(s):");
+            for (ModuleInfo mi : detected) {
+                int libs = (mi.libraries() == null) ? 0 : mi.libraries().size();
+                getLogger().info("[Modules] - " + mi.name()
+                        + " v" + mi.version()
+                        + " (load=" + mi.loadPhase()
+                        + ", folia=" + mi.supportsFolia()
+                        + ", libs=" + libs + ")");
             }
         }
 
-        infoMessage(getName() + " reloaded.");
+        if (deferModuleLoad) {
+            moduleManager.loadAll();
+        }
+
+        if (versionManager.isHasTextDisplays()) {
+            textDisplayManager = new TextDisplayManager(this);
+            armorStandManager = new ArmorStandManager(this);
+        } else {
+            armorStandManager = new ArmorStandManager(this);
+            textDisplayManager = null;
+        }
+
+        moduleManager.enableAll(GravesXModuleController.LoadPhase.STARTUP);
+
+        DependencyEnableListener depListener = new DependencyEnableListener(moduleManager);
+        getServer().getPluginManager().registerEvents(depListener, this);
+        getSchedulerManager().runTask(moduleManager::tryEnablePending);
+
+        registerCommands();
+        registerListeners();
+        registerRecipes();
+        saveTextFiles();
+
+        getSchedulerManager().runTaskLater(() -> {
+            KeepInventoryDetector.install(this);
+            KeepInventoryDetector.logWorldsWithGameruleKeepInventoryTrue(this);
+        }, 1L);
+
+        getServer().getPluginManager().registerEvents(new LateEnableHook(), this);
+
+        moduleManager.enableAll(GravesXModuleController.LoadPhase.POSTWORLD);
+        moduleManager.tryEnablePending();
+
+        getSchedulerManager().runTask(() -> {
+            compatibilityChecker();
+            updateChecker();
+            getConfigManager().updateIfNeeded(isPluginDevelopmentBuild());
+            moduleManager.enableAll(GravesXModuleController.LoadPhase.COMPLETED);
+            moduleManager.tryEnablePending();
+            RegisterGraveProviders.bootstrapFromServices();
+        });
+    }
+
+    private void tryUnload(Object target, String label, String... methodNames) {
+        if (target == null) return;
+
+        for (String name : methodNames) {
+            try {
+                Method m = target.getClass().getMethod(name);
+                m.setAccessible(true);
+                m.invoke(target);
+                return;
+            } catch (NoSuchMethodException ignored) {
+            } catch (Throwable t) {
+                getLogger().warning("Error unloading " + label + " via " + name + "(): " + t.getMessage());
+                logStackTrace(t);
+                return;
+            }
+        }
     }
 
     public void saveTextFiles() {

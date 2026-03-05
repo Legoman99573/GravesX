@@ -730,13 +730,21 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
 
     private void handleReloadCommand(CommandSender commandSender) {
         if (!(commandSender instanceof Player) || plugin.getPermissionManager().hasGrantedPermission("graves.reload", ((Player) commandSender).getPlayer())) {
+
             Plugin skriptPlugin = plugin.getServer().getPluginManager().getPlugin("Skript");
             if (skriptPlugin != null && skriptPlugin.isEnabled()) {
                 plugin.getLogger().warning("Skript v." + skriptPlugin.getDescription().getVersion() + " detected. Skript Integration option will only take effect on restart.");
             }
-            plugin.reload();
+
             commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
-                    + "Reloaded config file.");
+                    + "Reloading " + plugin.getName() + "...");
+
+            final long start = System.nanoTime();
+            plugin.reload();
+            final long tookMs = (System.nanoTime() - start) / 1_000_000L;
+
+            commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
+                    + plugin.getName() + " reloaded. " + ChatColor.DARK_GRAY + "(" + tookMs + "ms)");
         } else {
             plugin.getEntityManager().sendMessage("message.permission-denied", (Player) commandSender);
         }
