@@ -648,6 +648,7 @@ public class EntityDeathListener implements Listener {
                              Location location,
                              PlayerDeathEvent pde,
                              Player player) {
+
         List<Block> ignoredBlockList = new ArrayList<>();
 
         Grave grave = new Grave(UUID.randomUUID());
@@ -658,6 +659,121 @@ public class EntityDeathListener implements Listener {
             modern.setIgnoredItems(ignoredItemStackList);
         }
         modern.setIgnoredBlocks(ignoredBlockList);
+
+        setupGrave(modern, grave, livingEntity, entityName, permissionList);
+        setGraveExperience(modern, grave, event, livingEntity, pde);
+        setupGraveKiller(modern, grave, livingEntity);
+        setupGraveProtection(modern, livingEntity, grave);
+
+        if (plugin.getConfigManager().getConfigSection("placement.safe-location", grave).getBoolean("placement.safe-location", true)) {
+            Location safeLocation = plugin.getLocationManager().getSafeGraveLocation(livingEntity, location, grave);
+            Location target = safeLocation != null ? safeLocation : location;
+            event.setDroppedExp(0);
+            if (plugin.getLocationManager().hasCachedGraveAt(target)) {
+                Location newLoc = plugin.getLocationManager().getNewLocationIfCachedGraveExists(livingEntity, target, grave);
+                if (newLoc != null) {
+                    target = newLoc;
+                }
+            }
+            modern.setDeathLocation(LocationUtil.roundLocation(target));
+        } else {
+            event.setDroppedExp(0);
+            Location target = location;
+            if (plugin.getLocationManager().hasCachedGraveAt(target)) {
+                Location newLoc = plugin.getLocationManager().getNewLocationIfCachedGraveExists(livingEntity, target, grave);
+                if (newLoc != null) {
+                    target = newLoc;
+                }
+            }
+            modern.setDeathLocation(LocationUtil.roundLocation(target));
+        }
+
+        GravePreCreateEvent pre = new GravePreCreateEvent(livingEntity, grave, graveItemStackList, ignoredItemStackList, ignoredBlockList);
+
+        pre.setGraveUUID(grave.getUUID());
+        pre.setDeathLocation(modern.getLocationDeath());
+        pre.setOwnerType(modern.getOwnerType());
+        pre.setOwnerName(modern.getOwnerName());
+        pre.setOwnerNameDisplay(modern.getOwnerNameDisplay());
+        pre.setOwnerUUID(modern.getOwnerUUID());
+        pre.setPermissionList(modern.getPermissionList());
+        pre.setYaw(modern.getYaw());
+        pre.setPitch(modern.getPitch());
+        pre.setTimeAlive(modern.getTimeAlive());
+        pre.setOwnerTexture(modern.getOwnerTexture());
+        pre.setOwnerTextureSignature(modern.getOwnerTextureSignature());
+        pre.setExperience(modern.getExperience());
+        pre.setKillerType(modern.getKillerType());
+        pre.setKillerName(modern.getKillerName());
+        pre.setKillerNameDisplay(modern.getKillerNameDisplay());
+        pre.setKillerUUID(modern.getKillerUUID());
+        pre.setProtection(modern.getProtection());
+        pre.setTimeProtection(modern.getTimeProtection());
+
+        plugin.getServer().getPluginManager().callEvent(pre);
+
+        if (pre.isAddon()) {
+            return;
+        }
+
+        if (pre.isCancelled()) {
+            List<ItemStack> toReturn = new ArrayList<>();
+            Set<ItemStack> identitySet = Collections.newSetFromMap(new IdentityHashMap<>());
+
+            if (removedItemStackList != null) {
+                for (ItemStack item : removedItemStackList) {
+                    if (item == null || item.getType() == Material.AIR) continue;
+                    if (identitySet.add(item)) toReturn.add(item);
+                }
+            }
+            if (graveItemStackList != null) {
+                for (ItemStack item : graveItemStackList) {
+                    if (item == null || item.getType() == Material.AIR) continue;
+                    if (identitySet.add(item)) toReturn.add(item);
+                }
+            }
+            if (ignoredItemStackList != null) {
+                for (ItemStack item : ignoredItemStackList) {
+                    if (item == null || item.getType() == Material.AIR) continue;
+                    if (identitySet.add(item)) toReturn.add(item);
+                }
+            }
+
+            if (!toReturn.isEmpty()) {
+                event.getDrops().addAll(toReturn);
+            }
+            return;
+        }
+
+        UUID preUUID = pre.getGraveUUID();
+        if (preUUID != null && !preUUID.equals(grave.getUUID())) {
+            grave = new Grave(preUUID);
+            modern = new GraveCreateEvent(livingEntity, grave, graveItemStackList, ignoredItemStackList, ignoredBlockList);
+
+            if (ignoredItemStackList != null && !ignoredItemStackList.isEmpty()) {
+                modern.setIgnoredItems(ignoredItemStackList);
+            }
+            modern.setIgnoredBlocks(ignoredBlockList);
+        }
+
+        modern.setDeathLocation(pre.getLocationDeath());
+        modern.setOwnerType(pre.getOwnerType());
+        modern.setOwnerName(pre.getOwnerName());
+        modern.setOwnerNameDisplay(pre.getOwnerNameDisplay());
+        modern.setOwnerUUID(pre.getOwnerUUID());
+        modern.setPermissionList(pre.getPermissionList().isEmpty() ? null : new ArrayList<>(pre.getPermissionList()));
+        modern.setYaw(pre.getYaw());
+        modern.setPitch(pre.getPitch());
+        modern.setTimeAlive(pre.getTimeAlive());
+        modern.setOwnerTexture(pre.getOwnerTexture());
+        modern.setOwnerTextureSignature(pre.getOwnerTextureSignature());
+        modern.setExperience(pre.getExperience());
+        modern.setKillerType(pre.getKillerType());
+        modern.setKillerName(pre.getKillerName());
+        modern.setKillerNameDisplay(pre.getKillerNameDisplay());
+        modern.setKillerUUID(pre.getKillerUUID());
+        modern.setProtection(pre.getProtection());
+        modern.setTimeProtection(pre.getTimeProtection());
 
         plugin.getServer().getPluginManager().callEvent(modern);
 
@@ -713,35 +829,8 @@ public class EntityDeathListener implements Listener {
             }
         }
 
-        setupGrave(modern, grave, livingEntity, entityName, permissionList);
-        setGraveExperience(modern, grave, event, livingEntity, pde);
-        setupGraveKiller(modern, grave, livingEntity);
-        setupGraveProtection(modern, livingEntity, grave);
-        if (plugin.getConfigManager().getConfigSection("placement.safe-location", grave).getBoolean("placement.safe-location", true)) {
-            Location safeLocation = plugin.getLocationManager().getSafeGraveLocation(livingEntity, location, grave);
-            Location target = safeLocation != null ? safeLocation : location;
-            event.setDroppedExp(0);
-            if (plugin.getLocationManager().hasCachedGraveAt(target)) {
-                Location newLoc = plugin.getLocationManager().getNewLocationIfCachedGraveExists(livingEntity, target, grave);
-                if (newLoc != null) {
-                    target = newLoc;
-                }
-            }
-            modern.setDeathLocation(LocationUtil.roundLocation(target));
-        } else {
-            event.setDroppedExp(0);
-            Location target = location;
-            if (plugin.getLocationManager().hasCachedGraveAt(target)) {
-                Location newLoc = plugin.getLocationManager().getNewLocationIfCachedGraveExists(livingEntity, target, grave);
-                if (newLoc != null) {
-                    target = newLoc;
-                }
-            }
-            modern.setDeathLocation(LocationUtil.roundLocation(target));
-        }
-
-        boolean cancelled = modern.isCancelled() || legacy.isCancelled();
-        boolean addon     = modern.isAddon()     || legacy.isAddon();
+        boolean cancelled = pre.isCancelled() || modern.isCancelled() || legacy.isCancelled();
+        boolean addon     = pre.isAddon()     || modern.isAddon()     || legacy.isAddon();
 
         if (addon) {
             plugin.debugMessage("GraveCreateEvent is handled by addon. Developers should handle it here. If not, this will do absolutely nothing at all.", 1);
@@ -768,18 +857,22 @@ public class EntityDeathListener implements Listener {
             grave.setTimeProtection(modern.getTimeProtection());
             grave.setLocationDeath(modern.getLocationDeath());
 
-            World world = Objects.requireNonNull(modern.getLocationDeath()).getWorld();
+            Location deathLoc = Objects.requireNonNull(modern.getLocationDeath());
+            World world = deathLoc.getWorld();
+
             boolean allowNetherRoof = plugin.getConfigManager().getConfigSection("placement.nether-roof", grave).getBoolean("placement.nether-roof");
-            if ((world != null && location.getY() < world.getMinHeight())
-                    || (world != null && location.getY() > world.getMaxHeight())
+            if ((world != null && deathLoc.getY() < world.getMinHeight())
+                    || (world != null && deathLoc.getY() > world.getMaxHeight())
                     || !allowNetherRoof && (world != null && world.getEnvironment() == World.Environment.NETHER && plugin.getSafeLocationManager().isAboveNetherRoof(grave.getLocationDeath(), grave))) {
-                handleFailedGravePlacement(event, grave, location, livingEntity, removedItemStackList, graveItemStackList);
+                handleFailedGravePlacement(event, grave, deathLoc, livingEntity, removedItemStackList, graveItemStackList);
                 return;
             }
 
+            List<String> effectivePerms = modern.getPermissionList().isEmpty() ? permissionList : new ArrayList<>(modern.getPermissionList());
+
             Location placedLocation = placeGrave(
-                    event, grave, graveItemStackList, removedItemStackList, location,
-                    livingEntity, permissionList, player
+                    event, grave, graveItemStackList, removedItemStackList, deathLoc,
+                    livingEntity, effectivePerms, player
             );
 
             plugin.getServer().getPluginManager().callEvent(
@@ -787,7 +880,7 @@ public class EntityDeathListener implements Listener {
             );
 
             if (!effectiveIgnoredItems.isEmpty() || !effectiveIgnoredBlocks.isEmpty()) {
-                dropIgnored(livingEntity, location, event, effectiveIgnoredItems, effectiveIgnoredBlocks);
+                dropIgnored(livingEntity, deathLoc, event, effectiveIgnoredItems, effectiveIgnoredBlocks);
             }
             return;
         }
