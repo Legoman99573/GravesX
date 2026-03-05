@@ -1150,24 +1150,24 @@ public class GraveManager {
         try {
             p.remove(grave);
 
-            boolean stillPlaced;
+            boolean stillPlaced = false;
             try {
                 stillPlaced = p.isPlaced(grave);
             } catch (Throwable t) {
-                stillPlaced = true;
-                GravesXGraveProviderException wrapped = GravesXGraveProviderException.forProvider(p, anchor, grave, "isPlaced() threw after remove()", t);
-                plugin.getLogger().log(Level.WARNING, wrapped.getMessage(), wrapped);
+                plugin.getLogger().warning("[CustomGraveProvider " + p.id() + " (order=" + p.order() + ")] isPlaced() threw after remove(): " + t.getMessage());
+                return;
             }
 
             if (!stillPlaced) {
                 plugin.debugMessage("[CustomGraveProvider " + p.id() + " (order=" + p.order() + ")] removed successfully.", 1);
-            } else {
-                GravesXGraveProviderException stillThere = GravesXGraveProviderException.forProvider(p, anchor, grave, "isPlaced=true after remove()", null);
-                plugin.getLogger().log(Level.WARNING, stillThere.getMessage(), stillThere);
+                return;
             }
+
+            plugin.debugMessage("[CustomGraveProvider " + p.id() + " (order=" + p.order() + ")] remove() returned without error, but isPlaced=true at " + anchor + ". Assuming removal is pending or isPlaced() is conservative.", 2);
+
         } catch (Throwable t) {
-            GravesXGraveProviderException wrapped = GravesXGraveProviderException.forProvider(p, anchor, grave, t);
-            plugin.getLogger().log(Level.WARNING, wrapped.getMessage(), wrapped);
+            plugin.getLogger().warning("[CustomGraveProvider " + p.id() + " (order=" + p.order() + ")] remove() failed: " + t.getMessage());
+            plugin.logStackTrace(t);
         }
     }
 
