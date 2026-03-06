@@ -55,7 +55,7 @@ public class InventoryClickListener implements Listener {
         Inventory clicked = event.getClickedInventory();
         if (clicked == null) return;
 
-        Inventory top = CompatibilityInventoryView.getTopInventory(player);
+        Inventory top = CompatibilityInventoryView.getTopInventory(event);
         InventoryHolder topHolder = top.getHolder();
 
         if (clicked.getHolder() instanceof Grave grave) {
