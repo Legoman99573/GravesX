@@ -100,11 +100,25 @@ public class EntityDeathListener implements Listener {
         if (isPlayer) {
             if (handlePlayerDeath(player, entityName)) return;
 
-            if (pde != null && isKeepInventory(pde, entityName) && !plugin.getPermissionManager().hasGrantedPermission("graves.keepinventory.bypass", player)) {
-                plugin.debugMessage("Grave not created for " + entityName + " because they had keep inventory. You can set a user to have the bypass permission.", 2);
-                return;
+            if (pde != null && isKeepInventory(pde, entityName)) {
+                boolean bypass = plugin.getPermissionManager().hasGrantedPermission("graves.keepinventory.bypass", player.getPlayer());
+
+                if (!bypass) {
+                    plugin.debugMessage("Grave not created for " + entityName + " because they had keep inventory. You can set a user to have the bypass permission.", 2);
+                    return;
+                }
+
+                try {
+                    pde.setKeepInventory(false);
+                } catch (NoSuchMethodError ignored) {
+                    // Ignore
+                }
+
+                plugin.debugMessage("Grave creation proceeding for " + entityName + "; forcing keep inventory off to avoid duplication.", 1);
             } else {
-                plugin.debugMessage("Grave created for " + entityName + " even though they have keep inventory. This may cause duplication bugs and no support will be provided.", 2);
+                if (pde != null) {
+                    pde.setKeepInventory(false);
+                }
             }
 
             if (pde != null && event.getDrops().isEmpty()) {
@@ -342,7 +356,7 @@ public class EntityDeathListener implements Listener {
      */
     private boolean isKeepInventory(PlayerDeathEvent event, String entityName) {
         try {
-            if (event.getKeepInventory() && !plugin.getPermissionManager().hasGrantedPermission("graves.keepinventory.bypass", event.getEntity())) {
+            if (event.getKeepInventory() && !plugin.getPermissionManager().hasGrantedPermission("graves.keepinventory.bypass", event.getEntity().getPlayer())) {
                 plugin.debugMessage("Grave not created for " + entityName + " because they had keep inventory", 2);
                 return true;
             }
