@@ -81,38 +81,79 @@ public final class SafeLocationManager {
     }
 
     /**
-     * Result of resolving a grave placement.
+     * Grave placement result.
      */
-    public static final class GravePlacementResult {
+    public static class GravePlacementResult {
+        /**
+         * Grave placement location result.
+         */
         private final Location location;
+        /**
+         * Grave placement reason result.
+         */
         private final GravePlacementReason reason;
 
+        /**
+         * Private Grave Placement constructor.
+         *
+         * @param location The location.
+         * @param reason   The reason.
+         */
         private GravePlacementResult(Location location, GravePlacementReason reason) {
             this.location = location;
             this.reason = reason;
         }
 
+        /**
+         * Gets the location.
+         *
+         * @return The location.
+         */
         public Location getLocation() {
             return location;
         }
 
+        /**
+         * Gets the reason.
+         *
+         * @return The reason.
+         */
         public GravePlacementReason getReason() {
             return reason;
         }
 
+        /**
+         * Creates a result.
+         *
+         * @param location The location.
+         * @param reason   The reason.
+         * @return The result.
+         */
         public static GravePlacementResult of(Location location, GravePlacementReason reason) {
             return new GravePlacementResult(location, reason);
         }
     }
 
     /**
-     * Internal candidate used during selection.
+     * Placement candidate.
      */
     private static final class Candidate {
+        /**
+         * Location for a candidate.
+         */
         final Location loc;
+        /**
+         * Grave Placement reason for a candidate.
+         */
         final GravePlacementReason reason;
 
-        Candidate(Location loc, GravePlacementReason reason) {
+        /**
+         * Private Candidate constructor.
+         *
+         * @param loc    The location.
+         * @param reason The reason.
+         */
+        private Candidate(Location loc, GravePlacementReason reason) {
             this.loc = loc;
             this.reason = reason;
         }
@@ -132,11 +173,23 @@ public final class SafeLocationManager {
         return isAboveNetherRoofInternal(location, grave);
     }
 
+    /**
+     * Stores the last solid location for an entity.
+     *
+     * @param entity   The entity.
+     * @param location The location.
+     */
     public void setLastSolidLocation(Entity entity, Location location) {
         if (entity == null || location == null) return;
         plugin.getCacheManager().getLastLocationMap().put(entity.getUniqueId(), location.clone());
     }
 
+    /**
+     * Gets the last solid location for an entity.
+     *
+     * @param entity The entity.
+     * @return The location, or null if not available.
+     */
     public Location getLastSolidLocation(Entity entity) {
         if (entity == null) return null;
 
@@ -152,12 +205,25 @@ public final class SafeLocationManager {
         return location.clone();
     }
 
+    /**
+     * Removes the last solid location for an entity.
+     *
+     * @param entity The entity.
+     */
     public void removeLastSolidLocation(Entity entity) {
         if (entity == null) return;
         plugin.getCacheManager().getLastLocationMap().remove(entity.getUniqueId());
     }
 
-    @SuppressWarnings("unused")
+    /**
+     * Gets a safe teleport location.
+     *
+     * @param entity   The entity.
+     * @param location The location.
+     * @param grave    The grave.
+     * @param plugin   The plugin.
+     * @return The safe location, or null if not found.
+     */
     public Location getSafeTeleportLocation(Entity entity, Location location, Grave grave, Graves plugin) {
         if (location == null || entity == null) return null;
 
@@ -192,6 +258,12 @@ public final class SafeLocationManager {
         return null;
     }
 
+    /**
+     * Resolves the highest safe teleport location in the same column.
+     *
+     * @param base The base location.
+     * @return The safe location, or null if not found.
+     */
     private Location resolveTeleportTop(Location base) {
         if (base == null || base.getWorld() == null) return null;
 
@@ -210,11 +282,27 @@ public final class SafeLocationManager {
         return null;
     }
 
+    /**
+     * Gets a safe grave location.
+     *
+     * @param livingEntity The entity.
+     * @param location     The location.
+     * @param grave        The grave.
+     * @return The safe location, or null if not found.
+     */
     public Location getSafeGraveLocation(LivingEntity livingEntity, Location location, Grave grave) {
         GravePlacementResult r = resolveSafeGravePlacement(livingEntity, location, grave);
         return r != null ? r.getLocation() : null;
     }
 
+    /**
+     * Resolves a safe grave placement result.
+     *
+     * @param livingEntity The entity.
+     * @param location     The location.
+     * @param grave        The grave.
+     * @return The placement result, or null if the input location is null.
+     */
     public GravePlacementResult resolveSafeGravePlacement(LivingEntity livingEntity, Location location, Grave grave) {
         String prefix = "[SafeLocationManager] resolveSafeGravePlacement: ";
 
@@ -332,22 +420,13 @@ public final class SafeLocationManager {
             boolean waterTop = plugin.getConfigManager().getConfigSection("placement.water-top", grave).getBoolean("placement.water-top");
 
             if (waterTop) {
-                if (directlyAboveWater) {
-                    Location above = centerOnBlock(origin);
-                    if (above != null && !isVoid(above) && isInsideBorder(above) && !hasGrave(above) && isLocationSafeGraveAboveFluid(above, true)) {
-                        plugin.debugMessage(prefix + "CHOSEN=" + GravePlacementReason.WATER_ABOVE + " loc=" + fmtLoc(above) + " distSq=" + distSq(origin, above) + ".", 1);
-                        return GravePlacementResult.of(above, GravePlacementReason.WATER_ABOVE);
-                    }
-                }
-
                 Location start = MaterialUtil.isWater(originType) ? origin : origin.clone().add(0.0, -1.0, 0.0);
                 Location surface = resolveFluidSurfaceTop(start, grave, true);
                 if (surface != null) {
-                    plugin.debugMessage(prefix + "CHOSEN=" + GravePlacementReason.WATER_TOP + " loc=" + fmtLoc(surface) + " distSq=" + distSq(origin, surface) + ".", 1);
-                    return GravePlacementResult.of(surface, GravePlacementReason.WATER_TOP);
+                    candidates.add(new Candidate(surface, GravePlacementReason.WATER_TOP));
+                } else {
+                    plugin.debugMessage(prefix + "water-top enabled but no AIR surface found; continuing.", 1);
                 }
-
-                plugin.debugMessage(prefix + "water-top enabled but no AIR surface found; continuing.", 1);
             }
 
             addWaterCandidates(candidates, origin, livingEntity, grave, useGround, useRoof);
@@ -398,6 +477,13 @@ public final class SafeLocationManager {
         return GravePlacementResult.of(origin, GravePlacementReason.FALLBACK_ORIGINAL);
     }
 
+    /**
+     * Logs placement candidates for debugging.
+     *
+     * @param prefix     The message prefix.
+     * @param origin     The origin location.
+     * @param candidates The candidates.
+     */
     private void debugCandidates(String prefix, Location origin, List<Candidate> candidates) {
         if (origin == null || origin.getWorld() == null) return;
 
@@ -418,6 +504,12 @@ public final class SafeLocationManager {
         }
     }
 
+    /**
+     * Centers a location on its block.
+     *
+     * @param loc The location.
+     * @return The centered location, or null if invalid.
+     */
     private Location centerOnBlock(Location loc) {
         if (loc == null || loc.getWorld() == null) return null;
 
@@ -434,15 +526,28 @@ public final class SafeLocationManager {
         );
     }
 
+    /**
+     * Adds water placement candidates.
+     *
+     * @param out          The candidate list.
+     * @param origin       The origin location.
+     * @param livingEntity The entity.
+     * @param grave        The grave.
+     * @param useGround    Whether ground placement is enabled.
+     * @param useRoof      Whether roof placement is enabled.
+     */
     private void addWaterCandidates(List<Candidate> out, Location origin, LivingEntity livingEntity, Grave grave, boolean useGround, boolean useRoof) {
         boolean waterSmart = plugin.getConfigManager().getConfigSection("placement.water-smart", grave).getBoolean("placement.water-smart");
+        boolean waterBottom = plugin.getConfigManager().getConfigSection("placement.water-bottom", grave).contains("placement.water-bottom")
+                ? plugin.getConfigManager().getConfigSection("placement.water-bottom", grave).getBoolean("placement.water-bottom")
+                : useGround;
 
         if (waterSmart) {
             Location smart = resolveSmartFromLastSolid(livingEntity, origin, grave, useGround, useRoof);
             if (smart != null) out.add(new Candidate(smart, GravePlacementReason.WATER_SMART));
         }
 
-        if (useGround) {
+        if (waterBottom) {
             Location bottom = findWaterBottom(origin);
             if (bottom != null && !hasGrave(bottom) && isLocationSafeGrave(bottom)) {
                 out.add(new Candidate(bottom, GravePlacementReason.WATER_BOTTOM));
@@ -450,6 +555,16 @@ public final class SafeLocationManager {
         }
     }
 
+    /**
+     * Adds lava placement candidates.
+     *
+     * @param out          The candidate list.
+     * @param origin       The origin location.
+     * @param livingEntity The entity.
+     * @param grave        The grave.
+     * @param useGround    Whether ground placement is enabled.
+     * @param useRoof      Whether roof placement is enabled.
+     */
     private void addLavaCandidates(List<Candidate> out, Location origin, LivingEntity livingEntity, Grave grave, boolean useGround, boolean useRoof) {
         boolean lavaSmart = plugin.getConfigManager().getConfigSection("placement.lava-smart", grave).getBoolean("placement.lava-smart");
 
@@ -469,6 +584,13 @@ public final class SafeLocationManager {
         }
     }
 
+    /**
+     * Adds void placement candidates.
+     *
+     * @param out    The candidate list.
+     * @param origin The origin location.
+     * @param grave  The grave.
+     */
     private void addVoidCandidates(List<Candidate> out, Location origin, Grave grave) {
         if (origin == null || origin.getWorld() == null) return;
 
@@ -499,6 +621,13 @@ public final class SafeLocationManager {
         if (best != null) out.add(best);
     }
 
+    /**
+     * Picks the closest candidate.
+     *
+     * @param origin     The origin location.
+     * @param candidates The candidates.
+     * @return The closest candidate, or null if none.
+     */
     private Candidate pickClosest(Location origin, List<Candidate> candidates) {
         if (origin == null || origin.getWorld() == null) return null;
         if (candidates == null || candidates.isEmpty()) return null;
@@ -520,6 +649,13 @@ public final class SafeLocationManager {
         return best;
     }
 
+    /**
+     * Gets the squared distance between two locations.
+     *
+     * @param a The first location.
+     * @param b The second location.
+     * @return The squared distance.
+     */
     private double distSq(Location a, Location b) {
         double dx = a.getX() - b.getX();
         double dy = a.getY() - b.getY();
@@ -527,6 +663,16 @@ public final class SafeLocationManager {
         return (dx * dx) + (dy * dy) + (dz * dz);
     }
 
+    /**
+     * Resolves a placement from the last solid location.
+     *
+     * @param livingEntity  The entity.
+     * @param deathLocation The death location.
+     * @param grave         The grave.
+     * @param useGround     Whether ground placement is enabled.
+     * @param useRoof       Whether roof placement is enabled.
+     * @return The resolved location, or null if not found.
+     */
     private Location resolveSmartFromLastSolid(LivingEntity livingEntity, Location deathLocation, Grave grave, boolean useGround, boolean useRoof) {
         if (!(livingEntity instanceof Player player)) return null;
 
@@ -562,6 +708,14 @@ public final class SafeLocationManager {
         return null;
     }
 
+    /**
+     * Resolves a ground placement location.
+     *
+     * @param base   The base location.
+     * @param origin The origin location.
+     * @param grave  The grave.
+     * @return The resolved location, or null if not found.
+     */
     private Location resolveGroundLocation(Location base, Location origin, Grave grave) {
         if (base == null || base.getWorld() == null) return null;
 
@@ -571,6 +725,14 @@ public final class SafeLocationManager {
         return searchUpForSafeGrave(base, origin, grave, base.getBlockY() + 1);
     }
 
+    /**
+     * Resolves a roof placement location.
+     *
+     * @param base   The base location.
+     * @param origin The origin location.
+     * @param grave  The grave.
+     * @return The resolved location, or null if not found.
+     */
     private Location resolveRoofLocation(Location base, Location origin, Grave grave) {
         if (base == null || base.getWorld() == null) return null;
 
@@ -580,6 +742,14 @@ public final class SafeLocationManager {
         return searchDownForSafeGrave(base, grave, base.getBlockY());
     }
 
+    /**
+     * Searches downward for a safe grave location.
+     *
+     * @param base   The base location.
+     * @param grave  The grave.
+     * @param startY The starting Y value.
+     * @return The safe location, or null if not found.
+     */
     private Location searchDownForSafeGrave(Location base, Grave grave, int startY) {
         if (base == null || base.getWorld() == null) return null;
 
@@ -613,6 +783,15 @@ public final class SafeLocationManager {
         return null;
     }
 
+    /**
+     * Searches upward for a safe grave location.
+     *
+     * @param base   The base location.
+     * @param origin The origin location.
+     * @param grave  The grave.
+     * @param startY The starting Y value.
+     * @return The safe location, or null if not found.
+     */
     private Location searchUpForSafeGrave(Location base, Location origin, Grave grave, int startY) {
         if (base == null || base.getWorld() == null) return null;
 
@@ -647,6 +826,14 @@ public final class SafeLocationManager {
         return null;
     }
 
+    /**
+     * Resolves the air block above a fluid column.
+     *
+     * @param originInFluid The location in fluid.
+     * @param grave         The grave.
+     * @param water         Whether the fluid is water.
+     * @return The surface location, or null if not found.
+     */
     private Location resolveFluidSurfaceTop(Location originInFluid, Grave grave, boolean water) {
         if (originInFluid == null || originInFluid.getWorld() == null) return null;
 
@@ -689,6 +876,13 @@ public final class SafeLocationManager {
         return place;
     }
 
+    /**
+     * Checks if a grave location above fluid is safe.
+     *
+     * @param location The location.
+     * @param water    Whether the fluid is water.
+     * @return True if safe, otherwise false.
+     */
     private boolean isLocationSafeGraveAboveFluid(Location location, boolean water) {
         if (location == null) return false;
 
@@ -703,6 +897,12 @@ public final class SafeLocationManager {
                 && (water ? MaterialUtil.isWater(below.getType()) : MaterialUtil.isLava(below.getType()));
     }
 
+    /**
+     * Finds the bottom of a water column.
+     *
+     * @param loc The location.
+     * @return The bottom water location, or null if not found.
+     */
     private Location findWaterBottom(Location loc) {
         if (loc == null || loc.getWorld() == null) return null;
 
@@ -750,6 +950,14 @@ public final class SafeLocationManager {
         return bottom;
     }
 
+    /**
+     * Checks if an entity can build at a location.
+     *
+     * @param livingEntity   The entity.
+     * @param location       The location.
+     * @param permissionList The permission list.
+     * @return True if building is allowed, otherwise false.
+     */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean canBuild(LivingEntity livingEntity, Location location, List<String> permissionList) {
         if (livingEntity instanceof Player player) {
@@ -762,6 +970,12 @@ public final class SafeLocationManager {
         return true;
     }
 
+    /**
+     * Checks if a player location is safe.
+     *
+     * @param location The location.
+     * @return True if safe, otherwise false.
+     */
     public boolean isLocationSafePlayer(Location location) {
         if (location == null || location.getWorld() == null) return false;
 
@@ -780,6 +994,12 @@ public final class SafeLocationManager {
         return false;
     }
 
+    /**
+     * Checks if a grave location is safe.
+     *
+     * @param location The location.
+     * @return True if safe, otherwise false.
+     */
     public boolean isLocationSafeGrave(Location location) {
         if (location == null) return false;
 
@@ -792,6 +1012,12 @@ public final class SafeLocationManager {
                 && MaterialUtil.isSafeSolid(block.getRelative(BlockFace.DOWN).getType());
     }
 
+    /**
+     * Checks if a grave exists at a location.
+     *
+     * @param location The location.
+     * @return True if a grave exists, otherwise false.
+     */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean hasGrave(Location location) {
         if (location == null) return false;
@@ -802,6 +1028,12 @@ public final class SafeLocationManager {
                 && plugin.getDataManager().getChunkData(rounded).getBlockDataMap().containsKey(rounded);
     }
 
+    /**
+     * Checks if a location is inside the world border.
+     *
+     * @param location The location.
+     * @return True if inside the border, otherwise false.
+     */
     public boolean isInsideBorder(Location location) {
         if (location == null) return false;
 
@@ -813,11 +1045,23 @@ public final class SafeLocationManager {
                 || (location.getWorld() != null && location.getWorld().getWorldBorder().isInside(location));
     }
 
+    /**
+     * Checks if a location is in the void.
+     *
+     * @param location The location.
+     * @return True if in the void, otherwise false.
+     */
     public boolean isVoid(Location location) {
         if (location == null || location.getWorld() == null) return true;
         return location.getY() < getMinHeight(location) || location.getY() > location.getWorld().getMaxHeight();
     }
 
+    /**
+     * Gets the minimum height for a location.
+     *
+     * @param location The location.
+     * @return The minimum height.
+     */
     public int getMinHeight(Location location) {
         return location != null
                 && location.getWorld() != null
@@ -826,16 +1070,36 @@ public final class SafeLocationManager {
                 : 0;
     }
 
+    /**
+     * Checks if a world is the Nether.
+     *
+     * @param world The world.
+     * @return True if the world is the Nether, otherwise false.
+     */
     private boolean isNether(World world) {
         return world != null && world.getEnvironment() == World.Environment.NETHER;
     }
 
+    /**
+     * Checks if a location is above the Nether roof limit.
+     *
+     * @param loc   The location.
+     * @param grave The grave.
+     * @return True if above the roof limit, otherwise false.
+     */
     private boolean isAboveNetherRoofInternal(Location loc, Grave grave) {
         if (loc == null || loc.getWorld() == null) return false;
         World w = loc.getWorld();
         return isNether(w) && loc.getBlockY() > getNetherRoofYInternal(w, grave);
     }
 
+    /**
+     * Gets the Nether roof Y limit for a world.
+     *
+     * @param world The world.
+     * @param grave The grave.
+     * @return The roof Y limit.
+     */
     private int getNetherRoofYInternal(World world, Grave grave) {
         if (world == null) return 0;
 
@@ -881,6 +1145,12 @@ public final class SafeLocationManager {
         return roof;
     }
 
+    /**
+     * Parses an integer value.
+     *
+     * @param s The string.
+     * @return The parsed integer, or null if invalid.
+     */
     private Integer parseIntOrNull(String s) {
         if (s == null) return null;
         try {
@@ -890,6 +1160,12 @@ public final class SafeLocationManager {
         }
     }
 
+    /**
+     * Formats a location for debug output.
+     *
+     * @param loc The location.
+     * @return The formatted location string.
+     */
     private String fmtLoc(Location loc) {
         if (loc == null || loc.getWorld() == null) return "null";
         return loc.getWorld().getName() + " x=" + loc.getBlockX() + " y=" + loc.getBlockY() + " z=" + loc.getBlockZ();
