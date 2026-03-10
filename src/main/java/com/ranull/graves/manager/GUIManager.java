@@ -297,7 +297,7 @@ public class GUIManager {
                     int slot = Integer.parseInt(string);
 
                     if (slot < 0 || slot >= inventory.getSize()) {
-                        plugin.getLogger().warning("[GUI] Grave menu slot " + slot + " out of bounds (size=" + inventory.getSize() + "). Check gui.menu.grave.slot.*");
+                        plugin.debugMessage("[GUI] Grave menu slot " + slot + " out of bounds (size=" + inventory.getSize() + "). Check gui.menu.grave.slot." + slot, 2);
                         continue;
                     }
 
