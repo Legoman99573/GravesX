@@ -243,6 +243,8 @@ settings:
         unsafe: false
         # If the grave is in an unsafe location, should the entity be teleported to the top.
         top: true
+        # Should the player be facing towards the grave face? False will preserve to the player's original yaw and pitch before teleporting.
+        face-relative: true
 
       ###########
       # Storage #

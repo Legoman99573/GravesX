@@ -209,31 +209,55 @@ public class EntityManager extends EntityDataManager {
         GravePreTeleportEvent modernPre = new GravePreTeleportEvent(grave, entity);
         plugin.getServer().getPluginManager().callEvent(modernPre);
 
-        com.ranull.graves.event.GravePreTeleportEvent legacyPre =
+        com.ranull.graves.event.GravePreTeleportEvent legacy =
                 new com.ranull.graves.event.GravePreTeleportEvent(grave, entity);
-        plugin.getServer().getPluginManager().callEvent(legacyPre);
+        plugin.getServer().getPluginManager().callEvent(legacy);
 
-        if (modernPre.isCancelled() || modernPre.isAddon() || legacyPre.isCancelled() || legacyPre.isAddon()) {
+        if (modernPre.isCancelled() || modernPre.isAddon() || legacy.isCancelled() || legacy.isAddon()) {
             return;
         }
 
         Location base = LocationUtil.roundLocation(location).clone();
         BlockFace face = BlockFaceUtil.getYawBlockFace(grave.getYaw());
 
+        boolean faceRelative = plugin.getConfigManager()
+                .getConfigSection("teleport.face-relative", grave)
+                .getBoolean("teleport.face-relative", true);
+
+        Location currentLocation = entity.getLocation().clone();
+        float preservedYaw = currentLocation.getYaw();
+        float preservedPitch = currentLocation.getPitch();
+
         Location target = base.clone()
                 .getBlock().getRelative(face).getRelative(face)
                 .getLocation().add(0.5, 0.0, 0.5);
 
         if (plugin.getLocationManager().isLocationSafePlayer(target)) {
-            target.setYaw(BlockFaceUtil.getBlockFaceYaw(face.getOppositeFace()));
-            target.setPitch(20.0f);
+            if (faceRelative) {
+                target.setYaw(BlockFaceUtil.getBlockFaceYaw(face.getOppositeFace()));
+                target.setPitch(20.0f);
+            } else {
+                target.setYaw(preservedYaw);
+                target.setPitch(preservedPitch);
+            }
         } else {
-            Location safe = plugin.getLocationManager()
-                    .getSafeTeleportLocation(entity, base.clone().add(0.0, 1.0, 0.0), grave, plugin);
+            Location safe = plugin.getLocationManager().getSafeTeleportLocation(
+                    entity,
+                    base.clone().add(0.0, 1.0, 0.0),
+                    grave,
+                    plugin
+            );
+
             if (safe != null) {
                 target = safe.add(0.5, 0.0, 0.5);
-                target.setYaw(BlockFaceUtil.getBlockFaceYaw(face));
-                target.setPitch(90.0f);
+
+                if (faceRelative) {
+                    target.setYaw(BlockFaceUtil.getBlockFaceYaw(face));
+                    target.setPitch(90.0f);
+                } else {
+                    target.setYaw(preservedYaw);
+                    target.setPitch(preservedPitch);
+                }
             } else {
                 target = null;
             }
@@ -252,11 +276,10 @@ public class EntityManager extends EntityDataManager {
             GraveTeleportEvent modern = new GraveTeleportEvent(grave, player);
             plugin.getServer().getPluginManager().callEvent(modern);
 
-            com.ranull.graves.event.GraveTeleportEvent legacy =
-                    new com.ranull.graves.event.GraveTeleportEvent(grave, player);
-            plugin.getServer().getPluginManager().callEvent(legacy);
+            com.ranull.graves.event.GraveTeleportEvent legacyTeleport = new com.ranull.graves.event.GraveTeleportEvent(grave, player);
+            plugin.getServer().getPluginManager().callEvent(legacyTeleport);
 
-            if (!modern.isCancelled() && !modern.isAddon() && !legacy.isCancelled() && !legacy.isAddon()) {
+            if (!modern.isCancelled() && !modern.isAddon() && !legacyTeleport.isCancelled() && !legacyTeleport.isAddon()) {
                 boolean bypass = plugin.getPermissionManager().hasGrantedPermission("graves.teleport.delay-bypass", player);
 
                 if (!bypass && delaySeconds > 0L) {
@@ -363,7 +386,7 @@ public class EntityManager extends EntityDataManager {
                         CompatibilityTeleport.teleportSafely(player, finalTarget, plugin).thenAccept(ok -> {
                             executeRegion(player, () -> {
                                 if (ok) {
-                                    Location from = initialLocation.clone(); // since we already validated samePos
+                                    Location from = initialLocation.clone();
                                     Location actualTo = player.getLocation().clone();
 
                                     firePostTeleportAndRollbackIfCancelled(grave, player, from, actualTo);
@@ -394,11 +417,9 @@ public class EntityManager extends EntityDataManager {
             GraveTeleportEvent modern = new GraveTeleportEvent(grave, entity);
             plugin.getServer().getPluginManager().callEvent(modern);
 
-            com.ranull.graves.event.GraveTeleportEvent legacy =
-                    new com.ranull.graves.event.GraveTeleportEvent(grave, entity);
-            plugin.getServer().getPluginManager().callEvent(legacy);
-
-            if (!modern.isCancelled() && !modern.isAddon() && !legacy.isCancelled() && !legacy.isAddon()) {
+            com.ranull.graves.event.GraveTeleportEvent legacyTeleport = new com.ranull.graves.event.GraveTeleportEvent(grave, entity);
+            plugin.getServer().getPluginManager().callEvent(legacyTeleport);
+            if (!modern.isCancelled() && !modern.isAddon() && !legacyTeleport.isCancelled() && !legacyTeleport.isAddon()) {
                 Location finalTarget = target.clone();
 
                 Runnable doTeleport = () -> executeRegion(entity, () -> {
