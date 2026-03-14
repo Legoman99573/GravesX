@@ -121,6 +121,10 @@ permissions:
     default: op
     description: Can view other peoples graves
 
+  graves.count:
+    default: op
+    description: Counts the number of graves for a player or world.
+
   graves.experience:
     default: true
     description: Can store experience in graves
