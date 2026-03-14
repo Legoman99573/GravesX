@@ -306,19 +306,16 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
                             || plugin.getPermissionManager().hasGrantedPermission("graves.teleport.command.others", (Player) commandSender)) {
 
                         if (args.length == 2) {
-                            String partialInput = args[1];
-                            plugin.getSchedulerManager().runTaskAsynchronously(() -> {
-                                for (OfflinePlayer offlinePlayer : Bukkit.getOfflinePlayers()) {
-                                    if (offlinePlayer.hasPlayedBefore() && offlinePlayer.getName() != null) {
-                                        String playerName = offlinePlayer.getName();
-                                        if (playerName.startsWith(partialInput)) {
-                                            synchronized (stringList) {
-                                                stringList.add(offlinePlayer.getName());
-                                            }
-                                        }
+                            String partialInput = args[1].toLowerCase(Locale.ROOT);
+
+                            for (OfflinePlayer offlinePlayer : Bukkit.getOfflinePlayers()) {
+                                if (offlinePlayer.hasPlayedBefore() && offlinePlayer.getName() != null) {
+                                    String playerName = offlinePlayer.getName();
+                                    if (playerName.toLowerCase(Locale.ROOT).contains(partialInput)) {
+                                        stringList.add(playerName);
                                     }
                                 }
-                            });
+                            }
                         }
                     }
                     break;
@@ -328,19 +325,16 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
                 case "open": {
                     if (!(commandSender instanceof Player) || plugin.getPermissionManager().hasGrantedPermission("graves.virtual.command.others", (Player) commandSender)) {
                         if (args.length == 2) {
-                            String partialInput = args[1];
-                            plugin.getSchedulerManager().runTaskAsynchronously(() -> {
-                                for (OfflinePlayer offlinePlayer : Bukkit.getOfflinePlayers()) {
-                                    if (offlinePlayer.hasPlayedBefore() && offlinePlayer.getName() != null) {
-                                        String playerName = offlinePlayer.getName();
-                                        if (playerName.startsWith(partialInput)) {
-                                            synchronized (stringList) {
-                                                stringList.add(offlinePlayer.getName());
-                                            }
-                                        }
+                            String partialInput = args[1].toLowerCase(Locale.ROOT);
+
+                            for (OfflinePlayer offlinePlayer : Bukkit.getOfflinePlayers()) {
+                                if (offlinePlayer.hasPlayedBefore() && offlinePlayer.getName() != null) {
+                                    String playerName = offlinePlayer.getName();
+                                    if (playerName.toLowerCase(Locale.ROOT).contains(partialInput)) {
+                                        stringList.add(playerName);
                                     }
                                 }
-                            });
+                            }
                         }
                     }
                     break;
@@ -393,19 +387,16 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
 
                         if ((args.length == 3 && args[1].equals("offline-player"))
                                 || (args.length == 3 && args[1].equals("player"))) {
-                            String partialInput = args[2];
-                            plugin.getSchedulerManager().runTaskAsynchronously(() -> {
-                                for (OfflinePlayer offlinePlayer : Bukkit.getOfflinePlayers()) {
-                                    if (offlinePlayer.hasPlayedBefore() && offlinePlayer.getName() != null) {
-                                        String playerName = offlinePlayer.getName();
-                                        if (playerName.startsWith(partialInput)) {
-                                            synchronized (stringList) {
-                                                stringList.add(offlinePlayer.getName());
-                                            }
-                                        }
+                            String partialInput = args[2].toLowerCase(Locale.ROOT);
+
+                            for (OfflinePlayer offlinePlayer : Bukkit.getOfflinePlayers()) {
+                                if (offlinePlayer.hasPlayedBefore() && offlinePlayer.getName() != null) {
+                                    String playerName = offlinePlayer.getName();
+                                    if (playerName.toLowerCase(Locale.ROOT).contains(partialInput)) {
+                                        stringList.add(playerName);
                                     }
                                 }
-                            });
+                            }
                         }
 
                         if ((args.length == 3 && args[1].equals("grave-specific"))
@@ -455,19 +446,16 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
                                     }
                                 }
                             } else if (args[1].equalsIgnoreCase("player")) {
-                                String partialInput = args[2];
-                                plugin.getSchedulerManager().runTaskAsynchronously(() -> {
-                                    for (OfflinePlayer offlinePlayer : Bukkit.getOfflinePlayers()) {
-                                        if (offlinePlayer.hasPlayedBefore() && offlinePlayer.getName() != null) {
-                                            String playerName = offlinePlayer.getName();
-                                            if (playerName.toLowerCase(Locale.ROOT).startsWith(partialInput.toLowerCase(Locale.ROOT))) {
-                                                synchronized (stringList) {
-                                                    stringList.add(playerName);
-                                                }
-                                            }
+                                String partialInput = args[2].toLowerCase(Locale.ROOT);
+
+                                for (OfflinePlayer offlinePlayer : Bukkit.getOfflinePlayers()) {
+                                    if (offlinePlayer.hasPlayedBefore() && offlinePlayer.getName() != null) {
+                                        String playerName = offlinePlayer.getName();
+                                        if (playerName.toLowerCase(Locale.ROOT).contains(partialInput)) {
+                                            stringList.add(playerName);
                                         }
                                     }
-                                });
+                                }
                             }
                         } else if (args.length == 4 && args[1].equalsIgnoreCase("player")) {
                             String partialInput = args[3].toLowerCase(Locale.ROOT);
