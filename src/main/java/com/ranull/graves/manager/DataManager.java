@@ -20,6 +20,7 @@ import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.*;
 import java.sql.*;
 import java.sql.Date;
@@ -2767,123 +2768,281 @@ public class DataManager {
     }
 
     /**
-     * Migrates data from the plugin’s SQLite schema into the configured target database.
+     * Migrates data from the plugin’s SQLite or H2 schema into the configured target database.
      * <p>
-     * - Reads each table from the SQLite file in {@code plugin/data/data.db}.
+     * - Reads each table from the SQLite file in {@code plugin/data/data.db} or h2 file in {@code plugin/data/graves.data.mv.db}.
      * - Recreates it in the target database with mapped column types.
      * - Copies all rows.
-     * - Renames the SQLite file to data.old.db on success.
+     * - Renames the SQLite file to data.old.db and SQLite data to graves.data.mv.migrated.db on success.
      * </p>
      */
     private void migrate() {
-        File dataFolder = new File(plugin.getDataFolder(), "data");
-        File sqliteFile  = new File(dataFolder, "data.db");
-        if (!dataFolder.exists() || !sqliteFile.exists()) {
-            plugin.getLogger().warning("No SQLite database at " + sqliteFile.getPath() + "; skipping migration.");
+        MigrationSource source = detectMigrationSource();
+        if (source.path() == null || source.type() == Type.INVALID) {
+            return;
+        }
+
+        switch (source.type()) {
+            case SQLITE -> migrateFromSQLite(source.path());
+            case H2 -> migrateFromH2(source.path());
+            default -> plugin.getLogger().warning("Unsupported migration source type: " + source.type());
+        }
+    }
+
+    private MigrationSource detectMigrationSource() {
+        Path dataDir = plugin.getDataFolder().toPath().resolve("data");
+
+        Path sqliteFile = dataDir.resolve("data.db");
+        if (Files.isRegularFile(sqliteFile)) {
+            if (this.type == Type.SQLITE) return new MigrationSource(Type.INVALID, null);
+            return new MigrationSource(Type.SQLITE, sqliteFile);
+        }
+
+        Path h2Base = dataDir.resolve("graves.data");
+        Path h2Mv = Paths.get(h2Base.toString() + ".mv.db");
+        if (Files.isRegularFile(h2Mv)) {
+            if (this.type == Type.H2) return new MigrationSource(Type.INVALID, null);
+            return new MigrationSource(Type.H2, h2Base);
+        }
+
+        return new MigrationSource(Type.INVALID, null);
+    }
+
+    private record MigrationSource(Type type, Path path) {}
+
+    /**
+     * Migrates data from a legacy SQLite database file into the currently configured target database.
+     *
+     * @param sqliteFile the existing legacy SQLite database file
+     */
+    private void migrateFromSQLite(Path sqliteFile) {
+        if (sqliteFile == null || !Files.isRegularFile(sqliteFile)) {
+            plugin.getLogger().warning("Skipping SQLite migration because the source database file does not exist.");
             return;
         }
 
         HikariConfig sourceConfig = new HikariConfig();
+
         String journalMode = plugin.getConfig().getString("settings.storage.sqlite.journal-mode", "WAL");
         String synchronous = plugin.getConfig().getString("settings.storage.sqlite.synchronous", "OFF");
-        sourceConfig.setJdbcUrl("jdbc:sqlite:" + sqliteFile.getPath());
+
+        String jm = journalMode.toUpperCase(Locale.ROOT);
+        if (!jm.equals("DELETE") && !jm.equals("TRUNCATE") && !jm.equals("PERSIST")
+                && !jm.equals("MEMORY") && !jm.equals("WAL") && !jm.equals("OFF")) {
+            jm = "WAL";
+        }
+
+        String syn = synchronous.toUpperCase(Locale.ROOT);
+        if (!syn.equals("OFF") && !syn.equals("0")
+                && !syn.equals("NORMAL") && !syn.equals("1")
+                && !syn.equals("FULL") && !syn.equals("2")
+                && !syn.equals("EXTRA") && !syn.equals("3")) {
+            syn = "OFF";
+        }
+
+        String jdbcUrl = "jdbc:sqlite:" + sqliteFile.toAbsolutePath() + "?busy_timeout=30000";
+
+        sourceConfig.setJdbcUrl(jdbcUrl);
         sourceConfig.setDriverClassName("org.sqlite.JDBC");
-        sourceConfig.setConnectionInitSql(
-                "PRAGMA busy_timeout = 30000; " +
-                        "PRAGMA journal_mode = " + journalMode + "; " +
-                        "PRAGMA synchronous = " + synchronous + ";"
-        );
+        sourceConfig.setPoolName("GravesX SQLite Migration to " + getType());
+
+        sourceConfig.setMaximumPoolSize(10);
+        sourceConfig.setMinimumIdle(1);
         sourceConfig.setConnectionTimeout(30000);
         sourceConfig.setIdleTimeout(600000);
         sourceConfig.setMaxLifetime(1800000);
-        sourceConfig.setMaximumPoolSize(10);
 
-        try (HikariDataSource sourceDs = new HikariDataSource(sourceConfig);
-             Connection sqliteConn = sourceDs.getConnection();
+        sourceConfig.setConnectionInitSql("PRAGMA journal_mode=" + jm + "; PRAGMA synchronous=" + syn + ";");
+        sourceConfig.setConnectionTestQuery("SELECT 1");
+
+        try (HikariDataSource sourceDataSource = new HikariDataSource(sourceConfig);
+             Connection sourceConn = sourceDataSource.getConnection();
              Connection targetConn = getConnection()) {
 
-            if (targetConn == null) {
-                plugin.getLogger().severe("Migration aborted: target database connection is null.");
-                return;
+            migrateFromConnection(sourceConn, targetConn, Type.SQLITE);
+            renameMigratedSQLiteFile(sqliteFile);
+        } catch (Exception exception) {
+            plugin.getLogger().severe("Failed to migrate legacy SQLite database.");
+            plugin.logStackTrace(exception);
+        }
+    }
+
+    /**
+     * Migrates data from a h2 database file into the currently configured target database.
+     *
+     * @param h2BasePath the existing h2 database base path without the .mv.db suffix
+     */
+    private void migrateFromH2(Path h2BasePath) {
+        if (h2BasePath == null) {
+            plugin.getLogger().warning("Skipping H2 migration because the source database path is null.");
+            return;
+        }
+
+        Path mvFile = Paths.get(h2BasePath.toString() + ".mv.db");
+        Path traceFile = Paths.get(h2BasePath.toString() + ".trace.db");
+
+        if (!Files.isRegularFile(mvFile)) {
+            plugin.getLogger().warning("Skipping H2 migration because the source database file does not exist: " + mvFile);
+            return;
+        }
+
+        HikariConfig sourceConfig = new HikariConfig();
+
+        long maxLifetime = plugin.getConfig().getLong("settings.storage.h2.maxLifetime", 1800000);
+        int maxConnections = plugin.getConfig().getInt("settings.storage.h2.maxConnections", 50);
+        long connectionTimeout = plugin.getConfig().getLong("settings.storage.h2.connectionTimeout", 30000);
+
+        String jdbcUrl = "jdbc:h2:file:" + h2BasePath.toAbsolutePath() + ";AUTO_SERVER=FALSE;DB_CLOSE_DELAY=-1;";
+
+        sourceConfig.setJdbcUrl(jdbcUrl);
+        sourceConfig.setDriverClassName("com.ranull.graves.libraries.h2.Driver");
+        sourceConfig.setPoolName("GravesX h2 Migration to " + getType());
+
+        sourceConfig.setMaximumPoolSize(maxConnections);
+        sourceConfig.setMinimumIdle(Math.min(2, maxConnections));
+        sourceConfig.setConnectionTimeout(connectionTimeout);
+        sourceConfig.setIdleTimeout(600000);
+        sourceConfig.setMaxLifetime(maxLifetime);
+
+        try {
+            sourceConfig.setKeepaliveTime(300000);
+            sourceConfig.setValidationTimeout(5000);
+        } catch (Throwable ignored) {
+        }
+
+        sourceConfig.setConnectionTestQuery("SELECT 1");
+
+        try (HikariDataSource sourceDs = new HikariDataSource(sourceConfig);
+             Connection sourceConn = sourceDs.getConnection();
+             Connection targetConn = getConnection()) {
+
+            migrateFromConnection(sourceConn, targetConn, Type.H2);
+
+            renameMigratedH2File(mvFile);
+            if (Files.exists(traceFile)) {
+                renameMigratedH2File(traceFile);
             }
-
-            DatabaseMetaData sqliteMeta = sqliteConn.getMetaData();
-            try (ResultSet tables = sqliteMeta.getTables(null, null, getStoragePrefix() + "%", new String[] { "TABLE" })) {
-                boolean allSuccess = true;
-
-                while (tables.next()) {
-                    String sqliteTable = tables.getString("TABLE_NAME");
-
-                    StringBuilder createSql = new StringBuilder("CREATE TABLE IF NOT EXISTS ")
-                            .append(sqliteTable).append(" (");
-                    StringJoiner defs = new StringJoiner(", ");
-
-                    List<String> cols = new ArrayList<>();
-                    try (Statement stmt = sqliteConn.createStatement();
-                         ResultSet rsMeta = stmt.executeQuery("SELECT * FROM " + sqliteTable + " LIMIT 1")) {
-                        ResultSetMetaData md = rsMeta.getMetaData();
-                        for (int i = 1; i <= md.getColumnCount(); i++) {
-                            String col        = md.getColumnName(i);
-                            String sqliteType = md.getColumnTypeName(i);
-                            String targetType = mapSQLiteTypeToTargetDB(sqliteType, col);
-                            if (targetType == null) continue;
-                            cols.add(col);
-                            defs.add(col + " " + targetType);
-                        }
-                    }
-
-                    if (cols.isEmpty()) {
-                        plugin.getLogger().warning("No columns mapped for " + sqliteTable + "; skipping.");
-                        continue;
-                    }
-
-                    createSql.append(defs).append(");");
-                    executeUpdate(createSql.toString(), new Object[0]);
-
-                    if (sqliteTable.equals(getStoragePrefix() + "grave")) {
-                        adjustGraveTableForTargetDB();
-                    }
-
-                    String placeholders = String.join(", ", Collections.nCopies(cols.size(), "?"));
-                    String insertSql = "INSERT INTO " + sqliteTable +
-                            " (" + String.join(", ", cols) + ") VALUES (" + placeholders + ")";
-
-                    try (PreparedStatement insert = targetConn.prepareStatement(insertSql);
-                         Statement readStmt = sqliteConn.createStatement();
-                         ResultSet rows = readStmt.executeQuery("SELECT * FROM " + sqliteTable)) {
-
-                        while (rows.next()) {
-                            for (int idx = 0; idx < cols.size(); idx++) {
-                                String val = rows.getString(cols.get(idx));
-                                insert.setString(idx + 1, val);
-                            }
-                            insert.executeUpdate();
-                        }
-                    } catch (SQLException e) {
-                        plugin.getLogger().severe("Error inserting into " + sqliteTable);
-                        plugin.logStackTrace(e);
-                        allSuccess = false;
-                    }
-                }
-
-                if (allSuccess) {
-                    Path from = sqliteFile.toPath();
-                    Path to   = new File(dataFolder, "data.old.db").toPath();
-                    try {
-                        Files.move(from, to,
-                                StandardCopyOption.REPLACE_EXISTING,
-                                StandardCopyOption.ATOMIC_MOVE);
-                        plugin.getLogger().info("Renamed SQLite file to data.old.db");
-                    } catch (Exception moveEx) {
-                        plugin.getLogger().severe("Failed to rename SQLite file");
-                        plugin.logStackTrace(moveEx);
-                    }
-                }
-            }
-        } catch (SQLException e) {
-            plugin.getLogger().severe("Migration failed");
+        } catch (Exception e) {
+            plugin.getLogger().severe("H2 migration failed");
             plugin.logStackTrace(e);
         }
+    }
+
+    private void migrateFromConnection(Connection sourceConn, Connection targetConn, Type sourceType) throws Exception {
+        if (targetConn == null) {
+            plugin.getLogger().severe("Migration aborted: target database connection is null.");
+            return;
+        }
+
+        DatabaseMetaData meta = sourceConn.getMetaData();
+        boolean allSuccess = true;
+
+        try (ResultSet tables = meta.getTables(null, null, getStoragePrefix() + "%", new String[]{"TABLE"})) {
+            while (tables.next()) {
+                String tableName = tables.getString("TABLE_NAME");
+
+                List<String> columns = new ArrayList<>();
+                StringJoiner defs = new StringJoiner(", ");
+
+                try (Statement stmt = sourceConn.createStatement();
+                     ResultSet rsMeta = stmt.executeQuery(getMetadataQuery(tableName, sourceType))) {
+
+                    ResultSetMetaData md = rsMeta.getMetaData();
+                    for (int i = 1; i <= md.getColumnCount(); i++) {
+                        String columnName = md.getColumnName(i);
+                        String sourceColumnType = md.getColumnTypeName(i);
+                        String targetColumnType = mapSourceTypeToTargetDB(sourceType, sourceColumnType, columnName);
+
+                        if (targetColumnType == null) continue;
+
+                        columns.add(columnName);
+                        defs.add(columnName + " " + targetColumnType);
+                    }
+                }
+
+                if (columns.isEmpty()) {
+                    plugin.getLogger().warning("No columns mapped for " + tableName + "; skipping.");
+                    continue;
+                }
+
+                String createSql = "CREATE TABLE IF NOT EXISTS " + tableName + " (" + defs + ")";
+                executeUpdate(createSql, new Object[0]);
+
+                if (tableName.equals(getStoragePrefix() + "grave")) {
+                    adjustGraveTableForTargetDB();
+                }
+
+                copyRows(sourceConn, targetConn, sourceType, tableName, columns);
+            }
+        }
+
+        if (!allSuccess) {
+            plugin.getLogger().warning("One or more tables failed during migration.");
+        }
+    }
+
+    private String mapSourceTypeToTargetDB(Type sourceType, String sourceColumnType, String columnName) {
+        return switch (sourceType) {
+            case SQLITE -> mapSQLiteTypeToTargetDB(sourceColumnType, columnName);
+            case H2 -> mapH2TypeToTargetDB(sourceColumnType, columnName);
+            default -> null;
+        };
+    }
+
+    private String mapH2TypeToTargetDB(String h2Type, String columnName) {
+        return switch (type) {
+            case MYSQL, MARIADB -> mapH2TypeToMySQL(h2Type, columnName);
+            case POSTGRESQL -> mapH2TypeToPostgreSQL(h2Type, columnName);
+            case MSSQL -> mapH2TypeToMSSQL(h2Type, columnName);
+            default -> {
+                plugin.getLogger().warning("Unhandled target database type: " + type);
+                yield null;
+            }
+        };
+    }
+
+    private String getMetadataQuery(String tableName, Type sourceType) {
+        return switch (sourceType) {
+            case SQLITE, H2 -> "SELECT * FROM " + tableName + " LIMIT 1";
+            default -> throw new IllegalArgumentException("Unsupported metadata source type: " + sourceType);
+        };
+    }
+
+    private void copyRows(Connection sourceConn, Connection targetConn, Type sourceType, String tableName, List<String> columns)
+            throws SQLException {
+
+        String placeholders = String.join(", ", Collections.nCopies(columns.size(), "?"));
+        String insertSql = "INSERT INTO " + tableName +
+                " (" + String.join(", ", columns) + ") VALUES (" + placeholders + ")";
+
+        try (PreparedStatement insert = targetConn.prepareStatement(insertSql);
+             Statement readStmt = sourceConn.createStatement();
+             ResultSet rows = readStmt.executeQuery("SELECT * FROM " + tableName)) {
+
+            while (rows.next()) {
+                for (int idx = 0; idx < columns.size(); idx++) {
+                    Object value = rows.getObject(columns.get(idx));
+                    insert.setObject(idx + 1, value);
+                }
+                insert.executeUpdate();
+            }
+        }
+    }
+
+    private void renameMigratedH2File(Path source) throws IOException {
+        if (!Files.exists(source)) return;
+
+        Path target = source.resolveSibling(source.getFileName().toString() + ".migrated.db");
+        try {
+            Files.move(source, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException e) {
+            Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
+    private void renameMigratedSQLiteFile(Path sqliteFile) throws IOException {
+        Path target = sqliteFile.resolveSibling("data.migrated.db");
+        Files.move(sqliteFile, target, StandardCopyOption.REPLACE_EXISTING);
     }
 
     /**
@@ -3371,5 +3530,140 @@ public class DataManager {
 
         customProviderSanitizedIds = Set.copyOf(idSet);
         customProviderKeysSnapshot = List.copyOf(keyList);
+    }
+
+    /**
+     * Maps an H2 source column type to MySQL/MariaDB.
+     *
+     * @param h2Type     the H2 source column type
+     * @param columnName the column name
+     * @return the mapped MySQL/MariaDB type
+     */
+    private String mapH2TypeToMySQL(String h2Type, String columnName) {
+        String normalized = h2Type.toUpperCase(Locale.ROOT);
+
+        return switch (normalized) {
+            case "CHARACTER VARYING", "VARCHAR", "VARCHAR_IGNORECASE", "TEXT", "CHARACTER LARGE OBJECT", "CLOB" -> {
+                if ("uuid".equalsIgnoreCase(columnName)
+                        || "owner_uuid".equalsIgnoreCase(columnName)
+                        || "killer_uuid".equalsIgnoreCase(columnName)
+                        || "entity_uuid".equalsIgnoreCase(columnName)
+                        || "uuid_grave".equalsIgnoreCase(columnName)
+                        || "uuid_entity".equalsIgnoreCase(columnName)) {
+                    yield "VARCHAR(36)";
+                }
+                yield "LONGTEXT";
+            }
+            case "CHARACTER", "CHAR", "NCHAR" -> "CHAR(255)";
+            case "BOOLEAN", "BIT" -> "BOOLEAN";
+            case "TINYINT" -> "TINYINT";
+            case "SMALLINT" -> "SMALLINT";
+            case "INTEGER", "INT", "MEDIUMINT" -> "INT";
+            case "BIGINT" -> "BIGINT";
+            case "REAL" -> "FLOAT";
+            case "DOUBLE", "DOUBLE PRECISION" -> "DOUBLE";
+            case "NUMERIC", "DECIMAL", "DECFLOAT" -> "DECIMAL(65,30)";
+            case "DATE" -> "DATE";
+            case "TIME", "TIME WITHOUT TIME ZONE" -> "TIME";
+            case "TIMESTAMP", "TIMESTAMP WITHOUT TIME ZONE", "TIMESTAMP WITH TIME ZONE" -> "DATETIME";
+            case "BINARY", "VARBINARY", "BINARY VARYING", "BLOB", "BYTEA", "BINARY LARGE OBJECT" -> "LONGBLOB";
+            case "JAVA_OBJECT", "JSON", "UUID", "ENUM", "GEOMETRY", "OTHER" -> "LONGTEXT";
+            default -> {
+                plugin.getLogger().warning("Unknown H2 type for MySQL/MariaDB migration: " + h2Type
+                        + " (column: " + columnName + ")");
+                yield "LONGTEXT";
+            }
+        };
+    }
+
+    /**
+     * Maps an H2 source column type to PostgreSQL.
+     *
+     * @param h2Type     the H2 source column type
+     * @param columnName the column name
+     * @return the mapped PostgreSQL type
+     */
+    private String mapH2TypeToPostgreSQL(String h2Type, String columnName) {
+        String normalized = h2Type.toUpperCase(Locale.ROOT);
+
+        return switch (normalized) {
+            case "CHARACTER VARYING", "VARCHAR", "VARCHAR_IGNORECASE", "TEXT", "CHARACTER LARGE OBJECT", "CLOB" -> {
+                if ("uuid".equalsIgnoreCase(columnName)
+                        || "owner_uuid".equalsIgnoreCase(columnName)
+                        || "killer_uuid".equalsIgnoreCase(columnName)
+                        || "entity_uuid".equalsIgnoreCase(columnName)
+                        || "uuid_grave".equalsIgnoreCase(columnName)
+                        || "uuid_entity".equalsIgnoreCase(columnName)) {
+                    yield "VARCHAR(36)";
+                }
+                yield "TEXT";
+            }
+            case "CHARACTER", "CHAR", "NCHAR" -> "CHAR(255)";
+            case "BOOLEAN", "BIT" -> "BOOLEAN";
+            case "TINYINT", "SMALLINT" -> "SMALLINT";
+            case "INTEGER", "INT", "MEDIUMINT" -> "INTEGER";
+            case "BIGINT" -> "BIGINT";
+            case "REAL" -> "REAL";
+            case "DOUBLE", "DOUBLE PRECISION" -> "DOUBLE PRECISION";
+            case "NUMERIC", "DECIMAL", "DECFLOAT" -> "NUMERIC";
+            case "DATE" -> "DATE";
+            case "TIME", "TIME WITHOUT TIME ZONE" -> "TIME";
+            case "TIMESTAMP", "TIMESTAMP WITHOUT TIME ZONE" -> "TIMESTAMP";
+            case "TIMESTAMP WITH TIME ZONE" -> "TIMESTAMPTZ";
+            case "BINARY", "VARBINARY", "BINARY VARYING", "BLOB", "BINARY LARGE OBJECT", "BYTEA" -> "BYTEA";
+            case "UUID" -> "UUID";
+            case "JSON" -> "JSONB";
+            case "JAVA_OBJECT", "ENUM", "GEOMETRY", "OTHER" -> "TEXT";
+            default -> {
+                plugin.getLogger().warning("Unknown H2 type for PostgreSQL migration: " + h2Type
+                        + " (column: " + columnName + ")");
+                yield "TEXT";
+            }
+        };
+    }
+
+    /**
+     * Maps an H2 source column type to Microsoft SQL Server.
+     *
+     * @param h2Type     the H2 source column type
+     * @param columnName the column name
+     * @return the mapped MSSQL type
+     */
+    private String mapH2TypeToMSSQL(String h2Type, String columnName) {
+        String normalized = h2Type.toUpperCase(Locale.ROOT);
+
+        return switch (normalized) {
+            case "CHARACTER VARYING", "VARCHAR", "VARCHAR_IGNORECASE", "TEXT", "CHARACTER LARGE OBJECT", "CLOB" -> {
+                if ("uuid".equalsIgnoreCase(columnName)
+                        || "owner_uuid".equalsIgnoreCase(columnName)
+                        || "killer_uuid".equalsIgnoreCase(columnName)
+                        || "entity_uuid".equalsIgnoreCase(columnName)
+                        || "uuid_grave".equalsIgnoreCase(columnName)
+                        || "uuid_entity".equalsIgnoreCase(columnName)) {
+                    yield "VARCHAR(36)";
+                }
+                yield "NVARCHAR(MAX)";
+            }
+            case "CHARACTER", "CHAR", "NCHAR" -> "NCHAR(255)";
+            case "BOOLEAN", "BIT" -> "BIT";
+            case "TINYINT" -> "TINYINT";
+            case "SMALLINT" -> "SMALLINT";
+            case "INTEGER", "INT", "MEDIUMINT" -> "INT";
+            case "BIGINT" -> "BIGINT";
+            case "REAL" -> "REAL";
+            case "DOUBLE", "DOUBLE PRECISION" -> "FLOAT";
+            case "NUMERIC", "DECIMAL", "DECFLOAT" -> "DECIMAL(38,18)";
+            case "DATE" -> "DATE";
+            case "TIME", "TIME WITHOUT TIME ZONE" -> "TIME";
+            case "TIMESTAMP", "TIMESTAMP WITHOUT TIME ZONE", "TIMESTAMP WITH TIME ZONE" -> "DATETIME2";
+            case "BINARY", "VARBINARY", "BINARY VARYING", "BLOB", "BINARY LARGE OBJECT", "BYTEA" -> "VARBINARY(MAX)";
+            case "UUID" -> "UNIQUEIDENTIFIER";
+            case "JSON", "JAVA_OBJECT", "ENUM", "GEOMETRY", "OTHER" -> "NVARCHAR(MAX)";
+            default -> {
+                plugin.getLogger().warning("Unknown H2 type for MSSQL migration: " + h2Type
+                        + " (column: " + columnName + ")");
+                yield "NVARCHAR(MAX)";
+            }
+        };
     }
 }
