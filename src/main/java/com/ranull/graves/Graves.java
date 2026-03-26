@@ -399,6 +399,8 @@ public class Graves extends JavaPlugin {
 
         String storageType = Objects.requireNonNull(getConfig().getString("settings.storage.type")).toUpperCase();
 
+        libraryLoaderUtil.loadLibrary("com{}h2database", "h2", "2.4.240", "org{}h2", "com{}ranull{}graves{}libraries{}h2", false, "https://repo1.maven.org/maven2/");
+
         switch (storageType) {
             case "POSTGRESQL":
                 libraryLoaderUtil.loadLibrary("org{}postgresql", "postgresql", "42.7.10", "org{}postgresql", "com{}ranull{}graves{}libraries{}postgresql", false);
@@ -409,9 +411,6 @@ public class Graves extends JavaPlugin {
                 break;
             case "MYSQL":
                 libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.6.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
-                break;
-            case "SQLITE", "H2":
-                libraryLoaderUtil.loadLibrary("com{}h2database", "h2", "2.4.240", "org{}h2", "com{}ranull{}graves{}libraries{}h2", false, "https://repo1.maven.org/maven2/");
                 break;
             case "MSSQL":
                 libraryLoaderUtil.loadLibrary("com{}microsoft{}sqlserver", "mssql-jdbc", "13.3.2.jre11-preview", "com{}microsoft", "com{}ranull{}graves{}libraries{}microsoft", false);
