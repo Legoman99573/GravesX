@@ -120,56 +120,220 @@ public class TextDisplayManager extends EntityDataManager {
     }
 
     public void removeHologram(Grave grave) {
-        removeHologram(getEntityDataMap(getLoadedEntityDataList(grave)));
-    }
-
-    public void removeHologram(EntityData entityData) {
-        plugin.debugMessage("[Holograms] removeHologram(entityData=" + entityData.getUUIDEntity() + ")", 1);
-        removeHologram(getEntityDataMap(Collections.singletonList(entityData)));
-    }
-
-    public void removeHologram(Map<EntityData, Entity> entityDataMap) {
-        if (entityDataMap == null || entityDataMap.isEmpty()) return;
-
-        Map.Entry<EntityData, Entity> entry = entityDataMap.entrySet().iterator().next();
-        EntityData data = entry.getKey();
-        if (data == null) return;
-
-        if (data instanceof HologramData hd && hd.getBackend() != HologramData.Backend.TEXT_DISPLAY) {
+        if (grave == null) {
+            plugin.debugMessage("[Holograms] removeTextDisplayHologram(grave) skipped: grave is null", 1);
             return;
         }
 
-        UUID entityUuid = data.getUUIDEntity();
-
-        Entity entity = entry.getValue();
-        if (entity == null && entityUuid != null) {
-            try { entity = Bukkit.getEntity(entityUuid); } catch (Throwable ignored) {}
+        if (grave.getUUID() == null) {
+            plugin.debugMessage("[Holograms] removeTextDisplayHologram(grave) skipped: grave UUID is null", 1);
+            return;
         }
 
-        Entity finalEntity = entity;
+        plugin.debugMessage("[Holograms] removeTextDisplayHologram(grave=" + grave.getUUID()
+                + ") resolving cached TextDisplay holograms", 1);
 
-        Runnable remover = () -> {
-            try {
-                if (finalEntity != null && finalEntity.isValid()) {
-                    finalEntity.remove();
+        List<HologramData> hologramDataList = getCachedHologramData(grave, HologramData.Backend.TEXT_DISPLAY);
+
+        plugin.debugMessage("[Holograms] removeTextDisplayHologram(grave=" + grave.getUUID() + ") resolved "
+                + hologramDataList.size() + " cached TextDisplay hologram(s)", 1);
+
+        if (hologramDataList.isEmpty()) {
+            plugin.debugMessage("[Holograms] No cached TextDisplay holograms found for grave=" + grave.getUUID(), 2);
+            return;
+        }
+
+        removeResolvedHolograms(hologramDataList);
+    }
+
+    /**
+     * @deprecated Use {@link #removeHologram(Grave)} instead.
+     */
+    @Deprecated(forRemoval = true)
+    public void removeHologram(EntityData entityData) {
+        String message = "TextDisplayManager#removeHologram(EntityData) is no longer supported. "
+                + "Use removeHologram(Grave) instead.";
+
+        plugin.getLogger().severe(message + " entity=" + (entityData != null ? entityData.getUUIDEntity() : "null"));
+        plugin.debugMessage("[Holograms] " + message, 1);
+
+        throw new UnsupportedOperationException(message);
+    }
+
+    /**
+     * @deprecated Use {@link #removeHologram(Grave)} instead.
+     */
+    @Deprecated(forRemoval = true)
+    public void removeHologram(Map<EntityData, Entity> entityDataMap) {
+        String message = "TextDisplayManager#removeHologram(Map<EntityData, Entity>) is no longer supported. "
+                + "Use removeHologram(Grave) instead.";
+
+        plugin.getLogger().severe(message + " size=" + (entityDataMap != null ? entityDataMap.size() : 0));
+        plugin.debugMessage("[Holograms] " + message, 1);
+
+        throw new UnsupportedOperationException(message);
+    }
+
+    private List<HologramData> getCachedHologramData(Grave grave, HologramData.Backend backend) {
+        List<HologramData> hologramDataList = new ArrayList<>();
+
+        if (grave == null || grave.getUUID() == null) {
+            return hologramDataList;
+        }
+
+        for (EntityData entityData : plugin.getCacheManager().getEntityMap().values()) {
+            if (!(entityData instanceof HologramData hologramData)) {
+                continue;
+            }
+
+            if (!grave.getUUID().equals(hologramData.getUUIDGrave())) {
+                continue;
+            }
+
+            if (backend != null && hologramData.getBackend() != backend) {
+                continue;
+            }
+
+            hologramDataList.add(hologramData);
+        }
+
+        return hologramDataList;
+    }
+
+    private void removeResolvedHolograms(List<? extends EntityData> hologramDataList) {
+        if (hologramDataList == null || hologramDataList.isEmpty()) {
+            plugin.debugMessage("[Holograms] removeResolvedTextDisplays skipped: no hologram data", 2);
+            return;
+        }
+
+        plugin.debugMessage("[Holograms] removeResolvedTextDisplays count=" + hologramDataList.size(), 1);
+
+        List<EntityData> removableEntityData = new ArrayList<>();
+
+        for (EntityData data : hologramDataList) {
+            if (data == null) {
+                plugin.debugMessage("[Holograms] Skipping null EntityData entry during TextDisplay removal", 2);
+                continue;
+            }
+
+            if (!(data instanceof HologramData hologramData)) {
+                plugin.debugMessage("[Holograms] Skipping non-hologram EntityData uuid=" + data.getUUIDEntity(), 2);
+                continue;
+            }
+
+            if (hologramData.getBackend() != HologramData.Backend.TEXT_DISPLAY) {
+                plugin.debugMessage("[Holograms] Skipping non-TextDisplay hologram uuid=" + data.getUUIDEntity()
+                        + ", backend=" + hologramData.getBackend(), 2);
+                continue;
+            }
+
+            removableEntityData.add(data);
+
+            UUID entityUuid = data.getUUIDEntity();
+            Entity entity = null;
+
+            if (entityUuid != null) {
+                try {
+                    entity = Bukkit.getEntity(entityUuid);
+                } catch (Throwable t) {
+                    plugin.debugMessage("[Holograms] Failed Bukkit entity lookup for TextDisplay uuid="
+                            + entityUuid + ": " + t.getMessage(), 2);
                 }
-            } catch (Throwable ignored) {}
-        };
+            }
 
-        if (finalEntity != null) {
-            executeRegion(finalEntity, remover);
-        } else {
-            Location loc = null;
-            try { loc = data.getLocation(); } catch (Throwable ignored) {}
+            Entity finalEntity = entity;
+            Location finalLocation = data.getLocation();
 
-            if (loc != null && loc.getWorld() != null) {
-                executeRegion(loc, remover);
+            plugin.debugMessage("[Holograms] Scheduling TextDisplay hologram removal for entity="
+                    + data.getUUIDEntity() + ", grave=" + data.getUUIDGrave()
+                    + ", location=" + (finalLocation != null ? toLocKey(finalLocation) : "null"), 1);
+
+            Runnable remover = () -> {
+                boolean removed = false;
+
+                try {
+                    Entity liveEntity = finalEntity;
+
+                    if (liveEntity == null && entityUuid != null) {
+                        try {
+                            liveEntity = Bukkit.getEntity(entityUuid);
+                        } catch (Throwable ignored) {
+                        }
+                    }
+
+                    if (!(liveEntity instanceof TextDisplay td)) {
+                        plugin.debugMessage("[Holograms] No live TextDisplay found for entity=" + entityUuid, 2);
+                        return;
+                    }
+
+                    if (!td.isValid()) {
+                        plugin.debugMessage("[Holograms] TextDisplay already invalid for entity=" + entityUuid, 2);
+                        return;
+                    }
+
+                    boolean matches = false;
+
+                    try {
+                        if (plugin.getVersionManager().hasScoreboardTags()
+                                && td.getScoreboardTags().contains("graveHologram")) {
+                            matches = true;
+                        }
+                    } catch (Throwable ignored) {
+                    }
+
+                    try {
+                        if (!matches && plugin.getVersionManager().hasPersistentData()) {
+                            PersistentDataContainer pdc = td.getPersistentDataContainer();
+                            String pdcUuid = pdc.get(GraveHologramKeys.GRAVE_UUID, PersistentDataType.STRING);
+                            if (pdcUuid != null && data.getUUIDGrave() != null
+                                    && data.getUUIDGrave().toString().equals(pdcUuid)) {
+                                matches = true;
+                            }
+                        }
+                    } catch (Throwable ignored) {
+                    }
+
+                    if (!matches) {
+                        plugin.debugMessage("[Holograms] Live entity did not match TextDisplay hologram markers for entity="
+                                + entityUuid, 2);
+                        return;
+                    }
+
+                    td.remove();
+                    removed = true;
+                    plugin.debugMessage("[Holograms] Removed TextDisplay entity=" + td.getUniqueId(), 2);
+                } catch (Throwable t) {
+                    plugin.debugMessage("[Holograms] Failed TextDisplay removal for entity="
+                            + entityUuid + ": " + t.getMessage(), 1);
+                }
+
+                if (!removed) {
+                    plugin.debugMessage("[Holograms] TextDisplay removal completed with no entity removed for entity="
+                            + entityUuid, 2);
+                }
+            };
+
+            if (finalEntity != null) {
+                plugin.debugMessage("[Holograms] Executing TextDisplay removal on entity region for entity="
+                        + finalEntity.getUniqueId(), 2);
+                executeRegion(finalEntity, remover);
+            } else if (finalLocation != null && finalLocation.getWorld() != null) {
+                plugin.debugMessage("[Holograms] Executing TextDisplay removal on location region for hologram entity="
+                        + data.getUUIDEntity(), 2);
+                executeRegion(finalLocation, remover);
             } else {
+                plugin.debugMessage("[Holograms] Executing fallback main-thread TextDisplay removal for hologram entity="
+                        + data.getUUIDEntity(), 2);
                 plugin.getServer().getScheduler().runTask(plugin, remover);
             }
         }
 
-        plugin.getDataManager().removeEntityData(Collections.singletonList(data));
+        if (!removableEntityData.isEmpty()) {
+            plugin.debugMessage("[Holograms] Removing " + removableEntityData.size() + " TextDisplay hologram entity-data entrie(s) from DataManager records", 1);
+            plugin.getDataManager().removeEntityData(removableEntityData);
+        } else {
+            plugin.debugMessage("[Holograms] No TextDisplay hologram entity-data entries qualified for DB/cache removal", 2);
+        }
     }
 
     public void updateTextDisplay(Entity entity,
@@ -201,7 +365,8 @@ public class TextDisplayManager extends EntityDataManager {
                 }
             }
         } catch (Throwable t) {
-            plugin.debugMessage("Failed to get Target Location for grave " + grave.getUUID() + ". Holograms will not update. \n" + Arrays.toString(t.getStackTrace()), 2);
+            plugin.debugMessage("Failed to get Target Location for grave " + grave.getUUID()
+                    + ". Holograms will not update. \n" + Arrays.toString(t.getStackTrace()), 2);
         }
 
         StringBuilder sb = new StringBuilder();
@@ -225,7 +390,11 @@ public class TextDisplayManager extends EntityDataManager {
     }
 
     public void purgeLingeringHolograms() {
+        plugin.debugMessage("[Cleanup] Starting TextDisplay hologram purge across all worlds", 1);
+
         for (World world : plugin.getServer().getWorlds()) {
+            plugin.debugMessage("[Cleanup] Scanning world " + world.getName() + " for lingering TextDisplays", 2);
+
             for (Entity e : world.getEntities()) {
                 if (!(e instanceof TextDisplay td)) continue;
 
@@ -247,7 +416,6 @@ public class TextDisplayManager extends EntityDataManager {
                         }
                     } catch (Throwable ignored) {}
 
-                    // Only touch entities that look like ours
                     if (!hasHoloTag && !hasPdc) return;
 
                     UUID graveUuid = null;
@@ -307,6 +475,8 @@ public class TextDisplayManager extends EntityDataManager {
                 });
             }
         }
+
+        plugin.debugMessage("[Cleanup] Finished TextDisplay hologram purge", 1);
     }
 
     public Grave hasGrave(UUID graveUUID) {
@@ -392,12 +562,6 @@ public class TextDisplayManager extends EntityDataManager {
         }
     }
 
-    /**
-     * Accepts:
-     * - "#AARRGGBB" or "AARRGGBB"
-     * - "#RRGGBB"   or "RRGGBB"   (assumes alpha=FF)
-     * - "0xAARRGGBB" / "0xRRGGBB"
-     */
     private Integer parseHexColorToARGB(String raw) {
         if (raw == null) return null;
 

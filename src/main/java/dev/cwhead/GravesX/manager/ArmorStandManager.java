@@ -111,91 +111,264 @@ public class ArmorStandManager extends EntityDataManager {
         }
     }
 
+    /**
+     * Removes all ArmorStand holograms linked to the given grave.
+     * <p>
+     * This is the only supported public removal entrypoint.
+     * It resolves hologram data directly from CacheManager using the grave UUID.
+     * </p>
+     *
+     * @param grave the grave whose ArmorStand holograms should be removed
+     */
     public void removeHologram(Grave grave) {
-        removeHologram(getEntityDataMap(getLoadedEntityDataList(grave)));
+        if (grave == null) {
+            plugin.debugMessage("[Holograms] removeHologram(grave) skipped: grave is null", 1);
+            return;
+        }
+
+        if (grave.getUUID() == null) {
+            plugin.debugMessage("[Holograms] removeHologram(grave) skipped: grave UUID is null", 1);
+            return;
+        }
+
+        plugin.debugMessage("[Holograms] removeHologram(grave=" + grave.getUUID() + ") resolving cached ArmorStand holograms", 1);
+
+        List<HologramData> hologramDataList = getCachedHologramData(grave, HologramData.Backend.ARMOR_STAND);
+
+        plugin.debugMessage("[Holograms] removeHologram(grave=" + grave.getUUID() + ") resolved "
+                + hologramDataList.size() + " cached ArmorStand hologram(s)", 1);
+
+        if (hologramDataList.isEmpty()) {
+            plugin.debugMessage("[Holograms] No cached ArmorStand holograms found for grave=" + grave.getUUID(), 2);
+            return;
+        }
+
+        removeResolvedHolograms(hologramDataList);
     }
 
+    /**
+     * @deprecated Use {@link #removeHologram(Grave)} instead.
+     */
+    @Deprecated(forRemoval = true)
     public void removeHologram(EntityData entityData) {
-        plugin.debugMessage("[Holograms] removeHologram(entityData=" + entityData.getUUIDEntity() + ")", 1);
-        removeHologram(getEntityDataMap(Collections.singletonList(entityData)));
+        String message = "ArmorStandManager#removeHologram(EntityData) is no longer supported. "
+                + "Use removeHologram(Grave) instead.";
+
+        plugin.getLogger().severe(message + " entity=" + (entityData != null ? entityData.getUUIDEntity() : "null"));
+        plugin.debugMessage("[Holograms] " + message, 1);
+
+        throw new UnsupportedOperationException(message);
     }
 
+    /**
+     * @deprecated Use {@link #removeHologram(Grave)} instead.
+     */
+    @Deprecated(forRemoval = true)
     public void removeHologram(Map<EntityData, Entity> entityDataMap) {
-        List<EntityData> entityDataList = new ArrayList<>();
+        String message = "ArmorStandManager#removeHologram(Map<EntityData, Entity>) is no longer supported. "
+                + "Use removeHologram(Grave) instead.";
 
-        for (Map.Entry<EntityData, Entity> entry : entityDataMap.entrySet()) {
-            Entity entity = entry.getValue();
-            EntityData data = entry.getKey();
-            entityDataList.add(data);
+        plugin.getLogger().severe(message + " size=" + (entityDataMap != null ? entityDataMap.size() : 0));
+        plugin.debugMessage("[Holograms] " + message, 1);
 
-            if (entity != null && entity.isValid()) {
-                entity.remove();
+        throw new UnsupportedOperationException(message);
+    }
+
+    /**
+     * Resolves cached hologram data for a grave/backend pair.
+     *
+     * @param grave the grave
+     * @param backend the backend to match, or null for any backend
+     * @return matching hologram data entries
+     */
+    private List<HologramData> getCachedHologramData(Grave grave, HologramData.Backend backend) {
+        List<HologramData> hologramDataList = new ArrayList<>();
+
+        if (grave == null || grave.getUUID() == null) {
+            return hologramDataList;
+        }
+
+        for (EntityData entityData : plugin.getCacheManager().getEntityMap().values()) {
+            if (!(entityData instanceof HologramData hologramData)) {
+                continue;
             }
 
-            Location graveLocation = data.getLocation();
-            if (graveLocation == null || graveLocation.getWorld() == null) continue;
+            if (!grave.getUUID().equals(hologramData.getUUIDGrave())) {
+                continue;
+            }
 
-            String locTag = "graveHologramGraveLocation:" + toLocKey(graveLocation);
-            String locKey = toLocKey(graveLocation);
+            if (backend != null && hologramData.getBackend() != backend) {
+                continue;
+            }
 
-            executeRegion(graveLocation, () -> {
+            hologramDataList.add(hologramData);
+        }
+
+        return hologramDataList;
+    }
+
+    /**
+     * Removes already-resolved hologram data entries.
+     *
+     * @param hologramDataList the hologram data list to remove
+     */
+    private void removeResolvedHolograms(List<? extends EntityData> hologramDataList) {
+        if (hologramDataList == null || hologramDataList.isEmpty()) {
+            plugin.debugMessage("[Holograms] removeResolvedHolograms skipped: no hologram data", 2);
+            return;
+        }
+
+        plugin.debugMessage("[Holograms] removeResolvedHolograms count=" + hologramDataList.size(), 1);
+
+        Map<EntityData, Entity> entityDataMap = getEntityDataMap(new ArrayList<>(hologramDataList));
+
+        plugin.debugMessage("[Holograms] Resolved " + entityDataMap.size()
+                + " live entity reference(s) from " + hologramDataList.size() + " hologram data entrie(s)", 1);
+
+        List<EntityData> removableEntityData = new ArrayList<>();
+
+        for (Map.Entry<EntityData, Entity> entry : entityDataMap.entrySet()) {
+            EntityData data = entry.getKey();
+            if (data == null) {
+                plugin.debugMessage("[Holograms] Skipping null EntityData entry during removal", 2);
+                continue;
+            }
+
+            if (!(data instanceof HologramData hologramData)) {
+                plugin.debugMessage("[Holograms] Skipping non-hologram EntityData uuid=" + data.getUUIDEntity(), 2);
+                continue;
+            }
+
+            if (hologramData.getBackend() != HologramData.Backend.ARMOR_STAND) {
+                plugin.debugMessage("[Holograms] Skipping non-ArmorStand hologram uuid=" + data.getUUIDEntity()
+                        + ", backend=" + hologramData.getBackend(), 2);
+                continue;
+            }
+
+            removableEntityData.add(data);
+
+            Entity finalEntity = entry.getValue();
+            Location graveLocation = null;
+
+            try {
+                graveLocation = data.getLocation();
+            } catch (Throwable ignored) {
+            }
+
+            String finalLocKey = graveLocation != null ? toLocKey(graveLocation) : null;
+            String finalLocTag = finalLocKey != null ? "graveHologramGraveLocation:" + finalLocKey : null;
+            Location finalGraveLocation = graveLocation;
+
+            plugin.debugMessage("[Holograms] Scheduling ArmorStand hologram removal for entity="
+                    + data.getUUIDEntity() + ", grave=" + data.getUUIDGrave()
+                    + ", location=" + finalLocKey, 1);
+
+            Runnable remover = () -> {
+                int removedCount = 0;
+
                 try {
-                    for (Entity e : graveLocation.getWorld().getEntities()) {
+                    if (finalEntity != null && finalEntity.isValid()) {
+                        finalEntity.remove();
+                        removedCount++;
+                        plugin.debugMessage("[Holograms] Removed direct ArmorStand entity="
+                                + finalEntity.getUniqueId(), 2);
+                    }
+                } catch (Throwable t) {
+                    plugin.debugMessage("[Holograms] Failed direct entity removal for uuid="
+                            + data.getUUIDEntity() + ": " + t.getMessage(), 1);
+                }
+
+                if (finalGraveLocation == null || finalGraveLocation.getWorld() == null) {
+                    plugin.debugMessage("[Holograms] No valid location world for hologram entity="
+                            + data.getUUIDEntity() + ", skipping world sweep", 2);
+                    return;
+                }
+
+                try {
+                    for (Entity e : finalGraveLocation.getWorld().getEntities()) {
                         if (!(e instanceof ArmorStand)) continue;
                         if (!e.isValid()) continue;
-
-                        // original behavior: exact location match
-                        if (!e.getLocation().equals(graveLocation)) continue;
+                        if (!e.getLocation().equals(finalGraveLocation)) continue;
 
                         boolean remove = false;
 
                         try {
                             Set<String> tags = e.getScoreboardTags();
-                            if (tags.contains(locTag)) {
+                            if (finalLocTag != null && tags.contains(finalLocTag)) {
                                 remove = true;
                             }
-                        } catch (NoSuchMethodError ignored) {}
+                        } catch (NoSuchMethodError ignored) {
+                        }
 
                         try {
                             if (plugin.getVersionManager().hasPersistentData()) {
                                 PersistentDataContainer pdc = e.getPersistentDataContainer();
                                 String storedLoc = pdc.get(GraveHologramKeys.GRAVE_LOCATION, PersistentDataType.STRING);
-                                if (storedLoc != null && storedLoc.equals(locKey)) {
+                                if (finalLocKey != null && finalLocKey.equals(storedLoc)) {
                                     remove = true;
                                 }
                             }
-                        } catch (Throwable ignored) {}
+                        } catch (Throwable ignored) {
+                        }
 
                         if (remove) {
                             e.remove();
+                            removedCount++;
+                            plugin.debugMessage("[Holograms] Removed matched ArmorStand entity="
+                                    + e.getUniqueId() + " at " + finalLocKey, 2);
                         }
                     }
+
+                    plugin.debugMessage("[Holograms] Removal sweep finished for hologram entity="
+                            + data.getUUIDEntity() + ", removed=" + removedCount, 2);
                 } catch (Throwable t) {
                     plugin.getLogger().severe(
-                            "Failed removing holograms at world: " + graveLocation.getWorld().getName() +
-                                    ", x: " + graveLocation.getBlockX() +
-                                    ", y: " + graveLocation.getBlockY() +
-                                    ", z: " + graveLocation.getBlockZ() + "."
+                            "Failed removing holograms at world: " + finalGraveLocation.getWorld().getName() +
+                                    ", x: " + finalGraveLocation.getBlockX() +
+                                    ", y: " + finalGraveLocation.getBlockY() +
+                                    ", z: " + finalGraveLocation.getBlockZ() + "."
                     );
                     plugin.logStackTrace(t);
                 }
-            });
+            };
+
+            if (finalEntity != null) {
+                plugin.debugMessage("[Holograms] Executing removal on entity region for entity="
+                        + finalEntity.getUniqueId(), 2);
+                executeRegion(finalEntity, remover);
+            } else if (finalGraveLocation != null && finalGraveLocation.getWorld() != null) {
+                plugin.debugMessage("[Holograms] Executing removal on location region for hologram entity="
+                        + data.getUUIDEntity(), 2);
+                executeRegion(finalGraveLocation, remover);
+            } else {
+                plugin.debugMessage("[Holograms] Executing fallback main-thread removal for hologram entity=" + data.getUUIDEntity(), 2);
+                plugin.getServer().getScheduler().runTask(plugin, remover);
+            }
         }
 
-        plugin.getDataManager().removeEntityData(entityDataList);
+        if (!removableEntityData.isEmpty()) {
+            plugin.debugMessage("[Holograms] Removing " + removableEntityData.size() + " hologram entity-data entrie(s) from DataManager records", 1);
+            plugin.getDataManager().removeEntityData(removableEntityData);
+        } else {
+            plugin.debugMessage("[Holograms] No ArmorStand hologram entity-data entries qualified for DB/cache removal", 2);
+        }
     }
 
     public void purgeLingeringHolograms() {
-        for (World world : plugin.getServer().getWorlds()) {
-            for (ArmorStand stand : world.getEntitiesByClass(ArmorStand.class)) {
+        plugin.debugMessage("[Cleanup] Starting ArmorStand hologram purge across all worlds", 1);
 
+        for (World world : plugin.getServer().getWorlds()) {
+            plugin.debugMessage("[Cleanup] Scanning world " + world.getName() + " for lingering ArmorStand holograms", 2);
+
+            for (ArmorStand stand : world.getEntitiesByClass(ArmorStand.class)) {
                 executeRegion(stand, () -> {
                     boolean hasHoloTag = false;
                     try {
                         if (plugin.getVersionManager().hasScoreboardTags()) {
                             hasHoloTag = stand.getScoreboardTags().contains("graveHologram");
                         }
-                    } catch (Throwable ignored) {}
+                    } catch (Throwable ignored) {
+                    }
 
                     boolean hasPdc = false;
                     try {
@@ -203,7 +376,8 @@ public class ArmorStandManager extends EntityDataManager {
                             PersistentDataContainer pdc = stand.getPersistentDataContainer();
                             hasPdc = pdc.has(GraveHologramKeys.GRAVE_UUID, PersistentDataType.STRING);
                         }
-                    } catch (Throwable ignored) {}
+                    } catch (Throwable ignored) {
+                    }
 
                     if (!hasHoloTag && !hasPdc) {
                         return;
@@ -211,17 +385,24 @@ public class ArmorStandManager extends EntityDataManager {
 
                     UUID graveUuid = null;
 
-                    try { graveUuid = extractGraveUUIDFromStand(stand); } catch (Throwable ignored) {}
+                    try {
+                        graveUuid = extractGraveUUIDFromStand(stand);
+                    } catch (Throwable ignored) {
+                    }
 
                     try {
                         if (plugin.getVersionManager().hasPersistentData()) {
                             PersistentDataContainer pdc = stand.getPersistentDataContainer();
                             String pdcUuid = pdc.get(GraveHologramKeys.GRAVE_UUID, PersistentDataType.STRING);
                             if (pdcUuid != null) {
-                                try { graveUuid = UUID.fromString(pdcUuid); } catch (IllegalArgumentException ignored) {}
+                                try {
+                                    graveUuid = UUID.fromString(pdcUuid);
+                                } catch (IllegalArgumentException ignored) {
+                                }
                             }
                         }
-                    } catch (Throwable ignored) {}
+                    } catch (Throwable ignored) {
+                    }
 
                     if (graveUuid == null) {
                         stand.remove();
@@ -230,7 +411,10 @@ public class ArmorStandManager extends EntityDataManager {
                     }
 
                     Grave grave = null;
-                    try { grave = hasGrave(graveUuid); } catch (Throwable ignored) {}
+                    try {
+                        grave = hasGrave(graveUuid);
+                    } catch (Throwable ignored) {
+                    }
 
                     if (grave == null) {
                         stand.remove();
@@ -248,7 +432,10 @@ public class ArmorStandManager extends EntityDataManager {
                     String expectedLocKey = toLocKey(dbLoc);
 
                     String storedLocKey = null;
-                    try { storedLocKey = extractGraveLocationKeyFromStand(stand); } catch (Throwable ignored) {}
+                    try {
+                        storedLocKey = extractGraveLocationKeyFromStand(stand);
+                    } catch (Throwable ignored) {
+                    }
 
                     try {
                         if (plugin.getVersionManager().hasPersistentData()) {
@@ -256,7 +443,8 @@ public class ArmorStandManager extends EntityDataManager {
                             String pdcLoc = pdc.get(GraveHologramKeys.GRAVE_LOCATION, PersistentDataType.STRING);
                             if (pdcLoc != null) storedLocKey = pdcLoc;
                         }
-                    } catch (Throwable ignored) {}
+                    } catch (Throwable ignored) {
+                    }
 
                     if (storedLocKey != null && !locKeysMatch(expectedLocKey, storedLocKey)) {
                         stand.remove();
@@ -266,25 +454,46 @@ public class ArmorStandManager extends EntityDataManager {
                 });
             }
         }
+
+        plugin.debugMessage("[Cleanup] Finished ArmorStand hologram purge", 1);
     }
 
     public Grave hasGrave(UUID graveUUID) {
+        if (graveUUID == null) {
+            return null;
+        }
+
         return plugin.getCacheManager().getGraveMap().get(graveUUID);
     }
 
     private UUID extractGraveUUIDFromStand(ArmorStand stand) {
+        if (stand == null) {
+            return null;
+        }
+
         try {
             for (String tag : stand.getScoreboardTags()) {
                 if (tag.startsWith("graveHologramGraveUUID:")) {
                     String raw = tag.substring("graveHologramGraveUUID:".length()).trim();
-                    try { return UUID.fromString(raw); } catch (IllegalArgumentException ignored) { return null; }
+                    try {
+                        return UUID.fromString(raw);
+                    } catch (IllegalArgumentException ignored) {
+                        plugin.debugMessage("[Cleanup] Invalid grave UUID tag on ArmorStand " + stand.getUniqueId() + ": " + raw, 2);
+                        return null;
+                    }
                 }
             }
-        } catch (Throwable ignored) {}
+        } catch (Throwable ignored) {
+        }
+
         return null;
     }
 
     private String extractGraveLocationKeyFromStand(ArmorStand stand) {
+        if (stand == null) {
+            return null;
+        }
+
         try {
             for (String tag : stand.getScoreboardTags()) {
                 if (tag.startsWith("graveHologramGraveLocation:")) {
@@ -292,7 +501,9 @@ public class ArmorStandManager extends EntityDataManager {
                     return normalizeLocKey(raw);
                 }
             }
-        } catch (Throwable ignored) {}
+        } catch (Throwable ignored) {
+        }
+
         return null;
     }
 
@@ -313,7 +524,8 @@ public class ArmorStandManager extends EntityDataManager {
                 int y = Integer.parseInt(m.group(3));
                 int z = Integer.parseInt(m.group(4));
                 return world + ":" + x + ":" + y + ":" + z;
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ignored) {
+            }
         }
 
         Pattern pWorld = Pattern.compile("name=([^},\\s]+)");
@@ -333,13 +545,18 @@ public class ArmorStandManager extends EntityDataManager {
                 int z = (int) Math.floor(Double.parseDouble(sz));
                 if (world == null || world.isEmpty()) world = "unknown";
                 return world + ":" + x + ":" + y + ":" + z;
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ignored) {
+            }
         }
 
         return null;
     }
 
     private String findFirstGroup(Pattern p, String s) {
+        if (p == null || s == null) {
+            return null;
+        }
+
         Matcher m = p.matcher(s);
         return m.find() ? m.group(1) : null;
     }
@@ -355,7 +572,8 @@ public class ArmorStandManager extends EntityDataManager {
         String[] bs = b.split(":");
         if (as.length != 4 || bs.length != 4) return false;
 
-        String aw = as[0], bw = bs[0];
+        String aw = as[0];
+        String bw = bs[0];
         int ax = Integer.parseInt(as[1]);
         int ay = Integer.parseInt(as[2]);
         int az = Integer.parseInt(as[3]);
@@ -375,6 +593,7 @@ public class ArmorStandManager extends EntityDataManager {
             sched.execute(loc, task);
             return;
         }
+
         plugin.getServer().getScheduler().runTask(plugin, task);
     }
 
@@ -384,6 +603,7 @@ public class ArmorStandManager extends EntityDataManager {
             sched.execute(entity, task);
             return;
         }
+
         plugin.getServer().getScheduler().runTask(plugin, task);
     }
 }

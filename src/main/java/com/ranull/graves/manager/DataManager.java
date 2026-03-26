@@ -1643,7 +1643,9 @@ public class DataManager {
                     try {
                         UUID uuidEntity = UUID.fromString(uuidEntityString);
                         UUID uuidGrave = UUID.fromString(uuidGraveString);
-                        getChunkData(location).addEntityData(new EntityData(location, uuidEntity, uuidGrave, type));
+                        EntityData entityData = new EntityData(location, uuidEntity, uuidGrave, type);
+                        getChunkData(location).addEntityData(entityData);
+                        plugin.getCacheManager().addEntityData(entityData);
                         entityCount++;
                     } catch (IllegalArgumentException ex) {
                         plugin.getLogger().warning("EntityMap row skipped: malformed UUIDs (entity=" + uuidEntityString
@@ -1718,7 +1720,9 @@ public class DataManager {
                             }
                         }
 
-                        getChunkData(location).addEntityData(new HologramData(location, uuidEntity, uuidGrave, line, backend));
+                        HologramData hologramData = new HologramData(location, uuidEntity, uuidGrave, line, backend);
+                        getChunkData(location).addEntityData(hologramData);
+                        plugin.getCacheManager().addEntityData(hologramData);
                         hologramCount++;
                     } catch (IllegalArgumentException ex) {
                         plugin.getLogger().warning("Hologram row skipped: malformed UUIDs (entity=" + uuidEntityString + ", grave=" + uuidGraveString + ").");
@@ -1839,7 +1843,9 @@ public class DataManager {
                     try {
                         UUID uuidEntity = UUID.fromString(uuidEntityString);
                         UUID uuidGrave = UUID.fromString(uuidGraveString);
-                        getChunkData(location).addEntityData(new EntityData(location, uuidEntity, uuidGrave, type));
+                        EntityData entityData = new EntityData(location, uuidEntity, uuidGrave, type);
+                        getChunkData(location).addEntityData(entityData);
+                        plugin.getCacheManager().addEntityData(entityData);
                         entityCount++;
                     } catch (IllegalArgumentException ex) {
                         plugin.getLogger().warning("Entity Data row skipped: malformed UUIDs (entity=" + uuidEntityString
@@ -1944,7 +1950,10 @@ public class DataManager {
             return;
         }
 
-        plugin.getSchedulerManager().execute(loc, () -> getChunkData(loc).addEntityData(hologramData));
+        plugin.getSchedulerManager().execute(loc, () -> {
+            getChunkData(loc).addEntityData(hologramData);
+            plugin.getCacheManager().addEntityData(hologramData);
+        });
 
         String query = "INSERT INTO " + getStoragePrefix()
                 + "hologram (uuid_entity, uuid_grave, line, location, backend) VALUES (?, ?, ?, ?, ?)";
@@ -2033,6 +2042,7 @@ public class DataManager {
 
                         plugin.getSchedulerManager().execute(location, () -> {
                             getChunkData(location).removeEntityData(hologramData);
+                            plugin.getCacheManager().removeEntityData(hologramData);
                         });
                         scheduledRemovals++;
                     }
@@ -2064,7 +2074,10 @@ public class DataManager {
             return;
         }
 
-        plugin.getSchedulerManager().execute(loc, () -> getChunkData(loc).addEntityData(entityData));
+        plugin.getSchedulerManager().execute(loc, () -> {
+            getChunkData(loc).addEntityData(entityData);
+            plugin.getCacheManager().addEntityData(entityData);
+        });
 
         String table = entityDataTypeTable(entityData.getType());
         String query = "INSERT INTO " + getStoragePrefix() + table + " (location, uuid_entity, uuid_grave) VALUES (?, ?, ?)";
@@ -2107,11 +2120,15 @@ public class DataManager {
 
                     if (loc != null && loc.getWorld() != null) {
                         plugin.getSchedulerManager().execute(loc, () -> {
+                            Grave grave = plugin.getCacheManager().getGrave(entityData.getUUIDGrave());
+                            plugin.getHologramManager().removeHologram(grave);
                             getChunkData(loc).removeEntityData(entityData);
-                            plugin.getHologramManager().removeHologram(entityData);
+                            plugin.getCacheManager().removeEntityData(entityData);
                         });
                     } else {
-                        plugin.getHologramManager().removeHologram(entityData);
+                        Grave grave = plugin.getCacheManager().getGrave(entityData.getUUIDGrave());
+                        plugin.getHologramManager().removeHologram(grave);
+                        plugin.getCacheManager().removeEntityData(entityData);
                     }
 
                     String table = entityDataTypeTable(entityData.getType());

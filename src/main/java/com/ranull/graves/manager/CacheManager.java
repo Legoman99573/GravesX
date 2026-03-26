@@ -1,6 +1,7 @@
 package com.ranull.graves.manager;
 
 import com.ranull.graves.data.ChunkData;
+import com.ranull.graves.data.EntityData;
 import com.ranull.graves.type.Grave;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
@@ -66,6 +67,16 @@ public class CacheManager {
     private final Map<UUID, UUID> graveViewerMap;
 
     /**
+     * A map of entity UUIDs to their corresponding {@link EntityData}.
+     * <p>
+     * This provides a fast global lookup for tracked entity-backed grave data
+     * without requiring a chunk scan.
+     * </p>
+     */
+    private final Map<UUID, EntityData> entityMap;
+
+
+    /**
      * Constructs a new {@link CacheManager} with initialized maps.
      * <p>
      * The constructor initializes all the maps used for caching data related to graves, chunks, locations, and items
@@ -77,6 +88,7 @@ public class CacheManager {
         this.lastLocationMap = new HashMap<>();
         this.removedItemStackMap = new HashMap<>();
         this.graveViewerMap = new HashMap<>();
+        this.entityMap = new HashMap<>();
     }
 
     /**
@@ -324,5 +336,67 @@ public class CacheManager {
         }
 
         return null;
+    }
+
+    /**
+     * Returns the map of entity UUIDs to their corresponding {@link EntityData}.
+     *
+     * @return the entity map
+     */
+    public Map<UUID, EntityData> getEntityMap() {
+        return entityMap;
+    }
+
+    /**
+     * Retrieves tracked entity data by entity UUID.
+     *
+     * @param entityUUID the entity UUID
+     * @return the tracked entity data, or {@code null} if not cached
+     */
+    public EntityData getEntityData(UUID entityUUID) {
+        if (entityUUID == null) {
+            return null;
+        }
+
+        return entityMap.get(entityUUID);
+    }
+
+    /**
+     * Adds or replaces tracked entity data in the cache.
+     *
+     * @param entityData the entity data to cache
+     */
+    public void addEntityData(EntityData entityData) {
+        if (entityData == null || entityData.getUUIDEntity() == null) {
+            return;
+        }
+
+        entityMap.put(entityData.getUUIDEntity(), entityData);
+    }
+
+    /**
+     * Removes tracked entity data from the cache by entity UUID.
+     *
+     * @param entityUUID the entity UUID
+     */
+    public void removeEntityData(UUID entityUUID) {
+        if (entityUUID == null) {
+            return;
+        }
+
+        entityMap.remove(entityUUID);
+    }
+
+    /**
+     * Removes tracked entity data from the cache.
+     *
+     * @param entityData the entity data to remove
+     */
+    public void removeEntityData(EntityData entityData) {
+        if (entityData == null) {
+            return;
+        }
+
+        removeEntityData(entityData.getUUIDEntity());
     }
 }

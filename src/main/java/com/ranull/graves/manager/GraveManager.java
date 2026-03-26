@@ -1190,10 +1190,6 @@ public class GraveManager {
 
         Runnable work = () -> {
             switch (entityData.getType()) {
-                case HOLOGRAM: {
-                    plugin.getHologramManager().removeHologram(entityData);
-                    break;
-                }
                 case FURNITURELIB: {
                     plugin.getIntegrationManager().getFurnitureLib().removeEntityData(entityData);
                     break;
@@ -1235,7 +1231,6 @@ public class GraveManager {
                         if (p != null) {
                             try {
                                 if (p.supports(entityData) && p.removeEntityData(entityData)) {
-                                    plugin.getHologramManager().removeHologram(entityData);
                                     return;
                                 }
                             } catch (Throwable t) {
@@ -1255,22 +1250,6 @@ public class GraveManager {
                         if (p == null) {
                             continue;
                         }
-                        try {
-                            if (p.supports(entityData) && p.removeEntityData(entityData)) {
-                                plugin.getHologramManager().removeHologram(entityData);
-                                return;
-                            }
-                        } catch (Throwable t) {
-                            String pid;
-                            try {
-                                pid = String.valueOf(p.id());
-                            } catch (Throwable ignored) {
-                                pid = p.getClass().getName();
-                            }
-
-                            plugin.getLogger().warning("[CustomGraveProvider " + pid + "] removeEntityData() failed: " + t.getMessage());
-                            plugin.logStackTrace(t);
-                        }
                     }
                     break;
                 }
@@ -1279,6 +1258,10 @@ public class GraveManager {
                     break;
                 }
             }
+
+            Grave grave = plugin.getCacheManager().getGraveMap().get(entityData.getUUIDGrave());
+
+            plugin.getHologramManager().removeHologram(grave);
         };
 
         if (anchor != null && anchor.getWorld() != null) {
