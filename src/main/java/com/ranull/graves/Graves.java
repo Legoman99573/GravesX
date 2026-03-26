@@ -80,6 +80,8 @@ public class Graves extends JavaPlugin {
     private TextDisplayManager textDisplayManager;
 
     private final AtomicBoolean reloading = new AtomicBoolean(false);
+    private final AtomicBoolean normalDisable = new AtomicBoolean(false);
+    private final AtomicBoolean shutdownTasksRan = new AtomicBoolean(false);
 
     @Override
     public void onLoad() {
@@ -263,6 +265,7 @@ public class Graves extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        normalDisable.set(true);
         if (moduleManager != null) {
             getLogger().info("[Modules] Disabling modules...");
             moduleManager.disableAll();
@@ -275,9 +278,13 @@ public class Graves extends JavaPlugin {
         getLogger().info("Registering Soft Crash Handler...");
         try {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                // JVM shutdown hooks run on both crash and graceful stop.
+                // If Bukkit already triggered onDisable, skip duplicate shutdown work.
+                if (normalDisable.get() || shutdownTasksRan.get()) {
+                    return;
+                }
                 getLogger().severe("GravesX detected server went into a crashed state...");
                 runShutdownTasks();
-                getServer().getPluginManager().disablePlugin(this);
             }));
             getLogger().info("Registered Soft Crash Handler. Server will handle crashes in a separate thread. This does not work on hard crashes.");
         } catch (Exception e) {
@@ -286,6 +293,11 @@ public class Graves extends JavaPlugin {
     }
 
     private void runShutdownTasks() {
+        if (!shutdownTasksRan.compareAndSet(false, true)) {
+            debugMessage("Skipping duplicate shutdown task execution.", 1);
+            return;
+        }
+
         getLogger().info("Saving Grave inventories before shutting down...");
         for (Grave grave : getCacheManager().getGraveMap().values()) {
             try {
@@ -303,8 +315,10 @@ public class Graves extends JavaPlugin {
         getLogger().info("Shutting Down GravesX...");
         getLogger().info("Unloading and Shutting Down DataManager...");
         try {
-            dataManager.closeConnection();
-            getLogger().info("Unloaded DataManager Successfully.");
+            if (dataManager != null) {
+                dataManager.closeConnection();
+                getLogger().info("Unloaded DataManager Successfully.");
+            }
         } catch (Exception e) {
             getLogger().severe("Failed to unload DataManager and shut down Database.");
             logStackTrace(e);
@@ -312,8 +326,10 @@ public class Graves extends JavaPlugin {
 
         getLogger().info("Unloading GraveManager...");
         try {
-            graveManager.unload();
-            getLogger().info("Unloaded GraveManager Successfully.");
+            if (graveManager != null) {
+                graveManager.unload();
+                getLogger().info("Unloaded GraveManager Successfully.");
+            }
         } catch (Exception e) {
             getLogger().severe("Failed to unload GraveManager.");
             logStackTrace(e);
@@ -321,9 +337,11 @@ public class Graves extends JavaPlugin {
 
         getLogger().info("Unloading IntegrationManager...");
         try {
-            integrationManager.unload();
-            integrationManager.unloadNoReload();
-            getLogger().info("Unloaded IntegrationManager Successfully.");
+            if (integrationManager != null) {
+                integrationManager.unload();
+                integrationManager.unloadNoReload();
+                getLogger().info("Unloaded IntegrationManager Successfully.");
+            }
         } catch (Exception e) {
             getLogger().severe("Failed to unload IntegrationManager.");
             logStackTrace(e);
