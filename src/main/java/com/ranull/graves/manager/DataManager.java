@@ -2939,50 +2939,61 @@ public class DataManager {
             return;
         }
 
-        DatabaseMetaData meta = sourceConn.getMetaData();
-        boolean allSuccess = true;
+        List<String> tableNames = getMigrationTableNames(sourceConn, sourceType);
 
-        try (ResultSet tables = meta.getTables(null, null, getStoragePrefix() + "%", new String[]{"TABLE"})) {
-            while (tables.next()) {
-                String tableName = tables.getString("TABLE_NAME");
+        for (String tableName : tableNames) {
+            List<String> columns = new ArrayList<>();
+            StringJoiner defs = new StringJoiner(", ");
 
-                List<String> columns = new ArrayList<>();
-                StringJoiner defs = new StringJoiner(", ");
+            try (Statement stmt = sourceConn.createStatement();
+                 ResultSet rsMeta = stmt.executeQuery(getMetadataQuery(tableName, sourceType))) {
 
-                try (Statement stmt = sourceConn.createStatement();
-                     ResultSet rsMeta = stmt.executeQuery(getMetadataQuery(tableName, sourceType))) {
+                ResultSetMetaData md = rsMeta.getMetaData();
+                for (int i = 1; i <= md.getColumnCount(); i++) {
+                    String columnName = md.getColumnName(i);
+                    String sourceColumnType = md.getColumnTypeName(i);
+                    String targetColumnType = mapSourceTypeToTargetDB(sourceType, sourceColumnType, columnName);
 
-                    ResultSetMetaData md = rsMeta.getMetaData();
-                    for (int i = 1; i <= md.getColumnCount(); i++) {
-                        String columnName = md.getColumnName(i);
-                        String sourceColumnType = md.getColumnTypeName(i);
-                        String targetColumnType = mapSourceTypeToTargetDB(sourceType, sourceColumnType, columnName);
+                    if (targetColumnType == null) continue;
 
-                        if (targetColumnType == null) continue;
-
-                        columns.add(columnName);
-                        defs.add(columnName + " " + targetColumnType);
-                    }
+                    columns.add(columnName);
+                    defs.add(columnName + " " + targetColumnType);
                 }
-
-                if (columns.isEmpty()) {
-                    plugin.getLogger().warning("No columns mapped for " + tableName + "; skipping.");
-                    continue;
-                }
-
-                String createSql = "CREATE TABLE IF NOT EXISTS " + tableName + " (" + defs + ")";
-                executeUpdate(createSql, new Object[0]);
-
-                if (tableName.equals(getStoragePrefix() + "grave")) {
-                    adjustGraveTableForTargetDB();
-                }
-
-                copyRows(sourceConn, targetConn, sourceType, tableName, columns);
             }
-        }
 
-        if (!allSuccess) {
-            plugin.getLogger().warning("One or more tables failed during migration.");
+            if (columns.isEmpty()) {
+                plugin.getLogger().warning("No columns mapped for " + tableName + "; skipping.");
+                continue;
+            }
+
+            String createSql = "CREATE TABLE IF NOT EXISTS " + tableName + " (" + defs + ")";
+            executeUpdate(createSql, new Object[0]);
+
+            if (tableName.equals(getStoragePrefix() + "grave")) {
+                adjustGraveTableForTargetDB();
+            }
+
+            copyRows(sourceConn, targetConn, sourceType, tableName, columns);
+        }
+    }
+
+    private List<String> getMigrationTableNames(Connection sourceConn, Type sourceType) throws SQLException {
+        List<String> tables = new ArrayList<>();
+
+        String prefix = getStoragePrefix();
+
+        addTableIfExists(tables, prefix + "grave");
+        addTableIfExists(tables, prefix + "hologram");
+        addTableIfExists(tables, prefix + "armorstand");
+        addTableIfExists(tables, prefix + "itemframe");
+        addTableIfExists(tables, prefix + "chunk");
+
+        return tables;
+    }
+
+    private void addTableIfExists(List<String> tables, String tableName) {
+        if (tableExists(tableName)) {
+            tables.add(tableName);
         }
     }
 
