@@ -1509,24 +1509,7 @@ public class GraveManager {
 
                 Block block = location.getBlock();
                 if (isHeadBlock(block)) {
-                    try {
-                        BlockState state = block.getState();
-                        if (state instanceof Skull skull) {
-                            String owner = grave.getOwnerName();
-                            if (owner != null) {
-                                try {
-                                    Object owningPlayer = Skull.class.getMethod("getOwningPlayer").invoke(skull);
-                                    if (owningPlayer != null) {
-                                        String n = (String) owningPlayer.getClass().getMethod("getName").invoke(owningPlayer);
-                                        if (owner.equalsIgnoreCase(n)) {
-                                            result.complete(true);
-                                            return;
-                                        }
-                                    }
-                                } catch (Throwable ignored) {}
-                            }
-                        }
-                    } catch (Throwable ignored) {}
+                    plugin.getBlockManager().createBlock(location, grave);
                 }
 
                 result.complete(false);
@@ -1720,6 +1703,7 @@ public class GraveManager {
     public void createGraveBlock(@NotNull Location location, @NotNull Grave grave) {
         try {
             plugin.getCompatibility().setBlockData(location, location.getBlock().getBlockData().getMaterial(), grave, plugin);
+            plugin.getBlockManager().createBlock(location, grave);
         } catch (Throwable t) {
             String world = location.getWorld() != null ? location.getWorld().getName() : null;
             plugin.getLogger().warning("Failed to create grave block for " + grave.getUUID() + " at " + world + ", " + location.getBlockX() + "x, " + location.getBlockY() + "y, " + location.getBlockZ() + "z: " + t.getMessage());
