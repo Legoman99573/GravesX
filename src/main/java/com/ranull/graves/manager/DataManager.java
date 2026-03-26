@@ -2892,10 +2892,15 @@ public class DataManager {
         int maxConnections = plugin.getConfig().getInt("settings.storage.h2.maxConnections", 50);
         long connectionTimeout = plugin.getConfig().getLong("settings.storage.h2.connectionTimeout", 30000);
 
+        String username = plugin.getConfig().getString("settings.storage.h2.username", "sa");
+        String password = plugin.getConfig().getString("settings.storage.h2.password", "");
+
         String jdbcUrl = "jdbc:h2:file:" + h2BasePath.toAbsolutePath() + ";AUTO_SERVER=FALSE;DB_CLOSE_DELAY=-1;";
 
         sourceConfig.setJdbcUrl(jdbcUrl);
         sourceConfig.setDriverClassName("com.ranull.graves.libraries.h2.Driver");
+        sourceConfig.setUsername(username);
+        sourceConfig.setPassword(password);
         sourceConfig.setPoolName("GravesX h2 Migration to " + getType());
 
         sourceConfig.setMaximumPoolSize(maxConnections);
