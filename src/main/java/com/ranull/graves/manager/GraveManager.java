@@ -31,12 +31,14 @@ import org.bukkit.inventory.*;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.BiConsumer;
 import java.util.logging.Level;
+import java.lang.reflect.Method;
 
 /**
  * Manages the operations and lifecycle of graves within the Graves plugin.
@@ -2457,6 +2459,7 @@ public class GraveManager {
                 InventoryUtil.equipArmor(grave.getInventory(), player);InventoryUtil.equipItems(grave.getInventory(), player);
             }
 
+            syncBagOfGoldBalanceAfterAutoloot(player);
             player.updateInventory();
 
             plugin.getDataManager().updateGrave(grave, "inventory", InventoryUtil.inventoryToString(grave.getInventory()));
@@ -2480,6 +2483,33 @@ public class GraveManager {
                 plugin.getEntityManager().playWorldSound("sound.open", location, grave);
             }
         });
+    }
+
+    /**
+     * Keeps BagOfGold balance consistent after GravesX programmatically moves items from a grave
+     * to the player's inventory (auto-loot path). Inventory API moves do not always fire the same
+     * click/pickup handlers BagOfGold uses for balance sync, so we trigger BagOfGold's own
+     * reconciliation method once after auto-loot.
+     */
+    private void syncBagOfGoldBalanceAfterAutoloot(@NotNull Player player) {
+        Plugin bagOfGold = plugin.getServer().getPluginManager().getPlugin("BagOfGold");
+        if (bagOfGold == null || !bagOfGold.isEnabled()) return;
+
+        try {
+            Method getInstance = bagOfGold.getClass().getMethod("getInstance");
+            Object instance = getInstance.invoke(null);
+            if (instance == null) return;
+
+            Method getRewardManager = instance.getClass().getMethod("getRewardManager");
+            Object rewardManager = getRewardManager.invoke(instance);
+            if (rewardManager == null) return;
+
+            Method adjustToInventory = rewardManager.getClass()
+                    .getMethod("adjustPlayerBalanceToAmounOfMoneyInInventory", Player.class);
+            adjustToInventory.invoke(rewardManager, player);
+        } catch (Throwable throwable) {
+            plugin.debugMessage("Failed to sync BagOfGold balance after grave auto-loot: " + throwable.getMessage(), 1);
+        }
     }
 
     /**
