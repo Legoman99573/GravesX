@@ -3,6 +3,7 @@ package com.ranull.graves.listener;
 import com.ranull.graves.Graves;
 import com.ranull.graves.compatibility.CompatibilityInventoryView;
 import com.ranull.graves.data.BlockData;
+import com.ranull.graves.integration.BagOfGoldPhysicalMoneyIntegration;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.ExperienceUtil;
 import com.ranull.graves.util.LocationUtil;
@@ -42,6 +43,7 @@ import java.util.*;
  */
 public class EntityDeathListener implements Listener {
     private final Graves plugin;
+    private final BagOfGoldPhysicalMoneyIntegration bagOfGoldPhysicalMoneyIntegration;
 
     /**
      * Constructs an EntityDeathListener with the specified Graves plugin.
@@ -50,6 +52,7 @@ public class EntityDeathListener implements Listener {
      */
     public EntityDeathListener(Graves plugin) {
         this.plugin = plugin;
+        this.bagOfGoldPhysicalMoneyIntegration = new BagOfGoldPhysicalMoneyIntegration(plugin);
     }
 
     /**
@@ -556,6 +559,14 @@ public class EntityDeathListener implements Listener {
                     }
                 }
 
+                bagOfGoldPhysicalMoneyIntegration.splitPhysicalMoney(
+                        livingEntity,
+                        permissionList,
+                        slots,
+                        ignoredItemStackList,
+                        true
+                );
+
                 return slots;
             }
 
@@ -595,6 +606,14 @@ public class EntityDeathListener implements Listener {
                     dropIt.remove();
                 }
             }
+
+            bagOfGoldPhysicalMoneyIntegration.splitPhysicalMoney(
+                    livingEntity,
+                    permissionList,
+                    graveList,
+                    ignoredItemStackList,
+                    false
+            );
 
             return graveList;
 
@@ -1481,7 +1500,7 @@ public class EntityDeathListener implements Listener {
             if (ignoredItems != null) {
                 for (ItemStack item : ignoredItems) {
                     if (item != null && item.getType() != Material.AIR) {
-                        world.dropItemNaturally(dropLoc, item);
+                        world.dropItemNaturally(dropLoc, item.clone());
                     }
                 }
             }

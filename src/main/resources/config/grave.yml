@@ -266,6 +266,24 @@ settings:
         store-in-grave: true
         store: 0.7
 
+      ##################
+      # Physical Money #
+      ##################
+      # Splits physical BagOfGold money items between grave storage and ground drops.
+      # This only handles item stacks (no digital balance/Vault changes).
+      physical-money:
+        bagofgold:
+          # Enable BagOfGold physical-money split when players die.
+          enabled: true
+          # Scope options: pvp_and_pve, pvp_only, pve_only
+          apply-on: "pvp_and_pve"
+          # Percent of physical money value to keep inside the grave.
+          keep-in-grave-percent: 70
+          # Percent of physical money value to drop outside the grave.
+          drop-on-ground-percent: 30
+          # If split cannot drop anything due to stack granularity, force 1 unit to drop.
+          force-minimum-drop-item: true
+
       ###########
       # Respawn #
       ###########
