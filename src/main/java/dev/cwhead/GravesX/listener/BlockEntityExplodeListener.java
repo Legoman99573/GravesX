@@ -110,14 +110,10 @@ public class BlockEntityExplodeListener implements Listener {
             Location graveHeadLocation = grave.getLocationDeath();
 
             // If the exploding block is exactly the grave head block, protect it.
-            if (graveHeadLocation != null && graveHeadLocation.equals(block.getLocation())) {
+            if (graveHeadLocation != null && graveHeadLocation.equals(block.getLocation()) && !shouldExplode(grave)) {
                 plugin.debugMessage("[Explode Debug] " + source + ": protecting grave head block for grave "
                         + grave.getUUID(), 2);
                 iterator.remove();
-                continue;
-            }
-
-            if (!shouldExplode(grave)) {
                 continue;
             }
 
