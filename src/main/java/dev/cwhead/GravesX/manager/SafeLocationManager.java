@@ -199,6 +199,9 @@ public final class SafeLocationManager {
         entity.getWorld();
         if (!location.getWorld().equals(entity.getWorld())) return null;
 
+        Block feet = location.getBlock();
+        if (MaterialUtil.isWater(feet.getType()) || MaterialUtil.isLava(feet.getType())) return null;
+
         Block below = location.getBlock().getRelative(BlockFace.DOWN);
         if (!below.getType().isSolid()) return null;
 
