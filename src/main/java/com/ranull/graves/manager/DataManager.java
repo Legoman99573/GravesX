@@ -1134,7 +1134,9 @@ public class DataManager {
         }
 
         addColumnIfNotExists(name, "uuid", "VARCHAR(255) UNIQUE");
-        alterColumnIfExists(name, "uuid", "VARCHAR(255) UNIQUE");
+        // Do not ALTER with UNIQUE on every startup for MySQL/MariaDB, as some engines can
+        // create duplicate unique keys repeatedly and eventually hit key-count limits.
+        alterColumnIfExists(name, "uuid", "VARCHAR(255)");
 
         addColumnIfNotExists(name, "owner_type", "VARCHAR(255)");
         alterColumnIfExists(name, "owner_type", "VARCHAR(255)");
