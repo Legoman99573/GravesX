@@ -311,7 +311,13 @@ public class IntegrationManager {
         }
 
         if (placeholderAPI != null) {
-            placeholderAPI.unregister();
+            try {
+                placeholderAPI.unregister();
+            } catch (Throwable throwable) {
+                plugin.getLogger().warning("Skipping PlaceholderAPI unregister due to late shutdown state: " + throwable.getMessage());
+            } finally {
+                placeholderAPI = null;
+            }
         }
 
         if (playerNPC != null) {

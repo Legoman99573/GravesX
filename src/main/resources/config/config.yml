@@ -242,6 +242,14 @@ settings:
       # Should Vault integration be enabled.
       enabled: true
 
+    #############
+    # BagOfGold #
+    #############
+    # Global switch for BagOfGold physical-money split integration.
+    # Detailed split behavior/percentages are configured in grave.yml -> physical-money.bagofgold.
+    bagofgold:
+      enabled: true
+
     ###############
     # ProtocolLib #
     ###############

@@ -1134,7 +1134,9 @@ public class DataManager {
         }
 
         addColumnIfNotExists(name, "uuid", "VARCHAR(255) UNIQUE");
-        alterColumnIfExists(name, "uuid", "VARCHAR(255) UNIQUE");
+        // Do not ALTER with UNIQUE on every startup for MySQL/MariaDB, as some engines can
+        // create duplicate unique keys repeatedly and eventually hit key-count limits.
+        alterColumnIfExists(name, "uuid", "VARCHAR(255)");
 
         addColumnIfNotExists(name, "owner_type", "VARCHAR(255)");
         alterColumnIfExists(name, "owner_type", "VARCHAR(255)");
@@ -1396,7 +1398,29 @@ public class DataManager {
         };
 
         if (backfillBackend != null) {
-            executeUpdate(backfillBackend, new Object[0]);
+            final String finalName = name;
+            final String finalBackfillBackend = backfillBackend;
+
+            // Run backfill shortly after schema migrations to avoid startup races where
+            // the UPDATE executes before the backend column is actually added.
+            plugin.getSchedulerManager().runTaskLaterAsynchronously(() -> {
+                List<String> columns = getColumnList(finalName);
+                if (!columns.contains("backend")) {
+                    plugin.debugMessage(
+                            "Skipping hologram backend backfill for table '" + finalName + "' because column 'backend' is still missing.",
+                            2
+                    );
+                    return;
+                }
+
+                try {
+                    executeUpdateMainThread(finalBackfillBackend, new Object[0]);
+                } catch (SQLException exception) {
+                    plugin.getLogger().severe("Error executing hologram backend backfill");
+                    plugin.getLogger().severe("Failed SQL statement: " + finalBackfillBackend);
+                    plugin.logStackTrace(exception);
+                }
+            }, 40L);
         }
     }
 

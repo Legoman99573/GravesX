@@ -199,6 +199,9 @@ public final class SafeLocationManager {
         entity.getWorld();
         if (!location.getWorld().equals(entity.getWorld())) return null;
 
+        Block feet = location.getBlock();
+        if (MaterialUtil.isWater(feet.getType()) || MaterialUtil.isLava(feet.getType())) return null;
+
         Block below = location.getBlock().getRelative(BlockFace.DOWN);
         if (!below.getType().isSolid()) return null;
 
@@ -402,35 +405,64 @@ public final class SafeLocationManager {
         boolean inWaterOrAbove = MaterialUtil.isWater(originType) || directlyAboveWater;
         boolean inLavaOrAbove = MaterialUtil.isLava(originType) || directlyAboveLava;
 
-        if (directlyAboveWater) {
-            Location above = centerOnBlock(origin);
-            if (above != null && !isVoid(above) && isInsideBorder(above) && !hasGrave(above) && isLocationSafeGraveAboveFluid(above, true)) {
-                candidates.add(new Candidate(above, GravePlacementReason.WATER_ABOVE));
-            }
-        }
-
-        if (directlyAboveLava) {
-            Location above = centerOnBlock(origin);
-            if (above != null && !isVoid(above) && isInsideBorder(above) && !hasGrave(above) && isLocationSafeGraveAboveFluid(above, false)) {
-                candidates.add(new Candidate(above, GravePlacementReason.LAVA_ABOVE));
-            }
-        }
-
         if (inWaterOrAbove) {
+            // SMART-FIRST: prefer the player's last known solid location when available.
+            Location smart = resolveSmartFromLastSolid(livingEntity, origin, grave, useGround, useRoof);
+            if (smart != null) {
+                plugin.debugMessage(prefix + "CHOSEN=" + GravePlacementReason.WATER_SMART + " loc=" + fmtLoc(smart) + " distSq=" + distSq(origin, smart) + ".", 1);
+                return GravePlacementResult.of(smart, GravePlacementReason.WATER_SMART);
+            }
+
+            if (directlyAboveWater) {
+                Location above = centerOnBlock(origin);
+                if (above != null && !isVoid(above) && isInsideBorder(above) && !hasGrave(above) && isLocationSafeGraveAboveFluid(above, true)) {
+                    plugin.debugMessage(prefix + "CHOSEN=" + GravePlacementReason.WATER_ABOVE + " loc=" + fmtLoc(above) + " distSq=" + distSq(origin, above) + ".", 1);
+                    return GravePlacementResult.of(above, GravePlacementReason.WATER_ABOVE);
+                }
+            }
+
             boolean waterTop = plugin.getConfigManager().getConfigSection("placement.water-top", grave).getBoolean("placement.water-top");
 
             if (waterTop) {
                 Location start = MaterialUtil.isWater(originType) ? origin : origin.clone().add(0.0, -1.0, 0.0);
                 Location surface = resolveFluidSurfaceTop(start, grave, true);
                 if (surface != null) {
-                    candidates.add(new Candidate(surface, GravePlacementReason.WATER_TOP));
+                    plugin.debugMessage(prefix + "CHOSEN=" + GravePlacementReason.WATER_TOP + " loc=" + fmtLoc(surface) + " distSq=" + distSq(origin, surface) + ".", 1);
+                    return GravePlacementResult.of(surface, GravePlacementReason.WATER_TOP);
                 } else {
                     plugin.debugMessage(prefix + "water-top enabled but no AIR surface found; continuing.", 1);
                 }
             }
 
-            addWaterCandidates(candidates, origin, livingEntity, grave, useGround, useRoof);
+            boolean waterBottom = plugin.getConfigManager().getConfigSection("placement.water-bottom", grave).contains("placement.water-bottom")
+                    ? plugin.getConfigManager().getConfigSection("placement.water-bottom", grave).getBoolean("placement.water-bottom")
+                    : useGround;
+
+            if (waterBottom) {
+                Location bottom = findWaterBottom(origin);
+                if (bottom != null && !hasGrave(bottom) && isLocationSafeGrave(bottom)) {
+                    plugin.debugMessage(prefix + "CHOSEN=" + GravePlacementReason.WATER_BOTTOM + " loc=" + fmtLoc(bottom) + " distSq=" + distSq(origin, bottom) + ".", 1);
+                    return GravePlacementResult.of(bottom, GravePlacementReason.WATER_BOTTOM);
+                }
+            }
+
+            if (useRoof) {
+                Location roof = resolveRoofLocation(origin, origin, grave);
+                if (roof != null) candidates.add(new Candidate(roof, GravePlacementReason.ROOF));
+            }
+
+            if (useGround) {
+                Location ground = resolveGroundLocation(origin, origin, grave);
+                if (ground != null) candidates.add(new Candidate(ground, GravePlacementReason.GROUND));
+            }
         } else if (inLavaOrAbove) {
+            // SMART-FIRST: prefer the player's last known solid location when available.
+            Location smart = resolveSmartFromLastSolid(livingEntity, origin, grave, useGround, useRoof);
+            if (smart != null) {
+                plugin.debugMessage(prefix + "CHOSEN=" + GravePlacementReason.LAVA_SMART + " loc=" + fmtLoc(smart) + " distSq=" + distSq(origin, smart) + ".", 1);
+                return GravePlacementResult.of(smart, GravePlacementReason.LAVA_SMART);
+            }
+
             boolean lavaTop = plugin.getConfigManager().getConfigSection("placement.lava-top", grave).getBoolean("placement.lava-top");
 
             if (lavaTop) {
@@ -452,7 +484,15 @@ public final class SafeLocationManager {
                 plugin.debugMessage(prefix + "lava-top enabled but no AIR surface found; continuing.", 1);
             }
 
-            addLavaCandidates(candidates, origin, livingEntity, grave, useGround, useRoof);
+            if (useRoof) {
+                Location roof = resolveRoofLocation(origin, origin, grave);
+                if (roof != null) candidates.add(new Candidate(roof, GravePlacementReason.ROOF));
+            }
+
+            if (useGround) {
+                Location ground = resolveGroundLocation(origin, origin, grave);
+                if (ground != null) candidates.add(new Candidate(ground, GravePlacementReason.GROUND));
+            }
         } else {
             if (useRoof) {
                 Location roof = resolveRoofLocation(origin, origin, grave);

@@ -6,6 +6,7 @@ import com.ranull.graves.data.ChunkData;
 import com.ranull.graves.integration.MiniMessage;
 import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.LocationUtil;
+import com.ranull.graves.util.MaterialUtil;
 import com.ranull.graves.util.StringUtil;
 import dev.cwhead.GravesX.event.GraveWalkOverEvent;
 import org.bukkit.GameMode;
@@ -106,7 +107,12 @@ public class PlayerMoveListener implements Listener {
      * @return True if the location is safe, false otherwise.
      */
     private boolean isLocationSafe(Location location) {
+        Material feet = location.getBlock().getType();
+        Material head = location.getBlock().getRelative(BlockFace.UP).getType();
+
         return plugin.getLocationManager().isInsideBorder(location)
+                && !MaterialUtil.isWater(feet)
+                && !MaterialUtil.isWater(head)
                 && location.getBlock().getRelative(BlockFace.DOWN).getType().isSolid()
                 && plugin.getLocationManager().isLocationSafePlayer(location);
     }
