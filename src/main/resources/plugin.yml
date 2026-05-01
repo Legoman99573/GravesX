@@ -15,6 +15,7 @@ folia-supported: true
 loadbefore:
   - XItemsRemover
   - ExplodeAny
+  - CombatLogX
 
 softdepend:
   - AdvancedEnchantments
