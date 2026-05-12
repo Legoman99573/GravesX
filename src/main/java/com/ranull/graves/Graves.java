@@ -421,7 +421,7 @@ public class Graves extends JavaPlugin {
 
         switch (storageType) {
             case "POSTGRESQL":
-                libraryLoaderUtil.loadLibrary("org{}postgresql", "postgresql", "42.7.10", "org{}postgresql", "com{}ranull{}graves{}libraries{}postgresql", false);
+                libraryLoaderUtil.loadLibrary("org{}postgresql", "postgresql", "42.7.11", "org{}postgresql", "com{}ranull{}graves{}libraries{}postgresql", false);
                 break;
             case "MARIADB":
                 libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "9.6.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
