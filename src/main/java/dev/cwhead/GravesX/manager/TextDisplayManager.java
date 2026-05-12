@@ -9,7 +9,6 @@ import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.LocationUtil;
 import com.ranull.graves.util.StringUtil;
 import dev.cwhead.GravesX.keys.GraveHologramKeys;
-import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -21,8 +20,6 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * TextDisplay-based holograms (1.19+).
@@ -206,133 +203,168 @@ public class TextDisplayManager extends EntityDataManager {
             return;
         }
 
-        plugin.debugMessage("[Holograms] removeResolvedTextDisplays count=" + hologramDataList.size(), 1);
+        plugin.debugMessage("[Holograms] removeResolvedTextDisplays count="
+                + hologramDataList.size(), 1);
+
+        Map<EntityData, Entity> entityDataMap =
+                getEntityDataMap(new ArrayList<>(hologramDataList));
 
         List<EntityData> removableEntityData = new ArrayList<>();
 
-        for (EntityData data : hologramDataList) {
+        for (Map.Entry<EntityData, Entity> entry : entityDataMap.entrySet()) {
+
+            EntityData data = entry.getKey();
+
             if (data == null) {
-                plugin.debugMessage("[Holograms] Skipping null EntityData entry during TextDisplay removal", 2);
                 continue;
             }
 
             if (!(data instanceof HologramData hologramData)) {
-                plugin.debugMessage("[Holograms] Skipping non-hologram EntityData uuid=" + data.getUUIDEntity(), 2);
                 continue;
             }
 
-            if (hologramData.getBackend() != HologramData.Backend.TEXT_DISPLAY) {
-                plugin.debugMessage("[Holograms] Skipping non-TextDisplay hologram uuid=" + data.getUUIDEntity()
-                        + ", backend=" + hologramData.getBackend(), 2);
+            if (hologramData.getBackend()
+                    != HologramData.Backend.TEXT_DISPLAY) {
                 continue;
             }
 
             removableEntityData.add(data);
 
-            UUID entityUuid = data.getUUIDEntity();
-            Entity entity = null;
-
-            if (entityUuid != null) {
-                try {
-                    entity = Bukkit.getEntity(entityUuid);
-                } catch (Throwable t) {
-                    plugin.debugMessage("[Holograms] Failed Bukkit entity lookup for TextDisplay uuid="
-                            + entityUuid + ": " + t.getMessage(), 2);
-                }
-            }
-
-            Entity finalEntity = entity;
+            Entity finalEntity = entry.getValue();
             Location finalLocation = data.getLocation();
-
-            plugin.debugMessage("[Holograms] Scheduling TextDisplay hologram removal for entity="
-                    + data.getUUIDEntity() + ", grave=" + data.getUUIDGrave()
-                    + ", location=" + (finalLocation != null ? toLocKey(finalLocation) : "null"), 1);
+            UUID finalGraveUUID = data.getUUIDGrave();
 
             Runnable remover = () -> {
-                boolean removed = false;
+
+                int removedCount = 0;
 
                 try {
-                    Entity liveEntity = finalEntity;
+                    if (finalEntity instanceof TextDisplay td
+                            && td.isValid()) {
 
-                    if (liveEntity == null && entityUuid != null) {
-                        try {
-                            liveEntity = Bukkit.getEntity(entityUuid);
-                        } catch (Throwable ignored) {
-                        }
+                        td.remove();
+                        removedCount++;
+
+                        plugin.debugMessage(
+                                "[Holograms] Removed direct TextDisplay entity="
+                                        + td.getUniqueId(),
+                                2
+                        );
                     }
-
-                    if (!(liveEntity instanceof TextDisplay td)) {
-                        plugin.debugMessage("[Holograms] No live TextDisplay found for entity=" + entityUuid, 2);
-                        return;
-                    }
-
-                    if (!td.isValid()) {
-                        plugin.debugMessage("[Holograms] TextDisplay already invalid for entity=" + entityUuid, 2);
-                        return;
-                    }
-
-                    boolean matches = false;
-
-                    try {
-                        if (plugin.getVersionManager().hasScoreboardTags()
-                                && td.getScoreboardTags().contains("graveHologram")) {
-                            matches = true;
-                        }
-                    } catch (Throwable ignored) {
-                    }
-
-                    try {
-                        if (!matches && plugin.getVersionManager().hasPersistentData()) {
-                            PersistentDataContainer pdc = td.getPersistentDataContainer();
-                            String pdcUuid = pdc.get(GraveHologramKeys.GRAVE_UUID, PersistentDataType.STRING);
-                            if (pdcUuid != null && data.getUUIDGrave() != null
-                                    && data.getUUIDGrave().toString().equals(pdcUuid)) {
-                                matches = true;
-                            }
-                        }
-                    } catch (Throwable ignored) {
-                    }
-
-                    if (!matches) {
-                        plugin.debugMessage("[Holograms] Live entity did not match TextDisplay hologram markers for entity="
-                                + entityUuid, 2);
-                        return;
-                    }
-
-                    td.remove();
-                    removed = true;
-                    plugin.debugMessage("[Holograms] Removed TextDisplay entity=" + td.getUniqueId(), 2);
                 } catch (Throwable t) {
-                    plugin.debugMessage("[Holograms] Failed TextDisplay removal for entity="
-                            + entityUuid + ": " + t.getMessage(), 1);
+                    plugin.debugMessage(
+                            "[Holograms] Failed direct TextDisplay removal entity="
+                                    + data.getUUIDEntity()
+                                    + ": "
+                                    + t.getMessage(),
+                            1
+                    );
                 }
 
-                if (!removed) {
-                    plugin.debugMessage("[Holograms] TextDisplay removal completed with no entity removed for entity="
-                            + entityUuid, 2);
+                if (finalLocation == null
+                        || finalLocation.getWorld() == null) {
+                    return;
+                }
+
+                try {
+                    Collection<Entity> nearby =
+                            finalLocation.getWorld().getNearbyEntities(
+                                    finalLocation,
+                                    2.0,
+                                    2.0,
+                                    2.0
+                            );
+
+                    for (Entity e : nearby) {
+
+                        if (!(e instanceof TextDisplay td)) {
+                            continue;
+                        }
+
+                        if (!td.isValid()) {
+                            continue;
+                        }
+
+                        boolean remove = false;
+
+                        try {
+                            if (plugin.getVersionManager().hasPersistentData()) {
+
+                                PersistentDataContainer pdc =
+                                        td.getPersistentDataContainer();
+
+                                String storedUuid = pdc.get(
+                                        GraveHologramKeys.GRAVE_UUID,
+                                        PersistentDataType.STRING
+                                );
+
+                                if (storedUuid != null
+                                        && storedUuid.equals(
+                                        finalGraveUUID.toString())) {
+                                    remove = true;
+                                }
+                            }
+                        } catch (Throwable ignored) {
+                        }
+
+                        try {
+                            if (!remove
+                                    && plugin.getVersionManager()
+                                    .hasScoreboardTags()) {
+
+                                remove = td.getScoreboardTags().contains(
+                                        "graveHologramGraveUUID:"
+                                                + finalGraveUUID
+                                );
+                            }
+                        } catch (Throwable ignored) {
+                        }
+
+                        if (remove) {
+                            td.remove();
+                            removedCount++;
+
+                            plugin.debugMessage(
+                                    "[Holograms] Removed matched TextDisplay entity="
+                                            + td.getUniqueId()
+                                            + " grave="
+                                            + finalGraveUUID,
+                                    2
+                            );
+                        }
+                    }
+
+                    plugin.debugMessage(
+                            "[Holograms] TextDisplay removal sweep finished entity="
+                                    + data.getUUIDEntity()
+                                    + ", removed="
+                                    + removedCount,
+                            2
+                    );
+
+                } catch (Throwable t) {
+                    plugin.logStackTrace(t);
                 }
             };
 
             if (finalEntity != null) {
-                plugin.debugMessage("[Holograms] Executing TextDisplay removal on entity region for entity="
-                        + finalEntity.getUniqueId(), 2);
                 executeRegion(finalEntity, remover);
-            } else if (finalLocation != null && finalLocation.getWorld() != null) {
-                plugin.debugMessage("[Holograms] Executing TextDisplay removal on location region for hologram entity="
-                        + data.getUUIDEntity(), 2);
+
+            } else if (finalLocation != null
+                    && finalLocation.getWorld() != null) {
+
                 executeRegion(finalLocation, remover);
+
             } else {
-                plugin.debugMessage("[Holograms] Executing fallback main-thread TextDisplay removal for hologram entity="
-                        + data.getUUIDEntity(), 2);
-                plugin.getServer().getScheduler().runTask(plugin, remover);
+                plugin.getServer()
+                        .getScheduler()
+                        .runTask(plugin, remover);
             }
         }
 
         if (!removableEntityData.isEmpty()) {
-            plugin.debugMessage("[Holograms] Removing " + removableEntityData.size() + " TextDisplay hologram entity-data entrie(s) from DataManager records", 1);
-            plugin.getDataManager().removeEntityData(removableEntityData);
-        } else {
-            plugin.debugMessage("[Holograms] No TextDisplay hologram entity-data entries qualified for DB/cache removal", 2);
+            plugin.getDataManager()
+                    .removeEntityData(removableEntityData);
         }
     }
 
@@ -390,93 +422,175 @@ public class TextDisplayManager extends EntityDataManager {
     }
 
     public void purgeLingeringHolograms() {
-        plugin.debugMessage("[Cleanup] Starting TextDisplay hologram purge across all worlds", 1);
+        plugin.debugMessage(
+                "[Cleanup] Starting TextDisplay hologram purge across all worlds",
+                1
+        );
 
         for (World world : plugin.getServer().getWorlds()) {
-            plugin.debugMessage("[Cleanup] Scanning world " + world.getName() + " for lingering TextDisplays", 2);
 
-            for (Entity e : world.getEntities()) {
-                if (!(e instanceof TextDisplay td)) continue;
+            plugin.debugMessage(
+                    "[Cleanup] Scanning world "
+                            + world.getName()
+                            + " for lingering TextDisplays",
+                    2
+            );
+
+            for (TextDisplay td : world.getEntitiesByClass(TextDisplay.class)) {
 
                 executeRegion(td, () -> {
-                    if (!td.isValid()) return;
+
+                    if (!td.isValid()) {
+                        return;
+                    }
 
                     boolean hasHoloTag = false;
+
                     try {
-                        if (plugin.getVersionManager().hasScoreboardTags()) {
-                            hasHoloTag = td.getScoreboardTags().contains("graveHologram");
+                        if (plugin.getVersionManager()
+                                .hasScoreboardTags()) {
+
+                            hasHoloTag = td.getScoreboardTags()
+                                    .contains("graveHologram");
                         }
-                    } catch (Throwable ignored) {}
+                    } catch (Throwable ignored) {
+                    }
 
                     boolean hasPdc = false;
+
                     try {
-                        if (plugin.getVersionManager().hasPersistentData()) {
-                            PersistentDataContainer pdc = td.getPersistentDataContainer();
-                            hasPdc = pdc.has(GraveHologramKeys.GRAVE_UUID, PersistentDataType.STRING);
+                        if (plugin.getVersionManager()
+                                .hasPersistentData()) {
+
+                            PersistentDataContainer pdc =
+                                    td.getPersistentDataContainer();
+
+                            hasPdc = pdc.has(
+                                    GraveHologramKeys.GRAVE_UUID,
+                                    PersistentDataType.STRING
+                            );
                         }
-                    } catch (Throwable ignored) {}
+                    } catch (Throwable ignored) {
+                    }
 
-                    if (!hasHoloTag && !hasPdc) return;
+                    if (!hasHoloTag && !hasPdc) {
+                        return;
+                    }
 
-                    UUID graveUuid = null;
-
-                    try { graveUuid = extractGraveUUIDFromTags(td); } catch (Throwable ignored) {}
+                    UUID graveUUID = null;
 
                     try {
-                        if (plugin.getVersionManager().hasPersistentData()) {
-                            PersistentDataContainer pdc = td.getPersistentDataContainer();
-                            String pdcUuid = pdc.get(GraveHologramKeys.GRAVE_UUID, PersistentDataType.STRING);
-                            if (pdcUuid != null) {
-                                try { graveUuid = UUID.fromString(pdcUuid); } catch (IllegalArgumentException ignored) {}
+                        if (plugin.getVersionManager()
+                                .hasPersistentData()) {
+
+                            PersistentDataContainer pdc =
+                                    td.getPersistentDataContainer();
+
+                            String raw = pdc.get(
+                                    GraveHologramKeys.GRAVE_UUID,
+                                    PersistentDataType.STRING
+                            );
+
+                            if (raw != null) {
+                                graveUUID = UUID.fromString(raw);
                             }
                         }
-                    } catch (Throwable ignored) {}
+                    } catch (Throwable ignored) {
+                    }
 
-                    if (graveUuid == null) {
+                    if (graveUUID == null) {
+                        try {
+                            graveUUID = extractGraveUUIDFromTags(td);
+                        } catch (Throwable ignored) {
+                        }
+                    }
+
+                    if (graveUUID == null) {
+
                         td.remove();
-                        plugin.debugMessage("[Cleanup] Removed TextDisplay missing grave UUID tag/PDC entity=" + td.getUniqueId(), 2);
+
+                        plugin.debugMessage(
+                                "[Cleanup] Removed TextDisplay missing grave UUID entity="
+                                        + td.getUniqueId(),
+                                2
+                        );
+
                         return;
                     }
 
                     Grave grave = null;
-                    try { grave = hasGrave(graveUuid); } catch (Throwable ignored) {}
-
-                    if (grave == null) {
-                        td.remove();
-                        plugin.debugMessage("[Cleanup] Removed TextDisplay for missing grave " + graveUuid, 2);
-                        return;
-                    }
-
-                    Location dbLoc = grave.getLocationDeath();
-                    if (dbLoc == null || dbLoc.getWorld() == null) {
-                        td.remove();
-                        plugin.debugMessage("[Cleanup] Removed TextDisplay for grave " + graveUuid + " (DB location missing)", 2);
-                        return;
-                    }
-
-                    String expectedLocKey = toLocKey(dbLoc);
-
-                    String storedLocKey = null;
-                    try { storedLocKey = extractGraveLocationKeyFromTags(td); } catch (Throwable ignored) {}
 
                     try {
-                        if (plugin.getVersionManager().hasPersistentData()) {
-                            PersistentDataContainer pdc = td.getPersistentDataContainer();
-                            String pdcLoc = pdc.get(GraveHologramKeys.GRAVE_LOCATION, PersistentDataType.STRING);
-                            if (pdcLoc != null) storedLocKey = pdcLoc;
-                        }
-                    } catch (Throwable ignored) {}
+                        grave = hasGrave(graveUUID);
+                    } catch (Throwable ignored) {
+                    }
 
-                    if (storedLocKey != null && !locKeysMatch(expectedLocKey, storedLocKey)) {
+                    if (grave == null) {
+
                         td.remove();
-                        plugin.debugMessage("[Cleanup] Removed TextDisplay for grave " + graveUuid
-                                + " (location mismatch stored=" + storedLocKey + " db=" + expectedLocKey + ")", 2);
+
+                        plugin.debugMessage(
+                                "[Cleanup] Removed TextDisplay for missing grave "
+                                        + graveUUID,
+                                2
+                        );
+
+                        return;
+                    }
+
+                    boolean hologramExists = isHologramExists(graveUUID);
+
+                    if (!hologramExists) {
+
+                        td.remove();
+
+                        plugin.debugMessage(
+                                "[Cleanup] Removed orphaned TextDisplay entity="
+                                        + td.getUniqueId()
+                                        + " grave="
+                                        + graveUUID,
+                                2
+                        );
                     }
                 });
             }
         }
 
-        plugin.debugMessage("[Cleanup] Finished TextDisplay hologram purge", 1);
+        plugin.debugMessage(
+                "[Cleanup] Finished TextDisplay hologram purge",
+                1
+        );
+    }
+
+    private boolean isHologramExists(UUID graveUUID) {
+        boolean hologramExists = false;
+
+        try {
+            for (EntityData entityData :
+                    plugin.getCacheManager()
+                            .getEntityMap()
+                            .values()) {
+
+                if (!(entityData instanceof HologramData hologramData)) {
+                    continue;
+                }
+
+                if (hologramData.getBackend()
+                        != HologramData.Backend.TEXT_DISPLAY) {
+                    continue;
+                }
+
+                if (!graveUUID.equals(
+                        hologramData.getUUIDGrave())) {
+                    continue;
+                }
+
+                hologramExists = true;
+                break;
+            }
+        } catch (Throwable ignored) {
+        }
+        return hologramExists;
     }
 
     public Grave hasGrave(UUID graveUUID) {
@@ -593,90 +707,9 @@ public class TextDisplayManager extends EntityDataManager {
         return null;
     }
 
-    private String extractGraveLocationKeyFromTags(Entity entity) {
-        if (!plugin.getVersionManager().hasScoreboardTags()) return null;
-        try {
-            for (String tag : entity.getScoreboardTags()) {
-                if (tag.startsWith("graveHologramGraveLocation:")) {
-                    String raw = tag.substring("graveHologramGraveLocation:".length()).trim();
-                    return normalizeLocKey(raw);
-                }
-            }
-        } catch (Throwable ignored) {}
-        return null;
-    }
-
     private String toLocKey(Location loc) {
         if (loc == null || loc.getWorld() == null) return null;
         return loc.getWorld().getName() + ":" + loc.getBlockX() + ":" + loc.getBlockY() + ":" + loc.getBlockZ();
-    }
-
-    private String normalizeLocKey(String raw) {
-        if (raw == null || raw.isEmpty()) return null;
-
-        Pattern pSimple = Pattern.compile("^([^:,]+)[,:]\\s*(-?\\d+)[,:]\\s*(-?\\d+)[,:]\\s*(-?\\d+)$");
-        Matcher m = pSimple.matcher(raw);
-        if (m.find()) {
-            String world = m.group(1);
-            try {
-                int x = Integer.parseInt(m.group(2));
-                int y = Integer.parseInt(m.group(3));
-                int z = Integer.parseInt(m.group(4));
-                return world + ":" + x + ":" + y + ":" + z;
-            } catch (NumberFormatException ignored) {}
-        }
-
-        Pattern pWorld = Pattern.compile("name=([^},\\s]+)");
-        Pattern pX = Pattern.compile("x=([-\\d.]+)");
-        Pattern pY = Pattern.compile("y=([-\\d.]+)");
-        Pattern pZ = Pattern.compile("z=([-\\d.]+)");
-
-        String world = findFirstGroup(pWorld, raw);
-        String sx = findFirstGroup(pX, raw);
-        String sy = findFirstGroup(pY, raw);
-        String sz = findFirstGroup(pZ, raw);
-
-        if (sx != null && sy != null && sz != null) {
-            try {
-                int x = (int) Math.floor(Double.parseDouble(sx));
-                int y = (int) Math.floor(Double.parseDouble(sy));
-                int z = (int) Math.floor(Double.parseDouble(sz));
-                if (world == null || world.isEmpty()) world = "unknown";
-                return world + ":" + x + ":" + y + ":" + z;
-            } catch (NumberFormatException ignored) {}
-        }
-
-        return null;
-    }
-
-    private String findFirstGroup(Pattern p, String s) {
-        Matcher m = p.matcher(s);
-        return m.find() ? m.group(1) : null;
-    }
-
-    private boolean locKeysMatch(String expectedKey, String tagKey) {
-        if (expectedKey == null || tagKey == null) return false;
-
-        String a = normalizeLocKey(expectedKey);
-        String b = normalizeLocKey(tagKey);
-        if (a == null || b == null) return false;
-
-        String[] as = a.split(":");
-        String[] bs = b.split(":");
-        if (as.length != 4 || bs.length != 4) return false;
-
-        String aw = as[0], bw = bs[0];
-        int ax = Integer.parseInt(as[1]);
-        int ay = Integer.parseInt(as[2]);
-        int az = Integer.parseInt(as[3]);
-        int bx = Integer.parseInt(bs[1]);
-        int by = Integer.parseInt(bs[2]);
-        int bz = Integer.parseInt(bs[3]);
-
-        boolean worldKnown = !"unknown".equalsIgnoreCase(aw) && !"unknown".equalsIgnoreCase(bw);
-        boolean worldOk = !worldKnown || aw.equals(bw);
-
-        return worldOk && ax == bx && ay == by && az == bz;
     }
 
     private void executeRegion(Location loc, Runnable task) {
