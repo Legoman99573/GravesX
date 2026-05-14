@@ -24,6 +24,48 @@ import java.util.Objects;
 public final class SafeLocationManager {
 
     private final Graves plugin;
+    private static final List<String> DEFAULT_POWDER_SNOW_BLOCKS = List.of(
+            "POWDER_SNOW"
+    );
+    private static final List<String> DEFAULT_NON_FULL_SUPPORT_BLOCKS = List.of(
+            "*_SLAB",
+            "*_CARPET",
+            "STEP",
+            "DOUBLE_STEP",
+            "CARPET",
+            "LEGACY_STEP",
+            "LEGACY_DOUBLE_STEP",
+            "LEGACY_CARPET",
+            "SCAFFOLDING",
+            "LEGACY_SCAFFOLDING",
+            "TRIPWIRE",
+            "TRIPWIRE_HOOK",
+            "LEGACY_TRIPWIRE",
+            "LEGACY_TRIPWIRE_HOOK"
+    );
+    private static final List<String> DEFAULT_REPLACE_AVOIDED_BLOCKS = List.of(
+            "*_SLAB",
+            "*_CARPET",
+            "*_PRESSURE_PLATE",
+            "*_BUTTON",
+            "*_SIGN",
+            "*_WALL_SIGN",
+            "*_BANNER",
+            "*_WALL_BANNER",
+            "*_TORCH",
+            "STEP",
+            "DOUBLE_STEP",
+            "CARPET",
+            "LEGACY_STEP",
+            "LEGACY_DOUBLE_STEP",
+            "LEGACY_CARPET",
+            "SNOW",
+            "LEGACY_SNOW",
+            "REDSTONE_WIRE",
+            "LEGACY_REDSTONE_WIRE",
+            "TORCH",
+            "LEGACY_TORCH"
+    );
 
     public SafeLocationManager(Graves plugin) {
         this.plugin = plugin;
@@ -34,49 +76,153 @@ public final class SafeLocationManager {
      */
     public enum GravePlacementReason {
 
-        /** Original location was already a valid, empty, non-fluid placement. */
+        /**
+         * Tripped when the original death location is already clear, inside the border,
+         * not fluid, has safe solid support below, and does not already contain a grave.
+         * Causes the grave to be placed at the original rounded death location without
+         * running additional vertical fallback searches.
+         */
         ORIGINAL_SAFE,
 
-        /** Higher safe placement found by vertical scanning. */
+        /**
+         * Tripped when upward vertical scanning finds the closest valid grave location.
+         * Causes the grave to be placed above the original or candidate base location.
+         */
         ROOF,
 
-        /** Lower safe placement found by vertical scanning. */
+        /**
+         * Tripped when downward vertical scanning finds the closest valid grave location.
+         * Causes the grave to be placed below the original or candidate base location.
+         */
         GROUND,
 
-        /** Water case: derived from player's last solid location. */
+        /**
+         * Tripped when the death was in water, or directly above water, and the player's
+         * cached last-solid location is still clear and valid. Causes the grave to be
+         * placed at that last-solid location before water surface or bottom fallbacks run.
+         */
         WATER_SMART,
 
-        /** Water case: death was in air directly above water. */
+        /**
+         * Tripped when the death location is air directly above water and that air block
+         * can safely hold the grave. Causes the grave to be placed at the death block,
+         * above the water, instead of scanning through the water column.
+         */
         WATER_ABOVE,
 
-        /** Water case: first AIR block above contiguous water column. */
+        /**
+         * Tripped when water-top placement is enabled and a clear air block is found
+         * above the contiguous water column. Causes the grave to be placed on the water
+         * surface rather than at the underwater death location.
+         */
         WATER_TOP,
 
-        /** Water case: bottom-most water block in the contiguous column. */
+        /**
+         * Tripped when water-bottom placement is enabled and the bottom of the contiguous
+         * water column is safe for grave placement. Causes the grave to be placed at the
+         * bottom water block location.
+         */
         WATER_BOTTOM,
 
-        /** Lava case: derived from player's last solid location. */
+        /**
+         * Tripped when the death was in lava, or directly above lava, and the player's
+         * cached last-solid location is still clear and valid. Causes the grave to be
+         * placed at that last-solid location before lava surface fallback runs.
+         */
         LAVA_SMART,
 
-        /** Lava case: death was in air directly above lava. */
+        /**
+         * Tripped when the death location is air directly above lava and that air block
+         * can safely hold the grave. Causes the grave to be placed at the death block,
+         * above the lava, instead of scanning through the lava column.
+         */
         LAVA_ABOVE,
 
-        /** Lava case: first AIR block above contiguous lava column. */
+        /**
+         * Tripped when lava-top placement is enabled and a clear air block is found above
+         * the contiguous lava column. Causes the grave to be placed on the lava surface
+         * rather than at the lava death location.
+         */
         LAVA_TOP,
 
-        /** Origin was above world build height; placed below build limit. */
+        /**
+         * Tripped when both the death block and the block above it are solid, indicating
+         * a two-block wall suffocation death. Causes the grave to use a cleared last-solid
+         * location first, then the closest valid location above or below the suffocation
+         * column.
+         */
+        SUFFOCATION,
+
+        /**
+         * Tripped when the death block or the block below it is powder snow. Causes the
+         * grave to use a cleared last-solid location first, then the first clear block
+         * above the contiguous powder snow column.
+         */
+        POWDER_SNOW,
+
+        /**
+         * Tripped when the block below the death location is a non-full support, such as
+         * a slab, carpet, scaffolding, or tripwire. Causes the grave to be placed in the
+         * clear block above that support instead of treating the support as normal full
+         * ground.
+         */
+        NON_FULL_SUPPORT,
+
+        /**
+         * Tripped when the death block itself is solid, but the case is not fluid, powder
+         * snow, or two-block suffocation. Causes the grave to be placed at the closest
+         * valid location above or below the blocked feet position.
+         */
+        FEET_BLOCKED,
+
+        /**
+         * Tripped when the death block is clear but the block above it is solid. Causes
+         * the grave to be placed at the closest valid location above or below the blocked
+         * head position.
+         */
+        HEAD_BLOCKED,
+
+        /**
+         * Tripped when the death block is a small or special block that should be
+         * preserved, such as carpet, snow layer, pressure plate, sign, banner, redstone
+         * wire, button, or torch. Causes the grave to be placed one block above when that
+         * space is clear.
+         */
+        REPLACE_AVOIDED,
+
+        /**
+         * Tripped when the original death location is above the world's maximum build
+         * height. Causes the grave to be placed at the first valid location found by
+         * scanning downward from the build limit.
+         */
         ABOVE_BUILD_LIMIT,
 
-        /** Nether roof fallback when no below-roof placement was found. */
+        /**
+         * Tripped when the death is above the configured Nether roof limit and Nether roof
+         * placement fallback is required. Causes the grave to be placed on or above the
+         * roof fallback location when below-roof placement is not available.
+         */
         NETHER_ROOF,
 
-        /** Void/outside-border case: safe point found in the Y column. */
+        /**
+         * Tripped when the death is in the void or outside the world border and a valid
+         * location is found in the same X/Z column. Causes the grave to be placed at the
+         * closest safe column location.
+         */
         VOID_COLUMN,
 
-        /** Void/outside-border case: safe point found at minimum height. */
+        /**
+         * Tripped when the death is in the void or outside the world border and the best
+         * valid same-column location is at the world's minimum height. Causes the grave
+         * to be placed at that minimum-height safe location.
+         */
         VOID_MIN_HEIGHT,
 
-        /** No valid candidates; returned original. */
+        /**
+         * Tripped when no configured special-case, vertical, fluid, void, or border
+         * placement candidate can be resolved. Causes the original rounded death location
+         * to be returned as the final fallback.
+         */
         FALLBACK_ORIGINAL
     }
 
@@ -371,6 +517,18 @@ public final class SafeLocationManager {
             return GravePlacementResult.of(origin, GravePlacementReason.NETHER_ROOF);
         }
 
+        Location powderSnow = resolvePowderSnowPlacement(livingEntity, origin, grave);
+        if (powderSnow != null) {
+            plugin.debugMessage(prefix + "CHOSEN=" + GravePlacementReason.POWDER_SNOW + " loc=" + fmtLoc(powderSnow) + " distSq=" + distSq(origin, powderSnow) + ".", 1);
+            return GravePlacementResult.of(powderSnow, GravePlacementReason.POWDER_SNOW);
+        }
+
+        Candidate nonFullSupport = resolveNonFullSupportPlacement(origin, grave);
+        if (nonFullSupport != null) {
+            plugin.debugMessage(prefix + "CHOSEN=" + nonFullSupport.reason + " loc=" + fmtLoc(nonFullSupport.loc) + " distSq=" + distSq(origin, nonFullSupport.loc) + ".", 1);
+            return GravePlacementResult.of(nonFullSupport.loc, nonFullSupport.reason);
+        }
+
         if (!hasGrave(origin) && isLocationSafeGrave(origin)) {
             Material t = origin.getBlock().getType();
             if (!MaterialUtil.isWater(t) && !MaterialUtil.isLava(t)) {
@@ -404,9 +562,35 @@ public final class SafeLocationManager {
 
         boolean inWaterOrAbove = MaterialUtil.isWater(originType) || directlyAboveWater;
         boolean inLavaOrAbove = MaterialUtil.isLava(originType) || directlyAboveLava;
+        boolean wallSuffocation = isPlacementEnabled("placement.suffocation", grave, true) && isWallSuffocation(origin);
 
-        if (inWaterOrAbove) {
-            // SMART-FIRST: prefer the player's last known solid location when available.
+        if (wallSuffocation) {
+            Location lastSolid = resolveClearedLastSolid(livingEntity, origin, grave);
+            if (lastSolid != null) {
+                plugin.debugMessage(prefix + "CHOSEN=" + GravePlacementReason.SUFFOCATION + " loc=" + fmtLoc(lastSolid) + " distSq=" + distSq(origin, lastSolid) + ".", 1);
+                return GravePlacementResult.of(lastSolid, GravePlacementReason.SUFFOCATION);
+            }
+
+            Location suffocation = resolveSuffocationLocation(origin, grave);
+            if (suffocation != null) {
+                plugin.debugMessage(prefix + "CHOSEN=" + GravePlacementReason.SUFFOCATION + " loc=" + fmtLoc(suffocation) + " distSq=" + distSq(origin, suffocation) + ".", 1);
+                return GravePlacementResult.of(suffocation, GravePlacementReason.SUFFOCATION);
+            }
+
+            plugin.debugMessage(prefix + "wall suffocation detected but no above/below placement found; continuing.", 1);
+        } else if (isPlacementEnabled("placement.feet-blocked", grave, true) && isFeetBlocked(origin, grave)) {
+            Location feetBlocked = resolveBlockedPlacement(origin, grave, GravePlacementReason.FEET_BLOCKED);
+            if (feetBlocked != null) {
+                plugin.debugMessage(prefix + "CHOSEN=" + GravePlacementReason.FEET_BLOCKED + " loc=" + fmtLoc(feetBlocked) + " distSq=" + distSq(origin, feetBlocked) + ".", 1);
+                return GravePlacementResult.of(feetBlocked, GravePlacementReason.FEET_BLOCKED);
+            }
+        } else if (isPlacementEnabled("placement.head-blocked", grave, true) && isHeadBlocked(origin, grave)) {
+            Location headBlocked = resolveBlockedPlacement(origin, grave, GravePlacementReason.HEAD_BLOCKED);
+            if (headBlocked != null) {
+                plugin.debugMessage(prefix + "CHOSEN=" + GravePlacementReason.HEAD_BLOCKED + " loc=" + fmtLoc(headBlocked) + " distSq=" + distSq(origin, headBlocked) + ".", 1);
+                return GravePlacementResult.of(headBlocked, GravePlacementReason.HEAD_BLOCKED);
+            }
+        } else if (inWaterOrAbove) {
             Location smart = resolveSmartFromLastSolid(livingEntity, origin, grave, useGround, useRoof);
             if (smart != null) {
                 plugin.debugMessage(prefix + "CHOSEN=" + GravePlacementReason.WATER_SMART + " loc=" + fmtLoc(smart) + " distSq=" + distSq(origin, smart) + ".", 1);
@@ -456,7 +640,6 @@ public final class SafeLocationManager {
                 if (ground != null) candidates.add(new Candidate(ground, GravePlacementReason.GROUND));
             }
         } else if (inLavaOrAbove) {
-            // SMART-FIRST: prefer the player's last known solid location when available.
             Location smart = resolveSmartFromLastSolid(livingEntity, origin, grave, useGround, useRoof);
             if (smart != null) {
                 plugin.debugMessage(prefix + "CHOSEN=" + GravePlacementReason.LAVA_SMART + " loc=" + fmtLoc(smart) + " distSq=" + distSq(origin, smart) + ".", 1);
@@ -701,6 +884,326 @@ public final class SafeLocationManager {
         double dy = a.getY() - b.getY();
         double dz = a.getZ() - b.getZ();
         return (dx * dx) + (dy * dy) + (dz * dz);
+    }
+
+    /**
+     * Resolves placement for deaths in powder snow.
+     *
+     * @param livingEntity The entity.
+     * @param origin       The death location.
+     * @param grave        The grave.
+     * @return The resolved location, or null if this is not a powder snow case.
+     */
+    private Location resolvePowderSnowPlacement(LivingEntity livingEntity, Location origin, Grave grave) {
+        if (origin == null || origin.getWorld() == null) return null;
+        if (!isPlacementEnabled("placement.powder-snow", grave, true)) return null;
+
+        Block block = origin.getBlock();
+        Block below = block.getRelative(BlockFace.DOWN);
+
+        if (!isPowderSnow(block.getType(), grave) && !isPowderSnow(below.getType(), grave)) return null;
+
+        Location lastSolid = resolveClearedLastSolid(livingEntity, origin, grave);
+        if (lastSolid != null) return lastSolid;
+
+        Block start = isPowderSnow(block.getType(), grave) ? block : below;
+        return resolvePowderSnowSurfaceTop(start.getLocation(), grave);
+    }
+
+    /**
+     * Resolves the first clear block above a powder snow column.
+     *
+     * @param originInPowderSnow The location in powder snow.
+     * @param grave              The grave.
+     * @return The surface location, or null if not found.
+     */
+    private Location resolvePowderSnowSurfaceTop(Location originInPowderSnow, Grave grave) {
+        if (originInPowderSnow == null || originInPowderSnow.getWorld() == null) return null;
+
+        World world = originInPowderSnow.getWorld();
+        int x = originInPowderSnow.getBlockX();
+        int z = originInPowderSnow.getBlockZ();
+        int minY = world.getMinHeight();
+        int maxY = world.getMaxHeight() - 1;
+
+        if (isNether(world) && !isAboveNetherRoofInternal(originInPowderSnow, grave)) {
+            maxY = Math.min(maxY, getNetherRoofYInternal(world, grave));
+        }
+
+        int y = Math.max(originInPowderSnow.getBlockY(), minY);
+        if (!isPowderSnow(world.getBlockAt(x, y, z).getType(), grave)) return null;
+
+        while (y <= maxY && isPowderSnow(world.getBlockAt(x, y, z).getType(), grave)) {
+            y++;
+        }
+
+        if (y < minY || y > maxY) return null;
+
+        Location surface = new Location(world, x + 0.5, y, z + 0.5, originInPowderSnow.getYaw(), originInPowderSnow.getPitch());
+        return isClearPlacementAboveSpecialBlock(surface) ? surface : null;
+    }
+
+    /**
+     * Resolves placement above non-full support blocks without replacing them.
+     *
+     * @param origin The death location.
+     * @return The placement candidate, or null if not applicable.
+     */
+    private Candidate resolveNonFullSupportPlacement(Location origin, Grave grave) {
+        if (origin == null || origin.getWorld() == null) return null;
+
+        Block block = origin.getBlock();
+        Block below = block.getRelative(BlockFace.DOWN);
+
+        if (isPlacementEnabled("placement.replace-avoided", grave, true) && isReplacementAvoidedBlock(block.getType(), grave)) {
+            Location above = centerOnBlock(origin.clone().add(0.0, 1.0, 0.0));
+            if (isClearPlacementAboveSpecialBlock(above)) {
+                return new Candidate(above, GravePlacementReason.REPLACE_AVOIDED);
+            }
+        }
+
+        if (isPlacementEnabled("placement.non-full-support", grave, true) && isNonFullSupport(below.getType(), grave)) {
+            Location aboveSupport = centerOnBlock(origin);
+            if (isClearPlacementAboveSpecialBlock(aboveSupport)) {
+                return new Candidate(aboveSupport, GravePlacementReason.NON_FULL_SUPPORT);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Checks if a block can receive a grave above a small or special support block.
+     *
+     * @param location The candidate location.
+     * @return True if the candidate can be used.
+     */
+    private boolean isClearPlacementAboveSpecialBlock(Location location) {
+        if (location == null || location.getWorld() == null) return false;
+
+        Location rounded = LocationUtil.roundLocation(location);
+        if (rounded == null || rounded.getWorld() == null) return false;
+
+        return !isVoid(rounded)
+                && isInsideBorder(rounded)
+                && !hasGrave(rounded)
+                && MaterialUtil.isSafeNotSolid(rounded.getBlock().getType());
+    }
+
+    /**
+     * Checks whether the feet block is occupied but not already handled by special cases.
+     *
+     * @param location The death location.
+     * @return True if the feet block is blocked.
+     */
+    private boolean isFeetBlocked(Location location, Grave grave) {
+        if (location == null || location.getWorld() == null) return false;
+
+        Material type = location.getBlock().getType();
+        return type.isSolid()
+                && !MaterialUtil.isWater(type)
+                && !MaterialUtil.isLava(type)
+                && !isPowderSnow(type, grave);
+    }
+
+    /**
+     * Checks whether the head block is occupied while the feet block is otherwise clear.
+     *
+     * @param location The death location.
+     * @return True if the head block is blocked.
+     */
+    private boolean isHeadBlocked(Location location, Grave grave) {
+        if (location == null || location.getWorld() == null) return false;
+
+        Block block = location.getBlock();
+        Material feet = block.getType();
+        Material head = block.getRelative(BlockFace.UP).getType();
+
+        return MaterialUtil.isSafeNotSolid(feet)
+                && !MaterialUtil.isWater(feet)
+                && !MaterialUtil.isLava(feet)
+                && !isPowderSnow(feet, grave)
+                && head.isSolid()
+                && !MaterialUtil.isLava(head);
+    }
+
+    /**
+     * Resolves a placement above or below an occupied player-space block.
+     *
+     * @param origin The death location.
+     * @param grave  The grave.
+     * @param reason The placement reason.
+     * @return The resolved location, or null if not found.
+     */
+    private Location resolveBlockedPlacement(Location origin, Grave grave, GravePlacementReason reason) {
+        if (origin == null || origin.getWorld() == null) return null;
+
+        List<Candidate> candidates = new ArrayList<>();
+
+        Location above = searchUpForSafeGrave(origin, origin, grave, origin.getBlockY() + 1);
+        if (above != null) candidates.add(new Candidate(above, reason));
+
+        Location below = searchDownForSafeGrave(origin, grave, origin.getBlockY() - 1);
+        if (below != null) candidates.add(new Candidate(below, reason));
+
+        Candidate best = pickClosest(origin, candidates);
+        return best != null ? best.loc : null;
+    }
+
+    /**
+     * Checks whether a material is powder snow across supported versions.
+     *
+     * @param material The material.
+     * @return True if powder snow.
+     */
+    private boolean isPowderSnow(Material material, Grave grave) {
+        return materialMatchesConfiguredList(material, "placement.powder-snow-blocks", grave, DEFAULT_POWDER_SNOW_BLOCKS);
+    }
+
+    /**
+     * Checks whether a block should be preserved by placing the grave above it.
+     *
+     * @param material The material.
+     * @return True if the block should not be replaced directly.
+     */
+    private boolean isReplacementAvoidedBlock(Material material, Grave grave) {
+        return materialMatchesConfiguredList(material, "placement.replace-avoided-blocks", grave, DEFAULT_REPLACE_AVOIDED_BLOCKS);
+    }
+
+    /**
+     * Checks whether a material is a non-full support block.
+     *
+     * @param material The material.
+     * @return True if non-full support.
+     */
+    private boolean isNonFullSupport(Material material, Grave grave) {
+        return materialMatchesConfiguredList(material, "placement.non-full-support-blocks", grave, DEFAULT_NON_FULL_SUPPORT_BLOCKS);
+    }
+
+    /**
+     * Checks whether a placement option is enabled.
+     *
+     * @param path         The config path.
+     * @param grave        The grave.
+     * @param defaultValue The value to use if the config path is missing.
+     * @return True if enabled.
+     */
+    private boolean isPlacementEnabled(String path, Grave grave, boolean defaultValue) {
+        var section = plugin.getConfigManager().getConfigSection(path, grave);
+        return section.contains(path) ? section.getBoolean(path) : defaultValue;
+    }
+
+    /**
+     * Checks whether a material matches a configured placement material list.
+     *
+     * @param material     The material.
+     * @param path         The config path.
+     * @param grave        The grave.
+     * @param defaultNames The fallback names to use if the config path is missing or empty.
+     * @return True if matched.
+     */
+    private boolean materialMatchesConfiguredList(Material material, String path, Grave grave, List<String> defaultNames) {
+        if (material == null) return false;
+
+        var section = plugin.getConfigManager().getConfigSection(path, grave);
+        List<String> names = section.contains(path) ? section.getStringList(path) : defaultNames;
+        if (names == null || names.isEmpty()) names = defaultNames;
+
+        String materialName = material.name();
+        for (String raw : names) {
+            if (matchesMaterialPattern(materialName, raw)) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Checks whether a material name matches an exact or wildcard pattern.
+     *
+     * @param materialName The material name.
+     * @param rawPattern   The raw configured pattern.
+     * @return True if matched.
+     */
+    private boolean matchesMaterialPattern(String materialName, String rawPattern) {
+        if (materialName == null || rawPattern == null) return false;
+
+        String pattern = rawPattern.trim().toUpperCase();
+        if (pattern.isEmpty()) return false;
+
+        if ("*".equals(pattern)) return true;
+
+        int star = pattern.indexOf('*');
+        if (star < 0) return materialName.equals(pattern);
+
+        String prefix = pattern.substring(0, star);
+        String suffix = pattern.substring(star + 1);
+        return materialName.startsWith(prefix) && materialName.endsWith(suffix);
+    }
+
+    /**
+     * Checks whether the death location is inside two solid blocks.
+     *
+     * @param location The death location.
+     * @return True if the current block and block above are solid.
+     */
+    private boolean isWallSuffocation(Location location) {
+        if (location == null || location.getWorld() == null) return false;
+
+        Block block = location.getBlock();
+        return block.getType().isSolid()
+                && block.getRelative(BlockFace.UP).getType().isSolid();
+    }
+
+    /**
+     * Resolves the previously stored solid location only when it is now clear for direct placement.
+     *
+     * @param livingEntity  The entity.
+     * @param deathLocation The death location.
+     * @param grave         The grave.
+     * @return The cleared last solid location, or null if unavailable.
+     */
+    private Location resolveClearedLastSolid(LivingEntity livingEntity, Location deathLocation, Grave grave) {
+        if (!(livingEntity instanceof Player player)) return null;
+
+        Location lastSolid = getLastSolidLocation(player);
+        if (lastSolid == null || lastSolid.getWorld() == null) return null;
+
+        if (deathLocation != null
+                && deathLocation.getWorld() != null
+                && deathLocation.getWorld().equals(lastSolid.getWorld())
+                && isNether(lastSolid.getWorld())
+                && !isAboveNetherRoofInternal(deathLocation, grave)
+                && lastSolid.getBlockY() > getNetherRoofYInternal(lastSolid.getWorld(), grave)) {
+            return null;
+        }
+
+        Location base = LocationUtil.roundLocation(lastSolid);
+        if (base == null || base.getWorld() == null) return null;
+        if (isVoid(base) || !isInsideBorder(base)) return null;
+
+        return !hasGrave(base) && isLocationSafeGrave(base) ? base : null;
+    }
+
+    /**
+     * Resolves a grave location above or below a wall suffocation point.
+     *
+     * @param origin The suffocation origin.
+     * @param grave  The grave.
+     * @return The resolved location, or null if not found.
+     */
+    private Location resolveSuffocationLocation(Location origin, Grave grave) {
+        if (origin == null || origin.getWorld() == null) return null;
+
+        List<Candidate> candidates = new ArrayList<>();
+
+        Location above = searchUpForSafeGrave(origin, origin, grave, origin.getBlockY() + 2);
+        if (above != null) candidates.add(new Candidate(above, GravePlacementReason.SUFFOCATION));
+
+        Location below = searchDownForSafeGrave(origin, grave, origin.getBlockY() - 1);
+        if (below != null) candidates.add(new Candidate(below, GravePlacementReason.SUFFOCATION));
+
+        Candidate best = pickClosest(origin, candidates);
+        return best != null ? best.loc : null;
     }
 
     /**

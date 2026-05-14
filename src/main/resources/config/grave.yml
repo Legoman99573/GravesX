@@ -52,6 +52,60 @@ settings:
         lava-smart: true
         # If the entity drowns in water, try place the grave on the last solid block they stood on. (Only works for players)
         water-smart: false
+        # If the entity suffocates in a wall, try place the grave at the last solid block, then above or below the suffocation column.
+        suffocation: true
+        # If the entity dies in powder snow, try the last solid block first, then place the grave above the powder snow surface.
+        powder-snow: true
+        # Material names that should be treated as powder snow for placement. Supports * wildcards, for example *_POWDER_SNOW.
+        powder-snow-blocks:
+          - "POWDER_SNOW"
+        # If the entity dies on a non-full support, place the grave above it instead of replacing or treating it like full ground.
+        non-full-support: true
+        # Material names that should be treated as non-full supports. Supports * wildcards, for example *_SLAB.
+        non-full-support-blocks:
+          - "*_SLAB"
+          - "*_CARPET"
+          - "STEP"
+          - "DOUBLE_STEP"
+          - "CARPET"
+          - "LEGACY_STEP"
+          - "LEGACY_DOUBLE_STEP"
+          - "LEGACY_CARPET"
+          - "SCAFFOLDING"
+          - "LEGACY_SCAFFOLDING"
+          - "TRIPWIRE"
+          - "TRIPWIRE_HOOK"
+          - "LEGACY_TRIPWIRE"
+          - "LEGACY_TRIPWIRE_HOOK"
+        # If the entity dies inside a small or special block, place the grave above it instead of replacing that block.
+        replace-avoided: true
+        # Material names that should be preserved by placing the grave above them. Supports * wildcards, for example *_BUTTON.
+        replace-avoided-blocks:
+          - "*_SLAB"
+          - "*_CARPET"
+          - "*_PRESSURE_PLATE"
+          - "*_BUTTON"
+          - "*_SIGN"
+          - "*_WALL_SIGN"
+          - "*_BANNER"
+          - "*_WALL_BANNER"
+          - "*_TORCH"
+          - "STEP"
+          - "DOUBLE_STEP"
+          - "CARPET"
+          - "LEGACY_STEP"
+          - "LEGACY_DOUBLE_STEP"
+          - "LEGACY_CARPET"
+          - "SNOW"
+          - "LEGACY_SNOW"
+          - "REDSTONE_WIRE"
+          - "LEGACY_REDSTONE_WIRE"
+          - "TORCH"
+          - "LEGACY_TORCH"
+        # If the entity dies with its feet block occupied, move the grave above or below instead of placing at the blocked location.
+        feet-blocked: true
+        # If the entity dies with its head block occupied, move the grave above or below instead of placing at the blocked location.
+        head-blocked: true
         # Allow grave placement above the Nether roof? (Not recommended, as graves placed here may be inaccessible.)
         nether-roof: false
         # Height of the nether roof? Shouldn't need to touch this unless you are using a custom world generator
