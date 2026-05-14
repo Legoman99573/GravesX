@@ -224,8 +224,7 @@ public class ArmorStandManager extends EntityDataManager {
 
         List<EntityData> removableEntityData = new ArrayList<>();
 
-        for (Map.Entry<EntityData, Entity> entry : entityDataMap.entrySet()) {
-            EntityData data = entry.getKey();
+        for (EntityData data : hologramDataList) {
 
             if (data == null) {
                 plugin.debugMessage("[Holograms] Skipping null EntityData entry during removal", 2);
@@ -247,7 +246,7 @@ public class ArmorStandManager extends EntityDataManager {
 
             removableEntityData.add(data);
 
-            Entity finalEntity = entry.getValue();
+            Entity finalEntity = entityDataMap.get(data);
             Location finalGraveLocation = data.getLocation();
             UUID finalGraveUUID = data.getUUIDGrave();
 
@@ -309,7 +308,8 @@ public class ArmorStandManager extends EntityDataManager {
                                         PersistentDataType.STRING
                                 );
 
-                                if (storedUuid != null
+                                if (finalGraveUUID != null
+                                        && storedUuid != null
                                         && storedUuid.equals(finalGraveUUID.toString())) {
                                     remove = true;
                                 }
@@ -503,6 +503,19 @@ public class ArmorStandManager extends EntityDataManager {
                                         + graveUUID,
                                 2
                         );
+                        return;
+                    }
+
+                    if (!isCachedHologramEntity(graveUUID, stand.getUniqueId())) {
+                        stand.remove();
+
+                        plugin.debugMessage(
+                                "[Cleanup] Removed stale hologram entity="
+                                        + stand.getUniqueId()
+                                        + " grave="
+                                        + graveUUID,
+                                2
+                        );
                     }
                 });
             }
@@ -536,6 +549,37 @@ public class ArmorStandManager extends EntityDataManager {
         } catch (Throwable ignored) {
         }
         return hologramExists;
+    }
+
+    private boolean isCachedHologramEntity(UUID graveUUID, UUID entityUUID) {
+        if (graveUUID == null || entityUUID == null) {
+            return false;
+        }
+
+        try {
+            for (EntityData entityData : plugin.getCacheManager().getEntityMap().values()) {
+
+                if (!(entityData instanceof HologramData hologramData)) {
+                    continue;
+                }
+
+                if (hologramData.getBackend()
+                        != HologramData.Backend.ARMOR_STAND) {
+                    continue;
+                }
+
+                if (!graveUUID.equals(hologramData.getUUIDGrave())) {
+                    continue;
+                }
+
+                if (entityUUID.equals(hologramData.getUUIDEntity())) {
+                    return true;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+
+        return false;
     }
 
     public Grave hasGrave(UUID graveUUID) {
@@ -575,22 +619,60 @@ public class ArmorStandManager extends EntityDataManager {
     }
 
     private void executeRegion(Location loc, Runnable task) {
-        var sched = plugin.getSchedulerManager();
-        if (sched != null) {
-            sched.execute(loc, task);
-            return;
+        if (plugin.getVersionManager().isFolia()) {
+            var sched = plugin.getSchedulerManager();
+            if (sched != null) {
+                sched.execute(loc, task);
+                return;
+            }
+        }
+
+        if (plugin.getVersionManager().isPaper()) {
+            var sched = plugin.getSchedulerManager();
+            if (sched != null) {
+                sched.runTask(task);
+                return;
+            }
         }
 
         plugin.getServer().getScheduler().runTask(plugin, task);
     }
 
     private void executeRegion(Entity entity, Runnable task) {
-        var sched = plugin.getSchedulerManager();
-        if (sched != null) {
-            sched.execute(entity, task);
+        if (plugin.getVersionManager().isFolia()) {
+            var sched = plugin.getSchedulerManager();
+            if (sched != null) {
+                sched.execute(entity, task);
+                return;
+            }
+        }
+
+        if (plugin.getVersionManager().isPaper()
+                && executePaperEntityTask(entity, task)) {
             return;
         }
 
         plugin.getServer().getScheduler().runTask(plugin, task);
     }
+
+    private boolean executePaperEntityTask(Entity entity, Runnable task) {
+        if (entity == null) {
+            return false;
+        }
+
+        try {
+            Object scheduler = entity.getClass()
+                    .getMethod("getScheduler")
+                    .invoke(entity);
+
+            scheduler.getClass()
+                    .getMethod("execute", org.bukkit.plugin.Plugin.class, Runnable.class, Runnable.class, long.class)
+                    .invoke(scheduler, plugin, task, (Runnable) () -> {}, 1L);
+
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
 }

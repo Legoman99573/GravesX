@@ -2145,14 +2145,18 @@ public class DataManager {
 
                     if (loc != null && loc.getWorld() != null) {
                         plugin.getSchedulerManager().execute(loc, () -> {
-                            Grave grave = plugin.getCacheManager().getGrave(entityData.getUUIDGrave());
-                            plugin.getHologramManager().removeHologram(grave);
+                            if (entityData.getType() != EntityData.Type.HOLOGRAM) {
+                                Grave grave = plugin.getCacheManager().getGrave(entityData.getUUIDGrave());
+                                plugin.getHologramManager().removeHologram(grave);
+                            }
                             getChunkData(loc).removeEntityData(entityData);
                             plugin.getCacheManager().removeEntityData(entityData);
                         });
                     } else {
-                        Grave grave = plugin.getCacheManager().getGrave(entityData.getUUIDGrave());
-                        plugin.getHologramManager().removeHologram(grave);
+                        if (entityData.getType() != EntityData.Type.HOLOGRAM) {
+                            Grave grave = plugin.getCacheManager().getGrave(entityData.getUUIDGrave());
+                            plugin.getHologramManager().removeHologram(grave);
+                        }
                         plugin.getCacheManager().removeEntityData(entityData);
                     }
 
