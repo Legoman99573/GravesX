@@ -1637,12 +1637,8 @@ public class GraveManager {
                 try { headMat = Material.valueOf(matName); } catch (Throwable ignored) {}
                 if (headMat == null) { try { headMat = Material.valueOf("PLAYER_HEAD"); } catch (Throwable ignored) {} }
 
-                if (headMat != null) {
-                    anchor.getBlock().setType(headMat);
-                    headPlaced = true;
-                }
-
-                createGraveBlock(anchor, grave);
+                createGraveBlock(anchor, grave, p.shouldBlockBeReplaceable());
+                headPlaced = headMat != null;
                 plugin.getHologramManager().createHologram(anchor, grave);
                 hologramCreated = true;
             } else {
@@ -1703,9 +1699,19 @@ public class GraveManager {
      * @param grave  the associated grave
      */
     public void createGraveBlock(@NotNull Location location, @NotNull Grave grave) {
+        createGraveBlock(location, grave, false);
+    }
+
+    /**
+     * Public helper to create or replace the grave block at the given location.
+     *
+     * @param location             the location to place the block at
+     * @param grave                the associated grave
+     * @param storeReplacementData whether the original block state should be restored when the grave is removed
+     */
+    public void createGraveBlock(@NotNull Location location, @NotNull Grave grave, boolean storeReplacementData) {
         try {
-            plugin.getCompatibility().setBlockData(location, location.getBlock().getBlockData().getMaterial(), grave, plugin);
-            plugin.getBlockManager().createBlock(location, grave);
+            plugin.getBlockManager().createBlock(location, grave, storeReplacementData);
         } catch (Throwable t) {
             String world = location.getWorld() != null ? location.getWorld().getName() : null;
             plugin.getLogger().warning("Failed to create grave block for " + grave.getUUID() + " at " + world + ", " + location.getBlockX() + "x, " + location.getBlockY() + "y, " + location.getBlockZ() + "z: " + t.getMessage());
@@ -1723,7 +1729,7 @@ public class GraveManager {
     private void createGraveIntegrations(@NotNull Location anchor, @NotNull Grave grave) {
         if (plugin.getIntegrationManager().hasFurnitureLib() && plugin.getConfigManager().getConfigSection("furniturelib.enabled", grave).getBoolean("furniturelib.enabled", true)) {
             plugin.debugMessage("Creating FurnitureLib furniture grave for " + grave.getUUID(), 1);
-            createGraveBlock(anchor, grave);
+            createGraveBlock(anchor, grave, true);
             plugin.getHologramManager().createHologram(anchor, grave);
             plugin.getIntegrationManager().getFurnitureLib().createFurniture(anchor, grave);
         } else if (plugin.getIntegrationManager().hasFurnitureEngine() && plugin.getConfigManager().getConfigSection("furnitureengine.enabled", grave).getBoolean("furnitureengine.enabled", true)) {
@@ -1732,7 +1738,7 @@ public class GraveManager {
             plugin.getIntegrationManager().getFurnitureEngine().createFurniture(anchor, grave);
         } else if (plugin.getIntegrationManager().hasItemsAdder() && plugin.getConfigManager().getConfigSection("itemsadder.furniture.enabled", grave).getBoolean("itemsadder.furniture.enabled", true)) {
             plugin.debugMessage("Creating ItemsAdder furniture grave for " + grave.getUUID(), 1);
-            createGraveBlock(anchor, grave);
+            createGraveBlock(anchor, grave, true);
             plugin.getHologramManager().createHologram(anchor, grave);
             plugin.getIntegrationManager().getItemsAdder().createFurniture(anchor, grave);
         } else if (plugin.getIntegrationManager().hasItemsAdder() && plugin.getConfigManager().getConfigSection("itemsadder.block.enabled", grave).getBoolean("itemsadder.block.enabled", true)) {
@@ -1742,7 +1748,7 @@ public class GraveManager {
             plugin.getIntegrationManager().getItemsAdder().createBlock(anchor, grave);
         } else if (plugin.getIntegrationManager().hasOraxen() && plugin.getConfigManager().getConfigSection("oraxen.furniture.enabled", grave).getBoolean("oraxen.furniture.enabled", true)) {
             plugin.debugMessage("Creating Oraxen furniture grave for " + grave.getUUID(), 1);
-            createGraveBlock(anchor, grave);
+            createGraveBlock(anchor, grave, true);
             plugin.getHologramManager().createHologram(anchor, grave);
             plugin.getIntegrationManager().getOraxen().createFurniture(anchor, grave);
         } else if (plugin.getIntegrationManager().hasOraxen() && plugin.getConfigManager().getConfigSection("oraxen.block.enabled", grave).getBoolean("oraxen.block.enabled", true)) {
@@ -1752,7 +1758,7 @@ public class GraveManager {
             plugin.getIntegrationManager().getOraxen().createBlock(anchor, grave);
         } else if (plugin.getIntegrationManager().hasNexo() && plugin.getConfigManager().getConfigSection("nexo.furniture.enabled", grave).getBoolean("nexo.furniture.enabled", true)) {
             plugin.debugMessage("Creating Nexo furniture grave for " + grave.getUUID(), 1);
-            createGraveBlock(anchor, grave);
+            createGraveBlock(anchor, grave, true);
             plugin.getHologramManager().createHologram(anchor, grave);
             plugin.getIntegrationManager().getNexo().createFurniture(anchor, grave);
         } else if (plugin.getIntegrationManager().hasNexo() && plugin.getConfigManager().getConfigSection("nexo.block.enabled", grave).getBoolean("nexo.block.enabled", true)) {
@@ -1793,19 +1799,16 @@ public class GraveManager {
         } else {
             if (plugin.getConfigManager().getConfigSection("armor-stand.enabled", grave).getBoolean("armor-stand.enabled", false)) {
                 plugin.debugMessage("Creating ArmorStand grave for " + grave.getUUID(), 1);
-                createGraveBlock(anchor, grave);
+                createGraveBlock(anchor, grave, true);
                 plugin.getHologramManager().createHologram(anchor, grave);
                 plugin.getEntityManager().createArmorStand(anchor, grave);
             } else if (plugin.getConfigManager().getConfigSection("item-frame.enabled", grave).getBoolean("item-frame.enabled", false)) {
                 plugin.debugMessage("Creating ItemFrame grave for " + grave.getUUID(), 1);
-                createGraveBlock(anchor, grave);
+                createGraveBlock(anchor, grave, true);
                 plugin.getHologramManager().createHologram(anchor, grave);
                 plugin.getEntityManager().createItemFrame(anchor, grave);
             } else {
                 plugin.debugMessage("Creating Block grave for " + grave.getUUID(), 1);
-                Block block = anchor.getBlock();
-                block.setType(Material.valueOf(plugin.getConfigManager().getConfigSection("block.material", grave).getString("block.material", "PLAYER_HEAD")));
-
                 createGraveBlock(anchor, grave);
                 plugin.getHologramManager().createHologram(anchor, grave);
             }
