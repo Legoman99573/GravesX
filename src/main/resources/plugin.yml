@@ -190,6 +190,10 @@ permissions:
     default: op
     description: Import graves from another plugin
 
+  graves.migration:
+    default: op
+    description: Run GravesX migration commands
+
   graves.givetoken:
     default: op
     description: Give a grave token

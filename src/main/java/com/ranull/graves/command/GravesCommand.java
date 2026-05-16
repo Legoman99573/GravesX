@@ -1,6 +1,8 @@
 package com.ranull.graves.command;
 
 import com.ranull.graves.Graves;
+import com.ranull.graves.data.EntityData;
+import com.ranull.graves.data.HologramData;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.compatibility.CompatibilityTeleport;
 import dev.cwhead.GravesX.util.PluginDownloadUtil;
@@ -29,7 +31,9 @@ import java.util.UUID;
 public class GravesCommand implements CommandExecutor, TabCompleter {
     private final Graves plugin;
     private final Set<UUID> pendingImports = new HashSet<>();
+    private final Set<UUID> pendingHologramMigrations = new HashSet<>();
     private boolean consolePendingImport = false;
+    private boolean consolePendingHologramMigration = false;
 
     /**
      * Constructor to initialize the GravesCommand with the Graves plugin.
@@ -65,6 +69,7 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
                 case "cleanup" -> handleCleanupCommand(commandSender);
                 case "purge" -> handlePurgeCommand(commandSender, args);
                 case "import" -> handleImportCommand(commandSender, args);
+                case "migration", "migrate" -> handleMigrationCommand(commandSender, args);
                 case "addons", "addon" -> handleAddonCommand(commandSender, args);
                 case "count" -> handleCountCommand(commandSender, args);
                 case "help" -> sendHelpMenu(commandSender);
@@ -147,6 +152,11 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage(ChatColor.RED + "/graves import {plugin} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Imports grave data from another grave plugin");
             }
 
+            // Migration
+            if (plugin.getPermissionManager().hasGrantedPermission("graves.migration", player.getPlayer())) {
+                sender.sendMessage(ChatColor.RED + "/graves migration holograms " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Migrate ArmorStand holograms to TextDisplay holograms");
+            }
+
             // Purge
             if (plugin.getPermissionManager().hasGrantedPermission("graves.purge", player.getPlayer())) {
                 sender.sendMessage(ChatColor.RED + "/graves purge {type} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Purges based on type");
@@ -179,6 +189,7 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(ChatColor.RED + "/graves dump " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Dump server information");
             sender.sendMessage(ChatColor.RED + "/graves debug {level} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Change debug level");
             sender.sendMessage(ChatColor.RED + "/graves import {plugin} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Imports grave data from another grave plugin");
+            sender.sendMessage(ChatColor.RED + "/graves migration holograms " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Migrate ArmorStand holograms to TextDisplay holograms");
             sender.sendMessage(ChatColor.RED + "/graves purge {type} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Purges based on type");
             sender.sendMessage(ChatColor.RED + "/graves addon {addon} " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Downloads addon (Restart Required)");
             sender.sendMessage(ChatColor.RED + "/graves cleanup " + ChatColor.DARK_GRAY + "-" + ChatColor.RESET + " Purges all graves");
@@ -210,6 +221,12 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
             if (commandSender instanceof Player player
                     && plugin.getPermissionManager().hasGrantedPermission("graves.import", player.getPlayer())) {
                 stringList.add("import");
+            }
+
+            if (!(commandSender instanceof Player)
+                    || plugin.getPermissionManager().hasGrantedPermission("graves.migration", ((Player) commandSender).getPlayer())) {
+                stringList.add("migration");
+                stringList.add("migrate");
             }
 
             if (!(commandSender instanceof Player)
@@ -388,6 +405,22 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
                             || plugin.getPermissionManager().hasGrantedPermission("graves.import", ((Player) commandSender).getPlayer())) {
                         stringList.add("AngelChest");
                         stringList.add("angelchest");
+                        stringList.add("confirm");
+                    }
+                    break;
+                }
+
+                case "migration":
+                case "migrate": {
+                    if (!(commandSender instanceof Player)
+                            || plugin.getPermissionManager().hasGrantedPermission("graves.migration", ((Player) commandSender).getPlayer())) {
+                        if (args.length == 2) {
+                            stringList.add("holograms");
+                            stringList.add("hologram");
+                        } else if (args.length == 3
+                                && (args[1].equalsIgnoreCase("holograms") || args[1].equalsIgnoreCase("hologram"))) {
+                            stringList.add("confirm");
+                        }
                     }
                     break;
                 }
@@ -1094,6 +1127,146 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
 
         commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
                 + "Usage: /graves import {plugin}");
+    }
+
+    private void handleMigrationCommand(CommandSender commandSender, String[] args) {
+        boolean isConsole = !(commandSender instanceof Player);
+        Player player = isConsole ? null : (Player) commandSender;
+
+        if (!isConsole && !plugin.getPermissionManager().hasGrantedPermission("graves.migration", player)) {
+            plugin.getEntityManager().sendMessage("message.permission-denied", player);
+            return;
+        }
+
+        if (args.length < 2) {
+            sendMigrationList(commandSender);
+            return;
+        }
+
+        if (!args[1].equalsIgnoreCase("holograms") && !args[1].equalsIgnoreCase("hologram")) {
+            sendMigrationList(commandSender);
+            return;
+        }
+
+        if (!plugin.getVersionManager().isHasTextDisplays()) {
+            commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
+                    + "TextDisplay holograms are not supported on this server version.");
+            return;
+        }
+
+        if (args.length >= 3 && args[2].equalsIgnoreCase("confirm")) {
+            boolean allowed = isConsole ? consolePendingHologramMigration : pendingHologramMigrations.remove(player.getUniqueId());
+
+            if (!allowed) {
+                commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
+                        + "No pending hologram migration request. Run /graves migration holograms first.");
+                return;
+            }
+
+            if (isConsole) {
+                consolePendingHologramMigration = false;
+            }
+
+            int migrated = migrateArmorStandHologramsToTextDisplays();
+
+            commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
+                    + "Hologram migration complete. Graves migrated to the modern TextDisplay system: "
+                    + ChatColor.RED + migrated + ChatColor.RESET + ".");
+            return;
+        }
+
+        if (args.length > 2) {
+            commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
+                    + "Usage: /graves migration holograms confirm");
+            return;
+        }
+
+        Set<UUID> graveUUIDs = getArmorStandHologramGraveUUIDs();
+        if (graveUUIDs.isEmpty()) {
+            commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
+                    + "No ArmorStand grave holograms were found to migrate.");
+            return;
+        }
+
+        if (isConsole) {
+            consolePendingHologramMigration = true;
+        } else {
+            pendingHologramMigrations.add(player.getUniqueId());
+        }
+
+        commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
+                + "This will migrate all ArmorStand grave holograms for " + ChatColor.RED + graveUUIDs.size() + ChatColor.RESET
+                + " graves to TextDisplay holograms. This may take time.\n"
+                + ChatColor.YELLOW + "Type " + ChatColor.RED + "/graves migration holograms confirm"
+                + ChatColor.YELLOW + " to proceed.");
+    }
+
+    private int migrateArmorStandHologramsToTextDisplays() {
+        Set<UUID> graveUUIDs = getArmorStandHologramGraveUUIDs();
+        int migrated = 0;
+
+        for (UUID graveUUID : graveUUIDs) {
+            Grave grave = plugin.getCacheManager().getGraveMap().get(graveUUID);
+            if (grave == null || grave.getLocationDeath() == null || grave.getLocationDeath().getWorld() == null) {
+                continue;
+            }
+
+            boolean hasTextDisplay = hasHologramBackend(graveUUID, HologramData.Backend.TEXT_DISPLAY);
+
+            plugin.getArmorStandManager().removeHologram(grave);
+            plugin.getArmorStandManager().purgeWorldArmorStandHolograms(grave);
+            if (!hasTextDisplay) {
+                plugin.getTextDisplayManager().createHologram(grave.getLocationDeath(), grave);
+            }
+
+            migrated++;
+        }
+
+        return migrated;
+    }
+
+    private void sendMigrationList(CommandSender commandSender) {
+        commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
+                + "Available migrations:");
+        commandSender.sendMessage(ChatColor.RED + "/graves migration holograms " + ChatColor.DARK_GRAY + "-"
+                + ChatColor.RESET + " Migrate ArmorStand grave holograms to TextDisplay holograms");
+    }
+
+    private Set<UUID> getArmorStandHologramGraveUUIDs() {
+        Set<UUID> graveUUIDs = new HashSet<>();
+
+        for (EntityData entityData : new ArrayList<>(plugin.getCacheManager().getEntityMap().values())) {
+            if (!(entityData instanceof HologramData hologramData)) {
+                continue;
+            }
+
+            if (hologramData.getBackend() != HologramData.Backend.ARMOR_STAND) {
+                continue;
+            }
+
+            UUID graveUUID = hologramData.getUUIDGrave();
+            if (graveUUID != null && plugin.getCacheManager().getGraveMap().containsKey(graveUUID)) {
+                graveUUIDs.add(graveUUID);
+            }
+        }
+
+        return graveUUIDs;
+    }
+
+    private boolean hasHologramBackend(UUID graveUUID, HologramData.Backend backend) {
+        if (graveUUID == null || backend == null) {
+            return false;
+        }
+
+        for (EntityData entityData : new ArrayList<>(plugin.getCacheManager().getEntityMap().values())) {
+            if (entityData instanceof HologramData hologramData
+                    && graveUUID.equals(hologramData.getUUIDGrave())
+                    && hologramData.getBackend() == backend) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void handleCountCommand(CommandSender commandSender, String[] args) {

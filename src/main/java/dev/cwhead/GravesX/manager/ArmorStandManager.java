@@ -524,6 +524,37 @@ public class ArmorStandManager extends EntityDataManager {
         plugin.debugMessage("[Cleanup] Finished ArmorStand hologram purge", 1);
     }
 
+    /**
+     * Removes every live ArmorStand hologram entity in loaded worlds that is tagged for the given grave.
+     *
+     * @param grave the grave whose ArmorStand holograms should be purged
+     */
+    public void purgeWorldArmorStandHolograms(Grave grave) {
+        if (grave == null || grave.getUUID() == null) {
+            return;
+        }
+
+        UUID targetGraveUUID = grave.getUUID();
+        plugin.debugMessage("[Holograms] Starting targeted ArmorStand world purge for grave=" + targetGraveUUID, 1);
+
+        for (World world : plugin.getServer().getWorlds()) {
+            for (ArmorStand stand : world.getEntitiesByClass(ArmorStand.class)) {
+                executeRegion(stand, () -> {
+                    UUID standGraveUUID = getArmorStandGraveUUID(stand);
+                    if (!targetGraveUUID.equals(standGraveUUID)) {
+                        return;
+                    }
+
+                    if (stand.isValid()) {
+                        stand.remove();
+                        plugin.debugMessage("[Holograms] Purged ArmorStand hologram entity="
+                                + stand.getUniqueId() + " grave=" + targetGraveUUID, 2);
+                    }
+                });
+            }
+        }
+    }
+
     private boolean isHologramExists(UUID graveUUID) {
         boolean hologramExists = false;
 
@@ -611,6 +642,25 @@ public class ArmorStandManager extends EntityDataManager {
         }
 
         return null;
+    }
+
+    private UUID getArmorStandGraveUUID(ArmorStand stand) {
+        if (stand == null) {
+            return null;
+        }
+
+        try {
+            if (plugin.getVersionManager().hasPersistentData()) {
+                PersistentDataContainer pdc = stand.getPersistentDataContainer();
+                String raw = pdc.get(GraveHologramKeys.GRAVE_UUID, PersistentDataType.STRING);
+                if (raw != null) {
+                    return UUID.fromString(raw);
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+
+        return extractGraveUUIDFromStand(stand);
     }
 
     private String toLocKey(Location loc) {
