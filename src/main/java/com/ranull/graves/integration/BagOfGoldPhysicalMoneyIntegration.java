@@ -245,7 +245,7 @@ public final class BagOfGoldPhysicalMoneyIntegration {
         if (bag == null || !bag.isEnabled()) {
             if (!warnedMissingPlugin) {
                 warnedMissingPlugin = true;
-                plugin.integrationMessage("BagOfGold physical-money split is enabled, but BagOfGold is not loaded. Skipping split.", "warn");
+                plugin.debugMessage("BagOfGold physical-money split is enabled, but BagOfGold is not loaded. Skipping split.", 2);
             }
             return null;
         }
