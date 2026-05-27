@@ -692,9 +692,9 @@ public class GraveCreateEvent extends GraveEntityEvent {
      *
      * @param damageEvent the last damage event, or {@code null}.
      */
-    public void setDeathCause(@Nullable EntityDamageEvent damageEvent) {
-        this.deathReason = (damageEvent != null)
-                ? String.valueOf(damageEvent.getCause())
+    public void setDeathCause(@Nullable String damageEvent) {
+        this.deathReason = (!damageEvent.isEmpty())
+                ? damageEvent
                 : null;
     }
 

@@ -713,11 +713,11 @@ public class GravePreCreateEvent extends GraveEntityEvent {
      * Convenience setter that accepts a Bukkit damage event and extracts a basic reason.
      * Does not localize; callers can still override via {@link #setDeathReason(String)}.
      *
-     * @param damageCause the last damage event, or {@code null}.
+     * @param damageEvent the last damage event, or {@code null}.
      */
-    public void setDeathCause(@Nullable EntityDamageEvent.DamageCause damageCause) {
-        this.deathReason = (damageCause != null)
-                ? String.valueOf(damageCause)
+    public void setDeathCause(@Nullable String damageEvent) {
+        this.deathReason = (!damageEvent.isEmpty())
+                ? damageEvent
                 : null;
     }
 
