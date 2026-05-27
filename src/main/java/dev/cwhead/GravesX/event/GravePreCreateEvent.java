@@ -8,6 +8,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.HandlerList;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -137,6 +138,12 @@ public class GravePreCreateEvent extends GraveEntityEvent {
      * Blocks that were ignored for this grave creation.
      */
     private @Nullable Collection<Block> ignoredBlocks;
+
+    /**
+     * A human-readable death reason (e.g., "FALL", "VOID", "LAVA", or localized text from integrations).
+     * May be null if unknown.
+     */
+    private @Nullable String deathReason;
 
     /**
      * Constructs a new {@code GravePreCreateEvent} without any ignored items/blocks information.
@@ -665,6 +672,53 @@ public class GravePreCreateEvent extends GraveEntityEvent {
             return false;
         }
         return this.ignoredBlocks.remove(block);
+    }
+
+    /**
+     * Returns the human-readable death reason for this event snapshot.
+     *
+     * @return the stored death cause string.
+     */
+    public @Nullable String getDeathReason() {
+        return deathReason;
+    }
+
+    /**
+     * Returns the Bukkit damage cause enum from the stored death reason.
+     *
+     * @return the damage cause, or {@code null} if invalid/unset.
+     */
+    public @Nullable EntityDamageEvent.DamageCause getDeathCause() {
+        if (deathReason == null || deathReason.isBlank()) {
+            return null;
+        }
+
+        try {
+            return EntityDamageEvent.DamageCause.valueOf(deathReason);
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    /**
+     * Sets a human-readable death reason directly.
+     *
+     * @param reason the reason text to store, or {@code null} to clear.
+     */
+    public void setDeathReason(@Nullable String reason) {
+        this.deathReason = (reason != null && !reason.isBlank()) ? reason : null;
+    }
+
+    /**
+     * Convenience setter that accepts a Bukkit damage event and extracts a basic reason.
+     * Does not localize; callers can still override via {@link #setDeathReason(String)}.
+     *
+     * @param damageCause the last damage event, or {@code null}.
+     */
+    public void setDeathCause(@Nullable EntityDamageEvent.DamageCause damageCause) {
+        this.deathReason = (damageCause != null)
+                ? String.valueOf(damageCause)
+                : null;
     }
 
     /**

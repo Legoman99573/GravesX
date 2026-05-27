@@ -113,6 +113,11 @@ public class Grave implements InventoryHolder, Serializable {
     private int experience;
 
     /**
+     * A human-readable death cause string (e.g., "Killed by Zombie", "Explosion", "Void").
+     */
+    private String deathCause;
+
+    /**
      * Indicates whether protection is enabled.
      */
     private boolean protection;
@@ -499,6 +504,24 @@ public class Grave implements InventoryHolder, Serializable {
      */
     public void setExperience(int experience) {
         this.experience = experience;
+    }
+
+    /**
+     * Returns the human-readable death cause for this grave (if known).
+     *
+     * @return the death cause string, or null if not set.
+     */
+    public String getDeathCause() {
+        return deathCause;
+    }
+
+    /**
+     * Sets the human-readable death cause for this grave.
+     *
+     * @param deathCause a display-ready description (e.g., "Killed by Skeleton").
+     */
+    public void setDeathCause(String deathCause) {
+        this.deathCause = deathCause;
     }
 
     /**

@@ -1073,6 +1073,7 @@ public class DataManager {
                                 + "time_creation BIGINT,"
                                 + "permissions TEXT,"
                                 + "provider_id VARCHAR(255)"
+                                + "death_reason VARCHAR(255)"
                                 + ");";
                 case MSSQL ->
                         "IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = '" + name + "')"
@@ -1101,6 +1102,7 @@ public class DataManager {
                                 + "time_creation BIGINT,"
                                 + "permissions NVARCHAR(MAX),"
                                 + "provider_id NVARCHAR(255)"
+                                + "death_reason NVARCHAR(255)"
                                 + ");";
                 default ->
                         "CREATE TABLE IF NOT EXISTS " + name + " ("
@@ -1128,6 +1130,7 @@ public class DataManager {
                                 + "time_creation BIGINT,"
                                 + "permissions LONGTEXT,"
                                 + "provider_id VARCHAR(255)"
+                                + "death_reason VARCHAR(255)"
                                 + ");";
             };
             executeUpdate(create, new Object[0]);
@@ -1261,10 +1264,14 @@ public class DataManager {
             case MSSQL -> {
                 addColumnIfNotExists(name, "permissions", "NVARCHAR(MAX)");
                 alterColumnIfExists(name, "permissions", "NVARCHAR(MAX)");
+                addColumnIfNotExists(name, "death_reason", "NVARCHAR(255)");
+                alterColumnIfExists(name, "death_reason", "NVARCHAR(255)");
             }
             default -> {
                 addColumnIfNotExists(name, "permissions", "LONGTEXT");
                 alterColumnIfExists(name, "permissions", "LONGTEXT");
+                addColumnIfNotExists(name, "death_reason", "VARCHAR(255)");
+                alterColumnIfExists(name, "death_reason", "VARCHAR(255)");
             }
         }
 
@@ -2246,8 +2253,8 @@ public class DataManager {
                         + "(uuid, owner_type, owner_name, owner_name_display, owner_uuid, owner_texture, owner_texture_signature, "
                         + "killer_type, killer_name, killer_name_display, killer_uuid, "
                         + "location_death, yaw, pitch, inventory, equipment, experience, protection, is_abandoned, "
-                        + "time_alive, time_protection, time_creation, permissions, provider_id) "
-                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                        + "time_alive, time_protection, time_creation, permissions, provider_id, death_reason) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         String providerId = null;
         try {
@@ -2287,7 +2294,8 @@ public class DataManager {
                 grave.getPermissionList() != null && !grave.getPermissionList().isEmpty()
                         ? StringUtils.join(grave.getPermissionList(), "|")
                         : null,
-                providerId
+                providerId,
+                grave.getDeathCause() != null ? grave.getDeathCause() : null
         };
 
         plugin.getSchedulerManager().runTaskAsynchronously(() -> {
@@ -2510,6 +2518,15 @@ public class DataManager {
             }
             grave.setProviderId(resultSet.getString("provider_id") != null ? resultSet.getString("provider_id") : null);
 
+            String deathReason = null;
+            try {
+                deathReason = resultSet.getString("death_reason");
+            } catch (SQLException ignored) {
+
+            }
+            if (deathReason != null && !deathReason.isBlank()) {
+                grave.setDeathCause(deathReason);
+            }
             return grave;
         } catch (SQLException exception) {
             plugin.getLogger().severe("Error occurred while converting a ResultSet to a Grave object");
