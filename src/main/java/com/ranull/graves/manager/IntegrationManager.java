@@ -1,6 +1,7 @@
 package com.ranull.graves.manager;
 
 import ch.njol.skript.SkriptAddon;
+import com.becerritoo.GravesX.integration.BagOfGoldIntegration;
 import com.ranull.graves.Graves;
 import com.ranull.graves.integration.*;
 import dev.cwhead.GravesX.compatibility.CompatibilityGameRule;
@@ -11,7 +12,6 @@ import me.jay.GravesX.integration.FancyNPCs;
 import com.ranull.graves.integration.PlayerNPC;
 import net.milkbowl.vault.permission.Permission;
 import org.bukkit.Bukkit;
-import org.bukkit.GameRule;
 import org.bukkit.World;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -19,7 +19,6 @@ import org.bukkit.plugin.RegisteredServiceProvider;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -231,10 +230,10 @@ public class IntegrationManager {
     /**
      * Handles integration with BagOfGold.
      * <p>
-     * This {@link BagOfGoldPhysicalMoneyIntegration} instance represents the handler for integrating with the BagOfGold plugin, which handles physical-money items.
+     * This {@link BagOfGoldIntegration} instance represents the handler for integrating with the BagOfGold plugin, which handles physical-money items.
      * </p>
      */
-    private BagOfGoldPhysicalMoneyIntegration bagOfGold;
+    private BagOfGoldIntegration bagOfGold;
 
     /**
      * Initializes a new instance of the {@code IntegrationManager} class.
@@ -501,7 +500,7 @@ public class IntegrationManager {
      *
      * @return The BagOfGoldPhysicalMoneyIntegration instance, or null if not loaded.
      */
-    public BagOfGoldPhysicalMoneyIntegration getBagOfGold() {
+    public BagOfGoldIntegration getBagOfGold() {
         return bagOfGold;
     }
 
@@ -1258,7 +1257,7 @@ public class IntegrationManager {
         if (plugin.getConfig().getBoolean("settings.integration.bagofgold.enabled", true)) {
             Plugin bag = plugin.getServer().getPluginManager().getPlugin("BagOfGold");
             if (bag != null && bag.isEnabled()) {
-                bagOfGold = new BagOfGoldPhysicalMoneyIntegration(plugin);
+                bagOfGold = new BagOfGoldIntegration(plugin);
                 return;
             }
         }

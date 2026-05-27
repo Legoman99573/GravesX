@@ -1,4 +1,4 @@
-package com.ranull.graves.integration;
+package com.becerritoo.GravesX.integration;
 
 import com.ranull.graves.Graves;
 import org.bukkit.Material;
@@ -20,7 +20,7 @@ import java.util.List;
  * <p>Only item stacks marked as real BagOfGold/CustomItemsLib rewards are processed.
  * This integration never touches digital balances (Vault/DB).</p>
  */
-public final class BagOfGoldPhysicalMoneyIntegration {
+public final class BagOfGoldIntegration {
     private static final String BAGOFGOLD_PLUGIN = "BagOfGold";
     private static final double EPSILON = 1.0E-9D;
     private static final int FLOOR_SCALE = 5;
@@ -31,7 +31,7 @@ public final class BagOfGoldPhysicalMoneyIntegration {
     private boolean warnedReflectionFailure;
     private boolean loggedHook;
 
-    public BagOfGoldPhysicalMoneyIntegration(@NotNull Graves plugin) {
+    public BagOfGoldIntegration(@NotNull Graves plugin) {
         this.plugin = plugin;
     }
 
