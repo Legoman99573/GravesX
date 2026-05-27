@@ -652,15 +652,6 @@ public class GraveCreateEvent extends GraveEntityEvent {
     }
 
     /**
-     * Returns the human-readable death reason for this event snapshot.
-     *
-     * @return the stored death cause string.
-     */
-    public @Nullable String getDeathReason() {
-        return deathReason;
-    }
-
-    /**
      * Returns the Bukkit damage cause enum from the stored death reason.
      *
      * @return the damage cause, or {@code null} if invalid/unset.
@@ -671,7 +662,8 @@ public class GraveCreateEvent extends GraveEntityEvent {
         }
 
         try {
-            return EntityDamageEvent.DamageCause.valueOf(deathReason);
+            String key = normalizeDeathCauseKey(deathReason);
+            return (key == null) ? null : EntityDamageEvent.DamageCause.valueOf(key);
         } catch (Exception ex) {
             return null;
         }
@@ -687,15 +679,69 @@ public class GraveCreateEvent extends GraveEntityEvent {
     }
 
     /**
-     * Convenience setter that accepts a Bukkit damage event and extracts a basic reason.
-     * Does not localize; callers can still override via {@link #setDeathReason(String)}.
+     * Convenience setter that accepts an enum-like string and stores a normalized cause key.
+     * Examples accepted: "fall", "Fall Damage", "FALL_DAMAGE", "fall-damage".
      *
-     * @param damageEvent the last damage event, or {@code null}.
+     * @param causeName the death cause name; nullable
      */
-    public void setDeathCause(@Nullable String damageEvent) {
-        this.deathReason = (!damageEvent.isEmpty())
-                ? damageEvent
-                : null;
+    public void setDeathCause(@Nullable String causeName) {
+        this.deathReason = normalizeDeathCauseKey(causeName);
+    }
+
+    /**
+     * Convenience setter that accepts a Bukkit damage event and stores its cause.
+     *
+     * @param damageEvent the last damage event, or {@code null}
+     */
+    public void setDeathCause(@Nullable EntityDamageEvent damageEvent) {
+        if (damageEvent == null || damageEvent.getCause() == null) {
+            this.deathReason = null;
+            return;
+        }
+        this.deathReason = damageEvent.getCause().name();
+    }
+
+    /**
+     * Convenience setter that accepts a Bukkit DamageCause enum and stores it.
+     *
+     * @param cause the damage cause enum, or {@code null}
+     */
+    public void setDeathCause(@Nullable EntityDamageEvent.DamageCause cause) {
+        this.deathReason = (cause != null) ? cause.name() : null;
+    }
+
+    /**
+     * Normalizes a free-form death cause string to a valid DamageCause enum key if possible.
+     * Returns null if input is null/blank or cannot be normalized.
+     */
+    private @Nullable String normalizeDeathCauseKey(@Nullable String raw) {
+        if (raw == null) return null;
+
+        String s = raw.trim();
+        if (s.isEmpty()) return null;
+
+        // Replace common separators with underscore, collapse repeats, and uppercase.
+        s = s.replace('-', '_')
+                .replace(' ', '_')
+                .replace('.', '_')
+                .replace('/', '_')
+                .replace('\\', '_')
+                .toUpperCase()
+                .replaceAll("_+", "_");
+
+        // Trim leading/trailing underscores
+        while (s.startsWith("_")) s = s.substring(1);
+        while (s.endsWith("_")) s = s.substring(0, s.length() - 1);
+
+        if (s.isEmpty()) return null;
+
+        // Validate against enum; return null if not valid
+        try {
+            EntityDamageEvent.DamageCause.valueOf(s);
+            return s;
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
     }
 
     /**

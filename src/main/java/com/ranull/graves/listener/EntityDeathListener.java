@@ -743,8 +743,7 @@ public class EntityDeathListener implements Listener {
         pre.setKillerUUID(modern.getKillerUUID());
         pre.setProtection(modern.getProtection());
         pre.setTimeProtection(modern.getTimeProtection());
-        pre.setDeathReason(modern.getDeathReason());
-        pre.setDeathCause(modern.getDeathCause().name());
+        pre.setDeathCause(modern.getDeathCause());
 
         plugin.getServer().getPluginManager().callEvent(pre);
 
@@ -981,7 +980,6 @@ public class EntityDeathListener implements Listener {
         graveCreateEvent.setYaw(livingEntity.getLocation().getYaw());
         graveCreateEvent.setPitch(livingEntity.getLocation().getPitch());
         graveCreateEvent.setTimeAlive(plugin.getConfigManager().getConfigSection("grave.time", grave).getInt("grave.time") * 1000L);
-        graveCreateEvent.setDeathCause(livingEntity.getLastDamageCause().getCause().name());
         if (!plugin.getVersionManager().is_v1_7()) {
             if (plugin.getVersionManager().isPost1_21_9()) {
                 graveCreateEvent.setOwnerTexture(SkinTextureUtil_post_1_21_9.getTexture(livingEntity));
@@ -990,6 +988,10 @@ public class EntityDeathListener implements Listener {
             }
             graveCreateEvent.setOwnerTextureSignature(SkinSignatureUtil.getSignature(livingEntity));
         }
+
+        EntityDamageEvent last = livingEntity.getLastDamageCause();
+        EntityDamageEvent.DamageCause cause = (last != null) ? last.getCause() : null;
+        grave.setDeathCause((cause != null) ? cause.name() : null);
     }
 
     /**
