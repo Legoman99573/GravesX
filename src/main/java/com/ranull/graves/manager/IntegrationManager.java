@@ -229,6 +229,14 @@ public class IntegrationManager {
     private NoteBlockAPI noteBlockAPI;
 
     /**
+     * Handles integration with BagOfGold.
+     * <p>
+     * This {@link BagOfGoldPhysicalMoneyIntegration} instance represents the handler for integrating with the BagOfGold plugin, which handles physical-money items.
+     * </p>
+     */
+    private BagOfGoldPhysicalMoneyIntegration bagOfGold;
+
+    /**
      * Initializes a new instance of the {@code IntegrationManager} class.
      *
      * @param plugin The plugin instance of Graves.
@@ -272,6 +280,7 @@ public class IntegrationManager {
         loadFancyNpcs();
         loadNoteblockAPI();
         loadMannequins();
+        loadBagOfGold();
     }
 
     /**
@@ -327,6 +336,11 @@ public class IntegrationManager {
         if (fancyNpcs != null) {
             fancyNpcs.unregisterListeners();
         }
+
+        if (bagOfGold != null) {
+            bagOfGold = null;
+        }
+
     }
 
     /**
@@ -480,6 +494,15 @@ public class IntegrationManager {
      */
     public SkriptAddon getSkript() {
         return skriptImpl != null ? skriptImpl.getSkriptAddon() : null;
+    }
+
+    /**
+     * Returns the instance of the BagOfGold physical-money integration, if it is loaded.
+     *
+     * @return The BagOfGoldPhysicalMoneyIntegration instance, or null if not loaded.
+     */
+    public BagOfGoldPhysicalMoneyIntegration getBagOfGold() {
+        return bagOfGold;
     }
 
     /**
@@ -712,6 +735,15 @@ public class IntegrationManager {
      */
     public boolean hasNoteBlockAPI() {
         return noteBlockAPI != null;
+    }
+
+    /**
+     * Checks if BagOfGold integration is available.
+     *
+     * @return true if BagOfGold integration is available, false otherwise.
+     */
+    public boolean hasBagOfGold() {
+        return bagOfGold != null;
     }
 
     /**
@@ -1217,6 +1249,22 @@ public class IntegrationManager {
             }
         }
     }
+
+    /**
+     * Loads the BagOfGold physical-money integration if enabled in the configuration.
+     * Note: The underlying bridge reflects BagOfGold classes on first use.
+     */
+    private void loadBagOfGold() {
+        if (plugin.getConfig().getBoolean("settings.integration.bagofgold.enabled", true)) {
+            Plugin bag = plugin.getServer().getPluginManager().getPlugin("BagOfGold");
+            if (bag != null && bag.isEnabled()) {
+                bagOfGold = new BagOfGoldPhysicalMoneyIntegration(plugin);
+                return;
+            }
+        }
+        bagOfGold = null;
+    }
+
     /**
      * Loads and displays warnings for compatibility issues with other plugins.
      */
