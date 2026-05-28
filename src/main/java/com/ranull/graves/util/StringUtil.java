@@ -99,9 +99,18 @@ public class StringUtil {
                     .replace("%owner_type%", grave.getOwnerType() != null ? grave.getOwnerType().name() : "")
                     .replace("%owner_uuid%", grave.getOwnerUUID() != null ? grave.getOwnerUUID().toString() : "")
                     .replace("%killer_name%", grave.getKillerName() != null ? grave.getKillerName() : "")
-                    .replace("%killer_name_display%", grave.getKillerNameDisplay() != null
-                            ? grave.getKillerNameDisplay()
-                            : (grave.getKillerName() != null ? grave.getKillerName() : ""))
+                    .replace("%killer_name_display%",
+                            switch (grave.getDeathCause()) {
+                                case "ENTITY_ATTACK", "ENTITY_SWEEP_ATTACK" ->
+                                        grave.getKillerNameDisplay() != null
+                                                ? grave.getKillerNameDisplay()
+                                                : (grave.getKillerName() != null ? grave.getKillerName() : "Unknown");
+
+                                default ->
+                                        grave.getDeathCause() != null
+                                                ? grave.getDeathCause()
+                                                : "Unknown";
+                            })
                     .replace("%killer_type%", grave.getKillerType() != null ? grave.getKillerType().name() : "")
                     .replace("%killer_uuid%", grave.getKillerUUID() != null ? grave.getKillerUUID().toString() : "")
                     .replace("%time_creation%", String.valueOf(grave.getTimeCreation()))

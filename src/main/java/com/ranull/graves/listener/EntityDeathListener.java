@@ -1150,7 +1150,7 @@ public class EntityDeathListener implements Listener {
             } else {
                 graveCreateEvent.setKillerUUID(null);
                 graveCreateEvent.setKillerType(null);
-                graveCreateEvent.setKillerName(plugin.getGraveManager().getDamageReason(e.getCause(), grave));
+                graveCreateEvent.setKillerName(plugin.getGraveManager().getDamageReason(grave));
             }
             graveCreateEvent.setKillerNameDisplay(graveCreateEvent.getKillerName());
         }

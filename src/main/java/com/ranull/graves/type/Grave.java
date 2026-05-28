@@ -512,6 +512,9 @@ public class Grave implements InventoryHolder, Serializable {
      * @return the death cause string, or null if not set.
      */
     public String getDeathCause() {
+        if (deathCause == null)
+            return "KILL"; // Presume some return null on old entries.
+
         return deathCause;
     }
 
@@ -521,6 +524,10 @@ public class Grave implements InventoryHolder, Serializable {
      * @param deathCause a display-ready description (e.g., "Killed by Skeleton").
      */
     public void setDeathCause(String deathCause) {
+        if (deathCause == null) {
+            this.deathCause = "KILL";
+            return;
+        }
         this.deathCause = deathCause;
     }
 

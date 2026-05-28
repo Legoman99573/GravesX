@@ -2588,15 +2588,40 @@ public class GraveManager {
     }
 
     /**
+     * @deprecated Use {@link #getDamageReason(Grave)} instead for improved accuracy,
+     * as it retrieves the stored death cause directly from the grave snapshot rather
+     * than relying on a separately provided {@link EntityDamageEvent.DamageCause}.
+     * This ensures the returned death reason matches the actual recorded death data.
+     *
      * Retrieves the damage reason for a specified damage cause and grave.
      *
      * @param damageCause the cause of the damage.
      * @param grave       the grave associated with the damage.
      * @return the damage reason.
      */
+    @Deprecated(since = "4.9.11.1")
     public String getDamageReason(EntityDamageEvent.DamageCause damageCause, Grave grave) {
         List<String> reasons = plugin.getConfigManager().getConfigSection("message.death-reason", grave).getStringList("message.death-reason");
         String causeName = damageCause.name();
+
+        for (String reason : reasons) {
+            if (reason.startsWith(causeName + ":")) {
+                return reason.split(":", 2)[1].trim();
+            }
+        }
+
+        return StringUtil.format(causeName);
+    }
+
+    /**
+     * Retrieves the damage reason for a specified grave.
+     *
+     * @param grave       the grave associated with the damage.
+     * @return the damage reason.
+     */
+    public String getDamageReason(Grave grave) {
+        List<String> reasons = plugin.getConfigManager().getConfigSection("message.death-reason", grave).getStringList("message.death-reason");
+        String causeName = grave.getDeathCause();
 
         for (String reason : reasons) {
             if (reason.startsWith(causeName + ":")) {

@@ -297,16 +297,12 @@ public class GraveCreationAPI {
             createGrave.setKillerName(killer.getName());
             createGrave.setKillerNameDisplay(killer.getCustomName());
             createGrave.setKillerUUID(killer.getUniqueId());
+            createGrave.setDeathCause(damageCause);
         } else {
             createGrave.setKillerUUID(victim.getUniqueId());
             createGrave.setKillerType(EntityType.PLAYER);
-            EntityDamageEvent.DamageCause finalDamageCause =
-                    (damageCause != null) ? damageCause : EntityDamageEvent.DamageCause.valueOf("KILL");
-            String killerName = graveManager.getDamageReason(
-                    victim.getLastDamageCause() != null
-                            ? victim.getLastDamageCause().getCause()
-                            : finalDamageCause,
-                    grave);
+            createGrave.setDeathCause(damageCause);
+            String killerName = graveManager.getDamageReason(grave);
             createGrave.setKillerName(killerName);
             createGrave.setKillerNameDisplay(killerName);
         }
