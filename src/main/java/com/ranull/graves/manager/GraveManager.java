@@ -1216,6 +1216,10 @@ public class GraveManager {
                     plugin.getIntegrationManager().getPlayerNPC().removeEntityData(entityData);
                     break;
                 }
+                case CRAFTENGINE: {
+                    plugin.getIntegrationManager().getCraftEngine().removeFurniture(entityData);
+                    break;
+                }
                 case CUSTOM: {
                     UUID graveId = null;
                     try { graveId = entityData.getUUIDGrave(); } catch (Throwable ignored) {}
@@ -1496,6 +1500,11 @@ public class GraveManager {
             if (im.hasNexo() && (im.getNexo().hasBlock(grave) || im.getNexo().hasFurniture(grave))) {
                 knownGraves.add(id); return true;
             }
+            if (im.hasCraftEngine() &&
+                    (im.getCraftEngine().hasBlock(grave) || im.getCraftEngine().hasFurniture(grave))) {
+                knownGraves.add(id);
+                return true;
+            }
         } catch (Throwable t) {
             plugin.getLogger().warning("Integration check failed in isGravePlaced: " + t.getMessage());
         }
@@ -1766,6 +1775,16 @@ public class GraveManager {
             createGraveBlock(anchor, grave);
             plugin.getHologramManager().createHologram(anchor, grave);
             plugin.getIntegrationManager().getNexo().createBlock(anchor, grave);
+        } else if (plugin.getIntegrationManager().hasCraftEngine() && plugin.getConfigManager().getConfigSection("craftengine.furniture.enabled", grave).getBoolean("craftengine.furniture.enabled", true)) {
+            plugin.debugMessage("Creating CraftEngine furniture grave for " + grave.getUUID(), 1);
+            createGraveBlock(anchor, grave, true);
+            plugin.getHologramManager().createHologram(anchor, grave);
+            plugin.getIntegrationManager().getCraftEngine().createFurniture(anchor, grave);
+        } else if (plugin.getIntegrationManager().hasCraftEngine() && plugin.getConfigManager().getConfigSection("craftengine.block.enabled", grave).getBoolean("craftengine.block.enabled", true)) {
+            plugin.debugMessage("Creating CraftEngine block grave for " + grave.getUUID(), 1);
+            createGraveBlock(anchor, grave);
+            plugin.getHologramManager().createHologram(anchor, grave);
+            plugin.getIntegrationManager().getCraftEngine().createBlock(anchor, grave);
         } else if (plugin.getIntegrationManager().hasPlayerNPC() && plugin.getConfigManager().getConfigSection("playernpc.corpse.enabled", grave).getBoolean("playernpc.corpse.enabled", true)) {
             plugin.debugMessage("Creating PlayerNPC corpse grave for " + grave.getUUID(), 1);
             plugin.getHologramManager().createHologram(anchor, grave);
@@ -2462,10 +2481,13 @@ public class GraveManager {
                 InventoryUtil.equipArmor(grave.getInventory(), player);InventoryUtil.equipItems(grave.getInventory(), player);
             }
 
-            syncBagOfGoldBalanceAfterAutoloot(player);
+            if (plugin.getIntegrationManager().hasBagOfGold()) {
+                syncBagOfGoldBalanceAfterAutoloot(player);
+            }
+
             player.updateInventory();
 
-            plugin.getDataManager().updateGrave(grave, "inventory", InventoryUtil.inventoryToString(grave.getInventory()));
+            plugin.getDataManager().updateGrave(grave, "inventory", InventoryUtil.inventoryToString(grave.getInventory(), plugin));
 
             plugin.getEntityManager().runCommands("event.command.open", player, location, grave);
 
@@ -2834,6 +2856,16 @@ public class GraveManager {
             return true;
         }
 
+        List<String> craftEngineKeys = plugin.getConfigManager().getConfigSection("ignore.item.craftengine", entity, permissionList).getStringList("ignore.item.craftengine");
+        if (craftEngineItemId(itemStack, craftEngineKeys, false)) {
+            return true;
+        }
+
+        List<String> craftEngineKeysContains = plugin.getConfigManager().getConfigSection("ignore.item.craftengine-contains", entity, permissionList).getStringList("ignore.item.craftengine-contains");
+        if (craftEngineItemId(itemStack, craftEngineKeysContains, true)) {
+            return true;
+        }
+
         return false;
     }
     /**
@@ -2925,6 +2957,43 @@ public class GraveManager {
                 }
             }
         }
+        return false;
+    }
+
+    /**
+     * Match CraftEngine custom item ids. Accepts exact ids like "namespace:key" or just "key".
+     */
+    private boolean craftEngineItemId(ItemStack itemStack, List<String> patterns, boolean contains) {
+        if (itemStack == null || patterns == null || patterns.isEmpty()
+                || !plugin.getIntegrationManager().hasCraftEngine()) {
+            return false;
+        }
+
+        String id = plugin.getIntegrationManager().getCraftEngine().getCustomItemId(itemStack);
+        if (id == null || id.isBlank()) {
+            return false;
+        }
+
+        String fullId = id.toLowerCase(Locale.ROOT);
+        String shortId = fullId.contains(":") ? fullId.substring(fullId.indexOf(':') + 1) : fullId;
+        Set<String> exactHaystack = Set.of(fullId, shortId);
+
+        for (String raw : patterns) {
+            String parsed = StringUtil.parseString(raw, plugin);
+            if (parsed == null || parsed.isBlank()) {
+                continue;
+            }
+
+            String needle = parsed.toLowerCase(Locale.ROOT).trim();
+            if (contains) {
+                if (fullId.contains(needle) || shortId.contains(needle)) {
+                    return true;
+                }
+            } else if (exactHaystack.contains(needle)) {
+                return true;
+            }
+        }
+
         return false;
     }
 

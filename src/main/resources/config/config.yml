@@ -313,6 +313,14 @@ settings:
       # Should Graves write its pack into the Nexo pack folder.
       write: true
 
+    ###############
+    # CraftEngine #
+    ###############
+    # Source: https://github.com/Xiao-MoMi/craft-engine
+    craftengine:
+      # Should CraftEngine item storage integration be enabled.
+      enabled: false
+
     ##################
     # PlaceholderAPI #
     ##################

@@ -8,6 +8,7 @@ import dev.cwhead.GravesX.compatibility.CompatibilityGameRule;
 import dev.cwhead.GravesX.integration.*;
 import dev.cwhead.GravesX.listener.integration.coreprotect.CoreProtectListener;
 import dev.cwhead.GravesX.listener.integration.itemsadder.*;
+import dev.cwhead.GravesX.provider.CustomItemStorageProvider;
 import me.jay.GravesX.integration.FancyNPCs;
 import com.ranull.graves.integration.PlayerNPC;
 import net.milkbowl.vault.permission.Permission;
@@ -15,8 +16,10 @@ import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.StringJoiner;
@@ -111,6 +114,14 @@ public class IntegrationManager {
      * </p>
      */
     private Nexo nexo;
+
+    /**
+     * Integration with CraftEngine, a plugin for custom items and resource packs.
+     * <p>
+     * This {@link CraftEngine} instance is used to preserve CraftEngine custom items in grave storage.
+     * </p>
+     */
+    private CraftEngine craftEngine;
 
     /**
      * Integration with ChestSort, a plugin for sorting chests and inventories.
@@ -265,6 +276,7 @@ public class IntegrationManager {
         loadItemsAdder();
         loadOraxen();
         loadNexo();
+        loadCraftEngine();
         loadMiniMessage();
         loadMineDown();
         loadChestSort();
@@ -316,6 +328,10 @@ public class IntegrationManager {
 
         if (nexo != null) {
             nexo.unregisterListeners();
+        }
+
+        if (craftEngine != null) {
+            craftEngine = null;
         }
 
         if (placeholderAPI != null) {
@@ -439,6 +455,15 @@ public class IntegrationManager {
      */
     public Nexo getNexo() {
         return nexo;
+    }
+
+    /**
+     * Returns the instance of the CraftEngine integration, if it is loaded.
+     *
+     * @return The {@code CraftEngine} integration instance, or null if not loaded.
+     */
+    public CraftEngine getCraftEngine() {
+        return craftEngine;
     }
 
     /**
@@ -653,6 +678,15 @@ public class IntegrationManager {
      */
     public boolean hasNexo() {
         return nexo != null;
+    }
+
+    /**
+     * Checks if CraftEngine integration is loaded.
+     *
+     * @return {@code true} if CraftEngine integration is loaded, {@code false} otherwise.
+     */
+    public boolean hasCraftEngine() {
+        return craftEngine != null;
     }
 
     /**
@@ -1001,6 +1035,30 @@ public class IntegrationManager {
     }
 
     /**
+     * Loads the CraftEngine integration if enabled in the configuration.
+     */
+    private void loadCraftEngine() {
+        if (plugin.getConfig().getBoolean("settings.integration.craftengine.enabled", true)) {
+            Plugin craftEnginePlugin = plugin.getServer().getPluginManager().getPlugin("CraftEngine");
+
+            if (craftEnginePlugin != null && craftEnginePlugin.isEnabled()) {
+                try {
+                    craftEngine = new CraftEngine(plugin, craftEnginePlugin);
+
+                    plugin.integrationMessage("Hooked into " + craftEnginePlugin.getName() + " "
+                            + craftEnginePlugin.getDescription().getVersion() + ".");
+                } catch (Throwable throwable) {
+                    craftEngine = null;
+                    plugin.integrationMessage("Failed to hook into " + craftEnginePlugin.getName() + " "
+                            + craftEnginePlugin.getDescription().getVersion() + ": " + throwable.getMessage(), "warn");
+                }
+            }
+        } else {
+            craftEngine = null;
+        }
+    }
+
+    /**
      * Loads the MiniMessage integration if enabled in the configuration.
      */
     private void loadMiniMessage() {
@@ -1262,6 +1320,20 @@ public class IntegrationManager {
             }
         }
         bagOfGold = null;
+    }
+
+    private final List<CustomItemStorageProvider> customItemStorageProviders = new ArrayList<>();
+
+    public List<CustomItemStorageProvider> getCustomItemStorageProviders() {
+        return customItemStorageProviders;
+    }
+
+    public void registerCustomItemStorageProvider(@NotNull CustomItemStorageProvider provider) {
+        customItemStorageProviders.add(provider);
+    }
+
+    public void unregisterCustomItemStorageProvider(@NotNull CustomItemStorageProvider provider) {
+        customItemStorageProviders.remove(provider);
     }
 
     /**

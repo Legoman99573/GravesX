@@ -202,6 +202,11 @@ public class EntityData implements Serializable {
         PLAYERNPC,
 
         /**
+         * Represents an entity from CraftEngine plugin.
+         */
+        CRAFTENGINE,
+
+        /**
          * Represents a custom entry, whether that be an addon or module.
          */
         CUSTOM;

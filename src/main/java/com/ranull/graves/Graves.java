@@ -302,7 +302,7 @@ public class Graves extends JavaPlugin {
         for (Grave grave : getCacheManager().getGraveMap().values()) {
             try {
                 getDataManager().updateGraveMainThread(grave, "inventory",
-                        InventoryUtil.inventoryToString(grave.getInventory()));
+                        InventoryUtil.inventoryToString(grave.getInventory(), this));
                 debugMessage("Saved inventory for grave UUID " + grave.getUUID() + " successfully", 2);
             } catch (Exception e) {
                 getLogger().severe("Failed to save grave " + grave.getUUID() + " on shutdown: " + e.getMessage());
@@ -488,7 +488,7 @@ public class Graves extends JavaPlugin {
                 for (Grave grave : getCacheManager().getGraveMap().values()) {
                     try {
                         getDataManager().updateGraveMainThread(
-                                grave, "inventory", InventoryUtil.inventoryToString(grave.getInventory())
+                                grave, "inventory", InventoryUtil.inventoryToString(grave.getInventory(), this)
                         );
                         debugMessage("Saved inventory for grave UUID " + grave.getUUID() + " successfully", 2);
                     } catch (Exception e) {

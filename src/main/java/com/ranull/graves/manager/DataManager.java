@@ -2276,15 +2276,8 @@ public class DataManager {
                 deathLoc != null ? LocationUtil.locationToString(deathLoc) : null,
                 grave.getYaw(),
                 grave.getPitch(),
-                InventoryUtil.inventoryToString(grave.getInventory()),
-                Base64Util.objectToBase64(
-                        grave.getEquipmentMap().entrySet().stream()
-                                .filter(entry -> entry.getValue() != null)
-                                .collect(java.util.stream.Collectors.toMap(
-                                        entry -> entry.getKey().name(),
-                                        java.util.Map.Entry::getValue
-                                ))
-                ),
+                InventoryUtil.inventoryToString(grave.getInventory(), plugin),
+                InventoryUtil.equipmentMapToString(grave.getEquipmentMap(), plugin, grave),
                 grave.getExperience(),
                 grave.getProtection() ? 1 : 0,
                 grave.isAbandoned() ? 1 : 0,
@@ -2492,10 +2485,7 @@ public class DataManager {
 
             if (resultSet.getString("equipment") == null) invalidationReason.add("equipment");
             if (resultSet.getString("equipment") != null) {
-                @SuppressWarnings("unchecked")
-                Map<EquipmentSlot, ItemStack> equipmentMap = (Map<EquipmentSlot, ItemStack>) Base64Util
-                        .base64ToObject(resultSet.getString("equipment"));
-                grave.setEquipmentMap(equipmentMap != null ? equipmentMap : new HashMap<>());
+                grave.setEquipmentMap(InventoryUtil.stringToEquipmentMap(resultSet.getString("equipment"), plugin, grave));
             }
 
             grave.setYaw(resultSet.getFloat("yaw"));

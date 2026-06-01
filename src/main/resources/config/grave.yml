@@ -680,6 +680,22 @@ settings:
           # Block name.
           name: "caveblock"
 
+      ###############
+      # CraftEngine #
+      ###############
+      # The option requires CraftEngine, you must have this installed to use custom blocks, furniture, and item storage.
+      craftengine:
+        furniture:
+          # Should we use CraftEngine furniture?
+          enabled: false
+          # Furniture name.
+          name: "craftengine:grave"
+        block:
+          # Should we use CraftEngine blocks?
+          enabled: false
+          # Block name.
+          name: "craftengine:grave"
+
       ##########
       # Nexo #
       ##########

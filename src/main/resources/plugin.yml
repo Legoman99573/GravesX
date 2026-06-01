@@ -30,6 +30,7 @@ softdepend:
   - ItemsAdder
   - Oraxen
   - Nexo
+  - CraftEngine
   - ProtocolLib
   - SkullTextureAPI
   - ItemBridge

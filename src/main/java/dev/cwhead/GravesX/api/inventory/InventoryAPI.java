@@ -59,7 +59,7 @@ public class InventoryAPI {
      * @return The string representation of the inventory.
      */
     public String inventoryToString(@NotNull Inventory inventory) {
-        return InventoryUtil.inventoryToString(inventory);
+        return InventoryUtil.inventoryToString(inventory, plugin);
     }
 
     /**
