@@ -506,13 +506,6 @@ public class EntityDeathListener implements Listener {
                         continue;
                     }
 
-                    // ---- Curse of Binding: stays equipped, never stored in grave ----
-                    if (plugin.getVersionManager().hasEnchantmentCurse()
-                            && invItem.containsEnchantment(Enchantment.BINDING_CURSE)) {
-                        it.set(null);
-                        continue;
-                    }
-
                     // ---- Curse of Vanishing: not stored in grave ----
                     if (plugin.getVersionManager().hasEnchantmentCurse()
                             && invItem.containsEnchantment(Enchantment.VANISHING_CURSE)) {
