@@ -506,10 +506,22 @@ public class EntityDeathListener implements Listener {
                         continue;
                     }
 
-                    // ---- Curse of Binding: stays equipped, never stored in grave ----
+                    // ---- Curse of Binding: keep on player/vanilla, never store in grave ----
                     if (plugin.getVersionManager().hasEnchantmentCurse()
                             && invItem.containsEnchantment(Enchantment.BINDING_CURSE)) {
+                        ItemStack boundItem = invItem.clone();
+                        int slot = it.previousIndex();
+
                         it.set(null);
+                        consumeFromDropsBySimilarity(remainingDrops, invItem);
+
+                        plugin.getServer().getScheduler().runTask(plugin, () -> {
+                            if (player.isOnline()) {
+                                player.getInventory().setItem(slot, boundItem);
+                                player.updateInventory();
+                            }
+                        });
+
                         continue;
                     }
 
@@ -576,11 +588,41 @@ public class EntityDeathListener implements Listener {
                 final ItemStack item = dropIt.next();
                 if (item == null || item.getType() == Material.AIR) continue;
 
-                if (plugin.getVersionManager().hasEnchantmentCurse()
-                        && (item.containsEnchantment(Enchantment.BINDING_CURSE)
-                        || item.containsEnchantment(Enchantment.VANISHING_CURSE))) {
-                    dropIt.remove();
-                    continue;
+                if (plugin.getVersionManager().hasEnchantmentCurse()) {
+                    if (item.containsEnchantment(Enchantment.VANISHING_CURSE)) {
+                        dropIt.remove();
+                        continue;
+                    }
+
+                    if (item.containsEnchantment(Enchantment.BINDING_CURSE)
+                            && livingEntity instanceof Player player) {
+                        ItemStack boundItem = item.clone();
+                        int slot = -1;
+
+                        ItemStack[] contents = player.getInventory().getContents();
+                        for (int i = 0; i < contents.length; i++) {
+                            ItemStack slotItem = contents[i];
+
+                            if (slotItem != null
+                                    && slotItem.getType() != Material.AIR
+                                    && slotItem.isSimilar(item)) {
+                                slot = i;
+                                break;
+                            }
+                        }
+
+                        dropIt.remove();
+
+                        if (slot >= 0) {
+                            int finalSlot = slot;
+                            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                                player.getInventory().setItem(finalSlot, boundItem);
+                                player.updateInventory();
+                            });
+                        }
+
+                        continue;
+                    }
                 }
 
                 final UUID graveId = plugin.getEntityManager().getGraveUUIDFromItemStack(item);
