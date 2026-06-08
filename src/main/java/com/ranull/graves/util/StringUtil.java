@@ -110,7 +110,7 @@ public class StringUtil {
                                 default ->
                                         plugin.getGraveManager().getDamageReason(grave);
                             })
-                    .replace("%killer_death_cause%", grave.getDeathCause().replace("_", " ").toLowerCase()
+                    .replace("%killer_death_cause%", grave.getDeathCause().replace("_", " ").toLowerCase())
                     .replace("%killer_type%", grave.getKillerType() != null ? grave.getKillerType().name() : "")
                     .replace("%killer_uuid%", grave.getKillerUUID() != null ? grave.getKillerUUID().toString() : "")
                     .replace("%time_creation%", String.valueOf(grave.getTimeCreation()))
