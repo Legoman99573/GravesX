@@ -1072,7 +1072,7 @@ public class DataManager {
                                 + "time_protection BIGINT,"
                                 + "time_creation BIGINT,"
                                 + "permissions TEXT,"
-                                + "provider_id VARCHAR(255)"
+                                + "provider_id VARCHAR(255),"
                                 + "death_reason VARCHAR(255)"
                                 + ");";
                 case MSSQL ->
@@ -1101,7 +1101,7 @@ public class DataManager {
                                 + "time_protection BIGINT,"
                                 + "time_creation BIGINT,"
                                 + "permissions NVARCHAR(MAX),"
-                                + "provider_id NVARCHAR(255)"
+                                + "provider_id NVARCHAR(255),"
                                 + "death_reason NVARCHAR(255)"
                                 + ");";
                 default ->
@@ -1129,7 +1129,7 @@ public class DataManager {
                                 + "time_protection BIGINT,"
                                 + "time_creation BIGINT,"
                                 + "permissions LONGTEXT,"
-                                + "provider_id VARCHAR(255)"
+                                + "provider_id VARCHAR(255),"
                                 + "death_reason VARCHAR(255)"
                                 + ");";
             };
