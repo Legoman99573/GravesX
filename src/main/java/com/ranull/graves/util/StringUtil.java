@@ -15,6 +15,7 @@ import org.bukkit.entity.EntityType;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -107,10 +108,9 @@ public class StringUtil {
                                                 : (grave.getKillerName() != null ? grave.getKillerName() : "Unknown");
 
                                 default ->
-                                        grave.getDeathCause() != null
-                                                ? grave.getDeathCause()
-                                                : "Unknown";
+                                        plugin.getGraveManager().getDamageReason(grave);
                             })
+                    .replace("%killer_death_cause%", grave.getDeathCause().replace("_", " ").toLowerCase()
                     .replace("%killer_type%", grave.getKillerType() != null ? grave.getKillerType().name() : "")
                     .replace("%killer_uuid%", grave.getKillerUUID() != null ? grave.getKillerUUID().toString() : "")
                     .replace("%time_creation%", String.valueOf(grave.getTimeCreation()))
