@@ -1260,6 +1260,8 @@ public class DataManager {
             case H2, POSTGRESQL -> {
                 addColumnIfNotExists(name, "permissions", "TEXT");
                 alterColumnIfExists(name, "permissions", "TEXT");
+                addColumnIfNotExists(name, "death_reason", "TEXT");
+                alterColumnIfExists(name, "death_reason", "TEXT");
             }
             case MSSQL -> {
                 addColumnIfNotExists(name, "permissions", "NVARCHAR(MAX)");
