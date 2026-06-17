@@ -12,7 +12,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 /**
- * @deprecated Use {@link dev.cwhead.GravesX.event.GravePistonExtendEvent} instead. Will be removed in 4.9.15.1.
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GravePistonExtendEvent} instead. Will be removed in 2027.4.9.1.
  * Represents an event that occurs when a piston extends into a grave location.
  * <p>
  * This event extends {@link dev.cwhead.GravesX.event.graveevent.GraveEvent} and is cancellable, allowing event listeners
@@ -20,7 +20,7 @@ import java.util.List;
  * </p>
  */
 @Deprecated(since = "4.9.9.1", forRemoval = true)
-@ApiStatus.ScheduledForRemoval(inVersion = "4.9.15.1")
+@ApiStatus.ScheduledForRemoval(inVersion = "2027.4.9.1")
 public class GravePistonExtendEvent extends dev.cwhead.GravesX.event.GravePistonExtendEvent {
 
     /**
@@ -43,7 +43,7 @@ public class GravePistonExtendEvent extends dev.cwhead.GravesX.event.GravePiston
      * @param movedBlocks The list of blocks being moved by the piston.
      */
     @Deprecated(since = "4.9.9.1", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.15.1")
+    @ApiStatus.ScheduledForRemoval(inVersion = "2027.4.9.1")
     public GravePistonExtendEvent(@NotNull Grave grave, @Nullable Location location, @NotNull Block pistonBlock, @NotNull BlockFace direction, @NotNull List<Block> movedBlocks) {
         super(grave, location, pistonBlock, direction, movedBlocks);
     }

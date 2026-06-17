@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * @deprecated Use {@link dev.cwhead.GravesX.event.GraveObituaryAddEvent} instead. Will be removed in 4.9.15.1.
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveObituaryAddEvent} instead. Will be removed in 2027.4.9.1.
  * Represents an event that occurs when an Obituary is added to a grave.
  * <p>
  * This event extends {@link GraveEvent} and is cancellable, allowing event listeners
@@ -18,7 +18,7 @@ import org.jetbrains.annotations.Nullable;
  * </p>
  */
 @Deprecated(since = "4.9.9.1", forRemoval = true)
-@ApiStatus.ScheduledForRemoval(inVersion = "4.9.15.1")
+@ApiStatus.ScheduledForRemoval(inVersion = "2027.4.9.1")
 public class GraveObituaryAddEvent extends dev.cwhead.GravesX.event.GraveObituaryAddEvent {
 
     /**
@@ -39,7 +39,7 @@ public class GraveObituaryAddEvent extends dev.cwhead.GravesX.event.GraveObituar
      * @param entity   The entity for which the grave is being created (nullable).
      */
     @Deprecated(since = "4.9.9.1", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.15.1")
+    @ApiStatus.ScheduledForRemoval(inVersion = "2027.4.9.1")
     public GraveObituaryAddEvent(@NotNull Grave grave, @NotNull Location location, @Nullable Entity entity) {
         super(grave, location, entity);
     }

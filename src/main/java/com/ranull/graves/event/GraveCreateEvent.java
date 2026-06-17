@@ -12,7 +12,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collection;
 
 /**
- * @deprecated Use {@link dev.cwhead.GravesX.event.GraveCreateEvent} instead. Will be removed in 4.9.15.1.
+ * @deprecated Use {@link dev.cwhead.GravesX.event.GraveCreateEvent} instead. Will be removed in 2027.4.9.1.
  * Represents an event that occurs when a grave is created for an entity.
  * <p>
  * This event extends {@link dev.cwhead.GravesX.event.graveevent.GraveEntityEvent} and is cancellable, allowing event listeners
@@ -20,7 +20,7 @@ import java.util.Collection;
  * </p>
  */
 @Deprecated(since = "4.9.9.1", forRemoval = true)
-@ApiStatus.ScheduledForRemoval(inVersion = "4.9.15.1")
+@ApiStatus.ScheduledForRemoval(inVersion = "2027.4.9.1")
 public class GraveCreateEvent extends dev.cwhead.GravesX.event.GraveCreateEvent {
 
     /**
@@ -44,7 +44,7 @@ public class GraveCreateEvent extends dev.cwhead.GravesX.event.GraveCreateEvent 
      * @param grave  The grave being created.
      */
     @Deprecated(since = "4.9.9.1", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.15.1")
+    @ApiStatus.ScheduledForRemoval(inVersion = "2027.4.9.1")
     public GraveCreateEvent(@NotNull Entity entity, @NotNull Grave grave) {
         super(entity, grave);
     }
@@ -59,7 +59,7 @@ public class GraveCreateEvent extends dev.cwhead.GravesX.event.GraveCreateEvent 
      * @param ignoredBlocks Blocks that were ignored for this grave (may be {@code null} or empty).
      */
     @Deprecated(since = "4.9.14.1", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.15.1")
+    @ApiStatus.ScheduledForRemoval(inVersion = "2027.4.9.1")
     public GraveCreateEvent(@NotNull Entity entity,
                             @NotNull Grave grave,
                             @Nullable Collection<ItemStack> ignoredItems,

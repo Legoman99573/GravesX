@@ -1278,13 +1278,13 @@ public class Graves extends JavaPlugin {
 
     /**
      * @return the {@link GlobalScheduler} used for running asynchronous or scheduled plugin tasks.
-     * @deprecated Will be removed in {@code 4.9.12.1}. Use
+     * @deprecated Will be removed in {@code 2027.4.9.1}. Use
      * {@link #getSchedulerManager()} ()}{@link dev.cwhead.GravesX.manager.SchedulerManager} instead
      */
     @Deprecated (forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.12.1")
+    @ApiStatus.ScheduledForRemoval(inVersion = "2027.4.9.1")
     public GlobalScheduler getGravesXScheduler() {
-        debugMessage("Method plugin.getGravesXScheduler() is deprecated and set for removal in 4.9.12.1. We recommend using plugin.getSchedulerManager()", 2);
+        debugMessage("Method plugin.getGravesXScheduler() is deprecated and set for removal in 2027.4.9.1. We recommend using plugin.getSchedulerManager()", 2);
         return getSchedulerManager().getScheduler();
     }
 
@@ -1311,14 +1311,14 @@ public class Graves extends JavaPlugin {
      * @param config the config key.
      * @param grave the grave instance.
      * @return the matching configuration section, or default if none match.
-     * @deprecated Will be removed in {@code 4.9.12.1}. Use
+     * @deprecated Will be removed in {@code 2027.4.9.1}. Use
      * {@link #getConfigManager()}{@link dev.cwhead.GravesX.manager.ConfigManager#getConfigSection(String, Grave)}
      * instead.
      */
     @Deprecated(since = "4.9.10.1")
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.12.1")
+    @ApiStatus.ScheduledForRemoval(inVersion = "2027.4.9.1")
     public ConfigurationSection getConfig(String config, Grave grave) {
-        debugMessage("Graves#getConfig(String, Grave) is deprecated and will be removed in 4.9.12.1. Use Graves#getConfigManager().getConfigSection(String, Grave) instead", 2);
+        debugMessage("Graves#getConfig(String, Grave) is deprecated and will be removed in 2027.4.9.1. Use Graves#getConfigManager().getConfigSection(String, Grave) instead", 2);
         return getConfigManager().getConfigSection(config, grave);
     }
 
