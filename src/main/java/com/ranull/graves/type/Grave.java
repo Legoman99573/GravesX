@@ -2,6 +2,7 @@ package com.ranull.graves.type;
 
 import com.ranull.graves.data.LocationData;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
@@ -675,7 +676,7 @@ public class Grave implements InventoryHolder, Serializable {
 
 
     /**
-     * Gets the number of items in the grave's inventory.
+     * Gets the total number of items in the grave's inventory.
      *
      * @return The number of items.
      */
