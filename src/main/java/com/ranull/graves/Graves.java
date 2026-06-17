@@ -899,14 +899,23 @@ public class Graves extends JavaPlugin {
      * Also handles malformed version formats gracefully.
      */
     private void updateChecker() {
+        String installedVersion = getDescription().getVersion();
+        boolean isDevelopmentBuild = installedVersion.matches("(?i)^\\d+(?:\\.\\d+)+(?:-self|-build\\d+)$");
+
+        if (isDevelopmentBuild) {
+            setPluginDevelopmentBuild(true);
+        }
+
         if (getConfig().getBoolean("settings.update.check")) {
             getSchedulerManager().runTaskAsynchronously(() -> {
                 String latestVersion = getLatestVersion();
-                String installedVersion = getDescription().getVersion();
 
                 if (latestVersion != null && !installedVersion.equalsIgnoreCase(latestVersion)) {
                     try {
-                        int comparisonResult = compareVersions(installedVersion, latestVersion);
+                        String comparableInstalledVersion = installedVersion.replaceFirst("(?i)(-self|-build\\d+)$", "");
+                        String comparableLatestVersion = latestVersion.replaceFirst("(?i)(-self|-build\\d+)$", "");
+
+                        int comparisonResult = compareVersions(comparableInstalledVersion, comparableLatestVersion);
 
                         if (comparisonResult < 0) {
                             setPluginOutdatedBuild(true);
@@ -914,7 +923,7 @@ public class Graves extends JavaPlugin {
                             getLogger().warning("Installed Version: " + installedVersion);
                             getLogger().warning("Latest Version:  " + latestVersion);
                             getLogger().warning("Grab the latest release from https://www.spigotmc.org/resources/" + getSpigotID() + "/");
-                        } else if (comparisonResult > 0) {
+                        } else if (comparisonResult > 0 || isDevelopmentBuild) {
                             setPluginDevelopmentBuild(true);
                             getLogger().severe("You are running " + getDescription().getName() + " version " + installedVersion + ", which is a development build and is not production safe.");
                             getLogger().severe("THERE WILL NOT BE SUPPORT IF YOU LOSE GRAVE DATA FROM DEVELOPMENT OR COMPILED BUILDS. THIS BUILD IS FOR TESTING PURPOSES ONLY");
@@ -931,6 +940,14 @@ public class Graves extends JavaPlugin {
                             getLogger().severe("Installed Version: " + installedVersion);
                             getLogger().severe("Latest Version:  " + latestVersion);
                         }
+                    }
+                } else if (isDevelopmentBuild) {
+                    setPluginDevelopmentBuild(true);
+                    getLogger().severe("You are running " + getDescription().getName() + " version " + installedVersion + ", which is a development build and is not production safe.");
+                    getLogger().severe("THERE WILL NOT BE SUPPORT IF YOU LOSE GRAVE DATA FROM DEVELOPMENT OR COMPILED BUILDS. THIS BUILD IS FOR TESTING PURPOSES ONLY");
+                    getLogger().severe("Keep note that you are using a development version when you report bugs.");
+                    if (latestVersion != null) {
+                        getLogger().severe("If the same issue occurs in "  + latestVersion + ", then let us know in https://discord.ranull.com/.");
                     }
                 }
             });

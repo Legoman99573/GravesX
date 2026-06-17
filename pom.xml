@@ -9,7 +9,7 @@
     <artifactId>graves</artifactId>
     <name>GravesX</name>
     <description>Full featured death chest plugin by Ranull.</description>
-    <version>2026.4.9.1</version>
+    <version>${build.revision}${build.suffix}</version>
 
     <developers>
         <developer>
@@ -31,6 +31,10 @@
     <properties>
         <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <build.revision>2026.4.9.1</build.revision>
+
+        <build.suffix>-self</build.suffix>
     </properties>
 
     <distributionManagement>
@@ -386,8 +390,25 @@
     </build>
 
     <profiles>
+        <!-- Auto-enabled on Jenkins when BUILD_NUMBER exists. -->
+        <profile>
+            <id>jenkins-dev</id>
+            <activation>
+                <property>
+                    <name>env.BUILD_NUMBER</name>
+                </property>
+            </activation>
+            <properties>
+                <build.suffix>-build${env.BUILD_NUMBER}</build.suffix>
+            </properties>
+        </profile>
+
+        <!-- Clean production release. No -self and no -build###. -->
         <profile>
             <id>release</id>
+            <properties>
+                <build.suffix></build.suffix>
+            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -396,7 +417,7 @@
                         <version>3.3.1</version>
                         <executions>
                             <execution>
-                                <id>attach-sources</id>
+                                <id>attach-sources-release</id>
                                 <goals>
                                     <goal>jar-no-fork</goal>
                                 </goals>
