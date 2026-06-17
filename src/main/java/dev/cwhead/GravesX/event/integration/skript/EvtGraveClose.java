@@ -1,22 +1,23 @@
 package dev.cwhead.GravesX.event.integration.skript;
 
-import ch.njol.skript.Skript;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
 import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
-import ch.njol.skript.registrations.EventValues;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.GraveCloseEvent;
+import dev.cwhead.GravesX.integration.SkriptImpl;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.inventory.InventoryView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.function.Predicate;
+import org.skriptlang.skript.addon.SkriptAddon;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValue;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValueRegistry;
+import org.skriptlang.skript.bukkit.registration.BukkitSyntaxInfos;
 
 @Name("Grave Close Event")
 @Description("Triggered when an inventory associated with a grave is closed. Provides access to the grave and inventory view.")
@@ -25,65 +26,76 @@ import java.util.function.Predicate;
         "\tbroadcast \"%event-player% closed grave %event-grave% at block %event-block% and inventory %event-inventory-view%\""
 })
 public class EvtGraveClose extends SkriptEvent {
-
     static {
-        Skript.registerEvent("Grave Close", EvtGraveClose.class, GraveCloseEvent.class, "[grave] clos(e|ing|ed)");
+        SkriptAddon addon = SkriptImpl.getActiveSkriptAddon();
 
-        EventValues.registerEventValue(GraveCloseEvent.class, Player.class, GraveCloseEvent::getPlayer, 0);
+        addon.syntaxRegistry().register(
+                BukkitSyntaxInfos.Event.KEY,
+                BukkitSyntaxInfos.Event.builder(EvtGraveClose.class, "Grave Close")
+                        .addEvent(GraveCloseEvent.class)
+                        .addPatterns("[grave] clos(e|ing|ed)")
+                        .addDescription("Triggered when an inventory associated with a grave is closed. Provides access to the grave and inventory view.")
+                        .addExamples(
+                                "on grave close:",
+                                "\tbroadcast \"%event-player% closed grave %event-grave% at block %event-block% and inventory %event-inventory-view%\""
+                        )
+                        .build()
+        );
 
-        EventValues.registerEventValue(GraveCloseEvent.class, Grave.class, GraveCloseEvent::getGrave, 0);
+        EventValueRegistry registry = addon.registry(EventValueRegistry.class);
 
-        EventValues.registerEventValue(GraveCloseEvent.class, InventoryView.class, GraveCloseEvent::getInventoryView, 0);
+        registry.register(EventValue.builder(GraveCloseEvent.class, Player.class)
+                .getter(GraveCloseEvent::getPlayer)
+                .patterns("player")
+                .build());
+
+        registry.register(EventValue.builder(GraveCloseEvent.class, Grave.class)
+                .getter(GraveCloseEvent::getGrave)
+                .patterns("grave")
+                .build());
+
+        registry.register(EventValue.builder(GraveCloseEvent.class, InventoryView.class)
+                .getter(GraveCloseEvent::getInventoryView)
+                .patterns("inventory[-]view")
+                .build());
     }
 
     private Literal<Player> player;
     private Literal<Grave> grave;
     private Literal<InventoryView> inventoryView;
 
-    @SuppressWarnings("unchecked")
     @Override
     public boolean init(Literal<?> @NotNull [] args, int matchedPattern, @NotNull ParseResult parseResult) {
-        //grave = (Literal<Grave>) args[0];
-        //inventoryView = (Literal<InventoryView>) args[0];
         return true;
     }
 
     @Override
     public boolean check(Event e) {
-        if (e instanceof GraveCloseEvent) {
-            GraveCloseEvent event = (GraveCloseEvent) e;
-            if (player != null) {
-                player.check(event, new Predicate<Player>() {
-                    @Override
-                    public boolean test(Player p) {
-                        return p.equals(event.getPlayer());
-                    }
-                });
-            }
-            if (grave != null) {
-                grave.check(event, new Predicate<Grave>() {
-                    @Override
-                    public boolean test(Grave g) {
-                        return g.equals(event.getGrave());
-                    }
-                });
-            }
-            if (inventoryView != null) {
-                inventoryView.check(event, new Predicate<InventoryView>() {
-                    @Override
-                    public boolean test(InventoryView i) {
-                        return i.equals(event.getInventoryView());
-                    }
-                });
-            }
-            return true;
+        if (!(e instanceof GraveCloseEvent)) {
+            return false;
         }
-        return false;
+
+        GraveCloseEvent event = (GraveCloseEvent) e;
+
+        if (player != null && !player.check(event, playerValue -> playerValue.equals(event.getPlayer()))) {
+            return false;
+        }
+
+        if (grave != null && !grave.check(event, graveValue -> graveValue.equals(event.getGrave()))) {
+            return false;
+        }
+
+        if (inventoryView != null && !inventoryView.check(event, inventoryViewValue -> inventoryViewValue.equals(event.getInventoryView()))) {
+            return false;
+        }
+
+        return true;
     }
 
     @Override
     public String toString(@Nullable Event e, boolean debug) {
         return "Grave close event " +
+                (player != null ? " with player " + player.toString(e, debug) : "") +
                 (grave != null ? " with grave " + grave.toString(e, debug) : "") +
                 (inventoryView != null ? " with inventory view " + inventoryView.toString(e, debug) : "");
     }

@@ -1,15 +1,18 @@
 package dev.cwhead.GravesX.event.integration.skript;
 
-import ch.njol.skript.Skript;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
 import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
-import ch.njol.skript.registrations.EventValues;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.GraveParticleEvent;
+import org.skriptlang.skript.bukkit.registration.BukkitSyntaxInfos;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValueRegistry;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValue;
+import org.skriptlang.skript.addon.SkriptAddon;
+import dev.cwhead.GravesX.integration.SkriptImpl;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.jetbrains.annotations.NotNull;
@@ -24,13 +27,33 @@ import java.util.function.Predicate;
         "\tbroadcast \"%event-player% fired particles to grave location %event-location%\"",
 })
 public class EvtGraveParticle extends SkriptEvent {
-
     static {
-        Skript.registerEvent("Grave Compass Use", EvtGraveParticle.class, GraveParticleEvent.class, "[grave] particl(e|es)");
+        SkriptAddon addon = SkriptImpl.getActiveSkriptAddon();
 
-        EventValues.registerEventValue(GraveParticleEvent.class, Player.class, GraveParticleEvent::getPlayer, 0);
+        addon.syntaxRegistry().register(
+                BukkitSyntaxInfos.Event.KEY,
+                BukkitSyntaxInfos.Event.builder(EvtGraveParticle.class, "Grave Particle")
+                        .addEvent(GraveParticleEvent.class)
+                        .addPatterns("[grave] particl(e|es)")
+                        .addDescription("Triggered when a particle is targeted to a grave location.")
+                        .addExamples(
+                                "on grave particle:",
+                                "\tbroadcast \"%event-player% fired particles to grave location %event-location%\""
+                        )
+                        .build()
+        );
 
-        EventValues.registerEventValue(GraveParticleEvent.class, Grave.class, GraveParticleEvent::getGrave, 0);
+        EventValueRegistry registry = addon.registry(EventValueRegistry.class);
+
+        registry.register(EventValue.builder(GraveParticleEvent.class, Player.class)
+                .getter(GraveParticleEvent::getPlayer)
+                .patterns("player")
+                .build());
+
+        registry.register(EventValue.builder(GraveParticleEvent.class, Grave.class)
+                .getter(GraveParticleEvent::getGrave)
+                .patterns("grave")
+                .build());
     }
 
     private Literal<Player> player;

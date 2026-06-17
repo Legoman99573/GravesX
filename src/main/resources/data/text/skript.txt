@@ -1,0 +1,257 @@
+# GravesX Skript examples. You can get more information from https://docs.skunity.com/addons/GravesX
+
+on grave auto loot:
+    broadcast "Entity %event-entity% auto looted grave %event-grave% at %event-location%"
+    broadcast "Owner: %event-grave-owner-name% UUID: %event-grave-owner-uuid%"
+    broadcast "Experience: %event-grave-exp%"
+
+on grave break:
+    broadcast "%event-player% broke grave %event-grave% at block %event-block%"
+    broadcast "Block experience: %event-blockexp%"
+
+on grave close:
+    broadcast "%event-player% closed grave %event-grave%"
+
+on grave abandoned:
+    broadcast "Grave %event-grave% is now abandoned at %event-location%"
+
+on grave block place:
+    broadcast "Placed %event-block-type% for grave %event-grave% at %event-location%"
+
+on grave compass add:
+    broadcast "Grave compass for %event-grave% was added to %event-player%"
+
+command /mygraveuuids:
+    trigger:
+        set {_graveUUIDs::*} to grave uuids of player
+
+        if size of {_graveUUIDs::*} <= 0:
+            send "You do not have any graves."
+            stop
+
+        loop {_graveUUIDs::*}:
+            send "Grave UUID: %loop-value%"
+
+command /listmygraves:
+    trigger:
+        set {_graveUUIDs::*} to grave uuids of player
+
+        if size of {_graveUUIDs::*} <= 0:
+            send "You do not have any graves."
+            stop
+
+        loop {_graveUUIDs::*}:
+            set {_grave} to grave from uuid loop-value
+
+            if {_grave} is set:
+                send "Loaded grave from UUID: %loop-value%"
+            else:
+                send "Could not load grave from UUID: %loop-value%"
+
+command /selectgrave <number>:
+    trigger:
+        set {_graveUUIDs::*} to grave uuids of player
+
+        if size of {_graveUUIDs::*} <= 0:
+            send "You do not have any graves."
+            stop
+
+        if arg-1 < 1:
+            send "Use a number starting at 1."
+            stop
+
+        if arg-1 > size of {_graveUUIDs::*}:
+            send "You only have %size of {_graveUUIDs::*}% graves."
+            stop
+
+        set {_uuid} to {_graveUUIDs::%arg-1%}
+        set {_grave} to grave from uuid {_uuid}
+
+        if {_grave} is not set:
+            send "That grave could not be loaded."
+            stop
+
+        send "Selected grave UUID: %{_uuid}%"
+
+command /createmygrave:
+    trigger:
+        create a grave for player at player's location with 0 experience lasting 600000 milliseconds
+        send "Created a grave at your location."
+
+command /createprotectedgrave:
+    trigger:
+        create a protected grave for player at player's location with 0 experience lasting 600000 milliseconds protected for 300000 milliseconds
+        send "Created a protected grave at your location."
+
+command /protectgrave <number>:
+    trigger:
+        set {_graveUUIDs::*} to grave uuids of player
+
+        if arg-1 < 1:
+            send "Use a number starting at 1."
+            stop
+
+        if arg-1 > size of {_graveUUIDs::*}:
+            send "You only have %size of {_graveUUIDs::*}% graves."
+            stop
+
+        set {_uuid} to {_graveUUIDs::%arg-1%}
+        set {_grave} to grave from uuid {_uuid}
+
+        if {_grave} is not set:
+            send "That grave could not be loaded."
+            stop
+
+        set grave protection of {_grave} for 300000 milliseconds
+        send "Protected grave %{_uuid}% for 5 minutes."
+
+command /unprotectgrave <number>:
+    trigger:
+        set {_graveUUIDs::*} to grave uuids of player
+
+        if arg-1 < 1:
+            send "Use a number starting at 1."
+            stop
+
+        if arg-1 > size of {_graveUUIDs::*}:
+            send "You only have %size of {_graveUUIDs::*}% graves."
+            stop
+
+        set {_uuid} to {_graveUUIDs::%arg-1%}
+        set {_grave} to grave from uuid {_uuid}
+
+        if {_grave} is not set:
+            send "That grave could not be loaded."
+            stop
+
+        clear grave protection of {_grave}
+        send "Cleared protection for grave %{_uuid}%."
+
+command /removemygrave <number>:
+    trigger:
+        set {_graveUUIDs::*} to grave uuids of player
+
+        if arg-1 < 1:
+            send "Use a number starting at 1."
+            stop
+
+        if arg-1 > size of {_graveUUIDs::*}:
+            send "You only have %size of {_graveUUIDs::*}% graves."
+            stop
+
+        set {_uuid} to {_graveUUIDs::%arg-1%}
+        set {_grave} to grave from uuid {_uuid}
+
+        if {_grave} is not set:
+            send "That grave could not be loaded."
+            stop
+
+        remove grave {_grave}
+        send "Removed grave %{_uuid}%."
+
+command /addheldtograve <number>:
+    trigger:
+        set {_graveUUIDs::*} to grave uuids of player
+
+        if arg-1 < 1:
+            send "Use a number starting at 1."
+            stop
+
+        if arg-1 > size of {_graveUUIDs::*}:
+            send "You only have %size of {_graveUUIDs::*}% graves."
+            stop
+
+        set {_grave} to grave from uuid {_graveUUIDs::%arg-1%}
+
+        if {_grave} is not set:
+            send "That grave could not be loaded."
+            stop
+
+        if player's tool is not a valid grave item:
+            send "Hold a real item first."
+            stop
+
+        if {_grave} does not have an available slot:
+            send "That grave is full."
+            stop
+
+        add player's tool to next available slot of grave {_grave}
+        send "Added your held item to the next available grave slot."
+
+command /addheldtograveslot <number> <number>:
+    trigger:
+        set {_graveIndex} to arg-1
+        set {_slot} to arg-2
+        set {_graveUUIDs::*} to grave uuids of player
+
+        if {_graveIndex} < 1:
+            send "Use a grave number starting at 1."
+            stop
+
+        if {_graveIndex} > size of {_graveUUIDs::*}:
+            send "You only have %size of {_graveUUIDs::*}% graves."
+            stop
+
+        set {_grave} to grave from uuid {_graveUUIDs::%{_graveIndex}%}
+
+        if {_grave} is not set:
+            send "That grave could not be loaded."
+            stop
+
+        if player's tool is not a valid grave item:
+            send "Hold a real item first."
+            stop
+
+        add player's tool to grave {_grave} at slot {_slot}
+        send "Added your held item to grave slot %{_slot}%."
+
+command /setheldingraveslot <number> <number>:
+    trigger:
+        set {_graveIndex} to arg-1
+        set {_slot} to arg-2
+        set {_graveUUIDs::*} to grave uuids of player
+
+        if {_graveIndex} < 1:
+            send "Use a grave number starting at 1."
+            stop
+
+        if {_graveIndex} > size of {_graveUUIDs::*}:
+            send "You only have %size of {_graveUUIDs::*}% graves."
+            stop
+
+        set {_grave} to grave from uuid {_graveUUIDs::%{_graveIndex}%}
+
+        if {_grave} is not set:
+            send "That grave could not be loaded."
+            stop
+
+        if player's tool is not a valid grave item:
+            send "Hold a real item first."
+            stop
+
+        set slot {_slot} of grave {_grave} to player's tool
+        send "Set grave slot %{_slot}% to your held item."
+
+command /nextgraveslot <number>:
+    trigger:
+        set {_graveUUIDs::*} to grave uuids of player
+
+        if arg-1 < 1:
+            send "Use a number starting at 1."
+            stop
+
+        if arg-1 > size of {_graveUUIDs::*}:
+            send "You only have %size of {_graveUUIDs::*}% graves."
+            stop
+
+        set {_grave} to grave from uuid {_graveUUIDs::%arg-1%}
+
+        if {_grave} is not set:
+            send "That grave could not be loaded."
+            stop
+
+        if {_grave} has an available slot:
+            set {_slot} to next available grave slot of {_grave}
+            send "Next available grave slot: %{_slot}%"
+        else:
+            send "That grave is full."

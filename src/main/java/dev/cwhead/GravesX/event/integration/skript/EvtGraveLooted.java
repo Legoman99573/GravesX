@@ -1,15 +1,18 @@
 package dev.cwhead.GravesX.event.integration.skript;
 
-import ch.njol.skript.Skript;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
 import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
-import ch.njol.skript.registrations.EventValues;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.GraveLootedEvent;
+import org.skriptlang.skript.bukkit.registration.BukkitSyntaxInfos;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValueRegistry;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValue;
+import org.skriptlang.skript.addon.SkriptAddon;
+import dev.cwhead.GravesX.integration.SkriptImpl;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.inventory.InventoryView;
@@ -25,15 +28,38 @@ import java.util.function.Predicate;
         "\tbroadcast \"%event-player% completely looted grave %event-grave% at block %event-block% and inventory %event-inventory-view%\""
 })
 public class EvtGraveLooted extends SkriptEvent {
-
     static {
-        Skript.registerEvent("Grave Looted", EvtGraveLooted.class, GraveLootedEvent.class, "[grave] loo(t|ting|ted)");
+        SkriptAddon addon = SkriptImpl.getActiveSkriptAddon();
 
-        EventValues.registerEventValue(GraveLootedEvent.class, Player.class, GraveLootedEvent::getPlayer, 0);
+        addon.syntaxRegistry().register(
+                BukkitSyntaxInfos.Event.KEY,
+                BukkitSyntaxInfos.Event.builder(EvtGraveLooted.class, "Grave Looted")
+                        .addEvent(GraveLootedEvent.class)
+                        .addPatterns("[grave] loo(t|ting|ted)")
+                        .addDescription("Triggered when an inventory associated with a grave is completely looted. Provides access to the grave and inventory view.")
+                        .addExamples(
+                                "on grave looted:",
+                                "\tbroadcast \"%event-player% completely looted grave %event-grave% at block %event-block% and inventory %event-inventory-view%\""
+                        )
+                        .build()
+        );
 
-        EventValues.registerEventValue(GraveLootedEvent.class, Grave.class, GraveLootedEvent::getGrave, 0);
+        EventValueRegistry registry = addon.registry(EventValueRegistry.class);
 
-        EventValues.registerEventValue(GraveLootedEvent.class, InventoryView.class, GraveLootedEvent::getInventoryView, 0);
+        registry.register(EventValue.builder(GraveLootedEvent.class, Player.class)
+                .getter(GraveLootedEvent::getPlayer)
+                .patterns("player")
+                .build());
+
+        registry.register(EventValue.builder(GraveLootedEvent.class, Grave.class)
+                .getter(GraveLootedEvent::getGrave)
+                .patterns("grave")
+                .build());
+
+        registry.register(EventValue.builder(GraveLootedEvent.class, InventoryView.class)
+                .getter(GraveLootedEvent::getInventoryView)
+                .patterns("inventory[-]view")
+                .build());
     }
 
     private Literal<Player> player;

@@ -1,15 +1,18 @@
 package dev.cwhead.GravesX.event.integration.skript;
 
-import ch.njol.skript.Skript;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
 import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser;
-import ch.njol.skript.registrations.EventValues;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.GraveItemTakeEvent;
+import org.skriptlang.skript.bukkit.registration.BukkitSyntaxInfos;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValueRegistry;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValue;
+import org.skriptlang.skript.addon.SkriptAddon;
+import dev.cwhead.GravesX.integration.SkriptImpl;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.Event;
 import org.bukkit.event.inventory.InventoryAction;
@@ -26,17 +29,43 @@ import java.util.function.Predicate;
         "\tbroadcast \"Entity %event-entity% took %event-itemstack% using action %event-inventoryaction% from %event-grave% at location %event-location%\""
 })
 public class EvtGraveItemTake extends SkriptEvent {
-
     static {
-        Skript.registerEvent("Grave Item Take", EvtGraveItemTake.class, GraveItemTakeEvent.class, "[grave] Ite(m|ms) Tak(e|ing)");
+        SkriptAddon addon = SkriptImpl.getActiveSkriptAddon();
 
-        EventValues.registerEventValue(GraveItemTakeEvent.class, Entity.class, GraveItemTakeEvent::getEntity, 0);
+        addon.syntaxRegistry().register(
+                BukkitSyntaxInfos.Event.KEY,
+                BukkitSyntaxInfos.Event.builder(EvtGraveItemTake.class, "Grave Item Take")
+                        .addEvent(GraveItemTakeEvent.class)
+                        .addPatterns("[grave] Ite(m|ms) Tak(e|ing)")
+                        .addDescription("Triggered when an item is clicked or moved in a grave.")
+                        .addExamples(
+                                "on grave item take:",
+                                "\tbroadcast \"Entity %event-entity% took %event-itemstack% using action %event-inventoryaction% from %event-grave% at location %event-location%\""
+                        )
+                        .build()
+        );
 
-        EventValues.registerEventValue(GraveItemTakeEvent.class, Grave.class, GraveItemTakeEvent::getGrave, 0);
+        EventValueRegistry registry = addon.registry(EventValueRegistry.class);
 
-        EventValues.registerEventValue(GraveItemTakeEvent.class, ItemStack.class, GraveItemTakeEvent::getItem, 0);
+        registry.register(EventValue.builder(GraveItemTakeEvent.class, Entity.class)
+                .getter(GraveItemTakeEvent::getEntity)
+                .patterns("entity")
+                .build());
 
-        EventValues.registerEventValue(GraveItemTakeEvent.class, InventoryAction.class, GraveItemTakeEvent::getAction, 0);
+        registry.register(EventValue.builder(GraveItemTakeEvent.class, Grave.class)
+                .getter(GraveItemTakeEvent::getGrave)
+                .patterns("grave")
+                .build());
+
+        registry.register(EventValue.builder(GraveItemTakeEvent.class, ItemStack.class)
+                .getter(GraveItemTakeEvent::getItem)
+                .patterns("item", "itemstack")
+                .build());
+
+        registry.register(EventValue.builder(GraveItemTakeEvent.class, InventoryAction.class)
+                .getter(GraveItemTakeEvent::getAction)
+                .patterns("inventory[-]action", "action")
+                .build());
     }
 
     private Literal<Entity> entity;

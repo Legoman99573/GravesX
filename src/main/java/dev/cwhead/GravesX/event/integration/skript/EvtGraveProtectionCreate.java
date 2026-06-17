@@ -1,15 +1,18 @@
 package dev.cwhead.GravesX.event.integration.skript;
 
-import ch.njol.skript.Skript;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
 import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
-import ch.njol.skript.registrations.EventValues;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.GraveProtectionCreateEvent;
+import org.skriptlang.skript.bukkit.registration.BukkitSyntaxInfos;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValueRegistry;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValue;
+import org.skriptlang.skript.addon.SkriptAddon;
+import dev.cwhead.GravesX.integration.SkriptImpl;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.Event;
 import org.jetbrains.annotations.NotNull;
@@ -24,14 +27,33 @@ import java.util.function.Predicate;
         "\tbroadcast \"Grave %event-grave% protection created for entity %event-entity%\""
 })
 public class EvtGraveProtectionCreate extends SkriptEvent {
-
     static {
-        Skript.registerEvent("Grave Protection Create", EvtGraveProtectionCreate.class, GraveProtectionCreateEvent.class, "[grave] protec(t|tion|ted|ting) creat(e|ing|ed)");
+        SkriptAddon addon = SkriptImpl.getActiveSkriptAddon();
 
-        EventValues.registerEventValue(GraveProtectionCreateEvent.class, Entity.class, GraveProtectionCreateEvent::getEntity, 0);
+        addon.syntaxRegistry().register(
+                BukkitSyntaxInfos.Event.KEY,
+                BukkitSyntaxInfos.Event.builder(EvtGraveProtectionCreate.class, "Grave Protection Create")
+                        .addEvent(GraveProtectionCreateEvent.class)
+                        .addPatterns("[grave] protec(t|tion|ted|ting) creat(e|ing|ed)")
+                        .addDescription("Triggered when a grave is protected. Provides access to the entity and grave.")
+                        .addExamples(
+                                "on grave protection create:",
+                                "\tbroadcast \"Grave %event-grave% protection created for entity %event-entity%\""
+                        )
+                        .build()
+        );
 
-        EventValues.registerEventValue(GraveProtectionCreateEvent.class, Grave.class, GraveProtectionCreateEvent::getGrave, 0);
+        EventValueRegistry registry = addon.registry(EventValueRegistry.class);
 
+        registry.register(EventValue.builder(GraveProtectionCreateEvent.class, Entity.class)
+                .getter(GraveProtectionCreateEvent::getEntity)
+                .patterns("entity")
+                .build());
+
+        registry.register(EventValue.builder(GraveProtectionCreateEvent.class, Grave.class)
+                .getter(GraveProtectionCreateEvent::getGrave)
+                .patterns("grave")
+                .build());
     }
 
     private Literal<Entity> entity;

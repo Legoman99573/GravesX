@@ -1,15 +1,18 @@
 package dev.cwhead.GravesX.event.integration.skript;
 
-import ch.njol.skript.Skript;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
 import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
-import ch.njol.skript.registrations.EventValues;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.GraveOpenEvent;
+import org.skriptlang.skript.bukkit.registration.BukkitSyntaxInfos;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValueRegistry;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValue;
+import org.skriptlang.skript.addon.SkriptAddon;
+import dev.cwhead.GravesX.integration.SkriptImpl;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.inventory.InventoryView;
@@ -25,16 +28,38 @@ import java.util.function.Predicate;
         "\tbroadcast \"%event-player% opened grave %event-grave% at location %event-location%\"",
 })
 public class EvtGraveOpen extends SkriptEvent {
-
     static {
-        Skript.registerEvent("Grave Open", EvtGraveOpen.class, GraveOpenEvent.class, "[grave] ope(n|ning|ned)");
+        SkriptAddon addon = SkriptImpl.getActiveSkriptAddon();
 
-        EventValues.registerEventValue(GraveOpenEvent.class, Player.class, GraveOpenEvent::getPlayer, 0);
-        
-        EventValues.registerEventValue(GraveOpenEvent.class, Grave.class, GraveOpenEvent::getGrave, 0);
+        addon.syntaxRegistry().register(
+                BukkitSyntaxInfos.Event.KEY,
+                BukkitSyntaxInfos.Event.builder(EvtGraveOpen.class, "Grave Open")
+                        .addEvent(GraveOpenEvent.class)
+                        .addPatterns("[grave] ope(n|ning|ned)")
+                        .addDescription("Triggered when an inventory associated with a grave is opened. Provides access to the player, grave, and inventory view.")
+                        .addExamples(
+                                "on grave open:",
+                                "\tbroadcast \"%event-player% opened grave %event-grave% at location %event-location%\""
+                        )
+                        .build()
+        );
 
-        EventValues.registerEventValue(GraveOpenEvent.class, InventoryView.class, GraveOpenEvent::getView, 0);
+        EventValueRegistry registry = addon.registry(EventValueRegistry.class);
 
+        registry.register(EventValue.builder(GraveOpenEvent.class, Player.class)
+                .getter(GraveOpenEvent::getPlayer)
+                .patterns("player")
+                .build());
+
+        registry.register(EventValue.builder(GraveOpenEvent.class, Grave.class)
+                .getter(GraveOpenEvent::getGrave)
+                .patterns("grave")
+                .build());
+
+        registry.register(EventValue.builder(GraveOpenEvent.class, InventoryView.class)
+                .getter(GraveOpenEvent::getView)
+                .patterns("inventory[-]view")
+                .build());
     }
 
     private Literal<Player> player;

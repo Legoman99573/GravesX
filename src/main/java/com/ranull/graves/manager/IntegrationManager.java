@@ -1,6 +1,6 @@
 package com.ranull.graves.manager;
 
-import ch.njol.skript.SkriptAddon;
+import org.skriptlang.skript.addon.SkriptAddon;
 import com.becerritoo.GravesX.integration.BagOfGoldIntegration;
 import com.ranull.graves.Graves;
 import com.ranull.graves.integration.*;
@@ -1196,10 +1196,17 @@ public class IntegrationManager {
     private void loadSkript() {
         if (plugin.getConfig().getBoolean("settings.integration.skript.enabled", true)) {
             Plugin skriptPlugin = plugin.getServer().getPluginManager().getPlugin("Skript");
-            if (skriptPlugin != null && skriptPlugin.isEnabled()) {
-                skriptImpl = new SkriptImpl(plugin);
-                plugin.integrationMessage("Hooked into " + skriptPlugin.getName() + " " + skriptPlugin.getDescription().getVersion() + ".");
-            }
+                if (skriptPlugin != null && skriptPlugin.isEnabled()) {
+                    try {
+                        skriptImpl = new SkriptImpl(plugin);
+                        plugin.integrationMessage("Hooked into " + skriptPlugin.getName() + " " + skriptPlugin.getDescription().getVersion() + ".");
+                    } catch (Exception e) {
+                        plugin.integrationMessage("Failed to Hook into " + skriptPlugin.getName() + " " + skriptPlugin.getDescription().getVersion() + ". Skript implementation will not work and may cause skripts to break.", "severe");
+                        skriptImpl = null;
+                    }
+                } else {
+                    skriptImpl = null;
+                }
         } else {
             skriptImpl = null;
         }
@@ -1215,6 +1222,8 @@ public class IntegrationManager {
                 if (luckPermsPlugin != null && luckPermsPlugin.isEnabled()) {
                     luckPermsHandler = new LuckPermsHandler();
                     plugin.integrationMessage("Hooked into " + luckPermsPlugin.getName() + " " + luckPermsPlugin.getDescription().getVersion() + ".");
+                } else {
+                    luckPermsHandler = null;
                 }
             } catch (IllegalArgumentException exception) {
                 plugin.integrationMessage("Failed to Hook into " + luckPermsPlugin.getName() + " " + luckPermsPlugin.getDescription().getVersion() + ". LuckPerms will not be used as a Permissions Provider.", "severe");

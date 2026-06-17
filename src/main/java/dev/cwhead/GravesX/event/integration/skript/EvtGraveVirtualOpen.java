@@ -1,15 +1,18 @@
 package dev.cwhead.GravesX.event.integration.skript;
 
-import ch.njol.skript.Skript;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
 import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
-import ch.njol.skript.registrations.EventValues;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.GraveVirtualOpenEvent;
+import org.skriptlang.skript.bukkit.registration.BukkitSyntaxInfos;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValueRegistry;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValue;
+import org.skriptlang.skript.addon.SkriptAddon;
+import dev.cwhead.GravesX.integration.SkriptImpl;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -26,23 +29,48 @@ import java.util.function.Predicate;
         "\tbroadcast \"%event-player% virtually opened grave %event-grave% from %event-number% blocks away at %event-location%\"",
 })
 public class EvtGraveVirtualOpen extends SkriptEvent {
-
     static {
-        Skript.registerEvent("Grave Virtual Open", EvtGraveVirtualOpen.class, GraveVirtualOpenEvent.class,
-                "[grave] virtua(l|ly) ope(n|ning|ned)");
+        SkriptAddon addon = SkriptImpl.getActiveSkriptAddon();
 
-        EventValues.registerEventValue(GraveVirtualOpenEvent.class, Player.class, event -> {
-            boolean isEntity = event.hasPlayer();
-            return isEntity ? event.getPlayer() : null;
-        }, 0);
+        addon.syntaxRegistry().register(
+                BukkitSyntaxInfos.Event.KEY,
+                BukkitSyntaxInfos.Event.builder(EvtGraveVirtualOpen.class, "Grave Virtual Open")
+                        .addEvent(GraveVirtualOpenEvent.class)
+                        .addPatterns("[grave] virtua(l|ly) ope(n|ning|ned)")
+                        .addDescription("Triggered when a virtual grave open is about to be processed. Provides access to the entity, player (if applicable), grave, location, and distance.")
+                        .addExamples(
+                                "on grave virtual open:",
+                                "\tbroadcast \"%event-player% virtually opened grave %event-grave% from %event-number% blocks away at %event-location%\""
+                        )
+                        .build()
+        );
 
-        EventValues.registerEventValue(GraveVirtualOpenEvent.class, Entity.class, GraveVirtualOpenEvent::getEntity, 0);
+        EventValueRegistry registry = addon.registry(EventValueRegistry.class);
 
-        EventValues.registerEventValue(GraveVirtualOpenEvent.class, Grave.class, GraveVirtualOpenEvent::getGrave, 0);
+        registry.register(EventValue.builder(GraveVirtualOpenEvent.class, Player.class)
+                .getter(event -> event.hasPlayer() ? event.getPlayer() : null)
+                .patterns("player")
+                .build());
 
-        EventValues.registerEventValue(GraveVirtualOpenEvent.class, Location.class, GraveVirtualOpenEvent::getLocation, 0);
+        registry.register(EventValue.builder(GraveVirtualOpenEvent.class, Entity.class)
+                .getter(GraveVirtualOpenEvent::getEntity)
+                .patterns("entity")
+                .build());
 
-        EventValues.registerEventValue(GraveVirtualOpenEvent.class, Number.class, GraveVirtualOpenEvent::getDistance, 0);
+        registry.register(EventValue.builder(GraveVirtualOpenEvent.class, Grave.class)
+                .getter(GraveVirtualOpenEvent::getGrave)
+                .patterns("grave")
+                .build());
+
+        registry.register(EventValue.builder(GraveVirtualOpenEvent.class, Location.class)
+                .getter(GraveVirtualOpenEvent::getLocation)
+                .patterns("location")
+                .build());
+
+        registry.register(EventValue.builder(GraveVirtualOpenEvent.class, Number.class)
+                .getter(GraveVirtualOpenEvent::getDistance)
+                .patterns("distance")
+                .build());
     }
 
     private Literal<Player> player;

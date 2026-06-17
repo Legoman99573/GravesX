@@ -1,15 +1,18 @@
 package dev.cwhead.GravesX.event.integration.skript;
 
-import ch.njol.skript.Skript;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
 import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
-import ch.njol.skript.registrations.EventValues;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.GraveTimeoutEvent;
+import org.skriptlang.skript.bukkit.registration.BukkitSyntaxInfos;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValueRegistry;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValue;
+import org.skriptlang.skript.addon.SkriptAddon;
+import dev.cwhead.GravesX.integration.SkriptImpl;
 import org.bukkit.Location;
 import org.bukkit.event.Event;
 import org.jetbrains.annotations.NotNull;
@@ -24,13 +27,33 @@ import java.util.function.Predicate;
         "\tbroadcast \"Grave %event-grave% timed out at location %event-location%\""
 })
 public class EvtGraveTimeout extends SkriptEvent {
-
     static {
-        Skript.registerEvent("Grave Timeout", EvtGraveTimeout.class, GraveTimeoutEvent.class, "[grave] tim(e|ed)(| |-)out");
+        SkriptAddon addon = SkriptImpl.getActiveSkriptAddon();
 
-        EventValues.registerEventValue(GraveTimeoutEvent.class, Grave.class, GraveTimeoutEvent::getGrave, 0);
+        addon.syntaxRegistry().register(
+                BukkitSyntaxInfos.Event.KEY,
+                BukkitSyntaxInfos.Event.builder(EvtGraveTimeout.class, "Grave Timeout")
+                        .addEvent(GraveTimeoutEvent.class)
+                        .addPatterns("[grave] tim(e|ed)(| |-)out")
+                        .addDescription("Triggered when a grave times out. Provides access to the grave and location.")
+                        .addExamples(
+                                "on grave timeout:",
+                                "\tbroadcast \"Grave %event-grave% timed out at location %event-location%\""
+                        )
+                        .build()
+        );
 
-        EventValues.registerEventValue(GraveTimeoutEvent.class, Location.class, GraveTimeoutEvent::getLocation, 0);
+        EventValueRegistry registry = addon.registry(EventValueRegistry.class);
+
+        registry.register(EventValue.builder(GraveTimeoutEvent.class, Grave.class)
+                .getter(GraveTimeoutEvent::getGrave)
+                .patterns("grave")
+                .build());
+
+        registry.register(EventValue.builder(GraveTimeoutEvent.class, Location.class)
+                .getter(GraveTimeoutEvent::getLocation)
+                .patterns("location")
+                .build());
     }
 
     private Literal<Grave> grave;

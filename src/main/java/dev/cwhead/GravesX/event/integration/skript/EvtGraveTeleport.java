@@ -1,15 +1,18 @@
 package dev.cwhead.GravesX.event.integration.skript;
 
-import ch.njol.skript.Skript;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
 import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser;
-import ch.njol.skript.registrations.EventValues;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.GraveTeleportEvent;
+import org.skriptlang.skript.bukkit.registration.BukkitSyntaxInfos;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValueRegistry;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValue;
+import org.skriptlang.skript.addon.SkriptAddon;
+import dev.cwhead.GravesX.integration.SkriptImpl;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.Event;
@@ -25,15 +28,38 @@ import java.util.function.Predicate;
         "\tbroadcast \"%event-entity% teleported to grave %event-grave% at location %event-location%\""
 })
 public class EvtGraveTeleport extends SkriptEvent {
-
     static {
-        Skript.registerEvent("Grave Teleport", EvtGraveTeleport.class, GraveTeleportEvent.class, "[grave] telepor(t|ting|ted)");
+        SkriptAddon addon = SkriptImpl.getActiveSkriptAddon();
 
-        EventValues.registerEventValue(GraveTeleportEvent.class, Entity.class, GraveTeleportEvent::getEntity, 0);
+        addon.syntaxRegistry().register(
+                BukkitSyntaxInfos.Event.KEY,
+                BukkitSyntaxInfos.Event.builder(EvtGraveTeleport.class, "Grave Teleport")
+                        .addEvent(GraveTeleportEvent.class)
+                        .addPatterns("[grave] telepor(t|ting|ted)")
+                        .addDescription("Triggered when an entity teleports to a grave. Provides access to the grave, entity and location.")
+                        .addExamples(
+                                "on grave teleport:",
+                                "\tbroadcast \"%event-entity% teleported to grave %event-grave% at location %event-location%\""
+                        )
+                        .build()
+        );
 
-        EventValues.registerEventValue(GraveTeleportEvent.class, Grave.class, GraveTeleportEvent::getGrave, 0);
+        EventValueRegistry registry = addon.registry(EventValueRegistry.class);
 
-        EventValues.registerEventValue(GraveTeleportEvent.class, Location.class, GraveTeleportEvent::getLocation, 0);
+        registry.register(EventValue.builder(GraveTeleportEvent.class, Entity.class)
+                .getter(GraveTeleportEvent::getEntity)
+                .patterns("entity")
+                .build());
+
+        registry.register(EventValue.builder(GraveTeleportEvent.class, Grave.class)
+                .getter(GraveTeleportEvent::getGrave)
+                .patterns("grave")
+                .build());
+
+        registry.register(EventValue.builder(GraveTeleportEvent.class, Location.class)
+                .getter(GraveTeleportEvent::getLocation)
+                .patterns("location")
+                .build());
     }
 
     private Literal<Entity> entity;

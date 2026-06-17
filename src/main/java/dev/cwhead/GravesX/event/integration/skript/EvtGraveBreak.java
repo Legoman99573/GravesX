@@ -1,22 +1,23 @@
 package dev.cwhead.GravesX.event.integration.skript;
 
-import ch.njol.skript.Skript;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
 import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
-import ch.njol.skript.registrations.EventValues;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.GraveBreakEvent;
+import dev.cwhead.GravesX.integration.SkriptImpl;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.function.Predicate;
+import org.skriptlang.skript.addon.SkriptAddon;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValue;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValueRegistry;
+import org.skriptlang.skript.bukkit.registration.BukkitSyntaxInfos;
 
 @Name("Grave Break Event")
 @Description("Triggered when a grave block is broken. Provides access to the grave, player, block, and block type.")
@@ -25,17 +26,43 @@ import java.util.function.Predicate;
         "\tbroadcast \"%event-player% broke grave %event-grave% at block %event-block% with experience %event-blockexp%\"",
 })
 public class EvtGraveBreak extends SkriptEvent {
-
     static {
-        Skript.registerEvent("Grave Break", EvtGraveBreak.class, GraveBreakEvent.class, "[grave] br(eak|eaking|oken)");
+        SkriptAddon addon = SkriptImpl.getActiveSkriptAddon();
 
-        EventValues.registerEventValue(GraveBreakEvent.class, Player.class, GraveBreakEvent::getPlayer, 0);
+        addon.syntaxRegistry().register(
+                BukkitSyntaxInfos.Event.KEY,
+                BukkitSyntaxInfos.Event.builder(EvtGraveBreak.class, "Grave Break")
+                        .addEvent(GraveBreakEvent.class)
+                        .addPatterns("[grave] br(eak|eaking|oken)")
+                        .addDescription("Triggered when a grave block is broken. Provides access to the grave, player, block, and block type.")
+                        .addExamples(
+                                "on grave break:",
+                                "\tbroadcast \"%event-player% broke grave %event-grave% at block %event-block% with experience %event-blockexp%\""
+                        )
+                        .build()
+        );
 
-        EventValues.registerEventValue(GraveBreakEvent.class, Grave.class, GraveBreakEvent::getGrave, 0);
+        EventValueRegistry registry = addon.registry(EventValueRegistry.class);
 
-        EventValues.registerEventValue(GraveBreakEvent.class, Block.class, GraveBreakEvent::getBlock, 0);
+        registry.register(EventValue.builder(GraveBreakEvent.class, Player.class)
+                .getter(GraveBreakEvent::getPlayer)
+                .patterns("player")
+                .build());
 
-        EventValues.registerEventValue(GraveBreakEvent.class, Integer.class, GraveBreakEvent::getBlockExp, 0);
+        registry.register(EventValue.builder(GraveBreakEvent.class, Grave.class)
+                .getter(GraveBreakEvent::getGrave)
+                .patterns("grave")
+                .build());
+
+        registry.register(EventValue.builder(GraveBreakEvent.class, Block.class)
+                .getter(GraveBreakEvent::getBlock)
+                .patterns("block")
+                .build());
+
+        registry.register(EventValue.builder(GraveBreakEvent.class, Integer.class)
+                .getter(GraveBreakEvent::getBlockExp)
+                .patterns("block[-]exp", "block[-]experience")
+                .build());
     }
 
     private Literal<Player> player;
@@ -43,56 +70,34 @@ public class EvtGraveBreak extends SkriptEvent {
     private Literal<Block> block;
     private Literal<Integer> blockExp;
 
-    @SuppressWarnings("unchecked")
     @Override
     public boolean init(Literal<?> @NotNull [] args, int matchedPattern, @NotNull ParseResult parseResult) {
-        //player = (Literal<Player>) args[0];
-        //grave = (Literal<Grave>) args[0];
-        //block = (Literal<Block>) args[0];
-        //blockExp = (Literal<Integer>) args[0];
         return true;
     }
 
     @Override
     public boolean check(Event e) {
-        if (e instanceof GraveBreakEvent) {
-            GraveBreakEvent event = (GraveBreakEvent) e;
-
-            if (player != null) {
-                player.check(event, new Predicate<Player>() {
-                    @Override
-                    public boolean test(Player p) {
-                        return p.equals(event.getPlayer());
-                    }
-                });
-            }
-            if (grave != null) {
-                grave.check(event, new Predicate<Grave>() {
-                    @Override
-                    public boolean test(Grave g) {
-                        return g.equals(event.getGrave());
-                    }
-                });
-            }
-            if (block != null) {
-                block.check(event, new Predicate<Block>() {
-                    @Override
-                    public boolean test(Block b) {
-                        return b.equals(event.getBlock());
-                    }
-                });
-            }
-            if (blockExp != null) {
-                blockExp.check(event, new Predicate<Integer>() {
-                    @Override
-                    public boolean test(Integer be) {
-                        return be.equals(event.getBlockExp());
-                    }
-                });
-            }
-            return true;
+        if (!(e instanceof GraveBreakEvent event)) {
+            return false;
         }
-        return false;
+
+        if (player != null && !player.check(event, playerValue -> playerValue.equals(event.getPlayer()))) {
+            return false;
+        }
+
+        if (grave != null && !grave.check(event, graveValue -> graveValue.equals(event.getGrave()))) {
+            return false;
+        }
+
+        if (block != null && !block.check(event, blockValue -> blockValue.equals(event.getBlock()))) {
+            return false;
+        }
+
+        if (blockExp != null && !blockExp.check(event, blockExpValue -> blockExpValue.equals(event.getBlockExp()))) {
+            return false;
+        }
+
+        return true;
     }
 
     @Override

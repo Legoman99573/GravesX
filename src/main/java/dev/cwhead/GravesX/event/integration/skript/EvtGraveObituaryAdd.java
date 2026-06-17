@@ -1,15 +1,18 @@
 package dev.cwhead.GravesX.event.integration.skript;
 
-import ch.njol.skript.Skript;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
 import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser;
-import ch.njol.skript.registrations.EventValues;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.GraveObituaryAddEvent;
+import org.skriptlang.skript.bukkit.registration.BukkitSyntaxInfos;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValueRegistry;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValue;
+import org.skriptlang.skript.addon.SkriptAddon;
+import dev.cwhead.GravesX.integration.SkriptImpl;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.Event;
@@ -26,13 +29,37 @@ import java.util.function.Predicate;
 })
 public class EvtGraveObituaryAdd extends SkriptEvent {
     static {
-        Skript.registerEvent("Grave Obituary Add", EvtGraveObituaryAdd.class, GraveObituaryAddEvent.class, "[grave] obituar(y|ies) ad(d|ded)");
+        SkriptAddon addon = SkriptImpl.getActiveSkriptAddon();
 
-        EventValues.registerEventValue(GraveObituaryAddEvent.class, Entity.class, GraveObituaryAddEvent::getEntity, 0);
+        addon.syntaxRegistry().register(
+                BukkitSyntaxInfos.Event.KEY,
+                BukkitSyntaxInfos.Event.builder(EvtGraveObituaryAdd.class, "Grave Obituary Add")
+                        .addEvent(GraveObituaryAddEvent.class)
+                        .addPatterns("[grave] obituar(y|ies) ad(d|ded)")
+                        .addDescription("Triggered when an obituary is to be added to a grave. Provides access to the entity, grave, and location.")
+                        .addExamples(
+                                "on grave obituary add:",
+                                "\tbroadcast \"Obituary added to %event-player%'s grave %event-grave% at location %event-location%\""
+                        )
+                        .build()
+        );
 
-        EventValues.registerEventValue(GraveObituaryAddEvent.class, Grave.class, GraveObituaryAddEvent::getGrave, 0);
+        EventValueRegistry registry = addon.registry(EventValueRegistry.class);
 
-        EventValues.registerEventValue(GraveObituaryAddEvent.class, Location.class, GraveObituaryAddEvent::getLocation, 0);
+        registry.register(EventValue.builder(GraveObituaryAddEvent.class, Entity.class)
+                .getter(GraveObituaryAddEvent::getEntity)
+                .patterns("entity")
+                .build());
+
+        registry.register(EventValue.builder(GraveObituaryAddEvent.class, Grave.class)
+                .getter(GraveObituaryAddEvent::getGrave)
+                .patterns("grave")
+                .build());
+
+        registry.register(EventValue.builder(GraveObituaryAddEvent.class, Location.class)
+                .getter(GraveObituaryAddEvent::getLocation)
+                .patterns("location")
+                .build());
     }
 
     private Literal<Entity> entity;

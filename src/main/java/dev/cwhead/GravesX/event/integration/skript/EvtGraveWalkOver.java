@@ -1,15 +1,18 @@
 package dev.cwhead.GravesX.event.integration.skript;
 
-import ch.njol.skript.Skript;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
 import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
-import ch.njol.skript.registrations.EventValues;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.GraveWalkOverEvent;
+import org.skriptlang.skript.bukkit.registration.BukkitSyntaxInfos;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValueRegistry;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValue;
+import org.skriptlang.skript.addon.SkriptAddon;
+import dev.cwhead.GravesX.integration.SkriptImpl;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.Event;
@@ -26,25 +29,63 @@ import java.util.function.Predicate;
         "\tbroadcast \"Entity %event-entity% walked over and looted grave %event-grave% at location %event-location%\"",
 })
 public class EvtGraveWalkOver extends SkriptEvent {
-
     static {
-        Skript.registerEvent("Grave Walk Over", EvtGraveWalkOver.class, GraveWalkOverEvent.class, "[grave] wal(k|ked|king) over");
+        SkriptAddon addon = SkriptImpl.getActiveSkriptAddon();
 
-        EventValues.registerEventValue(GraveWalkOverEvent.class, Entity.class, GraveWalkOverEvent::getEntity, 0);
+        addon.syntaxRegistry().register(
+                BukkitSyntaxInfos.Event.KEY,
+                BukkitSyntaxInfos.Event.builder(EvtGraveWalkOver.class, "Grave Walk Over")
+                        .addEvent(GraveWalkOverEvent.class)
+                        .addPatterns("[grave] wal(k|ked|king) over")
+                        .addDescription("Triggered when an entity walks over a grave. Provides access to the entity, grave, and location.")
+                        .addExamples(
+                                "on grave walk over:",
+                                "\tbroadcast \"Entity %event-entity% walked over and looted grave %event-grave% at location %event-location%\""
+                        )
+                        .build()
+        );
 
-        EventValues.registerEventValue(GraveWalkOverEvent.class, String.class, GraveWalkOverEvent::getEntityName, 0);
+        EventValueRegistry registry = addon.registry(EventValueRegistry.class);
 
-        EventValues.registerEventValue(GraveWalkOverEvent.class, UUID.class, GraveWalkOverEvent::getEntityUniqueId, 0);
+        registry.register(EventValue.builder(GraveWalkOverEvent.class, Entity.class)
+                .getter(GraveWalkOverEvent::getEntity)
+                .patterns("entity")
+                .build());
 
-        EventValues.registerEventValue(GraveWalkOverEvent.class, Entity.class, GraveWalkOverEvent::getEntity, 0);
+        registry.register(EventValue.builder(GraveWalkOverEvent.class, Grave.class)
+                .getter(GraveWalkOverEvent::getGrave)
+                .patterns("grave")
+                .build());
 
-        EventValues.registerEventValue(GraveWalkOverEvent.class, Location.class, GraveWalkOverEvent::getLocation, 0);
+        registry.register(EventValue.builder(GraveWalkOverEvent.class, String.class)
+                .getter(GraveWalkOverEvent::getEntityName)
+                .patterns("entity[-]name")
+                .build());
 
-        EventValues.registerEventValue(GraveWalkOverEvent.class, UUID.class, GraveWalkOverEvent::getGraveOwnerUniqueId, 0);
+        registry.register(EventValue.builder(GraveWalkOverEvent.class, UUID.class)
+                .getter(GraveWalkOverEvent::getEntityUniqueId)
+                .patterns("entity[-]uuid", "entity[-]unique[-]id")
+                .build());
 
-        EventValues.registerEventValue(GraveWalkOverEvent.class, String.class, GraveWalkOverEvent::getGraveOwnerDisplayName, 0);
+        registry.register(EventValue.builder(GraveWalkOverEvent.class, Location.class)
+                .getter(GraveWalkOverEvent::getLocation)
+                .patterns("location")
+                .build());
 
-        EventValues.registerEventValue(GraveWalkOverEvent.class, Number.class, GraveWalkOverEvent::getGraveExperience, 0);
+        registry.register(EventValue.builder(GraveWalkOverEvent.class, UUID.class)
+                .getter(GraveWalkOverEvent::getGraveOwnerUniqueId)
+                .patterns("grave[-]owner[-]uuid", "grave[-]owner[-]unique[-]id")
+                .build());
+
+        registry.register(EventValue.builder(GraveWalkOverEvent.class, String.class)
+                .getter(GraveWalkOverEvent::getGraveOwnerDisplayName)
+                .patterns("grave[-]owner[-]display[-]name", "grave[-]owner[-]name")
+                .build());
+
+        registry.register(EventValue.builder(GraveWalkOverEvent.class, Number.class)
+                .getter(event -> event.getGraveExperience())
+                .patterns("grave[-]experience", "grave[-]exp")
+                .build());
     }
 
     private Literal<Entity> entity;

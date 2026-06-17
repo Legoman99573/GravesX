@@ -548,8 +548,12 @@ public class Graves extends JavaPlugin {
         try {
             if (integrationManager != null) {
                 integrationManager.unload();
-                if (getIntegrationManager().hasSkript()) {
-                    integrationManager.unloadNoReload();
+                try {
+                    if (getIntegrationManager().hasSkript()) {
+                        integrationManager.unloadNoReload();
+                    }
+                } catch (Exception ignored) {
+                    // ignore
                 }
             }
         } catch (Exception e) {
@@ -626,8 +630,12 @@ public class Graves extends JavaPlugin {
         versionManager = new VersionManager();
 
         integrationManager.load();
-        if (getIntegrationManager().hasSkript()) {
-            integrationManager.loadNoReload();
+        try {
+            if (getIntegrationManager().hasSkript()) {
+                integrationManager.loadNoReload();
+            }
+        } catch (Exception ignored) {
+            // ignore
         }
 
         cacheManager = new CacheManager();
@@ -743,6 +751,11 @@ public class Graves extends JavaPlugin {
             if (integrationManager.hasFurnitureLib()) {
                 ResourceUtil.copyResources("data/text/furniturelib.txt", getDataFolder().getPath()
                         + "/furniturelib.txt", this);
+            }
+
+            if (integrationManager.hasSkript()) {
+                ResourceUtil.copyResources("data/text/skript.txt", getDataFolder().getPath()
+                        + "/skript.txt", this);
             }
         }
     }

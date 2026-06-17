@@ -1,15 +1,18 @@
 package dev.cwhead.GravesX.event.integration.skript;
 
-import ch.njol.skript.Skript;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
 import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser;
-import ch.njol.skript.registrations.EventValues;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.GravePistonExtendEvent;
+import org.skriptlang.skript.bukkit.registration.BukkitSyntaxInfos;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValueRegistry;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValue;
+import org.skriptlang.skript.addon.SkriptAddon;
+import dev.cwhead.GravesX.integration.SkriptImpl;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -28,19 +31,48 @@ import java.util.function.Predicate;
         "\tbroadcast \"Grave %event-grave% at location %event-location% extended by %event-piston-block%\"",
 })
 public class EvtGravePistonExtend extends SkriptEvent {
-
     static {
-        Skript.registerEvent("Grave Piston Move", EvtGravePistonExtend.class, GravePistonExtendEvent.class, "[grave] pisto(n|ns) ex(te|pa)n(d|ded|ding)");
+        SkriptAddon addon = SkriptImpl.getActiveSkriptAddon();
 
-        EventValues.registerEventValue(GravePistonExtendEvent.class, Grave.class, GravePistonExtendEvent::getGrave, 0);
+        addon.syntaxRegistry().register(
+                BukkitSyntaxInfos.Event.KEY,
+                BukkitSyntaxInfos.Event.builder(EvtGravePistonExtend.class, "Grave Piston Move")
+                        .addEvent(GravePistonExtendEvent.class)
+                        .addPatterns("[grave] pisto(n|ns) ex(te|pa)n(d|ded|ding)")
+                        .addDescription("Triggered when a player head is dropped at a grave site. Provides access to the grave and location.")
+                        .addExamples(
+                                "on grave piston extend:",
+                                "\tbroadcast \"Grave %event-grave% at location %event-location% extended by %event-piston-block%\""
+                        )
+                        .build()
+        );
 
-        EventValues.registerEventValue(GravePistonExtendEvent.class, Location.class, GravePistonExtendEvent::getLocation, 0);
+        EventValueRegistry registry = addon.registry(EventValueRegistry.class);
 
-        EventValues.registerEventValue(GravePistonExtendEvent.class, Block.class, GravePistonExtendEvent::getPistonBlock, 0);
+        registry.register(EventValue.builder(GravePistonExtendEvent.class, Grave.class)
+                .getter(GravePistonExtendEvent::getGrave)
+                .patterns("grave")
+                .build());
 
-        EventValues.registerEventValue(GravePistonExtendEvent.class, BlockFace.class, GravePistonExtendEvent::getDirection, 0);
+        registry.register(EventValue.builder(GravePistonExtendEvent.class, Location.class)
+                .getter(GravePistonExtendEvent::getLocation)
+                .patterns("location")
+                .build());
 
-        EventValues.registerEventValue(GravePistonExtendEvent.class, List.class, GravePistonExtendEvent::getMovedBlocks, 0);
+        registry.register(EventValue.builder(GravePistonExtendEvent.class, Block.class)
+                .getter(GravePistonExtendEvent::getPistonBlock)
+                .patterns("piston[-]block")
+                .build());
+
+        registry.register(EventValue.builder(GravePistonExtendEvent.class, BlockFace.class)
+                .getter(GravePistonExtendEvent::getDirection)
+                .patterns("direction")
+                .build());
+
+        registry.register(EventValue.builder(GravePistonExtendEvent.class, List.class)
+                .getter(GravePistonExtendEvent::getMovedBlocks)
+                .patterns("moved[-]blocks")
+                .build());
     }
 
     private Literal<Grave> grave;

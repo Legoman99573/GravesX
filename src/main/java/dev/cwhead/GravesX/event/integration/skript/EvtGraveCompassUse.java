@@ -1,15 +1,18 @@
 package dev.cwhead.GravesX.event.integration.skript;
 
-import ch.njol.skript.Skript;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
 import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
-import ch.njol.skript.registrations.EventValues;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.GraveCompassUseEvent;
+import org.skriptlang.skript.bukkit.registration.BukkitSyntaxInfos;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValueRegistry;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValue;
+import org.skriptlang.skript.addon.SkriptAddon;
+import dev.cwhead.GravesX.integration.SkriptImpl;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.jetbrains.annotations.NotNull;
@@ -24,13 +27,33 @@ import java.util.function.Predicate;
         "\tbroadcast \"%event-player% used grave compass for %event-grave% for grave location %event-location%\"",
 })
 public class EvtGraveCompassUse extends SkriptEvent {
-
     static {
-        Skript.registerEvent("Grave Compass Use", EvtGraveCompassUse.class, GraveCompassUseEvent.class, "[grave] compas(s|ses) Us(e|ing|ed)");
+        SkriptAddon addon = SkriptImpl.getActiveSkriptAddon();
 
-        EventValues.registerEventValue(GraveCompassUseEvent.class, Player.class, GraveCompassUseEvent::getPlayer, 0);
+        addon.syntaxRegistry().register(
+                BukkitSyntaxInfos.Event.KEY,
+                BukkitSyntaxInfos.Event.builder(EvtGraveCompassUse.class, "Grave Compass Use")
+                        .addEvent(GraveCompassUseEvent.class)
+                        .addPatterns("[grave] compas(s|ses) Us(e|ing|ed)")
+                        .addDescription("Triggered when a grave compass is fired.")
+                        .addExamples(
+                                "on grave compass use:",
+                                "\tbroadcast \"%event-player% used grave compass for %event-grave% for grave location %event-location%\""
+                        )
+                        .build()
+        );
 
-        EventValues.registerEventValue(GraveCompassUseEvent.class, Grave.class, GraveCompassUseEvent::getGrave, 0);
+        EventValueRegistry registry = addon.registry(EventValueRegistry.class);
+
+        registry.register(EventValue.builder(GraveCompassUseEvent.class, Player.class)
+                .getter(GraveCompassUseEvent::getPlayer)
+                .patterns("player")
+                .build());
+
+        registry.register(EventValue.builder(GraveCompassUseEvent.class, Grave.class)
+                .getter(GraveCompassUseEvent::getGrave)
+                .patterns("grave")
+                .build());
     }
 
     private Literal<Player> player;

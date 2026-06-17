@@ -1,15 +1,18 @@
 package dev.cwhead.GravesX.event.integration.skript;
 
-import ch.njol.skript.Skript;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
 import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
-import ch.njol.skript.registrations.EventValues;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.GraveProjectileHitEvent;
+import org.skriptlang.skript.bukkit.registration.BukkitSyntaxInfos;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValueRegistry;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValue;
+import org.skriptlang.skript.addon.SkriptAddon;
+import dev.cwhead.GravesX.integration.SkriptImpl;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
@@ -27,19 +30,48 @@ import java.util.function.Predicate;
         "\tbroadcast \"%event-grave% \"",
 })
 public class EvtGraveProjectileHit extends SkriptEvent {
-
     static {
-        Skript.registerEvent("Grave Projectile Hit", EvtGraveProjectileHit.class, GraveProjectileHitEvent.class, "[grave] projectil(e|es) hi(t|tting)");
+        SkriptAddon addon = SkriptImpl.getActiveSkriptAddon();
 
-        EventValues.registerEventValue(GraveProjectileHitEvent.class, Player.class, GraveProjectileHitEvent::getPlayer, 0);
+        addon.syntaxRegistry().register(
+                BukkitSyntaxInfos.Event.KEY,
+                BukkitSyntaxInfos.Event.builder(EvtGraveProjectileHit.class, "Grave Projectile Hit")
+                        .addEvent(GraveProjectileHitEvent.class)
+                        .addPatterns("[grave] projectil(e|es) hi(t|tting)")
+                        .addDescription("Triggered when a grave block is broken. Provides access to the grave, player, block, and block type.")
+                        .addExamples(
+                                "on grave projectile hit:",
+                                "\tbroadcast \"%event-grave% \""
+                        )
+                        .build()
+        );
 
-        EventValues.registerEventValue(GraveProjectileHitEvent.class, Grave.class, GraveProjectileHitEvent::getGrave, 0);
+        EventValueRegistry registry = addon.registry(EventValueRegistry.class);
 
-        EventValues.registerEventValue(GraveProjectileHitEvent.class, Block.class, GraveProjectileHitEvent::getBlock, 0);
+        registry.register(EventValue.builder(GraveProjectileHitEvent.class, Player.class)
+                .getter(GraveProjectileHitEvent::getPlayer)
+                .patterns("player")
+                .build());
 
-        EventValues.registerEventValue(GraveProjectileHitEvent.class, Entity.class, GraveProjectileHitEvent::getEntity, 0);
+        registry.register(EventValue.builder(GraveProjectileHitEvent.class, Grave.class)
+                .getter(GraveProjectileHitEvent::getGrave)
+                .patterns("grave")
+                .build());
 
-        EventValues.registerEventValue(GraveProjectileHitEvent.class, LivingEntity.class, GraveProjectileHitEvent::getLivingEntity, 0);
+        registry.register(EventValue.builder(GraveProjectileHitEvent.class, Block.class)
+                .getter(GraveProjectileHitEvent::getBlock)
+                .patterns("block")
+                .build());
+
+        registry.register(EventValue.builder(GraveProjectileHitEvent.class, Entity.class)
+                .getter(GraveProjectileHitEvent::getEntity)
+                .patterns("entity")
+                .build());
+
+        registry.register(EventValue.builder(GraveProjectileHitEvent.class, LivingEntity.class)
+                .getter(GraveProjectileHitEvent::getLivingEntity)
+                .patterns("living[-]entity")
+                .build());
     }
 
     private Literal<Player> player;

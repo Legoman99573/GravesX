@@ -1,15 +1,18 @@
 package dev.cwhead.GravesX.event.integration.skript;
 
-import ch.njol.skript.Skript;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
 import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
-import ch.njol.skript.registrations.EventValues;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.GraveZombieSpawnEvent;
+import org.skriptlang.skript.bukkit.registration.BukkitSyntaxInfos;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValueRegistry;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValue;
+import org.skriptlang.skript.addon.SkriptAddon;
+import dev.cwhead.GravesX.integration.SkriptImpl;
 import org.bukkit.Location;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.Event;
@@ -25,15 +28,38 @@ import java.util.function.Predicate;
         "\tbroadcast \"A zombie targeting %event-target-entity% spawned at location %event-location% from grave %event-grave%\""
 })
 public class EvtGraveZombieSpawn extends SkriptEvent {
-
     static {
-        Skript.registerEvent("Grave Zombie Spawn", EvtGraveZombieSpawn.class, GraveZombieSpawnEvent.class, "[grave] zombi(e|es) spaw(n|ning|ned)");
+        SkriptAddon addon = SkriptImpl.getActiveSkriptAddon();
 
-        EventValues.registerEventValue(GraveZombieSpawnEvent.class, LivingEntity.class, GraveZombieSpawnEvent::getTargetEntity, 0);
+        addon.syntaxRegistry().register(
+                BukkitSyntaxInfos.Event.KEY,
+                BukkitSyntaxInfos.Event.builder(EvtGraveZombieSpawn.class, "Grave Zombie Spawn")
+                        .addEvent(GraveZombieSpawnEvent.class)
+                        .addPatterns("[grave] zombi(e|es) spaw(n|ning|ned)")
+                        .addDescription("Triggered when a zombie spawns targeting an entity. Provides access to the grave, target entity, and location.")
+                        .addExamples(
+                                "on grave zombie spawn:",
+                                "\tbroadcast \"A zombie targeting %event-target-entity% spawned at location %event-location% from grave %event-grave%\""
+                        )
+                        .build()
+        );
 
-        EventValues.registerEventValue(GraveZombieSpawnEvent.class, Grave.class, GraveZombieSpawnEvent::getGrave, 0);
+        EventValueRegistry registry = addon.registry(EventValueRegistry.class);
 
-        EventValues.registerEventValue(GraveZombieSpawnEvent.class, Location.class, GraveZombieSpawnEvent::getLocation, 0);
+        registry.register(EventValue.builder(GraveZombieSpawnEvent.class, LivingEntity.class)
+                .getter(GraveZombieSpawnEvent::getTargetEntity)
+                .patterns("target[-]entity")
+                .build());
+
+        registry.register(EventValue.builder(GraveZombieSpawnEvent.class, Grave.class)
+                .getter(GraveZombieSpawnEvent::getGrave)
+                .patterns("grave")
+                .build());
+
+        registry.register(EventValue.builder(GraveZombieSpawnEvent.class, Location.class)
+                .getter(GraveZombieSpawnEvent::getLocation)
+                .patterns("location")
+                .build());
     }
 
     private Literal<LivingEntity> targetEntity;

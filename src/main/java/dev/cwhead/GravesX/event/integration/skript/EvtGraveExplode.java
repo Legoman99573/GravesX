@@ -1,15 +1,18 @@
 package dev.cwhead.GravesX.event.integration.skript;
 
-import ch.njol.skript.Skript;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
 import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
-import ch.njol.skript.registrations.EventValues;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.GraveExplodeEvent;
+import org.skriptlang.skript.bukkit.registration.BukkitSyntaxInfos;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValueRegistry;
+import org.skriptlang.skript.bukkit.lang.eventvalue.EventValue;
+import org.skriptlang.skript.addon.SkriptAddon;
+import dev.cwhead.GravesX.integration.SkriptImpl;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.Event;
@@ -25,15 +28,38 @@ import java.util.function.Predicate;
         "\tbroadcast \"Entity %event-entity% caused grave %event-grave% to explode at location %event-location%\""
 })
 public class EvtGraveExplode extends SkriptEvent {
-
     static {
-        Skript.registerEvent("Grave Explode", EvtGraveExplode.class, GraveExplodeEvent.class, "[grave] explod(e|ing|ed)");
+        SkriptAddon addon = SkriptImpl.getActiveSkriptAddon();
 
-        EventValues.registerEventValue(GraveExplodeEvent.class, Entity.class, GraveExplodeEvent::getEntity, 0);
+        addon.syntaxRegistry().register(
+                BukkitSyntaxInfos.Event.KEY,
+                BukkitSyntaxInfos.Event.builder(EvtGraveExplode.class, "Grave Explode")
+                        .addEvent(GraveExplodeEvent.class)
+                        .addPatterns("[grave] explod(e|ing|ed)")
+                        .addDescription("Triggered when a grave explodes. Provides access to the entity, grave, and location.")
+                        .addExamples(
+                                "on grave explode:",
+                                "\tbroadcast \"Entity %event-entity% caused grave %event-grave% to explode at location %event-location%\""
+                        )
+                        .build()
+        );
 
-        EventValues.registerEventValue(GraveExplodeEvent.class, Grave.class, GraveExplodeEvent::getGrave, 0);
+        EventValueRegistry registry = addon.registry(EventValueRegistry.class);
 
-        EventValues.registerEventValue(GraveExplodeEvent.class, Location.class, GraveExplodeEvent::getLocation, 0);
+        registry.register(EventValue.builder(GraveExplodeEvent.class, Entity.class)
+                .getter(GraveExplodeEvent::getEntity)
+                .patterns("entity")
+                .build());
+
+        registry.register(EventValue.builder(GraveExplodeEvent.class, Grave.class)
+                .getter(GraveExplodeEvent::getGrave)
+                .patterns("grave")
+                .build());
+
+        registry.register(EventValue.builder(GraveExplodeEvent.class, Location.class)
+                .getter(GraveExplodeEvent::getLocation)
+                .patterns("location")
+                .build());
     }
 
     private Literal<Entity> entity;

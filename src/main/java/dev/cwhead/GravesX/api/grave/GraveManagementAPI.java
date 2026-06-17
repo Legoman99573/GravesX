@@ -4,10 +4,13 @@ import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.exception.GravesXIllegalArgumentException;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -215,6 +218,71 @@ public class GraveManagementAPI {
     }
 
     /**
+     * Gets all loaded grave UUIDs.
+     *
+     * @return a list of all loaded grave UUIDs.
+     */
+    public @NotNull List<UUID> getGraveUUIDs() {
+        return getGraveUUIDs((UUID) null);
+    }
+
+    /**
+     * Gets loaded grave UUIDs owned by the specified player.
+     *
+     * @param targetPlayer the player whose grave UUIDs should be returned; if {@code null}, all grave UUIDs are returned.
+     * @return a list of loaded grave UUIDs.
+     */
+    public @NotNull List<UUID> getGraveUUIDs(@Nullable Player targetPlayer) {
+        return getGraveUUIDs(targetPlayer != null ? targetPlayer.getUniqueId() : null);
+    }
+
+    /**
+     * Gets loaded grave UUIDs owned by the specified owner UUID.
+     *
+     * @param ownerUUID the owner UUID whose grave UUIDs should be returned; if {@code null}, all grave UUIDs are returned.
+     * @return a list of loaded grave UUIDs.
+     */
+    public @NotNull List<UUID> getGraveUUIDs(@Nullable UUID ownerUUID) {
+        List<UUID> graveUUIDs = new ArrayList<>();
+
+        for (Grave grave : plugin.getCacheManager().getGraveMap().values()) {
+            if (ownerUUID == null || ownerUUID.equals(grave.getOwnerUUID())) {
+                graveUUIDs.add(grave.getUUID());
+            }
+        }
+
+        return graveUUIDs;
+    }
+
+    /**
+     * Gets loaded graves owned by the specified player.
+     *
+     * @param targetPlayer the player whose graves should be returned; if {@code null}, all graves are returned.
+     * @return a list of loaded graves.
+     */
+    public @NotNull List<Grave> getGraves(@Nullable Player targetPlayer) {
+        return getGraves(targetPlayer != null ? targetPlayer.getUniqueId() : null);
+    }
+
+    /**
+     * Gets loaded graves owned by the specified owner UUID.
+     *
+     * @param ownerUUID the owner UUID whose graves should be returned; if {@code null}, all graves are returned.
+     * @return a list of loaded graves.
+     */
+    public @NotNull List<Grave> getGraves(@Nullable UUID ownerUUID) {
+        List<Grave> graves = new ArrayList<>();
+
+        for (Grave grave : plugin.getCacheManager().getGraveMap().values()) {
+            if (ownerUUID == null || ownerUUID.equals(grave.getOwnerUUID())) {
+                graves.add(grave);
+            }
+        }
+
+        return graves;
+    }
+
+    /**
      * Checks whether the specified grave is currently locked (being viewed) by any player.
      *
      * @param grave the grave to check
@@ -271,4 +339,129 @@ public class GraveManagementAPI {
         outViewer[0] = viewer;
         return true;
     }
+
+    /**
+     * Updates the protection state and remaining protection time for an existing grave.
+     *
+     * <p>This intentionally lives in the grave management API so Skript support does not
+     * modify grave internals directly.</p>
+     *
+     * @param grave the grave to update
+     * @param protectedGrave whether the grave should be protected
+     * @param timeProtection the remaining protection time in milliseconds; ignored when protection is disabled
+     */
+    public void setGraveProtection(@NotNull Grave grave, boolean protectedGrave, long timeProtection) {
+        grave.setProtection(protectedGrave);
+        grave.setTimeProtection(protectedGrave ? Math.max(timeProtection, 0L) : 0L);
+    }
+
+    /**
+     * Clears protection from an existing grave.
+     *
+     * @param grave the grave to update
+     */
+    public void clearGraveProtection(@NotNull Grave grave) {
+        setGraveProtection(grave, false, 0L);
+    }
+
+
+    /**
+     * Gets the next empty inventory slot for the specified grave.
+     *
+     * @param grave the grave to inspect
+     * @return the next empty slot index, or {@code -1} if no empty slot exists
+     */
+    public int getNextAvailableGraveSlot(@NotNull Grave grave) {
+        Inventory inventory = grave.getInventory();
+        if (inventory == null) {
+            return -1;
+        }
+
+        for (int slot = 0; slot < inventory.getSize(); slot++) {
+            if (isEmptyItem(inventory.getItem(slot))) {
+                return slot;
+            }
+        }
+
+        return -1;
+    }
+
+    /**
+     * Checks whether the specified grave has at least one empty inventory slot.
+     *
+     * @param grave the grave to inspect
+     * @return {@code true} if the grave has an empty slot, otherwise {@code false}
+     */
+    public boolean hasAvailableGraveSlot(@NotNull Grave grave) {
+        return getNextAvailableGraveSlot(grave) >= 0;
+    }
+
+    /**
+     * Adds an item to a specific grave inventory slot if that slot is empty.
+     *
+     * <p>Slot numbers are raw Bukkit inventory slot indexes. The first slot is {@code 0}.</p>
+     *
+     * @param grave the grave to update
+     * @param itemStack the item to add
+     * @param slot the target slot index
+     * @return {@code true} if the item was added, otherwise {@code false}
+     */
+    public boolean addItemToGraveSlot(@NotNull Grave grave, @NotNull ItemStack itemStack, int slot) {
+        Inventory inventory = grave.getInventory();
+        if (!canUseItem(itemStack) || inventory == null || !isValidSlot(inventory, slot) || !isEmptyItem(inventory.getItem(slot))) {
+            return false;
+        }
+
+        inventory.setItem(slot, itemStack.clone());
+        return true;
+    }
+
+    /**
+     * Sets an item in a specific grave inventory slot, replacing any existing item in that slot.
+     *
+     * <p>Slot numbers are raw Bukkit inventory slot indexes. The first slot is {@code 0}.</p>
+     *
+     * @param grave the grave to update
+     * @param itemStack the item to set
+     * @param slot the target slot index
+     * @return {@code true} if the item was set, otherwise {@code false}
+     */
+    public boolean setItemInGraveSlot(@NotNull Grave grave, @NotNull ItemStack itemStack, int slot) {
+        Inventory inventory = grave.getInventory();
+        if (!canUseItem(itemStack) || inventory == null || !isValidSlot(inventory, slot)) {
+            return false;
+        }
+
+        inventory.setItem(slot, itemStack.clone());
+        return true;
+    }
+
+    /**
+     * Adds an item to the next empty grave inventory slot.
+     *
+     * @param grave the grave to update
+     * @param itemStack the item to add
+     * @return the slot index that received the item, or {@code -1} if no slot was available
+     */
+    public int addItemToNextAvailableGraveSlot(@NotNull Grave grave, @NotNull ItemStack itemStack) {
+        int slot = getNextAvailableGraveSlot(grave);
+        if (slot < 0) {
+            return -1;
+        }
+
+        return addItemToGraveSlot(grave, itemStack, slot) ? slot : -1;
+    }
+
+    private boolean isValidSlot(@NotNull Inventory inventory, int slot) {
+        return slot >= 0 && slot < inventory.getSize();
+    }
+
+    private boolean canUseItem(@NotNull ItemStack itemStack) {
+        return itemStack.getType() != Material.AIR && itemStack.getAmount() > 0;
+    }
+
+    private boolean isEmptyItem(@Nullable ItemStack itemStack) {
+        return itemStack == null || itemStack.getType() == Material.AIR || itemStack.getAmount() <= 0;
+    }
+
 }
