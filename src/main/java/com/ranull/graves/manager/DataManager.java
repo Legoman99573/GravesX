@@ -2189,10 +2189,10 @@ public class DataManager {
      *
      * @param location the location to check
      * @return {@code true} if a grave exists at the location; {@code false} otherwise
-     * @deprecated Unused API. Deprecated as of 4.9.9.1 and scheduled for removal in 4.9.11.1.
+     * @deprecated Unused API. Deprecated as of 4.9.9.1 and scheduled for removal in 2026.4.9.2.
      */
     @Deprecated(since = "4.9.9.1", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.9.11.1")
+    @ApiStatus.ScheduledForRemoval(inVersion = "2026.4.9.2")
     public boolean hasGraveAtLocation(Location location) {
         String query = "SELECT COUNT(*) FROM " + getStoragePrefix() + "grave WHERE location_death = ?";
         try (Connection connection = getConnection();

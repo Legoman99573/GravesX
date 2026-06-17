@@ -1109,7 +1109,7 @@ public class Graves extends JavaPlugin {
      *
      * @return the {@link HologramManager} for displaying holographic text or elements above graves.
      */
-    @Deprecated (since = "4.9.11.1")
+    @Deprecated (since = "2026.4.9.1")
     public HologramManager getHologramManager() {
         return hologramManager;
     }

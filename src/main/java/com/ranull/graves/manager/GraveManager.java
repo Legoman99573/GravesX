@@ -2621,7 +2621,7 @@ public class GraveManager {
      * @param grave       the grave associated with the damage.
      * @return the damage reason.
      */
-    @Deprecated(since = "4.9.11.1")
+    @Deprecated(since = "2026.4.9.1")
     public String getDamageReason(EntityDamageEvent.DamageCause damageCause, Grave grave) {
         List<String> reasons = plugin.getConfigManager().getConfigSection("message.death-reason", grave).getStringList("message.death-reason");
         String causeName = damageCause.name();
