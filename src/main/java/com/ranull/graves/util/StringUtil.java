@@ -125,10 +125,10 @@ public class StringUtil {
                     .replace("%state_protection%",
                             grave.getProtection() && (grave.getTimeProtectionRemaining() > 0
                                     || grave.getTimeProtectionRemaining() < 0)
-                                    ? plugin.getConfigManager().getConfigSection("protection.state.unprotected", grave)
-                                    .getString("protection.state.unprotected", "Unprotected")
-                                    : plugin.getConfigManager().getConfigSection("protection.state.protected", grave)
-                                    .getString("protection.state.protected", "Protected"))
+                                    ? plugin.getConfigManager().getConfigSection("protection.states.protected", grave)
+                                    .getString("protection.states.protected", "&a✔")
+                                    : plugin.getConfigManager().getConfigSection("protection.states.unprotected", grave)
+                                    .getString("protection.states.unprotected", "&c✘"))
                     .replace("%state_abandoned%", String.valueOf(grave.isAbandoned()))
                     .replace("%item%", String.valueOf(grave.getItemAmount()));
 

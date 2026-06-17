@@ -274,11 +274,11 @@ settings:
             owner: true
             # If a killer can't be found should everyone be allowed to open the grave.
             other: false
-        state:
+        states:
           # Message for protected graves.
-          protected: "&c✘"
+          protected: "&a✔"
           # Message for unprotected graves.
-          unprotected: "&a✔"
+          unprotected: "&c✘"
         # Should players be allowed to preview a grave in a protected state?
         preview: false
 
