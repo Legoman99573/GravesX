@@ -582,8 +582,8 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
                     if (!plugin.getGraveManager().getGraveList(otherPlayer).isEmpty()) {
                         plugin.getGUIManager().openGraveList(player, otherPlayer.getUniqueId());
                     } else {
-                        commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » "
-                                + ChatColor.RESET + ChatColor.RED + args[1] + ChatColor.RESET + " has no graves.");
+                        plugin.getEntityManager().sendMessage("message.no-graves-other", player, args[1],
+                                player.getLocation(), plugin.getConfigManager().getPermissionList(player));
                     }
                 } else {
                     plugin.getEntityManager().sendMessage("message.permission-denied", player);
@@ -635,16 +635,14 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
             var graves = plugin.getGraveManager().getGraveList(player);
 
             if (graves == null || graves.isEmpty()) {
-                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » "
-                        + ChatColor.RESET + "You have no graves.");
+                plugin.getEntityManager().sendMessage("message.no-graves", player);
                 return;
             }
 
             Grave grave = graves.get(0);
 
             if (grave == null) {
-                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » "
-                        + ChatColor.RESET + "You have no graves.");
+                plugin.getEntityManager().sendMessage("message.no-graves", player);
                 return;
             }
 
@@ -669,16 +667,16 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
             var graves = plugin.getGraveManager().getGraveList(targetPl);
 
             if (graves == null || graves.isEmpty()) {
-                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » "
-                        + ChatColor.RESET + ChatColor.RED + args[1] + ChatColor.RESET + " has no graves.");
+                plugin.getEntityManager().sendMessage("message.no-graves-other", player, args[1],
+                        player.getLocation(), plugin.getConfigManager().getPermissionList(player));
                 return;
             }
 
             Grave grave = graves.get(0);
 
             if (grave == null) {
-                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » "
-                        + ChatColor.RESET + ChatColor.RED + args[1] + ChatColor.RESET + " has no graves.");
+                plugin.getEntityManager().sendMessage("message.no-graves-other", player, args[1],
+                        player.getLocation(), plugin.getConfigManager().getPermissionList(player));
                 return;
             }
 
@@ -710,7 +708,7 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
 
             var graves = plugin.getGraveManager().getGraveList(player);
             if (graves.isEmpty()) {
-                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET + "You have no graves.");
+                plugin.getEntityManager().sendMessage("message.no-graves", player);
                 return;
             }
 
@@ -745,8 +743,8 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
             OfflinePlayer targetPl = plugin.getServer().getOfflinePlayer(args[1]);
             var graves = plugin.getGraveManager().getGraveList(targetPl);
             if (graves.isEmpty()) {
-                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
-                        + ChatColor.RED + args[1] + ChatColor.RESET + " has no graves.");
+                plugin.getEntityManager().sendMessage("message.no-graves-other", player, args[1],
+                        player.getLocation(), plugin.getConfigManager().getPermissionList(player));
                 return;
             }
 
