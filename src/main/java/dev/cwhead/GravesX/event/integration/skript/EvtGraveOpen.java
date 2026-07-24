@@ -35,7 +35,7 @@ public class EvtGraveOpen extends SkriptEvent {
                 BukkitSyntaxInfos.Event.KEY,
                 BukkitSyntaxInfos.Event.builder(EvtGraveOpen.class, "Grave Open")
                         .addEvent(GraveOpenEvent.class)
-                        .addPatterns("[grave] ope(n|ning|ned)")
+                        .addPatterns("grav(e|es) ope(n|ning|ned)")
                         .addDescription("Triggered when an inventory associated with a grave is opened. Provides access to the player, grave, and inventory view.")
                         .addExamples(
                                 "on grave open:",

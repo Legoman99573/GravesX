@@ -36,7 +36,7 @@ public class EvtGraveAutoLoot extends SkriptEvent {
                 BukkitSyntaxInfos.Event.KEY,
                 BukkitSyntaxInfos.Event.builder(EvtGraveAutoLoot.class, "Grave Auto Loot")
                         .addEvent(GraveAutoLootEvent.class)
-                        .addPatterns("[grave] auto loo(t|ting|ted)")
+                        .addPatterns("grav(e|es) auto loo(t|ting|ted)")
                         .addDescription("Triggered when an entity auto loots a grave. Provides access to the entity, grave, and location.")
                         .addExamples(
                                 "on grave auto loot:",

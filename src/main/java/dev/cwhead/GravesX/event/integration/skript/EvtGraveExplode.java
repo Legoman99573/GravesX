@@ -35,7 +35,7 @@ public class EvtGraveExplode extends SkriptEvent {
                 BukkitSyntaxInfos.Event.KEY,
                 BukkitSyntaxInfos.Event.builder(EvtGraveExplode.class, "Grave Explode")
                         .addEvent(GraveExplodeEvent.class)
-                        .addPatterns("[grave] explod(e|ing|ed)")
+                        .addPatterns("grav(e|es) explod(e|ing|ed)")
                         .addDescription("Triggered when a grave explodes. Provides access to the entity, grave, and location.")
                         .addExamples(
                                 "on grave explode:",

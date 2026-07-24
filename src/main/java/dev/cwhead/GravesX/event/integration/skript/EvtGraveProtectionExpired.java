@@ -34,7 +34,7 @@ public class EvtGraveProtectionExpired extends SkriptEvent {
                 BukkitSyntaxInfos.Event.KEY,
                 BukkitSyntaxInfos.Event.builder(EvtGraveProtectionExpired.class, "Grave Protection Expired")
                         .addEvent(GraveProtectionExpiredEvent.class)
-                        .addPatterns("[grave] protec(t|ting|ted|tion) expir(e|ing|ed)")
+                        .addPatterns("grav(e|es) protec(t|ting|ted|tion) expir(e|ing|ed)")
                         .addDescription("Triggered when a grave's protection expires. Provides access to the grave and location.")
                         .addExamples(
                                 "on grave protection expired:",

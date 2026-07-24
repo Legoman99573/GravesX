@@ -33,7 +33,7 @@ public class EvtGraveBlockPlace extends SkriptEvent {
                 BukkitSyntaxInfos.Event.KEY,
                 BukkitSyntaxInfos.Event.builder(EvtGraveBlockPlace.class, "Grave Block Place")
                         .addEvent(GraveBlockPlaceEvent.class)
-                        .addPatterns("[grave] bloc(k|ks) plac(e|ing|ed)")
+                        .addPatterns("grav(e|es) bloc(k|ks) plac(e|ing|ed)")
                         .addDescription("Triggered when a block is placed for a grave. Provides access to the grave, block type, and location.")
                         .addExamples(
                                 "on grave block place:",

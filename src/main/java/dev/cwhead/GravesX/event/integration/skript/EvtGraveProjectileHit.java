@@ -37,7 +37,7 @@ public class EvtGraveProjectileHit extends SkriptEvent {
                 BukkitSyntaxInfos.Event.KEY,
                 BukkitSyntaxInfos.Event.builder(EvtGraveProjectileHit.class, "Grave Projectile Hit")
                         .addEvent(GraveProjectileHitEvent.class)
-                        .addPatterns("[grave] projectil(e|es) hi(t|tting)")
+                        .addPatterns("grav(e|es) projectil(e|es) hi(t|tting)")
                         .addDescription("Triggered when a grave block is broken. Provides access to the grave, player, block, and block type.")
                         .addExamples(
                                 "on grave projectile hit:",

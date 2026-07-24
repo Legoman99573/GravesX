@@ -35,7 +35,7 @@ public class EvtGravePreTeleport extends SkriptEvent {
                 BukkitSyntaxInfos.Event.KEY,
                 BukkitSyntaxInfos.Event.builder(EvtGravePreTeleport.class, "Grave Pre Teleport")
                         .addEvent(GravePreTeleportEvent.class)
-                        .addPatterns("[grave] pr(e|epare) telepor(t|ting|ted)")
+                        .addPatterns("grav(e|es) pr(e|epare) telepor(t|ting|ted)")
                         .addDescription("Triggered when an entity teleports to a grave. Provides access to the grave, entity and location.")
                         .addExamples(
                                 "on grave pre teleport:",

@@ -36,7 +36,7 @@ public class EvtGraveVirtualOpen extends SkriptEvent {
                 BukkitSyntaxInfos.Event.KEY,
                 BukkitSyntaxInfos.Event.builder(EvtGraveVirtualOpen.class, "Grave Virtual Open")
                         .addEvent(GraveVirtualOpenEvent.class)
-                        .addPatterns("[grave] virtua(l|ly) ope(n|ning|ned)")
+                        .addPatterns("grav(e|es) virtua(l|ly) ope(n|ning|ned)")
                         .addDescription("Triggered when a virtual grave open is about to be processed. Provides access to the entity, player (if applicable), grave, location, and distance.")
                         .addExamples(
                                 "on grave virtual open:",

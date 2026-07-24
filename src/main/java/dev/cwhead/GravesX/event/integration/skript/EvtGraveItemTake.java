@@ -36,7 +36,7 @@ public class EvtGraveItemTake extends SkriptEvent {
                 BukkitSyntaxInfos.Event.KEY,
                 BukkitSyntaxInfos.Event.builder(EvtGraveItemTake.class, "Grave Item Take")
                         .addEvent(GraveItemTakeEvent.class)
-                        .addPatterns("[grave] Ite(m|ms) Tak(e|ing)")
+                        .addPatterns("grav(e|es) Ite(m|ms) Tak(e|ing)")
                         .addDescription("Triggered when an item is clicked or moved in a grave.")
                         .addExamples(
                                 "on grave item take:",

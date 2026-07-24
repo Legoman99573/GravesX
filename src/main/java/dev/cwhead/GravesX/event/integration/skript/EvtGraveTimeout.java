@@ -34,7 +34,7 @@ public class EvtGraveTimeout extends SkriptEvent {
                 BukkitSyntaxInfos.Event.KEY,
                 BukkitSyntaxInfos.Event.builder(EvtGraveTimeout.class, "Grave Timeout")
                         .addEvent(GraveTimeoutEvent.class)
-                        .addPatterns("[grave] tim(e|ed)(| |-)out")
+                        .addPatterns("grav(e|es) tim(e|ed)(| |-)out")
                         .addDescription("Triggered when a grave times out. Provides access to the grave and location.")
                         .addExamples(
                                 "on grave timeout:",

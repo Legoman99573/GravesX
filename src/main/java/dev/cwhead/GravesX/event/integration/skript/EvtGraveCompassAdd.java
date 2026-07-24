@@ -32,7 +32,7 @@ public class EvtGraveCompassAdd extends SkriptEvent {
                 BukkitSyntaxInfos.Event.KEY,
                 BukkitSyntaxInfos.Event.builder(EvtGraveCompassAdd.class, "Grave Compass Add")
                         .addEvent(GraveCompassAddEvent.class)
-                        .addPatterns("[grave] compas(s|ses) ad(d|ding|ded)")
+                        .addPatterns("grav(e|es) compas(s|ses) ad(d|ding|ded)")
                         .addDescription("Triggered when a grave compass is added to a users inventory.")
                         .addExamples(
                                 "on grave compass add:",

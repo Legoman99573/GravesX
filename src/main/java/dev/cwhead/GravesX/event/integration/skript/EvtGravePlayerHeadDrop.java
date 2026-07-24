@@ -35,7 +35,7 @@ public class EvtGravePlayerHeadDrop extends SkriptEvent {
                 BukkitSyntaxInfos.Event.KEY,
                 BukkitSyntaxInfos.Event.builder(EvtGravePlayerHeadDrop.class, "Grave Player Head Drop")
                         .addEvent(GravePlayerHeadDropEvent.class)
-                        .addPatterns("[grave] playe(r|rs) hea(d|ds) dro(p|ped|pping)")
+                        .addPatterns("grav(e|es) playe(r|rs) hea(d|ds) dro(p|ped|pping)")
                         .addDescription("Triggered when a player head is dropped at a grave site. Provides access to the entity, grave, and location.")
                         .addExamples(
                                 "on grave player head drop:",

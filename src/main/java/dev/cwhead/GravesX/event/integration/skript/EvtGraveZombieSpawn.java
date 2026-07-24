@@ -35,7 +35,7 @@ public class EvtGraveZombieSpawn extends SkriptEvent {
                 BukkitSyntaxInfos.Event.KEY,
                 BukkitSyntaxInfos.Event.builder(EvtGraveZombieSpawn.class, "Grave Zombie Spawn")
                         .addEvent(GraveZombieSpawnEvent.class)
-                        .addPatterns("[grave] zombi(e|es) spaw(n|ning|ned)")
+                        .addPatterns("grav(e|es) zombi(e|es) spaw(n|ning|ned)")
                         .addDescription("Triggered when a zombie spawns targeting an entity. Provides access to the grave, target entity, and location.")
                         .addExamples(
                                 "on grave zombie spawn:",

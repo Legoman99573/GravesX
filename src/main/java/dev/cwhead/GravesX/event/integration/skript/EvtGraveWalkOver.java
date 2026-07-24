@@ -36,7 +36,7 @@ public class EvtGraveWalkOver extends SkriptEvent {
                 BukkitSyntaxInfos.Event.KEY,
                 BukkitSyntaxInfos.Event.builder(EvtGraveWalkOver.class, "Grave Walk Over")
                         .addEvent(GraveWalkOverEvent.class)
-                        .addPatterns("[grave] wal(k|ked|king) over")
+                        .addPatterns("grav(e|es) wal(k|ked|king) over")
                         .addDescription("Triggered when an entity walks over a grave. Provides access to the entity, grave, and location.")
                         .addExamples(
                                 "on grave walk over:",

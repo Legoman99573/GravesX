@@ -33,7 +33,7 @@ public class EvtGraveBreak extends SkriptEvent {
                 BukkitSyntaxInfos.Event.KEY,
                 BukkitSyntaxInfos.Event.builder(EvtGraveBreak.class, "Grave Break")
                         .addEvent(GraveBreakEvent.class)
-                        .addPatterns("[grave] br(eak|eaking|oken)")
+                        .addPatterns("grav(e|es) br(eak|eaking|oken)")
                         .addDescription("Triggered when a grave block is broken. Provides access to the grave, player, block, and block type.")
                         .addExamples(
                                 "on grave break:",

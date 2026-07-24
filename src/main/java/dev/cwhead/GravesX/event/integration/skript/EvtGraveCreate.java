@@ -34,7 +34,7 @@ public class EvtGraveCreate extends SkriptEvent {
                 BukkitSyntaxInfos.Event.KEY,
                 BukkitSyntaxInfos.Event.builder(EvtGraveCreate.class, "Grave Create")
                         .addEvent(GraveCreateEvent.class)
-                        .addPatterns("[grave] creat(e|ing|ed)")
+                        .addPatterns("grav(e|es) creat(e|ing|ed)")
                         .addDescription("Triggered when a grave is created. Provides access to the entity and grave.")
                         .addExamples(
                                 "on grave create:",

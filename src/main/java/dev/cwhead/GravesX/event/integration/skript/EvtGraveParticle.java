@@ -34,7 +34,7 @@ public class EvtGraveParticle extends SkriptEvent {
                 BukkitSyntaxInfos.Event.KEY,
                 BukkitSyntaxInfos.Event.builder(EvtGraveParticle.class, "Grave Particle")
                         .addEvent(GraveParticleEvent.class)
-                        .addPatterns("[grave] particl(e|es)")
+                        .addPatterns("grav(e|es) particl(e|es)")
                         .addDescription("Triggered when a particle is targeted to a grave location.")
                         .addExamples(
                                 "on grave particle:",

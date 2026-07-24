@@ -35,7 +35,7 @@ public class EvtGraveLooted extends SkriptEvent {
                 BukkitSyntaxInfos.Event.KEY,
                 BukkitSyntaxInfos.Event.builder(EvtGraveLooted.class, "Grave Looted")
                         .addEvent(GraveLootedEvent.class)
-                        .addPatterns("[grave] loo(t|ting|ted)")
+                        .addPatterns("grav(e|es) loo(t|ting|ted)")
                         .addDescription("Triggered when an inventory associated with a grave is completely looted. Provides access to the grave and inventory view.")
                         .addExamples(
                                 "on grave looted:",

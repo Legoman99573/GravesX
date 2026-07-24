@@ -35,7 +35,7 @@ public class EvtGraveObituaryAdd extends SkriptEvent {
                 BukkitSyntaxInfos.Event.KEY,
                 BukkitSyntaxInfos.Event.builder(EvtGraveObituaryAdd.class, "Grave Obituary Add")
                         .addEvent(GraveObituaryAddEvent.class)
-                        .addPatterns("[grave] obituar(y|ies) ad(d|ded)")
+                        .addPatterns("grav(e|es) obituar(y|ies) ad(d|ded)")
                         .addDescription("Triggered when an obituary is to be added to a grave. Provides access to the entity, grave, and location.")
                         .addExamples(
                                 "on grave obituary add:",

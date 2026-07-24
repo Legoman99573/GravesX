@@ -38,7 +38,7 @@ public class EvtGravePistonExtend extends SkriptEvent {
                 BukkitSyntaxInfos.Event.KEY,
                 BukkitSyntaxInfos.Event.builder(EvtGravePistonExtend.class, "Grave Piston Move")
                         .addEvent(GravePistonExtendEvent.class)
-                        .addPatterns("[grave] pisto(n|ns) ex(te|pa)n(d|ded|ding)")
+                        .addPatterns("grav(e|es) pisto(n|ns) ex(te|pa)n(d|ded|ding)")
                         .addDescription("Triggered when a player head is dropped at a grave site. Provides access to the grave and location.")
                         .addExamples(
                                 "on grave piston extend:",

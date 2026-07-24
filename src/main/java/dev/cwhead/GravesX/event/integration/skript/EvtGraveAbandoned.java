@@ -32,7 +32,7 @@ public class EvtGraveAbandoned extends SkriptEvent {
                 BukkitSyntaxInfos.Event.KEY,
                 BukkitSyntaxInfos.Event.builder(EvtGraveAbandoned.class, "Grave Abandoned")
                         .addEvent(GraveAbandonedEvent.class)
-                        .addPatterns("[grave] aband(on|oned|ed|oning)")
+                        .addPatterns("grav(e|es) aband(on|oned|ed|oning)")
                         .addDescription("Triggered when a grave is abandoned. Provides access to the grave and location.")
                         .addExamples(
                                 "on grave abandoned:",

@@ -33,7 +33,7 @@ public class EvtGraveClose extends SkriptEvent {
                 BukkitSyntaxInfos.Event.KEY,
                 BukkitSyntaxInfos.Event.builder(EvtGraveClose.class, "Grave Close")
                         .addEvent(GraveCloseEvent.class)
-                        .addPatterns("[grave] clos(e|ing|ed)")
+                        .addPatterns("grav(e|es) clos(e|ing|ed)")
                         .addDescription("Triggered when an inventory associated with a grave is closed. Provides access to the grave and inventory view.")
                         .addExamples(
                                 "on grave close:",

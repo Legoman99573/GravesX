@@ -36,7 +36,7 @@ public class EvtGravePreExplode extends SkriptEvent {
                 BukkitSyntaxInfos.Event.KEY,
                 BukkitSyntaxInfos.Event.builder(EvtGravePreExplode.class, "Grave Pre Explode")
                         .addEvent(GravePreExplodeEvent.class)
-                        .addPatterns("[grave] pre[-]explod(e|ing)")
+                        .addPatterns("grav(e|es) pre[-]explod(e|ing)")
                         .addDescription("")
                         .addExamples(
                                 "on grave pre explode:",

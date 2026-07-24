@@ -39,7 +39,7 @@ public class EvtGravePostCreate extends SkriptEvent {
                 BukkitSyntaxInfos.Event.KEY,
                 BukkitSyntaxInfos.Event.builder(EvtGravePostCreate.class, "Grave Post Create")
                         .addEvent(GravePostCreateEvent.class)
-                        .addPatterns("[grave] post creat(e|ing|ed)")
+                        .addPatterns("grav(e|es) post creat(e|ing|ed)")
                         .addDescription("Triggered after a grave create attempt completes (after placement). Provides access to the entity, grave, and placed location (nullable).")
                         .addExamples(
                                 "on grave post create:",
