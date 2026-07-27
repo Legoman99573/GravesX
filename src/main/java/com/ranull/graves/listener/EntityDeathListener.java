@@ -169,7 +169,7 @@ public class EntityDeathListener implements Listener {
                 getGraveItemStackList(event, livingEntity, permissionList, ignoredItemStackList);
 
         if (graveItemStackList.isEmpty()) {
-            plugin.debugMessage("Grave not created for " + entityName + " because they had no drops", 2);
+            plugin.debugMessage("Grave not created for " + entityName + " because they had no drops. This may be due to no items on the player or another plugin has emptied all drops.", 2);
             return;
         }
 
