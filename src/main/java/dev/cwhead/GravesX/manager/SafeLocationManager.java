@@ -591,10 +591,15 @@ public final class SafeLocationManager {
                 return GravePlacementResult.of(headBlocked, GravePlacementReason.HEAD_BLOCKED);
             }
         } else if (inWaterOrAbove) {
-            Location smart = resolveSmartFromLastSolid(livingEntity, origin, grave, useGround, useRoof);
-            if (smart != null) {
-                plugin.debugMessage(prefix + "CHOSEN=" + GravePlacementReason.WATER_SMART + " loc=" + fmtLoc(smart) + " distSq=" + distSq(origin, smart) + ".", 1);
-                return GravePlacementResult.of(smart, GravePlacementReason.WATER_SMART);
+            boolean waterSmart = plugin.getConfigManager()
+                    .getConfigSection("placement.water-smart", grave)
+                    .getBoolean("placement.water-smart");
+
+            if (waterSmart) {
+                Location smart = resolveSmartFromLastSolid(livingEntity, origin, grave, useGround, useRoof);
+                if (smart != null) {
+                    return GravePlacementResult.of(smart, GravePlacementReason.WATER_SMART);
+                }
             }
 
             if (directlyAboveWater) {
@@ -640,10 +645,15 @@ public final class SafeLocationManager {
                 if (ground != null) candidates.add(new Candidate(ground, GravePlacementReason.GROUND));
             }
         } else if (inLavaOrAbove) {
-            Location smart = resolveSmartFromLastSolid(livingEntity, origin, grave, useGround, useRoof);
-            if (smart != null) {
-                plugin.debugMessage(prefix + "CHOSEN=" + GravePlacementReason.LAVA_SMART + " loc=" + fmtLoc(smart) + " distSq=" + distSq(origin, smart) + ".", 1);
-                return GravePlacementResult.of(smart, GravePlacementReason.LAVA_SMART);
+            boolean lavaSmart = plugin.getConfigManager()
+                    .getConfigSection("placement.lava-smart", grave)
+                    .getBoolean("placement.lava-smart");
+
+            if (lavaSmart) {
+                Location smart = resolveSmartFromLastSolid(livingEntity, origin, grave, useGround, useRoof);
+                if (smart != null) {
+                    return GravePlacementResult.of(smart, GravePlacementReason.LAVA_SMART);
+                }
             }
 
             boolean lavaTop = plugin.getConfigManager().getConfigSection("placement.lava-top", grave).getBoolean("placement.lava-top");
