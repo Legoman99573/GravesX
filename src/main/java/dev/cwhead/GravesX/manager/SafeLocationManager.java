@@ -598,6 +598,7 @@ public final class SafeLocationManager {
             if (waterSmart) {
                 Location smart = resolveSmartFromLastSolid(livingEntity, origin, grave, useGround, useRoof);
                 if (smart != null) {
+                    plugin.debugMessage(prefix + "CHOSEN=" + GravePlacementReason.WATER_SMART + " loc=" + fmtLoc(smart) + " distSq=" + distSq(origin, smart) + ".", 1);
                     return GravePlacementResult.of(smart, GravePlacementReason.WATER_SMART);
                 }
             }
@@ -652,6 +653,7 @@ public final class SafeLocationManager {
             if (lavaSmart) {
                 Location smart = resolveSmartFromLastSolid(livingEntity, origin, grave, useGround, useRoof);
                 if (smart != null) {
+                    plugin.debugMessage(prefix + "CHOSEN=" + GravePlacementReason.LAVA_SMART + " loc=" + fmtLoc(smart) + " distSq=" + distSq(origin, smart) + ".", 1);
                     return GravePlacementResult.of(smart, GravePlacementReason.LAVA_SMART);
                 }
             }
