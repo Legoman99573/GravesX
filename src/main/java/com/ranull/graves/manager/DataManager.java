@@ -15,8 +15,6 @@ import org.bukkit.Location;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.EntityType;
-import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.io.File;
@@ -27,6 +25,7 @@ import java.sql.Date;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Manages data storage and retrieval for the Graves plugin.
@@ -59,6 +58,79 @@ public class DataManager {
 
     private volatile Set<String> customProviderSanitizedIds = Set.of();
     private volatile List<String> customProviderKeysSnapshot = List.of();
+
+    /**
+     * Number of database write operations (grave/block/hologram/entity data)
+     * that have been dispatched but have not yet finished executing.
+     */
+    private final AtomicInteger pendingWrites = new AtomicInteger(0);
+
+    /**
+     * Set once the plugin has begun shutting down.
+     */
+    private volatile boolean shuttingDown = false;
+
+    /**
+     * Dispatches a database write.
+     *
+     * @param task the database write to run.
+     */
+    private void runAsyncDatabaseTask(Runnable task) {
+        if (shuttingDown) {
+            try {
+                task.run();
+            } catch (Exception e) {
+                plugin.getLogger().severe("Failed to run database write during shutdown: " + e.getCause());
+                plugin.logStackTrace(e);
+            }
+            return;
+        }
+
+        pendingWrites.incrementAndGet();
+        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
+            try {
+                task.run();
+            } finally {
+                pendingWrites.decrementAndGet();
+            }
+        });
+    }
+
+    /**
+     * Blocks the calling thread (intended to be the main thread during
+     * {@code onDisable()}) until every database write dispatched via
+     * {@link #runAsyncDatabaseTask(Runnable)} has finished, or the timeout
+     * elapses.
+     *
+     * @param timeoutMillis maximum time to wait for pending writes to drain.
+     * @return true if all pending writes finished before the timeout, false if
+     * the wait timed out with writes still outstanding.
+     */
+    public boolean awaitPendingWrites(long timeoutMillis) {
+        shuttingDown = true;
+
+        long deadline = System.currentTimeMillis() + timeoutMillis;
+        while (pendingWrites.get() > 0) {
+            if (System.currentTimeMillis() >= deadline) {
+                return false;
+            }
+            try {
+                Thread.sleep(25L);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return pendingWrites.get() == 0;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * @return the number of database writes that have been dispatched but not
+     * yet completed.
+     */
+    public int getPendingWriteCount() {
+        return pendingWrites.get();
+    }
 
     /**
      * Initializes the DataManager with the specified plugin instance and sets up the database connection.
@@ -1926,7 +1998,7 @@ public class DataManager {
                 blockData.getReplaceData()
         };
 
-        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
+        runAsyncDatabaseTask(() -> {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException exception) {
@@ -1959,7 +2031,7 @@ public class DataManager {
         String query = "DELETE FROM " + getStoragePrefix() + "block WHERE location = ?";
         Object[] parameters = new Object[] { LocationUtil.locationToString(location) };
 
-        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
+        runAsyncDatabaseTask(() -> {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException exception) {
@@ -2000,7 +2072,7 @@ public class DataManager {
                 hologramData.getBackend().name()
         };
 
-        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
+        runAsyncDatabaseTask(() -> {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException exception) {
@@ -2017,7 +2089,7 @@ public class DataManager {
      * @param grave the grave to remove hologram data.
      */
     public void removeHologramData(Grave grave) {
-        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
+        runAsyncDatabaseTask(() -> {
             String selectSql = "SELECT uuid_entity, location, line, backend FROM " + getStoragePrefix() + "hologram WHERE uuid_grave = ?";
             String deleteSql = "DELETE FROM " + getStoragePrefix() + "hologram WHERE uuid_grave = ?";
 
@@ -2122,7 +2194,7 @@ public class DataManager {
                 entityData.getUUIDGrave().toString()
         };
 
-        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
+        runAsyncDatabaseTask(() -> {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException e) {
@@ -2147,7 +2219,7 @@ public class DataManager {
      * @param entityDataList the list of entity data to remove.
      */
     public void removeEntityData(List<EntityData> entityDataList) {
-        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
+        runAsyncDatabaseTask(() -> {
             try {
                 for (EntityData entityData : entityDataList) {
                     Location loc = entityData.getLocation();
@@ -2293,7 +2365,7 @@ public class DataManager {
                 grave.getDeathCause() != null ? grave.getDeathCause() : null
         };
 
-        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
+        runAsyncDatabaseTask(() -> {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException e) {
@@ -2331,7 +2403,7 @@ public class DataManager {
         String deleteQuery = "DELETE FROM " + getStoragePrefix() + "grave WHERE uuid = ?";
         Object[] deleteParams = new Object[] { uuid };
 
-        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
+        runAsyncDatabaseTask(() -> {
             try {
                 plugin.debugMessage("Attempting to remove grave for UUID: " + uuid, 1);
                 executeUpdate(deleteQuery, deleteParams);
@@ -2354,7 +2426,7 @@ public class DataManager {
         String query = "UPDATE " + getStoragePrefix() + "grave SET " + column + " = ? WHERE uuid = ?";
         Object[] parameters = new Object[] { integer, grave.getUUID() };
 
-        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
+        runAsyncDatabaseTask(() -> {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException e) {
@@ -2375,7 +2447,7 @@ public class DataManager {
         String query = "UPDATE " + getStoragePrefix() + "grave SET " + column + " = ? WHERE uuid = ?";
         Object[] parameters = new Object[] { string, grave.getUUID() };
 
-        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
+        runAsyncDatabaseTask(() -> {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException e) {
@@ -2618,83 +2690,81 @@ public class DataManager {
      * @throws SQLException if a database access error occurs.
      */
     private void executeUpdate(String sql, Object[] parameters) throws SQLException {
-        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
-            try (Connection connection = getConnection()) {
-                if (connection == null) {
-                    plugin.getLogger().severe("Error executing SQL update: connection is null");
-                    plugin.getLogger().severe("Failed SQL statement: " + sql);
-                    return;
-                }
+        try (Connection connection = getConnection()) {
+            if (connection == null) {
+                plugin.getLogger().severe("Error executing SQL update: connection is null");
+                plugin.getLogger().severe("Failed SQL statement: " + sql);
+                return;
+            }
 
-                try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
 
-                    if (parameters != null) {
-                        for (int i = 0; i < parameters.length; i++) {
-                            Object parameter = parameters[i];
-                            int idx = i + 1;
+                if (parameters != null) {
+                    for (int i = 0; i < parameters.length; i++) {
+                        Object parameter = parameters[i];
+                        int idx = i + 1;
 
-                            if (parameter == null) {
-                                statement.setNull(idx, Types.VARCHAR); // adjust per expected type as needed
-                            } else if (parameter instanceof String s) {
-                                statement.setString(idx, s);
-                            } else if (parameter instanceof Integer n) {
-                                statement.setInt(idx, n);
-                            } else if (parameter instanceof Long n) {
-                                statement.setLong(idx, n);
-                            } else if (parameter instanceof Double n) {
-                                statement.setDouble(idx, n);
-                            } else if (parameter instanceof Float n) {
-                                statement.setFloat(idx, n);
-                            } else if (parameter instanceof Boolean b) {
-                                statement.setBoolean(idx, b);
-                            } else if (parameter instanceof UUID u) {
-                                statement.setObject(idx, u.toString(), Types.VARCHAR);
-                            } else if (parameter instanceof byte[] bytes) {
-                                statement.setBytes(idx, bytes);
-                            } else if (parameter instanceof Date d) {
-                                statement.setDate(idx, d);
-                            } else if (parameter instanceof Timestamp ts) {
-                                statement.setTimestamp(idx, ts);
-                            } else if (parameter instanceof LocalDate ld) {
-                                statement.setObject(idx, ld, Types.DATE);
-                            } else if (parameter instanceof LocalDateTime ldt) {
-                                statement.setObject(idx, ldt, Types.TIMESTAMP);
-                            } else if (parameter instanceof Clob c) {
-                                statement.setClob(idx, c);
-                            } else if (parameter instanceof Blob b) {
-                                statement.setBlob(idx, b);
-                            } else if (parameter instanceof EntityType et) {
-                                statement.setString(idx, et.name());
-                            } else {
-                                statement.setObject(idx, parameter);
-                            }
+                        if (parameter == null) {
+                            statement.setNull(idx, Types.VARCHAR); // adjust per expected type as needed
+                        } else if (parameter instanceof String s) {
+                            statement.setString(idx, s);
+                        } else if (parameter instanceof Integer n) {
+                            statement.setInt(idx, n);
+                        } else if (parameter instanceof Long n) {
+                            statement.setLong(idx, n);
+                        } else if (parameter instanceof Double n) {
+                            statement.setDouble(idx, n);
+                        } else if (parameter instanceof Float n) {
+                            statement.setFloat(idx, n);
+                        } else if (parameter instanceof Boolean b) {
+                            statement.setBoolean(idx, b);
+                        } else if (parameter instanceof UUID u) {
+                            statement.setObject(idx, u.toString(), Types.VARCHAR);
+                        } else if (parameter instanceof byte[] bytes) {
+                            statement.setBytes(idx, bytes);
+                        } else if (parameter instanceof Date d) {
+                            statement.setDate(idx, d);
+                        } else if (parameter instanceof Timestamp ts) {
+                            statement.setTimestamp(idx, ts);
+                        } else if (parameter instanceof LocalDate ld) {
+                            statement.setObject(idx, ld, Types.DATE);
+                        } else if (parameter instanceof LocalDateTime ldt) {
+                            statement.setObject(idx, ldt, Types.TIMESTAMP);
+                        } else if (parameter instanceof Clob c) {
+                            statement.setClob(idx, c);
+                        } else if (parameter instanceof Blob b) {
+                            statement.setBlob(idx, b);
+                        } else if (parameter instanceof EntityType et) {
+                            statement.setString(idx, et.name());
+                        } else {
+                            statement.setObject(idx, parameter);
                         }
                     }
-
-                    statement.executeUpdate();
                 }
-            } catch (SQLException exception) {
-                String sqlState = exception.getSQLState();
-                String message = exception.getMessage() != null
-                        ? exception.getMessage().toLowerCase(java.util.Locale.ROOT)
-                        : "";
 
-                if ("42701".equals(sqlState)
-                        || "42P07".equals(sqlState)
-                        || "42S01".equals(sqlState)
-                        || "42S02".equals(sqlState)
-                        || "42S04".equals(sqlState)
-                        || "X0Y32".equals(sqlState)
-                        || "42000".equals(sqlState)
-                        || ("SQLITE_ERROR".equals(sqlState) && message.contains("duplicate column name"))) {
-                    // ignore
-                } else {
-                    plugin.getLogger().severe("Error executing SQL update");
-                    plugin.getLogger().severe("Failed SQL statement: " + sql);
-                    plugin.logStackTrace(exception);
-                }
+                statement.executeUpdate();
             }
-        });
+        } catch (SQLException exception) {
+            String sqlState = exception.getSQLState();
+            String message = exception.getMessage() != null
+                    ? exception.getMessage().toLowerCase(java.util.Locale.ROOT)
+                    : "";
+
+            if ("42701".equals(sqlState)
+                    || "42P07".equals(sqlState)
+                    || "42S01".equals(sqlState)
+                    || "42S02".equals(sqlState)
+                    || "42S04".equals(sqlState)
+                    || "X0Y32".equals(sqlState)
+                    || "42000".equals(sqlState)
+                    || ("SQLITE_ERROR".equals(sqlState) && message.contains("duplicate column name"))) {
+                // ignore
+            } else {
+                plugin.getLogger().severe("Error executing SQL update");
+                plugin.getLogger().severe("Failed SQL statement: " + sql);
+                plugin.logStackTrace(exception);
+            }
+        }
     }
 
     /**

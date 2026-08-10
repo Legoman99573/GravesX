@@ -298,6 +298,16 @@ public class Graves extends JavaPlugin {
             return;
         }
 
+        if (dataManager != null) {
+            getLogger().info("Waiting for pending grave database writes to finish...");
+            boolean drained = dataManager.awaitPendingWrites(10_000L);
+            if (drained) {
+                getLogger().info("All pending database writes completed.");
+            } else {
+                getLogger().severe("Timed out waiting for " + dataManager.getPendingWriteCount() + " database write(s) to finish. Some grave data may not be saved. If this happens regularly, your database may be unreachable, experiencing high latency, or unable to sustain the required write speeds.");
+            }
+        }
+
         getLogger().info("Saving Grave inventories before shutting down...");
         for (Grave grave : getCacheManager().getGraveMap().values()) {
             try {
@@ -582,6 +592,12 @@ public class Graves extends JavaPlugin {
 
         try {
             if (dataManager != null) {
+                getLogger().info("Waiting for pending grave database writes to finish before reload...");
+                boolean drained = dataManager.awaitPendingWrites(10_000L);
+                if (!drained) {
+                    getLogger().severe("Timed out waiting for " + dataManager.getPendingWriteCount() + " database write(s) to finish. Some grave data may not be saved. If this happens regularly, your database may be unreachable, experiencing high latency, or unable to sustain the required write speeds.");
+                }
+
                 getLogger().info("Closing DataManager (DB) for reload...");
                 dataManager.closeConnection();
                 getLogger().info("DataManager closed.");
