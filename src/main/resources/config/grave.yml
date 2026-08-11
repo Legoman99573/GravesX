@@ -1020,6 +1020,8 @@ settings:
         looted: "You looted &c%owner_name%&r's grave at &c%x%&rx, &c%y%&ry, &c%z%&rz in &c%world_formatted%&r."
         experience: "Looted &c%level% &rlevels from grave."
         empty: "You don't have any graves."
+        no-graves: "You have no graves."
+        no-graves-other: "&c%name%&r has no graves."
         death: "You were killed in &c%world_formatted% &rby &c%killer_name%&r."
         block: "Grave created at &c%x%&rx, &c%y%&ry, &c%z%&rz in &c%world_formatted%&r."
         timeout: "Your grave at &c%x%&rx, &c%y%&ry, &c%z%&rz in &c%world_formatted%&r timed out with &c%item% &ritems and &c%experience% &rExperience."
