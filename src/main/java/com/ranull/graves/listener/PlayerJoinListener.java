@@ -3,7 +3,6 @@ package com.ranull.graves.listener;
 import com.ranull.graves.Graves;
 import com.ranull.graves.integration.MiniMessage;
 import com.ranull.graves.util.StringUtil;
-import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -29,20 +28,17 @@ public class PlayerJoinListener implements Listener {
 
     /**
      * Handles the PlayerJoinEvent to notify players about available plugin updates.
-     * This method checks if the plugin's update check is enabled and if the player has the
-     * permission to receive update notifications. If so, it runs an asynchronous task to
-     * fetch the latest version of the plugin and compares it with the player's current version.
-     * If the player's version is outdated, a message is sent to the player indicating the
-     * current version, the latest version, and a link to the Spigot resource page.
-     * The comparison is handled carefully to ensure proper handling of version format errors.
      *
      * @param event The PlayerJoinEvent to handle.
      */
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
+
         if (shouldCheckForUpdates(player)) {
-            plugin.getSchedulerManager().runTaskAsynchronously(() -> notifyPlayerIfOutdated(player));
+            plugin.getSchedulerManager().runTaskAsynchronously(
+                    () -> notifyPlayerIfOutdated(player)
+            );
         }
     }
 
@@ -53,150 +49,252 @@ public class PlayerJoinListener implements Listener {
      * @return True if updates should be checked, false otherwise.
      */
     private boolean shouldCheckForUpdates(Player player) {
-        return plugin.getConfig().getBoolean("settings.update.check") && plugin.getPermissionManager().hasGrantedPermission("graves.update.notify", player);
+        return plugin.getConfig().getBoolean("settings.update.check")
+                && plugin.getPermissionManager()
+                .hasGrantedPermission("graves.update.notify", player);
     }
 
     /**
-     * Notifies the player if their plugin version is outdated.
+     * Notifies the player about the current plugin version status.
      *
-     * @param player         The player to notify.
+     * @param player The player to notify.
      */
     private void notifyPlayerIfOutdated(Player player) {
         String latestVersion = plugin.getLatestVersion();
         String installedVersion = plugin.getDescription().getVersion();
-        String prefix = plugin.getConfigManager().getConfigSection("message.prefix", player).getString("message.prefix");
-        try {
-            int comparisonResult = compareVersions(installedVersion, latestVersion);
 
-            if (comparisonResult < 0) {
-                List<String> stringList = plugin.getConfigManager().getConfigSection("message.grave-plugin-version-outdated", player)
-                        .getStringList("message.grave-plugin-version-outdated");
-                if (plugin.getIntegrationManager().hasMiniMessage()) {
-                    for (String message : stringList) {
-                        String toConvert = StringUtil.parseString(prefix + message, player, plugin);
-                        String newString = MiniMessage.parseString(toConvert);
-                        player.sendMessage(newString);
-                    }
-                } else {
-                    for (String message : stringList) {
-                        player.sendMessage(StringUtil.parseString(prefix + message, player, plugin));
-                    }
-                }
-            } else if (comparisonResult > 0) {
-                List<String> stringList = plugin.getConfigManager().getConfigSection("message.grave-plugin-version-development", player)
-                        .getStringList("message.grave-plugin-version-development");
-                if (plugin.getIntegrationManager().hasMiniMessage()) {
-                    for (String message : stringList) {
-                        String toConvert = StringUtil.parseString(
-                                prefix + message.replace("%public-version", plugin.getLatestVersion()),
-                                player, plugin);
-                        String newString = MiniMessage.parseString(toConvert);
-                        player.sendMessage(newString);
-                    }
-                } else {
-                    for (String message : stringList) {
-                        player.sendMessage(StringUtil.parseString(
-                                prefix + message.replace("%public-version", plugin.getLatestVersion()),
-                                player, plugin));
-                    }
-                }
-            } else {
-                String string = plugin.getConfigManager().getConfigSection("message.grave-plugin-version-latest", player)
-                        .getString("message.grave-plugin-version-latest");
-                if (plugin.getIntegrationManager().hasMiniMessage()) {
-                    String toConvert = StringUtil.parseString(prefix + string, player, plugin);
-                    String newString = MiniMessage.parseString(toConvert);
-                    player.sendMessage(newString);
-                } else {
-                    player.sendMessage(StringUtil.parseString(prefix + string, player, plugin));
-                }
-            }
+        if (latestVersion == null || latestVersion.isBlank()) {
+            plugin.getLogger().warning(
+                    "Unable to check for a GravesX update: latest version is unavailable."
+            );
+            return;
+        }
+
+        if (installedVersion == null || installedVersion.isBlank()) {
+            plugin.getLogger().warning(
+                    "Unable to check for a GravesX update: installed version is unavailable."
+            );
+            return;
+        }
+
+        String prefix = plugin.getConfigManager()
+                .getConfigSection("message.prefix", player)
+                .getString("message.prefix");
+
+        if (prefix == null) {
+            prefix = "";
+        }
+
+        final int comparisonResult;
+
+        try {
+            comparisonResult = compareVersions(installedVersion, latestVersion);
         } catch (NumberFormatException exception) {
-            List<String> stringList = plugin.getConfigManager().getConfigSection("message.grave-plugin-version-outdated", player)
-                    .getStringList("message.grave-plugin-version-outdated");
-            if (plugin.getIntegrationManager().hasMiniMessage()) {
-                for (String message : stringList) {
-                    String toConvert = StringUtil.parseString(prefix + message, player, plugin);
-                    String newString = MiniMessage.parseString(toConvert);
-                    player.sendMessage(newString);
+            plugin.getLogger().warning(
+                    "Unable to compare GravesX versions: installed='"
+                            + installedVersion
+                            + "', latest='"
+                            + latestVersion
+                            + "'."
+            );
+            return;
+        }
+
+        if (comparisonResult < 0) {
+            sendVersionMessage(
+                    player,
+                    prefix,
+                    "message.grave-plugin-version-outdated",
+                    latestVersion
+            );
+        } else if (comparisonResult > 0) {
+            sendVersionMessage(
+                    player,
+                    prefix,
+                    "message.grave-plugin-version-development",
+                    latestVersion
+            );
+        } else {
+            sendVersionMessage(
+                    player,
+                    prefix,
+                    "message.grave-plugin-version-latest",
+                    null
+            );
+        }
+    }
+
+    /**
+     * Sends a configured version message to a player.
+     *
+     * @param player The player receiving the message.
+     * @param prefix The configured message prefix.
+     * @param path The configuration path.
+     * @param latestVersion The latest public version, if applicable.
+     */
+    private void sendVersionMessage(
+            Player player,
+            String prefix,
+            String path,
+            String latestVersion
+    ) {
+        var configSection = plugin.getConfigManager()
+                .getConfigSection(path, player);
+
+        if (configSection == null) {
+            return;
+        }
+
+        if (path.endsWith("outdated") || path.endsWith("development")) {
+            List<String> messages = configSection.getStringList(path);
+
+            for (String message : messages) {
+                if (latestVersion != null) {
+                    message = message.replace("%public-version", latestVersion);
                 }
-            } else {
-                for (String message : stringList) {
-                    player.sendMessage(StringUtil.parseString(prefix + message, player, plugin));
-                }
+
+                sendMessage(player, prefix + message);
+            }
+        } else {
+            String message = configSection.getString(path);
+
+            if (message != null) {
+                sendMessage(player, prefix + message);
             }
         }
     }
 
     /**
-     * Compares two version strings.
+     * Sends a message using MiniMessage when available.
+     *
+     * @param player The player receiving the message.
+     * @param message The message to send.
+     */
+    private void sendMessage(Player player, String message) {
+        String parsed = StringUtil.parseString(message, player, plugin);
+
+        if (plugin.getIntegrationManager().hasMiniMessage()) {
+            player.sendMessage(MiniMessage.parseString(parsed));
+        } else {
+            player.sendMessage(parsed);
+        }
+    }
+
+    /**
+     * Compares two GravesX version strings.
      *
      * @param version1 The first version string.
      * @param version2 The second version string.
-     * @return A negative integer, zero, or a positive integer as the first version is less than, equal to, or greater than the second version.
+     * @return A negative integer, zero, or a positive integer as the first
+     * version is less than, equal to, or greater than the second version.
      */
     private int compareVersions(String version1, String version2) {
-        String[] levels1 = version1.split("\\.");
-        String[] levels2 = version2.split("\\.");
-
-        int length = Math.max(levels1.length, levels2.length);
-        for (int i = 0; i < length; i++) {
-            int v1 = i < levels1.length ? Integer.parseInt(levels1[i]) : 0;
-            int v2 = i < levels2.length ? Integer.parseInt(levels2[i]) : 0;
-            if (v1 < v2) return -1;
-            if (v1 > v2) return 1;
+        if (version1 == null || version2 == null) {
+            throw new NumberFormatException("Version cannot be null");
         }
+
+        version1 = version1.trim();
+        version2 = version2.trim();
+
+        if (version1.isEmpty() || version2.isEmpty()) {
+            throw new NumberFormatException("Version cannot be empty");
+        }
+
+        Version first = parseVersion(version1);
+        Version second = parseVersion(version2);
+
+        int length = Math.max(first.parts.length, second.parts.length);
+
+        for (int i = 0; i < length; i++) {
+            int v1 = i < first.parts.length ? first.parts[i] : 0;
+            int v2 = i < second.parts.length ? second.parts[i] : 0;
+
+            if (v1 < v2) {
+                return -1;
+            }
+
+            if (v1 > v2) {
+                return 1;
+            }
+        }
+
+        if (first.development != second.development) {
+            return first.development ? -1 : 1;
+        }
+
+        if (first.development) {
+            return Integer.compare(first.build, second.build);
+        }
+
         return 0;
     }
 
     /**
-     * Sends a message to the player indicating that their plugin version is outdated.
+     * Parses a GravesX version string.
      *
-     * @param player         The player to notify.
-     * @param currentVersion The current version of the plugin.
-     * @param latestVersion  The latest version of the plugin.
+     * @param version The version string.
+     * @return Parsed version information.
      */
-    private void sendOutdatedVersionMessage(Player player, double currentVersion, double latestVersion) {
-        player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
-                + "Outdated version detected " + currentVersion
-                + ", latest version is " + latestVersion
-                + ", https://www.spigotmc.org/resources/" + plugin.getSpigotID() + "/");
+    private Version parseVersion(String version) {
+        String baseVersion = version;
+        int build = 0;
+        boolean development = false;
+
+        int buildIndex = version.indexOf("-build");
+
+        if (buildIndex >= 0) {
+            development = true;
+
+            baseVersion = version.substring(0, buildIndex);
+
+            String buildString = version.substring(
+                    buildIndex + "-build".length()
+            );
+
+            if (buildString.isEmpty()) {
+                throw new NumberFormatException(
+                        "Development build number is missing: " + version
+                );
+            }
+
+            build = Integer.parseInt(buildString);
+        }
+
+        if (baseVersion.isEmpty()) {
+            throw new NumberFormatException(
+                    "Base version is missing: " + version
+            );
+        }
+
+        String[] parts = baseVersion.split("\\.");
+
+        int[] numericParts = new int[parts.length];
+
+        for (int i = 0; i < parts.length; i++) {
+            if (parts[i].isBlank()) {
+                throw new NumberFormatException(
+                        "Invalid version component: " + version
+                );
+            }
+
+            numericParts[i] = Integer.parseInt(parts[i]);
+        }
+
+        return new Version(numericParts, development, build);
     }
 
     /**
-     * Sends a message to the player indicating that they are using a development version of the plugin.
-     *
-     * @param player         The player to notify.
-     * @param currentVersion The current version of the plugin.
+     * Represents a parsed GravesX version.
      */
-    private void sendDevelopmentVersionMessage(Player player, double currentVersion) {
-        player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
-                + "Development version detected " + currentVersion
-                + ", Report any bugs to https://discord.ranull.com/");
-    }
+    private static final class Version {
+        private final int[] parts;
+        private final boolean development;
+        private final int build;
 
-    /**
-     * Sends a message to the player indicating that their plugin version is outdated.
-     *
-     * @param player         The player to notify.
-     * @param currentVersion The current version of the plugin.
-     * @param latestVersion  The latest version of the plugin.
-     */
-    private void sendOutdatedVersionMessage(Player player, String currentVersion, String latestVersion) {
-        player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
-                + "Outdated version detected " + currentVersion
-                + ", latest version is " + latestVersion
-                + ", https://www.spigotmc.org/resources/" + plugin.getSpigotID() + "/");
-    }
-
-    /**
-     * Checks if the current version is different from the latest version.
-     *
-     * @param currentVersion The current version.
-     * @param latestVersion  The latest version.
-     * @return True if the versions are different, false otherwise.
-     */
-    private boolean isDifferentVersion(String currentVersion, String latestVersion) {
-        return !currentVersion.equalsIgnoreCase(latestVersion) && !latestVersion.equalsIgnoreCase("4.9");
+        private Version(int[] parts, boolean development, int build) {
+            this.parts = parts;
+            this.development = development;
+            this.build = build;
+        }
     }
 }
