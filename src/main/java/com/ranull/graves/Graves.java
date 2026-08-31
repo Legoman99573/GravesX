@@ -435,7 +435,7 @@ public class Graves extends JavaPlugin {
                 break;
             case "MARIADB":
                 libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "26.7.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
-                libraryLoaderUtil.loadLibrary("org{}mariadb{}jdbc", "mariadb-java-client", "3.5.10", "org{}mariadb", "com{}ranull{}graves{}libraries{}mariadb", false);
+                libraryLoaderUtil.loadLibrary("org{}mariadb{}jdbc", "mariadb-java-client", "3.4.4", "org{}mariadb", "com{}ranull{}graves{}libraries{}mariadb", false);
                 break;
             case "MYSQL":
                 libraryLoaderUtil.loadLibrary("com{}mysql", "mysql-connector-j", "26.7.0", "com{}mysql", "com{}ranull{}graves{}libraries{}mysql", false);
