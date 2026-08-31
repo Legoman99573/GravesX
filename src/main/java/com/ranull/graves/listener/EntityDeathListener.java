@@ -168,8 +168,8 @@ public class EntityDeathListener implements Listener {
         final List<ItemStack> graveItemStackList =
                 getGraveItemStackList(event, livingEntity, permissionList, ignoredItemStackList);
 
-        if (graveItemStackList.isEmpty()) {
-            plugin.debugMessage("Grave not created for " + entityName + " because they had no drops. This may be due to no items on the player or another plugin has emptied all drops.", 2);
+        if (isGraveItemStackListEmpty(graveItemStackList)) {
+            plugin.debugMessage("Grave not created for " + entityName + " because they had no drops. This may be due to no items on the player, all items were consumed by curses (Vanishing destroyed, Binding stuck to the player), or another plugin has emptied all drops.", 2);
             return;
         }
 
@@ -506,30 +506,31 @@ public class EntityDeathListener implements Listener {
                         continue;
                     }
 
-                    // ---- Curse of Binding: keep on player/vanilla, never store in grave ----
-                    if (plugin.getVersionManager().hasEnchantmentCurse()
-                            && invItem.containsEnchantment(Enchantment.BINDING_CURSE)) {
-                        ItemStack boundItem = invItem.clone();
-                        int slot = it.previousIndex();
-
-                        it.set(null);
-                        consumeFromDropsBySimilarity(remainingDrops, invItem);
-
-                        plugin.getServer().getScheduler().runTask(plugin, () -> {
-                            if (player.isOnline()) {
-                                player.getInventory().setItem(slot, boundItem);
-                                player.updateInventory();
-                            }
-                        });
-
-                        continue;
-                    }
-
-                    // ---- Curse of Vanishing: not stored in grave ----
                     if (plugin.getVersionManager().hasEnchantmentCurse()
                             && invItem.containsEnchantment(Enchantment.VANISHING_CURSE)) {
                         it.set(null);
+                        consumeFromDropsBySimilarity(remainingDrops, invItem);
                         continue;
+                    }
+
+                    if (plugin.getVersionManager().hasEnchantmentCurse()
+                            && invItem.containsEnchantment(Enchantment.BINDING_CURSE)) {
+                        if (isBindingCurseBoundToPlayer(livingEntity, permissionList)) {
+                            ItemStack boundItem = invItem.clone();
+                            int slot = it.previousIndex();
+
+                            it.set(null);
+                            consumeFromDropsBySimilarity(remainingDrops, invItem);
+
+                            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                                if (player.isOnline()) {
+                                    player.getInventory().setItem(slot, boundItem);
+                                    player.updateInventory();
+                                }
+                            });
+
+                            continue;
+                        }
                     }
 
                     // Compass (grave item) handling
@@ -596,32 +597,34 @@ public class EntityDeathListener implements Listener {
 
                     if (item.containsEnchantment(Enchantment.BINDING_CURSE)
                             && livingEntity instanceof Player player) {
-                        ItemStack boundItem = item.clone();
-                        int slot = -1;
+                        if (isBindingCurseBoundToPlayer(livingEntity, permissionList)) {
+                            ItemStack boundItem = item.clone();
+                            int slot = -1;
 
-                        ItemStack[] contents = player.getInventory().getContents();
-                        for (int i = 0; i < contents.length; i++) {
-                            ItemStack slotItem = contents[i];
+                            ItemStack[] contents = player.getInventory().getContents();
+                            for (int i = 0; i < contents.length; i++) {
+                                ItemStack slotItem = contents[i];
 
-                            if (slotItem != null
-                                    && slotItem.getType() != Material.AIR
-                                    && slotItem.isSimilar(item)) {
-                                slot = i;
-                                break;
+                                if (slotItem != null
+                                        && slotItem.getType() != Material.AIR
+                                        && slotItem.isSimilar(item)) {
+                                    slot = i;
+                                    break;
+                                }
                             }
+
+                            dropIt.remove();
+
+                            if (slot >= 0) {
+                                int finalSlot = slot;
+                                plugin.getServer().getScheduler().runTask(plugin, () -> {
+                                    player.getInventory().setItem(finalSlot, boundItem);
+                                    player.updateInventory();
+                                });
+                            }
+
+                            continue;
                         }
-
-                        dropIt.remove();
-
-                        if (slot >= 0) {
-                            int finalSlot = slot;
-                            plugin.getServer().getScheduler().runTask(plugin, () -> {
-                                player.getInventory().setItem(finalSlot, boundItem);
-                                player.updateInventory();
-                            });
-                        }
-
-                        continue;
                     }
                 }
 
@@ -650,11 +653,11 @@ public class EntityDeathListener implements Listener {
 
             if (plugin.getIntegrationManager().hasBagOfGold()) {
                 plugin.getIntegrationManager().getBagOfGold().splitPhysicalMoney(
-                    livingEntity,
-                    permissionList,
-                    graveList,
-                    ignoredItemStackList,
-                    false
+                        livingEntity,
+                        permissionList,
+                        graveList,
+                        ignoredItemStackList,
+                        false
                 );
             }
 
@@ -700,6 +703,40 @@ public class EntityDeathListener implements Listener {
         }
 
         return consumed;
+    }
+
+    /**
+     * Checks the config to see whether Curse of Binding items should stick to the player (true) or be allowed
+     * to fall through into the grave like a normal item (false).
+     *
+     * @param livingEntity   The entity that died.
+     * @param permissionList The list of permissions.
+     * @return True if bound items should be returned to the player, false if they should go in the grave.
+     */
+    private boolean isBindingCurseBoundToPlayer(LivingEntity livingEntity, List<String> permissionList) {
+        return plugin.getConfigManager()
+                .getConfigSection("drop.binding-curse-binds-to-player", livingEntity, permissionList)
+                .getBoolean("drop.binding-curse-binds-to-player", true);
+    }
+
+    /**
+     * Checks whether a grave item list is effectively empty.
+     *
+     * @param itemStackList The list to check.
+     * @return True if the list has no items worth burying.
+     */
+    private boolean isGraveItemStackListEmpty(List<ItemStack> itemStackList) {
+        if (itemStackList == null || itemStackList.isEmpty()) {
+            return true;
+        }
+
+        for (ItemStack itemStack : itemStackList) {
+            if (itemStack != null && itemStack.getType() != Material.AIR) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -1481,7 +1518,7 @@ public class EntityDeathListener implements Listener {
 
             Location effectiveLoc = modern.hasLocation() ? modern.getLocation()
                     : legacy.hasLocation() ? legacy.getLocation()
-                    : loc;
+                      : loc;
 
             plugin.getGraveManager().placeGrave(effectiveLoc, grave);
             plugin.getEntityManager().sendMessage("message.block", livingEntity, effectiveLoc, grave);
@@ -1512,11 +1549,25 @@ public class EntityDeathListener implements Listener {
             } catch (NoSuchMethodError ignored) {}
         } else {
             plugin.getEntityManager().sendMessage("message.failure", livingEntity, location, grave);
+
+            List<ItemStack> toReturn = new ArrayList<>();
+            Set<ItemStack> identitySet = Collections.newSetFromMap(new IdentityHashMap<>());
+
             if (removedItemStackList != null) {
-                event.getDrops().addAll(removedItemStackList);
+                for (ItemStack item : removedItemStackList) {
+                    if (item == null || item.getType() == Material.AIR) continue;
+                    if (identitySet.add(item)) toReturn.add(item);
+                }
             }
             if (graveItemStackList != null) {
-                event.getDrops().addAll(graveItemStackList);
+                for (ItemStack item : graveItemStackList) {
+                    if (item == null || item.getType() == Material.AIR) continue;
+                    if (identitySet.add(item)) toReturn.add(item);
+                }
+            }
+
+            if (!toReturn.isEmpty()) {
+                event.getDrops().addAll(toReturn);
             }
         }
     }

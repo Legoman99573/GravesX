@@ -167,6 +167,8 @@ settings:
         looted-explosion-effect: false
         # Should a grave drop all items if a grave is being replaced as a player reaches the maximum graves allowed?
         old-grave-replacement: true
+        # Should Curse of Binding be bound to a player? False will place the item in a player's grave
+        binding-curse-binds-to-player: true
 
       #########
       # Block #
