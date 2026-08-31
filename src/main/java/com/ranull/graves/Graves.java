@@ -1525,7 +1525,7 @@ public class Graves extends JavaPlugin {
         String graveX = String.valueOf(affectedGraveLocation.getBlockX());
         String graveY = String.valueOf(affectedGraveLocation.getBlockY());
         String graveZ = String.valueOf(affectedGraveLocation.getBlockZ());
-        getLogger().warning("Grave "
+        debugMessage("Grave "
                 + grave_uuid
                 + " at location World: "
                 + graveWorld
@@ -1537,7 +1537,7 @@ public class Graves extends JavaPlugin {
                 + graveZ
                 + " has the following missing from grave data: "
                 + String.join(", ", invalidationReason)
-                + ". This shouldn't affect grave behavior. Do not report this as a bug.");
+                + ". This shouldn't affect grave behavior. Do not report this as a bug.", 2);
     }
 
     /**
