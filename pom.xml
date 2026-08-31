@@ -125,10 +125,6 @@
                                     <pattern>de.themoep.minedown</pattern>
                                     <shadedPattern>com.ranull.graves.libraries.minedown</shadedPattern>
                                 </relocation>
-                                <relocation>
-                                    <pattern>net.kyori</pattern>
-                                    <shadedPattern>com.ranull.graves.libraries.kyori</shadedPattern>
-                                </relocation>
 
                                 <relocation>
                                     <pattern>org.h2</pattern>
@@ -218,10 +214,6 @@
                                 <relocation>
                                     <pattern>de.themoep.minedown</pattern>
                                     <shadedPattern>com.ranull.graves.libraries.minedown</shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>net.kyori</pattern>
-                                    <shadedPattern>com.ranull.graves.libraries.kyori</shadedPattern>
                                 </relocation>
 
                                 <relocation>
@@ -672,26 +664,19 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Kyori (you relocate net.kyori.*) -->
+        <!-- Kyori -->
         <dependency>
             <groupId>net.kyori</groupId>
             <artifactId>adventure-text-minimessage</artifactId>
             <version>5.2.0</version>
-            <scope>compile</scope>
+            <scope>provided</scope>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>net.kyori</groupId>
             <artifactId>adventure-text-serializer-gson</artifactId>
             <version>5.2.0</version>
-            <scope>compile</scope>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>net.kyori</groupId>
-            <artifactId>adventure-platform-bukkit</artifactId>
-            <version>4.4.1</version>
-            <scope>compile</scope>
+            <scope>provided</scope>
             <optional>true</optional>
         </dependency>
 

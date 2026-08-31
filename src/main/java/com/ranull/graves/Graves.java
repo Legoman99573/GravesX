@@ -444,10 +444,6 @@ public class Graves extends JavaPlugin {
                 libraryLoaderUtil.loadLibrary("com{}microsoft{}sqlserver", "mssql-jdbc", "13.5.1.jre11-preview", "com{}microsoft", "com{}ranull{}graves{}libraries{}microsoft", false);
                 break;
         }
-        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-platform-bukkit", "4.4.1", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
-        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-api", "5.2.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
-        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-minimessage", "5.2.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
-        libraryLoaderUtil.loadLibrary("net{}kyori", "adventure-text-serializer-gson", "5.2.0", "net{}kyori", "com{}ranull{}graves{}libraries{}kyori", false);
         libraryLoaderUtil.loadLibrary("com{}github{}puregero", "multilib", "1.2.4", "com{}github{}puregero{}multilib", "com{}ranull{}graves{}libraries{}multilib", false, "https://repo.clojars.org/");
         libraryLoaderUtil.loadLibrary("org{}apache{}commons", "commons-text", "1.15.0", "org{}apache{}commons{}text", "com{}ranull{}graves{}libraries{}commonstext", false);
 

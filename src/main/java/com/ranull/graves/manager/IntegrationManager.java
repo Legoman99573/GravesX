@@ -1064,8 +1064,7 @@ public class IntegrationManager {
     private void loadMiniMessage() {
         if (plugin.getConfig().getBoolean("settings.integration.minimessage.enabled", true)) {
             try {
-                Class.forName("com.ranull.graves.libraries.kyori.adventure.text.minimessage.MiniMessage", false, getClass().getClassLoader());
-                Class.forName("com.ranull.graves.libraries.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer", false, getClass().getClassLoader());
+                Class.forName("net.kyori.adventure.text.minimessage.MiniMessage", false, getClass().getClassLoader());
 
                 miniMessage = new MiniMessage();
 

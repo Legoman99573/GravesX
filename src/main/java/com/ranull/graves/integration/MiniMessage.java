@@ -4,7 +4,6 @@ import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.util.CustomModelDataUtil;
 import me.imdanix.text.MiniTranslator;
-import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import net.kyori.adventure.text.minimessage.tag.standard.StandardTags;
@@ -12,118 +11,156 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
-import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Utility class for parsing MiniMessage formatted strings into legacy text format.
+ * Utility class for parsing MiniMessage formatted strings.
+ *
+ * <p>Adventure and MiniMessage are provided natively by Paper.</p>
  */
 public class MiniMessage {
-    public static net.kyori.adventure.text.minimessage.MiniMessage miniMessage;
-    private static BukkitAudiences audiences;
-    private static LegacyComponentSerializer legacyComponentSerializer;
+
+    private static final TagResolver STANDARD_TAGS =
+            TagResolver.builder()
+                    .resolver(StandardTags.defaults())
+                    .resolver(StandardTags.hoverEvent())
+                    .resolver(StandardTags.clickEvent())
+                    .resolver(StandardTags.insertion())
+                    .resolver(StandardTags.rainbow())
+                    .resolver(StandardTags.gradient())
+                    .resolver(StandardTags.newline())
+                    .resolver(StandardTags.score())
+                    .resolver(StandardTags.nbt())
+                    .resolver(StandardTags.font())
+                    .resolver(StandardTags.decorations())
+                    .resolver(StandardTags.keybind())
+                    .resolver(StandardTags.selector())
+                    .resolver(StandardTags.transition())
+                    .resolver(StandardTags.translatable())
+                    .resolver(StandardTags.translatableFallback())
+                    .resolver(StandardTags.reset())
+                    .resolver(StandardTags.pride())
+                    .resolver(StandardTags.shadowColor())
+                    .build();
+
+    private static final net.kyori.adventure.text.minimessage.MiniMessage MINI_MESSAGE =
+            net.kyori.adventure.text.minimessage.MiniMessage.builder()
+                    .strict(false)
+                    .tags(STANDARD_TAGS)
+                    .build();
+
+    private static final LegacyComponentSerializer LEGACY_COMPONENT_SERIALIZER =
+            LegacyComponentSerializer.builder()
+                    .hexColors()
+                    .useUnusualXRepeatedCharacterHexFormat()
+                    .extractUrls()
+                    .build();
 
     /**
-     * Initializes a new MiniMessage instance. Attempts to instantiate the MiniMessage parser.
-     * If the MiniMessage class is not found, the instance will be null.
+     * Creates a MiniMessage utility instance.
      */
     public MiniMessage() {
-        audiences = BukkitAudiences.create(JavaPlugin.getPlugin(Graves.class));
-        legacyComponentSerializer = LegacyComponentSerializer.builder()
-                .hexColors()
-                .useUnusualXRepeatedCharacterHexFormat()
-                .extractUrls()
-                .build();
-        miniMessage = net.kyori.adventure.text.minimessage.MiniMessage.builder()
-                .strict(false)
-                .tags(
-                        TagResolver.builder()
-                                .resolver(StandardTags.defaults())
-                                .resolver(StandardTags.hoverEvent())
-                                .resolver(StandardTags.clickEvent())
-                                .resolver(StandardTags.insertion())
-                                .resolver(StandardTags.rainbow())
-                                .resolver(StandardTags.gradient())
-                                .resolver(StandardTags.newline())
-                                .resolver(StandardTags.score())
-                                .resolver(StandardTags.nbt())
-                                .resolver(StandardTags.font())
-                                .resolver(StandardTags.decorations())
-                                .resolver(StandardTags.keybind())
-                                .resolver(StandardTags.selector())
-                                .resolver(StandardTags.transition())
-                                .resolver(StandardTags.translatable())
-                                .resolver(StandardTags.translatableFallback())
-                                .resolver(StandardTags.reset())
-                                .resolver(StandardTags.pride())
-                                .resolver(StandardTags.shadowColor())
-                                .build()
-                ).build();
     }
 
     /**
-     * Parses a list of MiniMessage formatted strings into legacy text formats.
+     * Parses a list of MiniMessage formatted strings into legacy text.
      *
-     * @param strings The list of MiniMessage formatted strings to parse.
-     * @return A list of legacy text representations of the MiniMessage formatted strings.
-     *         If MiniMessage is not initialized, returns the original list of strings.
+     * @param strings the MiniMessage strings
+     * @return the parsed legacy strings
      */
     public static List<String> parseString(List<String> strings) {
-        List<String> parseStrings = new ArrayList<>();
+        List<String> parseStrings = new ArrayList<>(strings.size());
+
         for (String string : strings) {
             parseStrings.add(parseString(string));
         }
+
         return parseStrings;
     }
 
     /**
-     * Parses a MiniMessage formatted string into a legacy text format.
+     * Parses a MiniMessage formatted string into legacy text.
      *
-     * @param string The MiniMessage formatted string to parse.
-     * @return The legacy text representation of the MiniMessage formatted string.
-     *         If MiniMessage is not initialized, returns the original string.
+     * @param string the MiniMessage string
+     * @return the parsed legacy string
      */
     public static String parseString(String string) {
-        return (miniMessage != null)
-                ? legacyComponentSerializer.serialize(miniMessage.deserialize(string))
-                : string;
+        return LEGACY_COMPONENT_SERIALIZER.serialize(
+                MINI_MESSAGE.deserialize(string)
+        );
     }
 
     /**
-     * Attempts to convert legacy color codes to Kyori's Adventure Text MiniMessage format.
-     * @param legacyTexts    The Legacy Text to be converted.
-     * @return              All text to be converted to StringBuilder, that is required by net.kyori.adventure.text.minimessage
+     * Converts legacy color/format codes into MiniMessage format.
+     *
+     * @param legacyTexts legacy strings
+     * @return converted MiniMessage strings
      */
     public static List<String> convertLegacyToMiniMessage(List<String> legacyTexts) {
-        List<String> convertedTexts = new ArrayList<>();
+        List<String> convertedTexts = new ArrayList<>(legacyTexts.size());
+
         for (String legacyText : legacyTexts) {
             convertedTexts.add(convertLegacyToMiniMessage(legacyText));
         }
+
         return convertedTexts;
     }
 
     /**
-     * Attempts to convert legacy color codes to Kyori's Adventure Text MiniMessage format.
-     * @param legacyText    The Legacy Text to be converted.
-     * @return              All text to be converted to StringBuilder, that is required by net.kyori.adventure.text.minimessage
+     * Converts legacy color/format codes into MiniMessage format.
+     *
+     * @param legacyText legacy string
+     * @return converted MiniMessage string
      */
     public static String convertLegacyToMiniMessage(String legacyText) {
-        String color = MiniTranslator.toMini(legacyText, MiniTranslator.Option.COLOR);
-        String format = MiniTranslator.toMini(color, MiniTranslator.Option.FORMAT);
-        String gradient = MiniTranslator.toMini(format, MiniTranslator.Option.GRADIENT);
-        String close_color = MiniTranslator.toMini(gradient, MiniTranslator.Option.CLOSE_COLORS);
-        String hex_colors = MiniTranslator.toMini(close_color, MiniTranslator.Option.HEX_COLOR_STANDALONE);
-        String double_to_escape = MiniTranslator.toMini(hex_colors, MiniTranslator.Option.DOUBLE_TO_ESCAPE);
-        String verbose_hex_color = MiniTranslator.toMini(double_to_escape, MiniTranslator.Option.VERBOSE_HEX_COLOR);
-        return MiniTranslator.toMini(verbose_hex_color, MiniTranslator.Option.FAST_RESET);
+        String color = MiniTranslator.toMini(
+                legacyText,
+                MiniTranslator.Option.COLOR
+        );
+
+        String format = MiniTranslator.toMini(
+                color,
+                MiniTranslator.Option.FORMAT
+        );
+
+        String gradient = MiniTranslator.toMini(
+                format,
+                MiniTranslator.Option.GRADIENT
+        );
+
+        String closeColor = MiniTranslator.toMini(
+                gradient,
+                MiniTranslator.Option.CLOSE_COLORS
+        );
+
+        String hexColors = MiniTranslator.toMini(
+                closeColor,
+                MiniTranslator.Option.HEX_COLOR_STANDALONE
+        );
+
+        String doubleToEscape = MiniTranslator.toMini(
+                hexColors,
+                MiniTranslator.Option.DOUBLE_TO_ESCAPE
+        );
+
+        String verboseHexColor = MiniTranslator.toMini(
+                doubleToEscape,
+                MiniTranslator.Option.VERBOSE_HEX_COLOR
+        );
+
+        return MiniTranslator.toMini(
+                verboseHexColor,
+                MiniTranslator.Option.FAST_RESET
+        );
     }
 
     /**
-     * Attempts to convert legacy color codes to Kyori's Adventure Text MiniMessage format.
-     * @param legacyText    The Legacy Text to be converted.
-     * @return              All text to be converted to StringBuilder, that is required by net.kyori.adventure.text.minimessage
+     * Converts legacy text directly into an Adventure Component.
+     *
+     * @param legacyText legacy text
+     * @return Adventure Component
      */
     public static Component convertLegacyToComponent(String legacyText) {
         String miniMessageText = MiniTranslator.toMini(
@@ -137,74 +174,79 @@ public class MiniMessage {
                 MiniTranslator.Option.VERBOSE_HEX_COLOR,
                 MiniTranslator.Option.FAST_RESET
         );
-        return MiniMessage.miniMessage().deserialize(miniMessageText);
+
+        return MINI_MESSAGE.deserialize(miniMessageText);
     }
 
     /**
-     * Formats a written book's metadata (title, author, pages, lore, and optionally custom model data)
-     * using Adventure components and legacy section serialization.
+     * Formats a written book's metadata using Adventure Components.
      *
-     * @param plugin     The plugin instance used to access configuration.
-     * @param grave      The Grave instance associated with this book (used for configuration context).
-     * @param itemStack  The ItemStack to modify. Must be a written book or it will be returned unchanged.
-     * @param title      The title of the book, as an Adventure Component.
-     * @param author     The author of the book, as an Adventure Component.
-     * @param pages      A list of Adventure Components representing the pages of the book.
-     * @param lore       A list of Adventure Components representing the lore of the book.
-     * @return The updated ItemStack with modified book metadata, or the original ItemStack if invalid.
+     * @param plugin    Graves plugin instance
+     * @param grave     Grave instance
+     * @param itemStack  item stack
+     * @param title     book title
+     * @param author    book author
+     * @param pages     book pages
+     * @param lore      book lore
+     * @return updated ItemStack
      */
-    public static ItemStack formatBookMeta(Graves plugin, Grave grave, ItemStack itemStack, Component title, Component author, List<Component> pages, List<Component> lore) {
+    public static ItemStack formatBookMeta(
+            Graves plugin,
+            Grave grave,
+            ItemStack itemStack,
+            Component title,
+            Component author,
+            List<Component> pages,
+            List<Component> lore
+    ) {
         if (itemStack == null || !(itemStack.getItemMeta() instanceof BookMeta bookMeta)) {
             return itemStack;
         }
 
-        LegacyComponentSerializer legacySerializer = LegacyComponentSerializer.legacySection();
-
-        String titleString = legacySerializer.serialize(title);
-        String authorString = legacySerializer.serialize(author);
+        String titleString = LEGACY_COMPONENT_SERIALIZER.serialize(title);
+        String authorString = LEGACY_COMPONENT_SERIALIZER.serialize(author);
 
         bookMeta.setTitle(titleString);
         bookMeta.setAuthor(authorString);
-
         List<String> serializedPages = pages.stream()
-                .map(legacySerializer::serialize)
+                .map(LEGACY_COMPONENT_SERIALIZER::serialize)
                 .toList();
         bookMeta.setPages(serializedPages);
 
         List<String> serializedLore = lore.stream()
-                .map(legacySerializer::serialize)
+                .map(LEGACY_COMPONENT_SERIALIZER::serialize)
                 .toList();
         bookMeta.setLore(serializedLore);
 
-        int customModelData = plugin.getConfigManager().getConfigSection("obituary.model-data", grave).getInt("obituary.model-data", -1);
+        int customModelData = plugin
+                .getConfigManager()
+                .getConfigSection("obituary.model-data", grave)
+                .getInt("obituary.model-data", -1);
 
         CustomModelDataUtil.applyCustomModelData(bookMeta, customModelData);
 
         itemStack.setItemMeta(bookMeta);
+
         return itemStack;
     }
 
     /**
-     * Sends a formatted message to a player using MiniMessage, falling back to plain legacy format if MiniMessage is unavailable.
+     * Sends a formatted message to a player using Paper's native Adventure API.
      *
-     * @param player  The player to send the message to.
-     * @param message The message to send. This should be in legacy format if MiniMessage is enabled.
+     * @param player  player receiving the message
+     * @param message legacy-formatted message
      */
     public static void sendMessage(final Player player, final String message) {
-        if (miniMessage != null && audiences != null) {
-            String output = convertLegacyToMiniMessage(message);
-            audiences.sender(player).sendMessage(miniMessage.deserialize(output));
-            return;
-        }
-        player.sendMessage(message);
+        String output = convertLegacyToMiniMessage(message);
+        player.sendMessage(LEGACY_COMPONENT_SERIALIZER.serialize(MINI_MESSAGE.deserialize(output)));
     }
 
     /**
-     * Gets a MiniMessage instance from the Adventure API.
+     * Gets the shared MiniMessage instance.
      *
-     * @return A singleton instance of {@link net.kyori.adventure.text.minimessage.MiniMessage}.
+     * @return MiniMessage instance
      */
     public static net.kyori.adventure.text.minimessage.MiniMessage miniMessage() {
-        return net.kyori.adventure.text.minimessage.MiniMessage.miniMessage();
+        return MINI_MESSAGE;
     }
 }
