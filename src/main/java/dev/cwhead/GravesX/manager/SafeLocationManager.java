@@ -219,6 +219,19 @@ public final class SafeLocationManager {
         VOID_MIN_HEIGHT,
 
         /**
+         * Tripped when a void death is recovered to the last solid block
+         * position the entity stood on.
+         */
+        VOID_LAST_SOLID,
+
+        /**
+         * Tripped when a void death cannot use the exact last-solid position,
+         * but can place a floating grave at the death X/Z using the
+         * last-solid Y level.
+         */
+        VOID_LAST_SOLID_Y,
+
+        /**
          * Tripped when no configured special-case, vertical, fluid, void, or border
          * placement candidate can be resolved. Causes the original rounded death location
          * to be returned as the final fallback.
@@ -337,19 +350,29 @@ public final class SafeLocationManager {
      * @return The location, or null if not available.
      */
     public Location getLastSolidLocation(Entity entity) {
-        if (entity == null) return null;
-
         Location location = plugin.getCacheManager().getLastLocationMap().get(entity.getUniqueId());
-        if (location == null || location.getWorld() == null) return null;
+
+        if (location == null || location.getWorld() == null) {
+            return null;
+        }
 
         entity.getWorld();
-        if (!location.getWorld().equals(entity.getWorld())) return null;
+
+        if (!location.getWorld().equals(entity.getWorld())) {
+            return null;
+        }
 
         Block feet = location.getBlock();
-        if (MaterialUtil.isWater(feet.getType()) || MaterialUtil.isLava(feet.getType())) return null;
+
+        if (MaterialUtil.isWater(feet.getType()) || MaterialUtil.isLava(feet.getType())) {
+            return null;
+        }
 
         Block below = location.getBlock().getRelative(BlockFace.DOWN);
-        if (!below.getType().isSolid()) return null;
+
+        if (!below.getType().isSolid()) {
+            return null;
+        }
 
         return location.clone();
     }
@@ -539,19 +562,46 @@ public final class SafeLocationManager {
 
         List<Candidate> candidates = new ArrayList<>();
 
-        if (isVoid(origin) || !isInsideBorder(origin)) {
-            plugin.debugMessage(prefix + "origin is void/outside border; computing void candidates only.", 1);
-            addVoidCandidates(candidates, origin, grave);
+        if (isVoid(origin)) {
+            plugin.debugMessage(prefix + "origin is in the void; computing last-solid void candidates only.", 1);
+
+            addVoidCandidates(candidates, livingEntity, origin, grave);
+
             debugCandidates(prefix, origin, candidates);
 
-            Candidate best = pickClosest(origin, candidates);
+
+            Candidate best = candidates.isEmpty() ? null : candidates.get(0);
+
             if (best != null) {
                 plugin.debugMessage(prefix + "CHOSEN=" + best.reason + " loc=" + fmtLoc(best.loc) + " distSq=" + distSq(origin, best.loc) + ".", 1);
+
                 return GravePlacementResult.of(best.loc, best.reason);
             }
 
-            plugin.debugMessage(prefix + "no void candidates; falling back to original.", 1);
+            plugin.debugMessage(prefix + "no last-solid void candidate; " + "allowing placement to fail normally.", 1);
+
             return GravePlacementResult.of(origin, GravePlacementReason.FALLBACK_ORIGINAL);
+        }
+
+        if (!isInsideBorder(origin)) {
+            plugin.debugMessage(prefix + "origin is outside the world border; " + "computing existing column candidates.", 1);
+
+            addVoidColumnCandidates(candidates, origin, grave);
+
+            debugCandidates(prefix, origin, candidates);
+
+            Candidate best = pickClosest(origin, candidates);
+
+            if (best != null) {
+                plugin.debugMessage(prefix + "CHOSEN=" + best.reason + " loc=" + fmtLoc(best.loc) + " distSq=" + distSq(origin, best.loc) + ".", 1);
+
+                return GravePlacementResult.of(best.loc, best.reason);
+            }
+
+            return GravePlacementResult.of(
+                    origin,
+                    GravePlacementReason.FALLBACK_ORIGINAL
+            );
         }
 
         Material originType = origin.getBlock().getType();
@@ -822,38 +872,115 @@ public final class SafeLocationManager {
     /**
      * Adds void placement candidates.
      *
-     * @param out    The candidate list.
-     * @param origin The origin location.
-     * @param grave  The grave.
+     * @param out          The candidate list.
+     * @param livingEntity The entity that died.
+     * @param origin       The death location.
+     * @param grave        The grave.
      */
-    private void addVoidCandidates(List<Candidate> out, Location origin, Grave grave) {
-        if (origin == null || origin.getWorld() == null) return;
+    private void addVoidCandidates(List<Candidate> out, LivingEntity livingEntity, Location origin, Grave grave) {
+        if (origin == null || origin.getWorld() == null || livingEntity == null) {
+            return;
+        }
 
-        if (!plugin.getConfigManager().getConfigSection("placement.void", grave).getBoolean("placement.void")) {
+        if (!plugin.getConfigManager()
+                .getConfigSection("placement.void", grave)
+                .getBoolean("placement.void")) {
+            return;
+        }
+
+        Location lastSolid = getLastSolidLocation(livingEntity);
+
+        if (lastSolid == null
+                || lastSolid.getWorld() == null
+                || !lastSolid.getWorld().equals(origin.getWorld())) {
+            return;
+        }
+
+        Location exact = centerOnBlock(lastSolid);
+
+        if (exact != null
+                && !hasGrave(exact)
+                && isLocationSafeGrave(exact)) {
+
+            out.add(new Candidate(
+                    exact,
+                    GravePlacementReason.VOID_LAST_SOLID
+            ));
+
+            return;
+        }
+
+        Location floating = new Location(origin.getWorld(), origin.getBlockX() + 0.5, lastSolid.getBlockY(), origin.getBlockZ() + 0.5, origin.getYaw(), origin.getPitch());
+
+        if (!isVoid(floating) && isInsideBorder(floating) && !hasGrave(floating) && MaterialUtil.isSafeNotSolid(floating.getBlock().getType())) {
+
+            out.add(new Candidate(floating, GravePlacementReason.VOID_LAST_SOLID_Y));
+        }
+    }
+
+    /**
+     * Adds safe same-column candidates for void and world-border fallback placement.
+     *
+     * @param out    Candidate list.
+     * @param origin Original death location.
+     * @param grave  Grave being placed.
+     */
+    private void addVoidColumnCandidates(List<Candidate> out, Location origin, Grave grave) {
+        if (out == null || origin == null || origin.getWorld() == null) {
             return;
         }
 
         World world = origin.getWorld();
+
         int x = origin.getBlockX();
         int z = origin.getBlockZ();
+
         int minY = world.getMinHeight();
         int maxY = world.getMaxHeight() - 1;
 
-        Candidate best = null;
-        double bestDist = Double.MAX_VALUE;
+        for (int y = maxY; y > minY; y--) {
+            Location candidate = new Location(world, x + 0.5D, y, z + 0.5D, origin.getYaw(), origin.getPitch());
 
-        for (int y = minY; y <= maxY; y++) {
-            Location c = new Location(world, x + 0.5, y, z + 0.5, origin.getYaw(), origin.getPitch());
-            if (hasGrave(c) || !isLocationSafeGrave(c)) continue;
+            Block feet = candidate.getBlock();
+            Block below = feet.getRelative(BlockFace.DOWN);
 
-            double d = distSq(origin, c);
-            if (d < bestDist) {
-                bestDist = d;
-                best = new Candidate(c, (y == minY) ? GravePlacementReason.VOID_MIN_HEIGHT : GravePlacementReason.VOID_COLUMN);
+            if (!MaterialUtil.isSafeNotSolid(feet.getType())) {
+                continue;
             }
+
+            if (MaterialUtil.isWater(feet.getType())
+                    || MaterialUtil.isLava(feet.getType())) {
+                continue;
+            }
+
+            if (!below.getType().isSolid()) {
+                continue;
+            }
+
+            if (MaterialUtil.isWater(below.getType())
+                    || MaterialUtil.isLava(below.getType())) {
+                continue;
+            }
+
+            if (hasGrave(candidate)) {
+                continue;
+            }
+
+            if (!isInsideBorder(candidate)) {
+                continue;
+            }
+
+            out.add(new Candidate(candidate, y == minY + 1 ? GravePlacementReason.VOID_MIN_HEIGHT : GravePlacementReason.VOID_COLUMN));
+
+            return;
         }
 
-        if (best != null) out.add(best);
+        Location minimum = new Location(world, x + 0.5D, minY, z + 0.5D, origin.getYaw(), origin.getPitch());
+
+        if (MaterialUtil.isSafeNotSolid(minimum.getBlock().getType()) && !MaterialUtil.isWater(minimum.getBlock().getType()) && !MaterialUtil.isLava(minimum.getBlock().getType()) && !hasGrave(minimum) && isInsideBorder(minimum)) {
+
+            out.add(new Candidate(minimum, GravePlacementReason.VOID_MIN_HEIGHT));
+        }
     }
 
     /**

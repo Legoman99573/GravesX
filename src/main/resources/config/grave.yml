@@ -40,7 +40,7 @@ settings:
         can-build-protectionlib: false
         # If the entity dies in the air should the grave fall to the ground.
         ground: true
-        # If the entity dies in the void, should it place a grave in the air if it can't find anywhere else.
+        # If the entity dies in the void, use its last solid location or place the grave in the air nearby.
         void: true
         # If the entity dies in lava should the grave float to the top.
         lava-top: true
