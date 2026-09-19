@@ -980,9 +980,9 @@ public class IntegrationManager {
                 plugin.getServer().getPluginManager().registerEvents(new CustomBlockBreakListener(plugin), plugin);
 
                 // Guess we need to check this shit now LOL
-                plugin.getServer().getPluginManager().registerEvents(new ItemsAdderLoadListener(plugin, itemsAdder), plugin);
-                plugin.getServer().getPluginManager().registerEvents(new ItemsAdderReloadGateListener(plugin, itemsAdder), plugin);
-                plugin.getServer().getPluginManager().registerEvents(new ItemsAdderDisableListener(plugin, itemsAdder), plugin);
+                plugin.getServer().getPluginManager().registerEvents(new ItemsAdderLoadListener(plugin), plugin);
+                plugin.getServer().getPluginManager().registerEvents(new ItemsAdderReloadGateListener(plugin), plugin);
+                plugin.getServer().getPluginManager().registerEvents(new ItemsAdderDisableListener(plugin), plugin);
 
                 plugin.integrationMessage("Hooked into " + itemsAdderPlugin.getName() + " " + itemsAdderPlugin.getDescription().getVersion() + ".");
             }

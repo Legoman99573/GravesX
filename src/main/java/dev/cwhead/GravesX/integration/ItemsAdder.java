@@ -176,28 +176,60 @@ public final class ItemsAdder extends EntityDataManager {
      * @param grave grave context
      */
     public void createBlock(Location location, Grave grave) {
-        if (grave == null || location == null || location.getWorld() == null) return;
-        if (!requireReady(grave, "block place")) return;
-
-        if (!plugin.getConfigManager().getConfigSection("itemsadder.block.enabled", grave)
-                .getBoolean("itemsadder.block.enabled")) {
+        if (grave == null) {
+            plugin.debugMessage("Can't place ItemsAdder block: grave is null", 1);
             return;
         }
 
-        String name = plugin.getConfigManager()
-                .getConfigSection("itemsadder.block.name", grave)
-                .getString("itemsadder.block.name", "");
+        if (location == null || location.getWorld() == null) {
+            plugin.debugMessage("Can't place ItemsAdder block for " + grave.getUUID() + ": location or world is null", 1);
+            return;
+        }
 
-        if (name.isEmpty()) return;
+        if (!requireReady(grave, "block place")) {
+            return;
+        }
 
-        CustomBlock block = CustomBlock.place(name, location);
+        boolean enabled = plugin.getConfigManager().getConfigSection("itemsadder.block.enabled", grave).getBoolean("itemsadder.block.enabled");
 
-        if (block != null) {
-            plugin.debugMessage("Placing ItemsAdder block for " + grave.getUUID() + " at "
-                    + location.getWorld().getName() + ", " + (location.getBlockX() + 0.5) + "x, "
-                    + (location.getBlockY() + 0.5) + "y, " + (location.getBlockZ() + 0.5) + "z", 1);
-        } else {
-            plugin.debugMessage("Can't find ItemsAdder block " + name, 1);
+        if (!enabled) {
+            plugin.debugMessage("ItemsAdder block placement disabled for grave " + grave.getUUID(), 2);
+            return;
+        }
+
+        String name = plugin.getConfigManager().getConfigSection("itemsadder.block.name", grave).getString("itemsadder.block.name", "");
+
+        if (name == null || name.isBlank()) {
+            plugin.debugMessage("Can't place ItemsAdder block for " + grave.getUUID() + ": itemsadder.block.name is empty", 1);
+
+            return;
+        }
+
+        plugin.debugMessage("Attempting to place ItemsAdder block '" + name + "' for " + grave.getUUID() + " at " + location.getWorld().getName() + ", " + location.getBlockX() + "x, " + location.getBlockY() + "y, " + location.getBlockZ() + "z", 2);
+
+        try {
+            CustomBlock block = CustomBlock.place(name, location);
+
+            if (block == null) {
+                plugin.debugMessage("ItemsAdder failed to place custom block '" + name + "' for grave " + grave.getUUID() + ". Check that the namespaced ID exists.", 1);
+
+                return;
+            }
+
+            CustomBlock placed = CustomBlock.byAlreadyPlaced(location.getBlock());
+
+            if (placed == null) {
+                plugin.debugMessage("ItemsAdder returned a block for '" + name + "', but no custom block exists at the placement location.", 1);
+
+                return;
+            }
+
+            plugin.debugMessage("Placed ItemsAdder block '" + name + "' for " + grave.getUUID() + " at " + location.getWorld().getName() + ", " + (location.getBlockX() + 0.5) + "x, " + (location.getBlockY() + 0.5) + "y, " + (location.getBlockZ() + 0.5) + "z", 1);
+
+        } catch (Throwable t) {
+            plugin.debugMessage("Exception while placing ItemsAdder block '" + name + "' for grave " + grave.getUUID() + ": " + t.getClass().getSimpleName() + ": " + t.getMessage(), 1);
+
+            plugin.logStackTrace(t);
         }
     }
 
@@ -208,10 +240,11 @@ public final class ItemsAdder extends EntityDataManager {
      * @return {@code true} if the block is a custom block
      */
     public boolean isCustomBlock(Location location) {
-        if (location != null && location.getWorld() != null) {
-            CustomBlock.byAlreadyPlaced(location.getBlock());
+        if (location == null || location.getWorld() == null) {
+            return false;
         }
-        return false;
+
+        return CustomBlock.byAlreadyPlaced(location.getBlock()) != null;
     }
 
     /**
@@ -252,8 +285,8 @@ public final class ItemsAdder extends EntityDataManager {
                 if (CustomFurniture.byAlreadySpawned(e) != null) {
                     return true;
                 }
-            } catch (Throwable ignored) {
-                return true;
+            } catch (Throwable t) {
+                plugin.debugMessage("Failed to check ItemsAdder furniture entity " + e.getUniqueId() + ": " + t.getClass().getSimpleName() + ": " + t.getMessage(), 2);
             }
         }
         return false;

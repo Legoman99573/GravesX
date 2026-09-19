@@ -21,18 +21,13 @@ public final class ItemsAdderReloadGateListener implements Listener {
     /** GravesX plugin instance. */
     private final Graves plugin;
 
-    /** ItemsAdder integration wrapper. */
-    private final ItemsAdder integration;
-
     /**
      * Creates the listener.
      *
      * @param plugin GravesX plugin instance
-     * @param integration ItemsAdder integration wrapper
      */
-    public ItemsAdderReloadGateListener(Graves plugin, ItemsAdder integration) {
+    public ItemsAdderReloadGateListener(Graves plugin) {
         this.plugin = plugin;
-        this.integration = integration;
     }
 
     /**
@@ -90,8 +85,8 @@ public final class ItemsAdderReloadGateListener implements Listener {
      */
     private void gateNotReady(String source, String cmd) {
         plugin.getSchedulerManager().runTask(() -> {
-            if (integration.isReady()) {
-                integration.setReady(false);
+            if (plugin.getIntegrationManager().getItemsAdder().isReady()) {
+                plugin.getIntegrationManager().getItemsAdder().setReady(false);
                 plugin.debugMessage(
                         "ItemsAdder reload detected (" + source + ": " + cmd + "). Integration gated until ItemsAdderLoadDataEvent.",
                         1

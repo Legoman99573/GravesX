@@ -15,18 +15,13 @@ public final class ItemsAdderDisableListener implements Listener {
     /** GravesX plugin instance. */
     private final Graves plugin;
 
-    /** ItemsAdder integration wrapper. */
-    private final ItemsAdder integration;
-
     /**
      * Creates the listener.
      *
      * @param plugin GravesX plugin instance
-     * @param integration ItemsAdder integration wrapper
      */
-    public ItemsAdderDisableListener(Graves plugin, ItemsAdder integration) {
+    public ItemsAdderDisableListener(Graves plugin) {
         this.plugin = plugin;
-        this.integration = integration;
     }
 
     /**
@@ -38,7 +33,7 @@ public final class ItemsAdderDisableListener implements Listener {
     public void onDisable(PluginDisableEvent event) {
         if (!event.getPlugin().getName().equalsIgnoreCase("ItemsAdder")) return;
 
-        integration.setReady(false);
+        plugin.getIntegrationManager().getItemsAdder().setReady(false);
         plugin.debugMessage("ItemsAdder disabled. Integration is now gated.", 1);
     }
 }
