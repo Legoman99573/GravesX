@@ -171,8 +171,9 @@ public class Graves extends JavaPlugin {
         integrationManager.load();
         integrationManager.loadNoReload();
 
-        cacheManager = new CacheManager();
         dataManager = new DataManager(this);
+        cacheManager = new CacheManager(this);
+        dataManager.startLoading();
         importManager = new ImportManager(this);
         blockManager = new BlockManager(this);
         itemStackManager = new ItemStackManager(this);
@@ -321,6 +322,16 @@ public class Graves extends JavaPlugin {
         }
 
         getLogger().info("Grave inventories saved.");
+
+        if (cacheManager != null) {
+            try {
+                getLogger().info("Clearing temporary GravesX cache...");
+                cacheManager.shutdown();
+            } catch (Throwable t) {
+                getLogger().severe("Failed to clear GravesX cache during shutdown.");
+                logStackTrace(t);
+            }
+        }
 
         getLogger().info("Shutting Down GravesX...");
         getLogger().info("Unloading and Shutting Down DataManager...");
@@ -650,8 +661,9 @@ public class Graves extends JavaPlugin {
             // ignore
         }
 
-        cacheManager = new CacheManager();
         dataManager = new DataManager(this);
+        cacheManager = new CacheManager(this);
+        dataManager.startLoading();
         importManager = new ImportManager(this);
         blockManager = new BlockManager(this);
         itemStackManager = new ItemStackManager(this);

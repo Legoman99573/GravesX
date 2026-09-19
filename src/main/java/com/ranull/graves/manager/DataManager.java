@@ -9,6 +9,7 @@ import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.*;
 import dev.cwhead.GravesX.api.provider.GraveProvider;
 import dev.cwhead.GravesX.api.provider.RegisterGraveProviders;
+import dev.cwhead.GravesX.cache.CacheCodec;
 import dev.cwhead.GravesX.manager.db.CredentialsProviderFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.bukkit.Location;
@@ -26,6 +27,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static com.ranull.graves.manager.DataManager.Type.*;
 
 /**
  * Manages data storage and retrieval for the Graves plugin.
@@ -153,7 +156,6 @@ public class DataManager {
                 loadType(Type.H2);
                 if (testDatabaseConnection()) {
                     migrate();
-                    load();
                     keepConnectionAlive(); // If we don't enable this, connection will close or time out :/
                 } else {
                     plugin.getLogger().severe("Failed to connect to " + Type.H2 + " database. Disabling plugin...");
@@ -269,6 +271,10 @@ public class DataManager {
     /**
      * Loads data from the database asynchronously.
      */
+    public void startLoading() {
+        load();
+    }
+
     private void load() {
         try {
             try {
@@ -385,6 +391,7 @@ public class DataManager {
         setupBlockTable();
         setupHologramTable();
         setupEntityTables();
+        setupTempCacheTable();
     }
 
     /**
@@ -496,7 +503,7 @@ public class DataManager {
 
         dataSource = new HikariDataSource(config);
         checkAndUnlockDatabase();
-        if (type == Type.MYSQL) checkMariaDBasMySQL();
+        if (type == MYSQL) checkMariaDBasMySQL();
     }
 
     private void checkMariaDBasMySQL() {
@@ -710,17 +717,17 @@ public class DataManager {
         boolean allowPublicKeyRetrieval = plugin.getConfig().getBoolean("settings.storage.mysql.allowPublicKeyRetrieval", false);
         boolean verifyServerCertificate = plugin.getConfig().getBoolean("settings.storage.mysql.verifyServerCertificate", false);
 
-        String jdbcUrl = (type == Type.MARIADB)
+        String jdbcUrl = (type == MARIADB)
                 ? String.format("jdbc:mariadb://%s:%d/%s", host, port, database)
                 : String.format("jdbc:mysql://%s:%d/%s", host, port, database);
 
         config.setJdbcUrl(jdbcUrl);
         config.setDriverClassName(
-                type == Type.MARIADB
+                type == MARIADB
                         ? "com.ranull.graves.libraries.mariadb.jdbc.Driver"
                         : "com.ranull.graves.libraries.mysql.cj.jdbc.Driver"
         );
-        config.setPoolName(type == Type.MARIADB
+        config.setPoolName(type == MARIADB
                 ? "GravesX MariaDB"
                 : "GravesX MySQL");
 
@@ -1115,6 +1122,94 @@ public class DataManager {
      *
      * @throws SQLException if an SQL error occurs.
      */
+    /**
+     * Returns the physical temporary cache table name.
+     */
+    public String getTempCacheTableName() {
+        return getStoragePrefix() + "tempcache";
+    }
+
+    /**
+     * Creates the temporary cache table used by the DATABASE cache backend.
+     */
+    public void setupTempCacheTable() {
+        String table = getTempCacheTableName();
+        String sql = switch (type) {
+            case MSSQL -> "IF OBJECT_ID('" + table + "', 'U') IS NULL CREATE TABLE " + table
+                    + " (cache_namespace NVARCHAR(128) NOT NULL, cache_key NVARCHAR(512) NOT NULL, "
+                    + "cache_value VARBINARY(MAX) NOT NULL, updated_at BIGINT NOT NULL, "
+                    + "CONSTRAINT PK_" + table.replaceAll("[^A-Za-z0-9_]", "_")
+                    + " PRIMARY KEY (cache_namespace, cache_key))";
+            case POSTGRESQL -> "CREATE TABLE IF NOT EXISTS " + table
+                    + " (cache_namespace VARCHAR(128) NOT NULL, cache_key VARCHAR(512) NOT NULL, "
+                    + "cache_value BYTEA NOT NULL, updated_at BIGINT NOT NULL, "
+                    + "PRIMARY KEY (cache_namespace, cache_key))";
+            case H2 -> "CREATE TABLE IF NOT EXISTS " + table
+                    + " (cache_namespace VARCHAR(128) NOT NULL, cache_key VARCHAR(512) NOT NULL, "
+                    + "cache_value BLOB NOT NULL, updated_at BIGINT NOT NULL, "
+                    + "PRIMARY KEY (cache_namespace, cache_key))";
+            default -> "CREATE TABLE IF NOT EXISTS " + table
+                    + " (cache_namespace VARCHAR(128) NOT NULL, cache_key VARCHAR(512) NOT NULL, "
+                    + "cache_value LONGBLOB NOT NULL, updated_at BIGINT NOT NULL, "
+                    + "PRIMARY KEY (cache_namespace, cache_key))";
+        };
+
+        try (Connection connection = getConnection();
+             Statement statement = connection.createStatement()) {
+            statement.executeUpdate(sql);
+        } catch (SQLException exception) {
+            plugin.getLogger().severe("Failed to create temporary cache table " + table);
+            plugin.logStackTrace(exception);
+        }
+    }
+
+    /**
+     * Clears all disposable DATABASE cache entries.
+     */
+    public void clearTempCacheTable() {
+        String sql = "DELETE FROM " + getTempCacheTableName();
+        try (Connection connection = getConnection();
+             Statement statement = connection.createStatement()) {
+            statement.executeUpdate(sql);
+        } catch (SQLException exception) {
+            plugin.getLogger().severe("Failed to clear temporary cache table " + getTempCacheTableName());
+            plugin.logStackTrace(exception);
+        }
+    }
+
+    /**
+     * Produces the same key format used by getChunkData(Location).
+     */
+    private String cacheChunkKey(Location location) {
+        if (location == null || location.getWorld() == null) {
+            return null;
+        }
+
+        int chunkX = location.getBlockX() >> 4;
+        int chunkZ = location.getBlockZ() >> 4;
+
+        if (plugin.getVersionManager().isFolia()) {
+            return location.getWorld().getName() + ":" + chunkX + "," + chunkZ;
+        }
+
+        return LocationUtil.chunkToString(location);
+    }
+
+    /**
+     * Writes a mutated ChunkData object back to the selected external cache.
+     * MEMORY requires no write-back because the cached object itself was mutated.
+     */
+    private void saveChunkCache(Location location, ChunkData chunk) {
+        if (location == null || chunk == null) {
+            return;
+        }
+
+        String key = cacheChunkKey(location);
+        if (key != null) {
+            plugin.getCacheManager().saveChunk(key, chunk);
+        }
+    }
+
     public void setupGraveTable() throws SQLException {
         String name = getStoragePrefix() + "grave";
         if (!tableExists(name)) {
@@ -1677,7 +1772,9 @@ public class DataManager {
                     plugin.getSchedulerManager().execute(anchor, () -> {
                         for (BlockWork w : group) {
                             try {
-                                getChunkData(w.loc).addBlockData(w.data);
+                                ChunkData cachedChunk = getChunkData(w.loc);
+                                cachedChunk.addBlockData(w.data);
+                                saveChunkCache(w.loc, cachedChunk);
                             } catch (Throwable t) {
                                 plugin.getLogger().warning("Failed to cache block at " + w.loc + ": " + t.getMessage());
                             }
@@ -1750,7 +1847,9 @@ public class DataManager {
                         UUID uuidEntity = UUID.fromString(uuidEntityString);
                         UUID uuidGrave = UUID.fromString(uuidGraveString);
                         EntityData entityData = new EntityData(location, uuidEntity, uuidGrave, type);
-                        getChunkData(location).addEntityData(entityData);
+                        ChunkData cachedChunk = getChunkData(location);
+                        cachedChunk.addEntityData(entityData);
+                        saveChunkCache(location, cachedChunk);
                         plugin.getCacheManager().addEntityData(entityData);
                         entityCount++;
                     } catch (IllegalArgumentException ex) {
@@ -1827,7 +1926,9 @@ public class DataManager {
                         }
 
                         HologramData hologramData = new HologramData(location, uuidEntity, uuidGrave, line, backend);
-                        getChunkData(location).addEntityData(hologramData);
+                        ChunkData cachedChunk = getChunkData(location);
+                        cachedChunk.addEntityData(hologramData);
+                        saveChunkCache(location, cachedChunk);
                         plugin.getCacheManager().addEntityData(hologramData);
                         hologramCount++;
                     } catch (IllegalArgumentException ex) {
@@ -1950,7 +2051,9 @@ public class DataManager {
                         UUID uuidEntity = UUID.fromString(uuidEntityString);
                         UUID uuidGrave = UUID.fromString(uuidGraveString);
                         EntityData entityData = new EntityData(location, uuidEntity, uuidGrave, type);
-                        getChunkData(location).addEntityData(entityData);
+                        ChunkData cachedChunk = getChunkData(location);
+                        cachedChunk.addEntityData(entityData);
+                        saveChunkCache(location, cachedChunk);
                         plugin.getCacheManager().addEntityData(entityData);
                         entityCount++;
                     } catch (IllegalArgumentException ex) {
@@ -1982,9 +2085,15 @@ public class DataManager {
         if (loc != null && loc.getWorld() != null
                 && plugin.getVersionManager().isFolia()) {
 
-            plugin.getSchedulerManager().execute(loc, () -> getChunkData(loc).addBlockData(blockData));
+            plugin.getSchedulerManager().execute(loc, () -> {
+                ChunkData cachedChunk = getChunkData(loc);
+                cachedChunk.addBlockData(blockData);
+                saveChunkCache(loc, cachedChunk);
+            });
         } else {
-            Objects.requireNonNull(getChunkData(loc)).addBlockData(blockData);
+            ChunkData cachedChunk = Objects.requireNonNull(getChunkData(loc));
+            cachedChunk.addBlockData(blockData);
+            saveChunkCache(loc, cachedChunk);
         }
 
         String query =
@@ -2025,6 +2134,7 @@ public class DataManager {
             ChunkData chunkData = getChunkData(location);
             if (chunkData != null) {
                 chunkData.removeBlockData(location);
+                saveChunkCache(location, chunkData);
             }
         });
 
@@ -2057,7 +2167,9 @@ public class DataManager {
         }
 
         plugin.getSchedulerManager().execute(loc, () -> {
-            getChunkData(loc).addEntityData(hologramData);
+            ChunkData cachedChunk = getChunkData(loc);
+            cachedChunk.addEntityData(hologramData);
+            saveChunkCache(loc, cachedChunk);
             plugin.getCacheManager().addEntityData(hologramData);
         });
 
@@ -2147,7 +2259,9 @@ public class DataManager {
                         HologramData hologramData = new HologramData(location, uuidEntity, grave.getUUID(), line, backend);
 
                         plugin.getSchedulerManager().execute(location, () -> {
-                            getChunkData(location).removeEntityData(hologramData);
+                            ChunkData cachedChunk = getChunkData(location);
+                            cachedChunk.removeEntityData(hologramData);
+                            saveChunkCache(location, cachedChunk);
                             plugin.getCacheManager().removeEntityData(hologramData);
                         });
                         scheduledRemovals++;
@@ -2181,7 +2295,9 @@ public class DataManager {
         }
 
         plugin.getSchedulerManager().execute(loc, () -> {
-            getChunkData(loc).addEntityData(entityData);
+            ChunkData cachedChunk = getChunkData(loc);
+            cachedChunk.addEntityData(entityData);
+            saveChunkCache(loc, cachedChunk);
             plugin.getCacheManager().addEntityData(entityData);
         });
 
@@ -2230,7 +2346,9 @@ public class DataManager {
                                 Grave grave = plugin.getCacheManager().getGrave(entityData.getUUIDGrave());
                                 plugin.getHologramManager().removeHologram(grave);
                             }
-                            getChunkData(loc).removeEntityData(entityData);
+                            ChunkData cachedChunk = getChunkData(loc);
+                            cachedChunk.removeEntityData(entityData);
+                            saveChunkCache(loc, cachedChunk);
                             plugin.getCacheManager().removeEntityData(entityData);
                         });
                     } else {
@@ -2613,7 +2731,7 @@ public class DataManager {
      *
      * @return the database connection, or {@code null} if unavailable.
      */
-    private Connection getConnection() {
+    public Connection getConnection() {
         if (dataSource == null || dataSource.isClosed()) {
             plugin.getLogger().severe("DataSource is not initialized or has been closed");
             return null;
@@ -2871,6 +2989,121 @@ public class DataManager {
         } catch (SQLException e) {
             plugin.getLogger().severe("Failed to connect to " + this.type + " database: " + e.getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Stores or updates a temporary cache entry.
+     */
+    public void putTempCache(String namespace, String key, byte[] value) {
+        long updatedAt = System.currentTimeMillis();
+
+        switch (getType()) {
+            case "MYSQL":
+            case "MARIADB":
+                putTempCacheMySql(namespace, key, value, updatedAt);
+                break;
+
+            case "POSTGRESQL":
+                putTempCachePostgreSql(namespace, key, value, updatedAt);
+                break;
+
+            case "H2":
+                putTempCacheH2(namespace, key, value, updatedAt);
+                break;
+
+            case "MSSQL":
+                putTempCacheMsSql(namespace, key, value, updatedAt);
+                break;
+
+            default:
+                throw new IllegalStateException("Unsupported database type: " + getType());
+        }
+    }
+
+    /**
+     * Stores a temporary cache entry using MySQL or MariaDB.
+     */
+    private void putTempCacheMySql(String namespace, String key, byte[] value, long updatedAt) {
+
+        String sql = "INSERT INTO " + getTempCacheTableName()
+                + " (cache_namespace, cache_key, cache_value, updated_at) "
+                + "VALUES (?, ?, ?, ?) "
+                + "ON DUPLICATE KEY UPDATE "
+                + "cache_value = VALUES(cache_value), "
+                + "updated_at = VALUES(updated_at)";
+
+        executeTempCacheUpsert(sql, namespace, key, value, updatedAt);
+    }
+
+    /**
+     * Stores a temporary cache entry using PostgreSQL.
+     */
+    private void putTempCachePostgreSql(String namespace, String key, byte[] value, long updatedAt) {
+
+        String sql = "INSERT INTO " + getTempCacheTableName()
+                + " (cache_namespace, cache_key, cache_value, updated_at) "
+                + "VALUES (?, ?, ?, ?) "
+                + "ON CONFLICT (cache_namespace, cache_key) "
+                + "DO UPDATE SET "
+                + "cache_value = EXCLUDED.cache_value, "
+                + "updated_at = EXCLUDED.updated_at";
+
+        executeTempCacheUpsert(sql, namespace, key, value, updatedAt);
+    }
+
+    /**
+     * Stores a temporary cache entry using H2.
+     */
+    private void putTempCacheH2(String namespace, String key, byte[] value, long updatedAt) {
+
+        String sql = "MERGE INTO " + getTempCacheTableName()
+                + " (cache_namespace, cache_key, cache_value, updated_at) "
+                + "KEY (cache_namespace, cache_key) "
+                + "VALUES (?, ?, ?, ?)";
+
+        executeTempCacheUpsert(sql, namespace, key, value, updatedAt);
+    }
+
+    /**
+     * Stores a temporary cache entry using MSSQL.
+     */
+    private void putTempCacheMsSql(String namespace, String key, byte[] value, long updatedAt) {
+
+        String table = getTempCacheTableName();
+
+        String sql = "MERGE INTO " + table + " AS target "
+                + "USING (VALUES (?, ?, ?, ?)) "
+                + "AS source (cache_namespace, cache_key, cache_value, updated_at) "
+                + "ON target.cache_namespace = source.cache_namespace "
+                + "AND target.cache_key = source.cache_key "
+                + "WHEN MATCHED THEN UPDATE SET "
+                + "cache_value = source.cache_value, "
+                + "updated_at = source.updated_at "
+                + "WHEN NOT MATCHED THEN INSERT "
+                + "(cache_namespace, cache_key, cache_value, updated_at) "
+                + "VALUES (source.cache_namespace, source.cache_key, "
+                + "source.cache_value, source.updated_at);";
+
+        executeTempCacheUpsert(sql, namespace, key, value, updatedAt);
+    }
+
+    /**
+     * Executes a temporary cache upsert.
+     */
+    private void executeTempCacheUpsert(String sql, String namespace, String key, byte[] value, long updatedAt) {
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setString(1, namespace);
+            statement.setString(2, key);
+            statement.setBytes(3, value);
+            statement.setLong(4, updatedAt);
+            statement.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new CacheCodec.CacheException("Failed writing database cache", e);
         }
     }
 
@@ -3621,7 +3854,7 @@ public class DataManager {
      * @return the formatted table prefix with an underscore, or an empty string if no prefix is set.
      */
     @ApiStatus.Experimental
-    private String getStoragePrefix() {
+    public String getStoragePrefix() {
         String prefix = plugin.getConfig().getString("settings.storage.prefix", "");
         if (prefix.isBlank()) {
             return "";

@@ -1,5 +1,7 @@
 package com.ranull.graves.manager;
 
+import com.ranull.graves.Graves;
+import dev.cwhead.GravesX.cache.*;
 import com.ranull.graves.data.ChunkData;
 import com.ranull.graves.data.EntityData;
 import com.ranull.graves.type.Grave;
@@ -7,88 +9,83 @@ import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 public class CacheManager {
-    /**
-     * A map of grave UUIDs to their corresponding {@link Grave} objects.
-     * <p>
-     * This {@link Map} associates each {@link UUID} with a {@link Grave} instance, allowing for quick retrieval
-     * of grave information based on its unique identifier.
-     * </p>
-     */
+    private final Graves plugin;
+    private final CacheType cacheType;
+    private final CacheBackend backend;
+    private final CacheCodec codec;
+
     private final Map<UUID, Grave> graveMap;
-
-    /**
-     * A map of chunk identifiers to their corresponding {@link ChunkData} objects.
-     * <p>
-     * This {@link Map} associates each chunk identifier (as a {@link String}) with {@link ChunkData}, which holds
-     * information about the specific chunk.
-     * </p>
-     */
     private final Map<String, ChunkData> chunkMap;
-
-    /**
-     * A map of entity UUIDs to their last known {@link Location}.
-     * <p>
-     * This {@link Map} tracks the most recent {@link Location} for each entity identified by its {@link UUID}.
-     * </p>
-     */
     private final Map<UUID, Location> lastLocationMap;
-
-    /**
-     * A map of entity UUIDs to lists of removed {@link ItemStack} objects.
-     * <p>
-     * This {@link Map} associates each entity's {@link UUID} with a {@link List} of {@link ItemStack} objects
-     * that have been removed from the entity.
-     * </p>
-     */
     private final Map<UUID, List<ItemStack>> removedItemStackMap;
-
-    /**
-     * A map of block identifiers to their corresponding {@link Location} objects where the block was right-clicked.
-     * <p>
-     * This {@link Map} tracks the locations of blocks that have been right-clicked, identified by a {@link String}
-     * representing the block identifier.
-     * </p>
-     */
-    private final Map<String, Location> rightClickedBlocks = new HashMap<>();
-
-    /**
-     * A map of grave UUIDs to the UUID of the player currently viewing that grave.
-     * <p>
-     * Used to prevent multiple players from accessing the same grave at the same time.
-     * If a grave UUID is present in this map, the grave is considered "in use" / "locked".
-     * </p>
-     */
+    private final Map<String, Location> rightClickedBlocks;
     private final Map<UUID, UUID> graveViewerMap;
-
-    /**
-     * A map of entity UUIDs to their corresponding {@link EntityData}.
-     * <p>
-     * This provides a fast global lookup for tracked entity-backed grave data
-     * without requiring a chunk scan.
-     * </p>
-     */
     private final Map<UUID, EntityData> entityMap;
 
+    public CacheManager(Graves plugin) {
+        this.plugin = plugin;
+        this.cacheType = CacheType.fromString(plugin.getConfig().getString("settings.cache.type", "MEMORY"));
+        this.codec = new CacheCodec(plugin);
+
+        this.backend = switch (cacheType) {
+            case NORMAL -> new MemoryCacheBackend();
+            case DISK -> new DiskCacheBackend(plugin);
+            case DATABASE -> new DatabaseCacheBackend(plugin);
+        };
+
+        this.graveMap = uuidMap("graves");
+        this.chunkMap = stringMap("chunks");
+        this.lastLocationMap = uuidMap("last-locations");
+        this.removedItemStackMap = uuidMap("removed-items");
+        this.rightClickedBlocks = stringMap("right-clicked-blocks");
+        this.graveViewerMap = uuidMap("grave-viewers");
+        this.entityMap = uuidMap("entities");
+
+        plugin.getLogger().info("Cache backend: " + cacheType);
+    }
+
+    private <V> Map<UUID, V> uuidMap(String namespace) {
+        return new CacheMap<>(cacheType, namespace, backend, codec,
+                UUID::toString, UUID::fromString);
+    }
+
+    private <V> Map<String, V> stringMap(String namespace) {
+        return new CacheMap<>(cacheType, namespace, backend, codec,
+                value -> value, value -> value);
+    }
+
+    public CacheType getCacheType() {
+        return cacheType;
+    }
 
     /**
-     * Constructs a new {@link CacheManager} with initialized maps.
-     * <p>
-     * The constructor initializes all the maps used for caching data related to graves, chunks, locations, and items
-     * </p>
+     * Writes a mutated chunk back to DISK/DATABASE. MEMORY does not need this.
      */
-    public CacheManager() {
-        this.graveMap = new HashMap<>();
-        this.chunkMap = new HashMap<>();
-        this.lastLocationMap = new HashMap<>();
-        this.removedItemStackMap = new HashMap<>();
-        this.graveViewerMap = new HashMap<>();
-        this.entityMap = new HashMap<>();
+    public void saveChunk(String key, ChunkData chunkData) {
+        if (cacheType != CacheType.NORMAL && key != null && chunkData != null) {
+            chunkMap.put(key, chunkData);
+        }
+    }
+
+    public void clear() {
+        backend.clear();
+    }
+
+    public void shutdown() {
+        backend.close();
+    }
+
+    public void close() {
+        shutdown();
+    }
+
+    public void unload() {
+        shutdown();
     }
 
     /**
@@ -399,4 +396,5 @@ public class CacheManager {
 
         removeEntityData(entityData.getUUIDEntity());
     }
+
 }

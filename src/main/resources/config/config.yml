@@ -141,9 +141,11 @@ settings:
   #########
   # Cache #
   #########
-  # Data storage system.
+  # Controls how temporary cached data is stored.
   cache:
-    # Cache type. Implementation Unused
+    # NORMAL: Stores cached data in memory (Uses available RAM. This option is highly recommended)
+    # DISK: Stores cached data in the .cache directory. (Not recommended for HardDrives as this may cause server lag)
+    # DATABASE: Stores cached data in the configured database. (Will use the configured database storage configured. Recommended for those who are using the database locally as external databases with long latency may cause problems)
     type: NORMAL
 
   #########
