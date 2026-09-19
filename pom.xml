@@ -554,10 +554,6 @@
             <url>https://repo.nexomc.com/releases</url>
         </repository>
         <repository>
-            <id>matteodev</id>
-            <url>https://maven.devs.beer/</url>
-        </repository>
-        <repository>
             <id>croabeast-repo</id>
             <url>https://croabeast.github.io/repo/</url>
         </repository>
@@ -796,9 +792,9 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>dev.lone</groupId>
-            <artifactId>api-itemsadder</artifactId>
-            <version>4.0.10</version>
+            <groupId>beer.devs</groupId>
+            <artifactId>itemsadder-api</artifactId>
+            <version>4.0.18-beta-10</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
