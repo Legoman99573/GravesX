@@ -3,18 +3,28 @@ package dev.cwhead.GravesX.cache;
 import com.ranull.graves.Graves;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Stream;
 
+/**
+ * Stores cache data on disk.
+ */
 public final class DiskCacheBackend implements CacheBackend {
+    private static final String CACHE_EXTENSION = ".gxcache";
+
     private final Graves plugin;
     private final Path root;
 
+    /**
+     * Creates the disk cache backend.
+     */
     public DiskCacheBackend(Graves plugin) {
         this.plugin = plugin;
         this.root = plugin.getDataFolder().toPath().resolve(".cache");
         clear();
+
         try {
             Files.createDirectories(root);
         } catch (IOException e) {
@@ -22,28 +32,44 @@ public final class DiskCacheBackend implements CacheBackend {
         }
     }
 
+    /**
+     * Gets the directory for a namespace.
+     */
     private Path dir(String namespace) {
         return root.resolve(namespace);
     }
 
+    /**
+     * Gets the cache file name for a key.
+     */
     private String fileName(String key) {
-        return Base64.getUrlEncoder().withoutPadding()
-                .encodeToString(key.getBytes(java.nio.charset.StandardCharsets.UTF_8)) + ".cache";
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(key.getBytes(StandardCharsets.UTF_8)) + CACHE_EXTENSION;
     }
 
+    /**
+     * Gets the cache key from a file name.
+     */
     private String keyFromFile(String file) {
-        String encoded = file.substring(0, file.length() - ".cache".length());
-        return new String(Base64.getUrlDecoder().decode(encoded),
-                java.nio.charset.StandardCharsets.UTF_8);
+        String encoded = file.substring(0, file.length() - CACHE_EXTENSION.length());
+
+        return new String(Base64.getUrlDecoder().decode(encoded), StandardCharsets.UTF_8);
     }
 
+    /**
+     * Gets the cache file for a key.
+     */
     private Path file(String namespace, String key) {
         return dir(namespace).resolve(fileName(key));
     }
 
-    @Override public synchronized byte[] get(String namespace, String key) {
+    /**
+     * Gets a cached value.
+     */
+    @Override
+    public synchronized byte[] get(String namespace, String key) {
         Path path = file(namespace, key);
         if (!Files.exists(path)) return null;
+
         try {
             return Files.readAllBytes(path);
         } catch (IOException e) {
@@ -51,16 +77,22 @@ public final class DiskCacheBackend implements CacheBackend {
         }
     }
 
-    @Override public synchronized void put(String namespace, String key, byte[] value) {
+    /**
+     * Stores a cached value.
+     */
+    @Override
+    public synchronized void put(String namespace, String key, byte[] value) {
         Path directory = dir(namespace);
         Path target = file(namespace, key);
+
         try {
             Files.createDirectories(directory);
+
             Path temp = Files.createTempFile(directory, ".write-", ".tmp");
             Files.write(temp, value, StandardOpenOption.TRUNCATE_EXISTING);
+
             try {
-                Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING,
-                        StandardCopyOption.ATOMIC_MOVE);
+                Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
             } catch (AtomicMoveNotSupportedException ignored) {
                 Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING);
             }
@@ -69,58 +101,93 @@ public final class DiskCacheBackend implements CacheBackend {
         }
     }
 
-    @Override public synchronized byte[] remove(String namespace, String key) {
+    /**
+     * Removes and returns a cached value.
+     */
+    @Override
+    public synchronized byte[] remove(String namespace, String key) {
         byte[] previous = get(namespace, key);
+
         try {
             Files.deleteIfExists(file(namespace, key));
         } catch (IOException e) {
             throw new CacheCodec.CacheException("Failed deleting disk cache entry", e);
         }
+
         return previous;
     }
 
-    @Override public synchronized boolean contains(String namespace, String key) {
+    /**
+     * Checks if a cached value exists.
+     */
+    @Override
+    public synchronized boolean contains(String namespace, String key) {
         return Files.exists(file(namespace, key));
     }
 
-    @Override public synchronized Set<String> keys(String namespace) {
+    /**
+     * Gets all keys in a namespace.
+     */
+    @Override
+    public synchronized Set<String> keys(String namespace) {
         Path directory = dir(namespace);
         if (!Files.isDirectory(directory)) return Collections.emptySet();
+
         Set<String> result = new HashSet<>();
+
         try (Stream<Path> stream = Files.list(directory)) {
             stream.filter(Files::isRegularFile)
                     .map(p -> p.getFileName().toString())
-                    .filter(n -> n.endsWith(".cache"))
+                    .filter(n -> n.endsWith(CACHE_EXTENSION))
                     .forEach(n -> {
-                        try { result.add(keyFromFile(n)); }
-                        catch (IllegalArgumentException e) {
+                        try {
+                            result.add(keyFromFile(n));
+                        } catch (IllegalArgumentException e) {
                             plugin.getLogger().warning("Ignoring malformed cache file " + n);
                         }
                     });
         } catch (IOException e) {
             throw new CacheCodec.CacheException("Failed listing disk cache " + directory, e);
         }
+
         return result;
     }
 
-    @Override public int size(String namespace) {
+    /**
+     * Gets the number of entries in a namespace.
+     */
+    @Override
+    public int size(String namespace) {
         return keys(namespace).size();
     }
 
-    @Override public synchronized void clearNamespace(String namespace) {
+    /**
+     * Clears all entries in a namespace.
+     */
+    @Override
+    public synchronized void clearNamespace(String namespace) {
         deleteTree(dir(namespace));
     }
 
-    @Override public synchronized void clear() {
+    /**
+     * Clears all cached entries.
+     */
+    @Override
+    public synchronized void clear() {
         deleteTree(root);
     }
 
+    /**
+     * Deletes a cache directory and its contents.
+     */
     private void deleteTree(Path path) {
         if (!Files.exists(path)) return;
+
         try (Stream<Path> stream = Files.walk(path)) {
             stream.sorted(Comparator.reverseOrder()).forEach(p -> {
-                try { Files.deleteIfExists(p); }
-                catch (IOException e) {
+                try {
+                    Files.deleteIfExists(p);
+                } catch (IOException e) {
                     throw new CacheCodec.CacheException("Failed deleting " + p, e);
                 }
             });
@@ -129,7 +196,11 @@ public final class DiskCacheBackend implements CacheBackend {
         }
     }
 
-    @Override public void close() {
+    /**
+     * Clears and closes the cache backend.
+     */
+    @Override
+    public void close() {
         clear();
     }
 }
