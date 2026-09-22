@@ -9,82 +9,63 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class MemoryCacheBackend implements CacheBackend {
     private final Map<String, Map<String, byte[]>> data = new ConcurrentHashMap<>();
 
-    /**
-     * Gets or creates a cache namespace.
-     */
-    private Map<String, byte[]> namespace(String namespace) {
-        return data.computeIfAbsent(namespace, ignored -> new ConcurrentHashMap<>());
-    }
-
-    /**
-     * Gets a cached value.
-     */
     @Override
-    public byte[] get(String namespace, String key) {
-        byte[] value = namespace(namespace).get(key);
+    public synchronized byte[] get(String namespace, String key) {
+        Map<String, byte[]> entries = data.get(namespace);
+
+        byte[] value = entries == null ? null : entries.get(key);
+
         return value == null ? null : value.clone();
     }
 
-    /**
-     * Stores a cached value.
-     */
     @Override
-    public void put(String namespace, String key, byte[] value) {
-        namespace(namespace).put(key, value.clone());
+    public synchronized void put(String namespace, String key, byte[] value) {
+        data.computeIfAbsent(namespace, ignored -> new HashMap<>()).put(key, value.clone());
     }
 
-    /**
-     * Removes and returns a cached value.
-     */
     @Override
-    public byte[] remove(String namespace, String key) {
-        byte[] value = namespace(namespace).remove(key);
+    public synchronized byte[] remove(String namespace, String key) {
+        Map<String, byte[]> entries = data.get(namespace);
+
+        if (entries == null)
+            return null;
+
+        byte[] value = entries.remove(key);
+
+        if (entries.isEmpty())
+            data.remove(namespace);
+
         return value == null ? null : value.clone();
     }
 
-    /**
-     * Checks if a cached value exists.
-     */
     @Override
-    public boolean contains(String namespace, String key) {
-        return namespace(namespace).containsKey(key);
+    public synchronized boolean contains(String namespace, String key) {
+        Map<String, byte[]> entries = data.get(namespace);
+        return entries != null && entries.containsKey(key);
     }
 
-    /**
-     * Gets all keys in a namespace.
-     */
     @Override
-    public Set<String> keys(String namespace) {
-        return new HashSet<>(namespace(namespace).keySet());
+    public synchronized Set<String> keys(String namespace) {
+        Map<String, byte[]> entries = data.get(namespace);
+        return entries == null ? Collections.emptySet() : new HashSet<>(entries.keySet());
     }
 
-    /**
-     * Gets the number of entries in a namespace.
-     */
     @Override
-    public int size(String namespace) {
-        return namespace(namespace).size();
+    public synchronized int size(String namespace) {
+        Map<String, byte[]> entries = data.get(namespace);
+        return entries == null ? 0 : entries.size();
     }
 
-    /**
-     * Clears all entries in a namespace.
-     */
     @Override
-    public void clearNamespace(String namespace) {
-        namespace(namespace).clear();
+    public synchronized void clearNamespace(String namespace) {
+        data.remove(namespace);
     }
 
-    /**
-     * Clears all cached entries.
-     */
     @Override
-    public void clear() {
+    public synchronized void clear() {
         data.clear();
     }
 
-    /**
-     * Clears and closes the cache backend.
-     */
     @Override
     public void close() {
         clear();

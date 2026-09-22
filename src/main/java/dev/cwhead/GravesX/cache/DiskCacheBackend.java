@@ -4,6 +4,8 @@ import com.ranull.graves.Graves;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.net.URLEncoder;
+import java.net.URLDecoder;
 import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Stream;
@@ -12,7 +14,8 @@ import java.util.stream.Stream;
  * Stores cache data on disk.
  */
 public final class DiskCacheBackend implements CacheBackend {
-    private static final String CACHE_EXTENSION = ".gxcache";
+    private final String extension;
+    private final boolean debug;
 
     private final Graves plugin;
     private final Path root;
@@ -21,8 +24,14 @@ public final class DiskCacheBackend implements CacheBackend {
      * Creates the disk cache backend.
      */
     public DiskCacheBackend(Graves plugin) {
+        this(plugin, ".cache");
+    }
+
+    public DiskCacheBackend(Graves plugin, String directory) {
         this.plugin = plugin;
-        this.root = plugin.getDataFolder().toPath().resolve(".cache");
+        this.debug = DebugCacheCodec.enabled(plugin);
+        this.extension = debug ? ".gxrcache" : ".gxcache";
+        this.root = plugin.getDataFolder().toPath().resolve(directory);
         clear();
 
         try {
@@ -43,16 +52,18 @@ public final class DiskCacheBackend implements CacheBackend {
      * Gets the cache file name for a key.
      */
     private String fileName(String key) {
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(key.getBytes(StandardCharsets.UTF_8)) + CACHE_EXTENSION;
+        return (debug ? URLEncoder.encode(key, StandardCharsets.UTF_8)
+                : Base64.getUrlEncoder().withoutPadding().encodeToString(key.getBytes(StandardCharsets.UTF_8))) + extension;
     }
 
     /**
      * Gets the cache key from a file name.
      */
     private String keyFromFile(String file) {
-        String encoded = file.substring(0, file.length() - CACHE_EXTENSION.length());
+        String encoded = file.substring(0, file.length() - extension.length());
 
-        return new String(Base64.getUrlDecoder().decode(encoded), StandardCharsets.UTF_8);
+        return debug ? URLDecoder.decode(encoded, StandardCharsets.UTF_8)
+                : new String(Base64.getUrlDecoder().decode(encoded), StandardCharsets.UTF_8);
     }
 
     /**
@@ -138,7 +149,7 @@ public final class DiskCacheBackend implements CacheBackend {
         try (Stream<Path> stream = Files.list(directory)) {
             stream.filter(Files::isRegularFile)
                     .map(p -> p.getFileName().toString())
-                    .filter(n -> n.endsWith(CACHE_EXTENSION))
+                    .filter(n -> n.endsWith(extension))
                     .forEach(n -> {
                         try {
                             result.add(keyFromFile(n));

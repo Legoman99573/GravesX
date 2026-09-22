@@ -16,7 +16,7 @@ public enum CacheType {
     DISK,
 
     /**
-     * Stores cache data in the database.
+     * Disables caching and reads authoritative database rows directly.
      */
     DATABASE;
 

@@ -148,12 +148,20 @@ public class GraveManagementAPI {
     }
 
     /**
-     * Gets the grave type
+     * Looks up the existing grave in the configured storage, or returns null.
      *
      * @param uuid the uuid of the grave
      */
-    public Grave getGrave(@NotNull UUID uuid) {
-        return new Grave(uuid);
+    public @Nullable Grave getGrave(@NotNull UUID uuid) {
+        return plugin.getCacheManager().getGrave(uuid);
+    }
+
+    /**
+     * Persists direct addon edits to an existing grave and refreshes its cache.
+     * Returns false if the grave was removed; never inserts a replacement row.
+     */
+    public boolean saveGrave(@NotNull Grave grave) {
+        return plugin.getDataManager().saveGrave(grave);
     }
 
     /**
@@ -351,8 +359,17 @@ public class GraveManagementAPI {
      * @param timeProtection the remaining protection time in milliseconds; ignored when protection is disabled
      */
     public void setGraveProtection(@NotNull Grave grave, boolean protectedGrave, long timeProtection) {
+        boolean oldProtection = grave.getProtection();
+        long oldTime = grave.getTimeProtection();
         grave.setProtection(protectedGrave);
         grave.setTimeProtection(protectedGrave ? Math.max(timeProtection, 0L) : 0L);
+        try {
+            if (!saveGrave(grave)) throw new IllegalStateException("Grave no longer exists: " + grave.getUUID());
+        } catch (RuntimeException ex) {
+            grave.setProtection(oldProtection);
+            grave.setTimeProtection(oldTime);
+            throw ex;
+        }
     }
 
     /**
@@ -412,8 +429,16 @@ public class GraveManagementAPI {
             return false;
         }
 
+        ItemStack previous = inventory.getItem(slot);
         inventory.setItem(slot, itemStack.clone());
-        return true;
+        try {
+            if (saveGrave(grave)) return true;
+        } catch (RuntimeException ex) {
+            inventory.setItem(slot, previous);
+            throw ex;
+        }
+        inventory.setItem(slot, previous);
+        return false;
     }
 
     /**
@@ -432,8 +457,16 @@ public class GraveManagementAPI {
             return false;
         }
 
+        ItemStack previous = inventory.getItem(slot);
         inventory.setItem(slot, itemStack.clone());
-        return true;
+        try {
+            if (saveGrave(grave)) return true;
+        } catch (RuntimeException ex) {
+            inventory.setItem(slot, previous);
+            throw ex;
+        }
+        inventory.setItem(slot, previous);
+        return false;
     }
 
     /**

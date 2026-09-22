@@ -45,6 +45,8 @@ import java.io.*;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Graves extends JavaPlugin {
@@ -310,7 +312,7 @@ public class Graves extends JavaPlugin {
         }
 
         getLogger().info("Saving Grave inventories before shutting down...");
-        for (Grave grave : getCacheManager().getGraveMap().values()) {
+        for (Grave grave : getCacheManager().gravesToFlush()) {
             try {
                 getDataManager().updateGraveMainThread(grave, "inventory",
                         InventoryUtil.inventoryToString(grave.getInventory(), this));
@@ -477,32 +479,65 @@ public class Graves extends JavaPlugin {
         return getConfigManager().config();
     }
 
+    /** Starts a reload. Completion is logged only after database loading finishes. */
     public void reload() {
+        reloadAsync();
+    }
+
+    /**
+     * Reloads managers and waits asynchronously for all database loading tasks.
+     *
+     * @return completion after database cache application, or exceptional completion on failure
+     */
+    public CompletionStage<Void> reloadAsync() {
         if (!reloading.compareAndSet(false, true)) {
             getLogger().warning("Reload already in progress.");
-            return;
+            return CompletableFuture.failedFuture(
+                    new IllegalStateException("Reload already in progress."));
         }
 
         long started = System.currentTimeMillis();
         getLogger().info("==== Reloading " + getName() + " ====");
 
+        CompletableFuture<Void> result = new CompletableFuture<>();
+
         try {
             unloadAllForReload();
-
             loadAllAfterReload();
-
-            long took = System.currentTimeMillis() - started;
-            infoMessage(getName() + " reloaded. (" + took + "ms)");
-        } finally {
-            reloading.set(false);
+            dataManager.getLoadingCompletion().whenComplete((unused, error) -> {
+                try {
+                    if (error == null) {
+                        long took = System.currentTimeMillis() - started;
+                        infoMessage(getName() + " reloaded. (" + took + "ms)");
+                    } else {
+                        getLogger().severe("Reload failed while loading the database.");
+                        logStackTrace(error);
+                    }
+                } finally {
+                    reloading.set(false);
+                    if (error == null) result.complete(null);
+                    else result.completeExceptionally(error);
+                }
+            });
+        } catch (Throwable error) {
+            getLogger().severe("Reload failed: " + error.getMessage());
+            logStackTrace(error);
+            CompletionStage<Void> loading = dataManager == null
+                    ? CompletableFuture.completedFuture(null)
+                    : dataManager.getLoadingCompletion();
+            loading.whenComplete((unused, loadError) -> {
+                reloading.set(false);
+                result.completeExceptionally(error);
+            });
         }
+        return result.minimalCompletionStage();
     }
 
     private void unloadAllForReload() {
         try {
             if (cacheManager != null && dataManager != null) {
                 getLogger().info("Saving Grave inventories before reload...");
-                for (Grave grave : getCacheManager().getGraveMap().values()) {
+                for (Grave grave : getCacheManager().gravesToFlush()) {
                     try {
                         getDataManager().updateGraveMainThread(
                                 grave, "inventory", InventoryUtil.inventoryToString(grave.getInventory(), this)
@@ -663,7 +698,6 @@ public class Graves extends JavaPlugin {
 
         dataManager = new DataManager(this);
         cacheManager = new CacheManager(this);
-        dataManager.startLoading();
         importManager = new ImportManager(this);
         blockManager = new BlockManager(this);
         itemStackManager = new ItemStackManager(this);
@@ -740,6 +774,7 @@ public class Graves extends JavaPlugin {
             moduleManager.tryEnablePending();
             RegisterGraveProviders.bootstrapFromServices();
         });
+        dataManager.startLoading();
     }
 
     private void tryUnload(Object target, String label, String... methodNames) {

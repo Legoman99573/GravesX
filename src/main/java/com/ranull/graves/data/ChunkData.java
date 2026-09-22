@@ -99,6 +99,10 @@ public class ChunkData implements Serializable {
      *
      * @return The world of the chunk.
      */
+    public String getWorldName() {
+        return worldName;
+    }
+
     public World getWorld() {
         if (world == null && worldName != null) {
             world = org.bukkit.Bukkit.getWorld(worldName);

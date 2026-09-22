@@ -27,6 +27,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
+import dev.cwhead.GravesX.manager.db.PendingLoad;
 
 import static com.ranull.graves.manager.DataManager.Type.*;
 
@@ -72,6 +76,37 @@ public class DataManager {
      * Set once the plugin has begun shutting down.
      */
     private volatile boolean shuttingDown = false;
+    private volatile boolean storageReady;
+
+    public boolean isStorageReady() { return storageReady; }
+
+    /**
+     * DATABASE is the cache-disabled mode; no temporary database cache is used.
+     */
+    public boolean isCacheDisabled() {
+        return dev.cwhead.GravesX.cache.CacheType.fromString(
+                plugin.getConfig().getString("settings.cache.type", "NORMAL"))
+                == dev.cwhead.GravesX.cache.CacheType.DATABASE;
+    }
+
+    /**
+     * Table metadata only, not cached entity data.
+     */
+    public Map<String, EntityData.Type> getPersistentEntityTables() {
+        Map<String, EntityData.Type> tables = new LinkedHashMap<>();
+        tables.put("armorstand", EntityData.Type.ARMOR_STAND);
+        tables.put("itemframe", EntityData.Type.ITEM_FRAME);
+        tables.put("hologram", EntityData.Type.HOLOGRAM);
+        for (EntityData.Type entityType : List.of(EntityData.Type.FURNITURELIB,
+                EntityData.Type.FURNITUREENGINE, EntityData.Type.ITEMSADDER,
+                EntityData.Type.ORAXEN, EntityData.Type.NEXO, EntityData.Type.PLAYERNPC,
+                EntityData.Type.MANNEQUIN)) {
+            String table = entityDataTypeTable(entityType);
+            if (isIntegrationEnabled(table)) tables.put(table, entityType);
+        }
+        for (String table : customProviderKeysSnapshot) tables.put(table, EntityData.Type.CUSTOM);
+        return tables;
+    }
 
     /**
      * Dispatches a database write.
@@ -79,6 +114,10 @@ public class DataManager {
      * @param task the database write to run.
      */
     private void runAsyncDatabaseTask(Runnable task) {
+        if (isCacheDisabled()) {
+            task.run();
+            return;
+        }
         if (shuttingDown) {
             try {
                 task.run();
@@ -166,7 +205,6 @@ public class DataManager {
                 loadType(this.type);
                 if (testDatabaseConnection()) {
                     migrate();
-                    load();
                     keepConnectionAlive(); // If we don't enable this, connection will close or time out :/
                 } else {
                     plugin.getLogger().severe("Failed to connect to " + this.type + " database. Disabling plugin...");
@@ -177,7 +215,6 @@ public class DataManager {
                 loadType(Type.MSSQL);
                 if (testDatabaseConnection()) {
                     migrate();
-                    load();
                     keepConnectionAlive();
                 } else {
                     plugin.getLogger().severe("Failed to connect to " + this.type + " database. Disabling plugin...");
@@ -275,81 +312,118 @@ public class DataManager {
         load();
     }
 
-    private void load() {
-        try {
-            try {
-                RegisterGraveProviders.bootstrapFromServices();
-            } catch (Throwable ignored) {}
-            snapshotCustomProviders();
-        } catch (Throwable t) {
-            plugin.getLogger().severe("Failed while snapshotting GraveProviders (sync).");
-            plugin.logStackTrace(t);
-            customProviderSanitizedIds = Set.of();
-            customProviderKeysSnapshot = List.of();
-        }
+    private volatile PendingLoad pendingLoad;
 
-        final List<String> customProviderKeys = customProviderKeysSnapshot;
+    public CompletionStage<Void> getLoadingCompletion() {
+        PendingLoad load = pendingLoad;
+        return load == null ? CompletableFuture.completedFuture(null) : load.completion();
+    }
 
-        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
-            try {
-                loadTables();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
+    private void submitLoad(Consumer<Runnable> scheduler, Runnable task) {
+        PendingLoad load = pendingLoad;
+        if (load == null || load.isDone()) scheduler.accept(task);
+        else load.submit(scheduler, task);
+    }
 
-            loadGraveMap();
-            loadBlockMap();
-            loadEntityMap("armorstand", EntityData.Type.ARMOR_STAND);
-            loadEntityMap("itemframe", EntityData.Type.ITEM_FRAME);
-            loadHologramMap();
+    private void loadFailed(Throwable error) {
+        PendingLoad load = pendingLoad;
+        if (load != null && !load.isDone()) load.fail(error);
+    }
 
-            Map<String, EntityData.Type> integrationMap = new HashMap<>();
-            integrationMap.put("furniturelib", EntityData.Type.FURNITURELIB);
-            integrationMap.put("furnitureengine", EntityData.Type.FURNITUREENGINE);
-            integrationMap.put("itemsadder", EntityData.Type.ITEMSADDER);
-            integrationMap.put("oraxen", EntityData.Type.ORAXEN);
-            integrationMap.put("nexo", EntityData.Type.NEXO);
-            integrationMap.put("playernpc", EntityData.Type.PLAYERNPC);
-            integrationMap.put("mannequins", EntityData.Type.MANNEQUIN);
-
-            for (Map.Entry<String, EntityData.Type> entry : integrationMap.entrySet()) {
-                String integration = entry.getKey();
-                EntityData.Type type = entry.getValue();
-
-                if (!isIntegrationEnabled(integration)) continue;
-
-                try {
-                    createEntityDataMapTable(integration);
-                    loadEntityDataMap(integration, type);
-                } catch (Throwable t) {
-                    plugin.getLogger().severe("Failed initializing integration entity data map for: " + integration);
-                    plugin.logStackTrace(t);
-                }
-
-                if ("playernpc".equals(integration)) {
-                    try {
-                        plugin.getSchedulerManager().runTask(() -> {
-                            try {
-                                plugin.getIntegrationManager().getPlayerNPC().createCorpses();
-                            } catch (Throwable t) {
-                                plugin.getLogger().severe("PlayerNPC createCorpses failed.");
-                                plugin.logStackTrace(t);
-                            }
-                        });
-                    } catch (Throwable ignored) {}
-                }
-            }
-
-            for (String key : customProviderKeys) {
-                try {
-                    createEntityDataMapTable(key);
-                    loadEntityDataMap(key, EntityData.Type.CUSTOM);
-                } catch (Throwable t) {
-                    plugin.getLogger().severe("Failed initializing custom provider for key: " + key);
-                    plugin.logStackTrace(t);
-                }
+    private synchronized void load() {
+        if (pendingLoad != null && !pendingLoad.isDone()) return;
+        PendingLoad loading = new PendingLoad();
+        pendingLoad = loading;
+        loading.completion().whenComplete((unused, error) -> {
+            if (error != null) {
+                plugin.getLogger().severe("Database loading failed.");
+                plugin.logStackTrace(error);
             }
         });
+        try {
+            try {
+                try {
+                    RegisterGraveProviders.bootstrapFromServices();
+                } catch (Throwable ignored) {}
+                snapshotCustomProviders();
+            } catch (Throwable t) {
+                plugin.getLogger().severe("Failed while snapshotting GraveProviders (sync).");
+                loadFailed(t);
+                plugin.logStackTrace(t);
+                customProviderSanitizedIds = Set.of();
+                customProviderKeysSnapshot = List.of();
+            }
+
+            final List<String> customProviderKeys = customProviderKeysSnapshot;
+
+            submitLoad(task -> plugin.getSchedulerManager().runTaskAsynchronously(task), () -> {
+                try {
+                    loadTables();
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+
+                loadGraveMap();
+                loadBlockMap();
+                loadEntityMap("armorstand", EntityData.Type.ARMOR_STAND);
+                loadEntityMap("itemframe", EntityData.Type.ITEM_FRAME);
+                loadHologramMap();
+
+                Map<String, EntityData.Type> integrationMap = new HashMap<>();
+                integrationMap.put("furniturelib", EntityData.Type.FURNITURELIB);
+                integrationMap.put("furnitureengine", EntityData.Type.FURNITUREENGINE);
+                integrationMap.put("itemsadder", EntityData.Type.ITEMSADDER);
+                integrationMap.put("oraxen", EntityData.Type.ORAXEN);
+                integrationMap.put("nexo", EntityData.Type.NEXO);
+                integrationMap.put("playernpc", EntityData.Type.PLAYERNPC);
+                integrationMap.put("mannequins", EntityData.Type.MANNEQUIN);
+
+                for (Map.Entry<String, EntityData.Type> entry : integrationMap.entrySet()) {
+                    String integration = entry.getKey();
+                    EntityData.Type type = entry.getValue();
+
+                    if (!isIntegrationEnabled(integration)) continue;
+
+                    try {
+                        createEntityDataMapTable(integration);
+                        loadEntityDataMap(integration, type);
+                    } catch (Throwable t) {
+                        plugin.getLogger().severe("Failed initializing integration entity data map for: " + integration);
+                        loadFailed(t);
+                        plugin.logStackTrace(t);
+                    }
+
+                    if ("playernpc".equals(integration)) {
+                        try {
+                            submitLoad(task -> plugin.getSchedulerManager().runTask(task), () -> {
+                                try {
+                                    plugin.getIntegrationManager().getPlayerNPC().createCorpses();
+                                } catch (Throwable t) {
+                                    plugin.getLogger().severe("PlayerNPC createCorpses failed.");
+                                    loadFailed(t);
+                                    plugin.logStackTrace(t);
+                                }
+                            });
+                        } catch (Throwable ignored) {}
+                    }
+                }
+
+                for (String key : customProviderKeys) {
+                    try {
+                        createEntityDataMapTable(key);
+                        loadEntityDataMap(key, EntityData.Type.CUSTOM);
+                    } catch (Throwable t) {
+                        plugin.getLogger().severe("Failed initializing custom provider for key: " + key);
+                        loadFailed(t);
+                        plugin.logStackTrace(t);
+                    }
+                }
+            });
+        } catch (Throwable error) {
+            loading.fail(error);
+        } finally {
+            loading.finish();
+        }
     }
 
     /**
@@ -391,7 +465,7 @@ public class DataManager {
         setupBlockTable();
         setupHologramTable();
         setupEntityTables();
-        setupTempCacheTable();
+        storageReady = true;
     }
 
     /**
@@ -890,6 +964,11 @@ public class DataManager {
             chunkString = LocationUtil.chunkToString(location);
         }
 
+        if (isCacheDisabled()) {
+            ChunkData chunk = plugin.getCacheManager().getChunkMap().get(chunkString);
+            return chunk != null ? chunk : new ChunkData(location.getWorld().getName(), cx, cz);
+        }
+
         return plugin.getCacheManager().getChunkMap().computeIfAbsent(
                 chunkString,
                 k -> isFolia
@@ -904,6 +983,7 @@ public class DataManager {
      * @param chunkData the chunk data to remove.
      */
     public void removeChunkData(ChunkData chunkData) {
+        if (isCacheDisabled()) return;
         if (chunkData == null) return;
 
         World world = chunkData.getWorld();
@@ -1118,66 +1198,6 @@ public class DataManager {
     }
 
     /**
-     * Sets up the grave table in the database.
-     *
-     * @throws SQLException if an SQL error occurs.
-     */
-    /**
-     * Returns the physical temporary cache table name.
-     */
-    public String getTempCacheTableName() {
-        return getStoragePrefix() + "tempcache";
-    }
-
-    /**
-     * Creates the temporary cache table used by the DATABASE cache backend.
-     */
-    public void setupTempCacheTable() {
-        String table = getTempCacheTableName();
-        String sql = switch (type) {
-            case MSSQL -> "IF OBJECT_ID('" + table + "', 'U') IS NULL CREATE TABLE " + table
-                    + " (cache_namespace NVARCHAR(128) NOT NULL, cache_key NVARCHAR(512) NOT NULL, "
-                    + "cache_value VARBINARY(MAX) NOT NULL, updated_at BIGINT NOT NULL, "
-                    + "CONSTRAINT PK_" + table.replaceAll("[^A-Za-z0-9_]", "_")
-                    + " PRIMARY KEY (cache_namespace, cache_key))";
-            case POSTGRESQL -> "CREATE TABLE IF NOT EXISTS " + table
-                    + " (cache_namespace VARCHAR(128) NOT NULL, cache_key VARCHAR(512) NOT NULL, "
-                    + "cache_value BYTEA NOT NULL, updated_at BIGINT NOT NULL, "
-                    + "PRIMARY KEY (cache_namespace, cache_key))";
-            case H2 -> "CREATE TABLE IF NOT EXISTS " + table
-                    + " (cache_namespace VARCHAR(128) NOT NULL, cache_key VARCHAR(512) NOT NULL, "
-                    + "cache_value BLOB NOT NULL, updated_at BIGINT NOT NULL, "
-                    + "PRIMARY KEY (cache_namespace, cache_key))";
-            default -> "CREATE TABLE IF NOT EXISTS " + table
-                    + " (cache_namespace VARCHAR(128) NOT NULL, cache_key VARCHAR(512) NOT NULL, "
-                    + "cache_value LONGBLOB NOT NULL, updated_at BIGINT NOT NULL, "
-                    + "PRIMARY KEY (cache_namespace, cache_key))";
-        };
-
-        try (Connection connection = getConnection();
-             Statement statement = connection.createStatement()) {
-            statement.executeUpdate(sql);
-        } catch (SQLException exception) {
-            plugin.getLogger().severe("Failed to create temporary cache table " + table);
-            plugin.logStackTrace(exception);
-        }
-    }
-
-    /**
-     * Clears all disposable DATABASE cache entries.
-     */
-    public void clearTempCacheTable() {
-        String sql = "DELETE FROM " + getTempCacheTableName();
-        try (Connection connection = getConnection();
-             Statement statement = connection.createStatement()) {
-            statement.executeUpdate(sql);
-        } catch (SQLException exception) {
-            plugin.getLogger().severe("Failed to clear temporary cache table " + getTempCacheTableName());
-            plugin.logStackTrace(exception);
-        }
-    }
-
-    /**
      * Produces the same key format used by getChunkData(Location).
      */
     private String cacheChunkKey(Location location) {
@@ -1300,7 +1320,7 @@ public class DataManager {
                                 + "death_reason VARCHAR(255)"
                                 + ");";
             };
-            executeUpdate(create, new Object[0]);
+            executeUpdate(create, new Object[0], true);
         }
 
         addColumnIfNotExists(name, "uuid", "VARCHAR(255) UNIQUE");
@@ -1475,7 +1495,7 @@ public class DataManager {
                             + "replace_data " + replaceDataType
                             + ");";
 
-            executeUpdate(createTableQuery, new Object[0]);
+            executeUpdate(createTableQuery, new Object[0], true);
         }
 
         addColumnIfNotExists(name, "location", "VARCHAR(255)");
@@ -1540,7 +1560,7 @@ public class DataManager {
             if (createTableQuery == null) {
                 return;
             }
-            executeUpdate(createTableQuery, new Object[0]);
+            executeUpdate(createTableQuery, new Object[0], true);
         }
 
         String varcharDef = switch (type) {
@@ -1579,7 +1599,7 @@ public class DataManager {
 
             // Run backfill shortly after schema migrations to avoid startup races where
             // the UPDATE executes before the backend column is actually added.
-            plugin.getSchedulerManager().runTaskLaterAsynchronously(() -> {
+            submitLoad(task -> plugin.getSchedulerManager().runTaskLaterAsynchronously(task, 40L), () -> {
                 List<String> columns = getColumnList(finalName);
                 if (!columns.contains("backend")) {
                     plugin.debugMessage(
@@ -1590,13 +1610,14 @@ public class DataManager {
                 }
 
                 try {
-                    executeUpdateMainThread(finalBackfillBackend, new Object[0]);
+                    executeUpdate(finalBackfillBackend, new Object[0], true);
                 } catch (SQLException exception) {
+                    loadFailed(exception);
                     plugin.getLogger().severe("Error executing hologram backend backfill");
                     plugin.getLogger().severe("Failed SQL statement: " + finalBackfillBackend);
                     plugin.logStackTrace(exception);
                 }
-            }, 40L);
+            });
         }
     }
 
@@ -1639,7 +1660,7 @@ public class DataManager {
             if (createTableQuery == null) {
                 return;
             }
-            executeUpdate(createTableQuery, new Object[0]);
+            executeUpdate(createTableQuery, new Object[0], true);
         }
 
         String varcharDef = switch (type) {
@@ -1662,6 +1683,7 @@ public class DataManager {
      * Loads the grave map from the database.
      */
     public void loadGraveMap() {
+        if (isCacheDisabled()) return;
         plugin.getCacheManager().getGraveMap().clear();
         plugin.getLogger().info("Loading grave maps...");
         String query = "SELECT * FROM " + getStoragePrefix() + "grave;";
@@ -1685,6 +1707,7 @@ public class DataManager {
                 plugin.getLogger().info("Loaded " + graveCount + " grave maps into cache.");
             }
         } catch (SQLException exception) {
+            loadFailed(exception);
             String sqlState = exception.getSQLState();
             String message = exception.getMessage() != null ? exception.getMessage().toLowerCase(java.util.Locale.ROOT) : "";
 
@@ -1701,6 +1724,7 @@ public class DataManager {
                 plugin.logStackTrace(exception);
             }
         } catch (NullPointerException exception) {
+            loadFailed(exception);
             plugin.getLogger().severe("A null pointer exception occurred while loading Grave Map");
             plugin.logStackTrace(exception);
         }
@@ -1713,9 +1737,10 @@ public class DataManager {
      *   using plugin.getSchedulerManager().execute(anchorLocation, ...).
      */
     public void loadBlockMap() {
+        if (isCacheDisabled()) return;
         String query = "SELECT * FROM " + getStoragePrefix() + "block;";
 
-        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
+        submitLoad(task -> plugin.getSchedulerManager().runTaskAsynchronously(task), () -> {
             plugin.getLogger().info("Loading Block Map cache...");
 
             class BlockWork {
@@ -1769,13 +1794,14 @@ public class DataManager {
 
                     Location anchor = group.get(0).loc.clone();
 
-                    plugin.getSchedulerManager().execute(anchor, () -> {
+                    submitLoad(task -> plugin.getSchedulerManager().execute(anchor, task), () -> {
                         for (BlockWork w : group) {
                             try {
                                 ChunkData cachedChunk = getChunkData(w.loc);
                                 cachedChunk.addBlockData(w.data);
                                 saveChunkCache(w.loc, cachedChunk);
                             } catch (Throwable t) {
+                                loadFailed(t);
                                 plugin.getLogger().warning("Failed to cache block at " + w.loc + ": " + t.getMessage());
                             }
                         }
@@ -1785,6 +1811,7 @@ public class DataManager {
                 plugin.getLogger().info("Queued " + scheduledCount + " Blocks into the Block Map Cache (batched by chunk).");
 
             } catch (SQLException exception) {
+                loadFailed(exception);
                 String sqlState = exception.getSQLState();
                 String message = exception.getMessage() != null
                         ? exception.getMessage().toLowerCase(java.util.Locale.ROOT)
@@ -1813,9 +1840,10 @@ public class DataManager {
      * @param type  the type of entity data.
      */
     private void loadEntityMap(String table, EntityData.Type type) {
+        if (isCacheDisabled()) return;
         String query = "SELECT * FROM " + getStoragePrefix() + table + ";";
 
-        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
+        submitLoad(task -> plugin.getSchedulerManager().runTaskAsynchronously(task), () -> {
             plugin.getLogger().info("Loading Entity Map Cache for " + table + "...");
             int entityCount = 0;
 
@@ -1864,6 +1892,7 @@ public class DataManager {
                     plugin.getLogger().info("Loaded " + entityCount + " entities into Entity Map Cache for " + getStoragePrefix() + table + ".");
                 }
             } catch (SQLException exception) {
+                loadFailed(exception);
                 plugin.getLogger().severe("Error occurred while loading Entity Map for " + table);
                 plugin.logStackTrace(exception);
             }
@@ -1874,9 +1903,10 @@ public class DataManager {
      * Loads the hologram map from the database.
      */
     public void loadHologramMap() {
+        if (isCacheDisabled()) return;
         String query = "SELECT * FROM " + getStoragePrefix() + "hologram;";
 
-        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
+        submitLoad(task -> plugin.getSchedulerManager().runTaskAsynchronously(task), () -> {
             plugin.getLogger().info("Loading Holograms into Hologram Map Cache...");
             int hologramCount = 0;
 
@@ -1943,6 +1973,7 @@ public class DataManager {
                 }
 
             } catch (SQLException exception) {
+                loadFailed(exception);
                 plugin.getLogger().severe("Error occurred while loading Hologram Map");
                 plugin.logStackTrace(exception);
             }
@@ -1988,8 +2019,9 @@ public class DataManager {
         }
 
         try {
-            executeUpdate(createTableQuery, new Object[0]);
+            executeUpdate(createTableQuery, new Object[0], true);
         } catch (SQLException e) {
+            loadFailed(e);
             plugin.getLogger().severe("Failed to create entity data map table: " + physicalTable);
             plugin.logStackTrace(e);
         }
@@ -2016,10 +2048,11 @@ public class DataManager {
      * @param type  the type of entity data.
      */
     private void loadEntityDataMap(String table, EntityData.Type type) {
+        if (isCacheDisabled()) return;
         String physicalTable = getStoragePrefix() + table;
         String query = "SELECT location, uuid_entity, uuid_grave FROM " + physicalTable + ";";
 
-        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
+        submitLoad(task -> plugin.getSchedulerManager().runTaskAsynchronously(task), () -> {
             plugin.getLogger().info("Loading Entity Data Map Cache for " + physicalTable + "...");
             int entityCount = 0;
 
@@ -2068,6 +2101,7 @@ public class DataManager {
                     plugin.getLogger().info("Loaded " + entityCount + " entities into Entity Data Map Cache for " + physicalTable + ".");
                 }
             } catch (SQLException | NullPointerException exception) {
+                loadFailed(exception);
                 plugin.getLogger().severe("Error occurred while loading Entity Data Map for " + physicalTable);
                 plugin.logStackTrace(exception);
             }
@@ -2086,14 +2120,18 @@ public class DataManager {
                 && plugin.getVersionManager().isFolia()) {
 
             plugin.getSchedulerManager().execute(loc, () -> {
-                ChunkData cachedChunk = getChunkData(loc);
-                cachedChunk.addBlockData(blockData);
-                saveChunkCache(loc, cachedChunk);
+                if (!isCacheDisabled()) {
+                    ChunkData cachedChunk = getChunkData(loc);
+                    cachedChunk.addBlockData(blockData);
+                    saveChunkCache(loc, cachedChunk);
+                }
             });
         } else {
-            ChunkData cachedChunk = Objects.requireNonNull(getChunkData(loc));
-            cachedChunk.addBlockData(blockData);
-            saveChunkCache(loc, cachedChunk);
+            if (!isCacheDisabled()) {
+                ChunkData cachedChunk = Objects.requireNonNull(getChunkData(loc));
+                cachedChunk.addBlockData(blockData);
+                saveChunkCache(loc, cachedChunk);
+            }
         }
 
         String query =
@@ -2131,10 +2169,12 @@ public class DataManager {
         }
 
         plugin.getSchedulerManager().execute(location, () -> {
-            ChunkData chunkData = getChunkData(location);
-            if (chunkData != null) {
-                chunkData.removeBlockData(location);
-                saveChunkCache(location, chunkData);
+            if (!isCacheDisabled()) {
+                ChunkData chunkData = getChunkData(location);
+                if (chunkData != null) {
+                    chunkData.removeBlockData(location);
+                    saveChunkCache(location, chunkData);
+                }
             }
         });
 
@@ -2167,9 +2207,11 @@ public class DataManager {
         }
 
         plugin.getSchedulerManager().execute(loc, () -> {
-            ChunkData cachedChunk = getChunkData(loc);
-            cachedChunk.addEntityData(hologramData);
-            saveChunkCache(loc, cachedChunk);
+            if (!isCacheDisabled()) {
+                ChunkData cachedChunk = getChunkData(loc);
+                cachedChunk.addEntityData(hologramData);
+                saveChunkCache(loc, cachedChunk);
+            }
             plugin.getCacheManager().addEntityData(hologramData);
         });
 
@@ -2259,9 +2301,11 @@ public class DataManager {
                         HologramData hologramData = new HologramData(location, uuidEntity, grave.getUUID(), line, backend);
 
                         plugin.getSchedulerManager().execute(location, () -> {
-                            ChunkData cachedChunk = getChunkData(location);
-                            cachedChunk.removeEntityData(hologramData);
-                            saveChunkCache(location, cachedChunk);
+                            if (!isCacheDisabled()) {
+                                ChunkData cachedChunk = getChunkData(location);
+                                cachedChunk.removeEntityData(hologramData);
+                                saveChunkCache(location, cachedChunk);
+                            }
                             plugin.getCacheManager().removeEntityData(hologramData);
                         });
                         scheduledRemovals++;
@@ -2295,9 +2339,11 @@ public class DataManager {
         }
 
         plugin.getSchedulerManager().execute(loc, () -> {
-            ChunkData cachedChunk = getChunkData(loc);
-            cachedChunk.addEntityData(entityData);
-            saveChunkCache(loc, cachedChunk);
+            if (!isCacheDisabled()) {
+                ChunkData cachedChunk = getChunkData(loc);
+                cachedChunk.addEntityData(entityData);
+                saveChunkCache(loc, cachedChunk);
+            }
             plugin.getCacheManager().addEntityData(entityData);
         });
 
@@ -2346,9 +2392,11 @@ public class DataManager {
                                 Grave grave = plugin.getCacheManager().getGrave(entityData.getUUIDGrave());
                                 plugin.getHologramManager().removeHologram(grave);
                             }
-                            ChunkData cachedChunk = getChunkData(loc);
-                            cachedChunk.removeEntityData(entityData);
-                            saveChunkCache(loc, cachedChunk);
+                            if (!isCacheDisabled()) {
+                                ChunkData cachedChunk = getChunkData(loc);
+                                cachedChunk.removeEntityData(entityData);
+                                saveChunkCache(loc, cachedChunk);
+                            }
                             plugin.getCacheManager().removeEntityData(entityData);
                         });
                     } else {
@@ -2432,14 +2480,6 @@ public class DataManager {
             deathLoc = grave.getLocationDeath();
         } catch (Throwable ignored) {}
 
-        if (deathLoc != null && deathLoc.getWorld() != null) {
-            Location finalDeathLoc = deathLoc;
-            plugin.getSchedulerManager().execute(finalDeathLoc, () ->
-                    plugin.getCacheManager().getGraveMap().put(grave.getUUID(), grave)
-            );
-        } else {
-            plugin.getCacheManager().getGraveMap().put(grave.getUUID(), grave);
-        }
         String query =
                 "INSERT INTO " + getStoragePrefix() + "grave "
                         + "(uuid, owner_type, owner_name, owner_name_display, owner_uuid, owner_texture, owner_texture_signature, "
@@ -2448,22 +2488,43 @@ public class DataManager {
                         + "time_alive, time_protection, time_creation, permissions, provider_id, death_reason) "
                         + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
+        Object[] parameters = graveParameters(grave);
+
+        try {
+            executeUpdate(query, parameters, true);
+        } catch (SQLException ex) {
+            throw new CacheCodec.CacheException("Failed to create grave", ex);
+        }
+        if (!isCacheDisabled()) {
+            if (deathLoc != null && deathLoc.getWorld() != null) {
+                Location finalDeathLoc = deathLoc;
+                plugin.getSchedulerManager().execute(finalDeathLoc, () ->
+                        plugin.getCacheManager().getGraveMap().put(grave.getUUID(), grave)
+                );
+            } else {
+                plugin.getCacheManager().getGraveMap().put(grave.getUUID(), grave);
+            }
+        }
+    }
+
+    private Object[] graveParameters(Grave grave) {
+        Location deathLoc = grave.getLocationDeath();
         String providerId = null;
         try {
             providerId = grave.getProviderId();
         } catch (Throwable ignored) {}
 
-        Object[] parameters = new Object[] {
+        return new Object[] {
                 grave.getUUID(),
                 grave.getOwnerType(),
-                grave.getOwnerName() != null ? grave.getOwnerName().replace("'", "''") : null,
-                grave.getOwnerNameDisplay() != null ? grave.getOwnerNameDisplay().replace("'", "''") : null,
+                grave.getOwnerName(),
+                grave.getOwnerNameDisplay(),
                 grave.getOwnerUUID(),
-                grave.getOwnerTexture() != null ? grave.getOwnerTexture().replace("'", "''") : null,
-                grave.getOwnerTextureSignature() != null ? grave.getOwnerTextureSignature().replace("'", "''") : null,
+                grave.getOwnerTexture(),
+                grave.getOwnerTextureSignature(),
                 grave.getKillerType(),
-                grave.getKillerName() != null ? grave.getKillerName().replace("'", "''") : null,
-                grave.getKillerNameDisplay() != null ? grave.getKillerNameDisplay().replace("'", "''") : null,
+                grave.getKillerName(),
+                grave.getKillerNameDisplay(),
                 grave.getKillerUUID(),
                 deathLoc != null ? LocationUtil.locationToString(deathLoc) : null,
                 grave.getYaw(),
@@ -2480,17 +2541,47 @@ public class DataManager {
                         ? StringUtils.join(grave.getPermissionList(), "|")
                         : null,
                 providerId,
-                grave.getDeathCause() != null ? grave.getDeathCause() : null
+                grave.getDeathCause()
         };
 
-        runAsyncDatabaseTask(() -> {
-            try {
-                executeUpdate(query, parameters);
-            } catch (SQLException e) {
-                plugin.getLogger().severe("Failed to add grave");
-                plugin.logStackTrace(e);
-            }
-        });
+    }
+
+    public boolean saveGrave(Grave grave) {
+        if (grave == null || !writeGraveRow(grave))
+            return false;
+
+        if (!isCacheDisabled())
+            plugin.getCacheManager().saveGrave(grave);
+
+        return true;
+    }
+
+    public void saveGraveDirect(Grave grave) {
+        if (isCacheDisabled() && grave != null)
+            writeGraveRow(grave);
+    }
+
+    private boolean writeGraveRow(Grave grave) {
+        Object[] insert = graveParameters(grave);
+        Object[] parameters = new Object[insert.length];
+        System.arraycopy(insert, 1, parameters, 0, insert.length - 1);
+        parameters[parameters.length - 1] = insert[0];
+        try {
+            int changed = executeUpdate("UPDATE " + getStoragePrefix() + "grave SET "+
+                    "owner_type = ?, owner_name = ?, owner_name_display = ?, owner_uuid = ?, owner_texture = ?, owner_texture_signature = ?, killer_type = ?, killer_name = ?, killer_name_display = ?, killer_uuid = ?, location_death = ?, yaw = ?, pitch = ?, inventory = ?, equipment = ?, experience = ?, protection = ?, is_abandoned = ?, time_alive = ?, time_protection = ?, time_creation = ?, permissions = ?, provider_id = ?, death_reason = ? WHERE uuid = ?", parameters, true);
+            return changed > 0 || graveRowExists(grave.getUUID());
+        } catch (SQLException ex) {
+            throw new CacheCodec.CacheException("Failed saving grave to persistent database", ex);
+        }
+    }
+
+    private boolean graveRowExists(UUID uuid) throws SQLException {
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                     "SELECT 1 FROM " + getStoragePrefix() + "grave WHERE uuid = ?")) {
+            statement.setString(1, uuid.toString());
+            try (ResultSet rows = statement.executeQuery()) { return rows.next(); }
+        }
     }
 
     /**
@@ -2503,7 +2594,8 @@ public class DataManager {
     }
 
     public void removeGrave(UUID uuid) {
-        Grave grave = plugin.getCacheManager().getGraveMap().remove(uuid);
+        Grave grave = isCacheDisabled() ? plugin.getCacheManager().getGrave(uuid)
+                : plugin.getCacheManager().getGraveMap().remove(uuid);
 
         if (grave != null) {
             Location deathLoc = grave.getLocationDeath();
@@ -2541,6 +2633,7 @@ public class DataManager {
      * @param integer the new integer value for the column.
      */
     public void updateGrave(Grave grave, String column, int integer) {
+        plugin.getCacheManager().saveGrave(grave);
         String query = "UPDATE " + getStoragePrefix() + "grave SET " + column + " = ? WHERE uuid = ?";
         Object[] parameters = new Object[] { integer, grave.getUUID() };
 
@@ -2562,6 +2655,7 @@ public class DataManager {
      * @param string the new value for the column.
      */
     public void updateGrave(Grave grave, String column, String string) {
+        plugin.getCacheManager().saveGrave(grave);
         String query = "UPDATE " + getStoragePrefix() + "grave SET " + column + " = ? WHERE uuid = ?";
         Object[] parameters = new Object[] { string, grave.getUUID() };
 
@@ -2584,6 +2678,7 @@ public class DataManager {
      */
     @ApiStatus.Experimental
     public void updateGraveMainThread(Grave grave, String column, String string) {
+        plugin.getCacheManager().saveGrave(grave);
         String query = "UPDATE " + getStoragePrefix() + "grave SET " + column + " = ? WHERE uuid = ?";
         Object[] parameters = new Object[] { string, grave.getUUID() };
 
@@ -2807,12 +2902,17 @@ public class DataManager {
      * @param parameters the parameters for the SQL statement.
      * @throws SQLException if a database access error occurs.
      */
-    private void executeUpdate(String sql, Object[] parameters) throws SQLException {
+    private int executeUpdate(String sql, Object[] parameters) throws SQLException {
+        return executeUpdate(sql, parameters, false);
+    }
+
+    private int executeUpdate(String sql, Object[] parameters, boolean strict) throws SQLException {
         try (Connection connection = getConnection()) {
             if (connection == null) {
+                if (strict || isCacheDisabled()) throw new SQLException("Database connection unavailable");
                 plugin.getLogger().severe("Error executing SQL update: connection is null");
                 plugin.getLogger().severe("Failed SQL statement: " + sql);
-                return;
+                return 0;
             }
 
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -2860,9 +2960,10 @@ public class DataManager {
                     }
                 }
 
-                statement.executeUpdate();
+                return statement.executeUpdate();
             }
         } catch (SQLException exception) {
+            if (strict || isCacheDisabled()) throw exception;
             String sqlState = exception.getSQLState();
             String message = exception.getMessage() != null
                     ? exception.getMessage().toLowerCase(java.util.Locale.ROOT)
@@ -2883,6 +2984,7 @@ public class DataManager {
                 plugin.logStackTrace(exception);
             }
         }
+        return 0;
     }
 
     /**
@@ -2989,121 +3091,6 @@ public class DataManager {
         } catch (SQLException e) {
             plugin.getLogger().severe("Failed to connect to " + this.type + " database: " + e.getMessage());
             return false;
-        }
-    }
-
-    /**
-     * Stores or updates a temporary cache entry.
-     */
-    public void putTempCache(String namespace, String key, byte[] value) {
-        long updatedAt = System.currentTimeMillis();
-
-        switch (getType()) {
-            case "MYSQL":
-            case "MARIADB":
-                putTempCacheMySql(namespace, key, value, updatedAt);
-                break;
-
-            case "POSTGRESQL":
-                putTempCachePostgreSql(namespace, key, value, updatedAt);
-                break;
-
-            case "H2":
-                putTempCacheH2(namespace, key, value, updatedAt);
-                break;
-
-            case "MSSQL":
-                putTempCacheMsSql(namespace, key, value, updatedAt);
-                break;
-
-            default:
-                throw new IllegalStateException("Unsupported database type: " + getType());
-        }
-    }
-
-    /**
-     * Stores a temporary cache entry using MySQL or MariaDB.
-     */
-    private void putTempCacheMySql(String namespace, String key, byte[] value, long updatedAt) {
-
-        String sql = "INSERT INTO " + getTempCacheTableName()
-                + " (cache_namespace, cache_key, cache_value, updated_at) "
-                + "VALUES (?, ?, ?, ?) "
-                + "ON DUPLICATE KEY UPDATE "
-                + "cache_value = VALUES(cache_value), "
-                + "updated_at = VALUES(updated_at)";
-
-        executeTempCacheUpsert(sql, namespace, key, value, updatedAt);
-    }
-
-    /**
-     * Stores a temporary cache entry using PostgreSQL.
-     */
-    private void putTempCachePostgreSql(String namespace, String key, byte[] value, long updatedAt) {
-
-        String sql = "INSERT INTO " + getTempCacheTableName()
-                + " (cache_namespace, cache_key, cache_value, updated_at) "
-                + "VALUES (?, ?, ?, ?) "
-                + "ON CONFLICT (cache_namespace, cache_key) "
-                + "DO UPDATE SET "
-                + "cache_value = EXCLUDED.cache_value, "
-                + "updated_at = EXCLUDED.updated_at";
-
-        executeTempCacheUpsert(sql, namespace, key, value, updatedAt);
-    }
-
-    /**
-     * Stores a temporary cache entry using H2.
-     */
-    private void putTempCacheH2(String namespace, String key, byte[] value, long updatedAt) {
-
-        String sql = "MERGE INTO " + getTempCacheTableName()
-                + " (cache_namespace, cache_key, cache_value, updated_at) "
-                + "KEY (cache_namespace, cache_key) "
-                + "VALUES (?, ?, ?, ?)";
-
-        executeTempCacheUpsert(sql, namespace, key, value, updatedAt);
-    }
-
-    /**
-     * Stores a temporary cache entry using MSSQL.
-     */
-    private void putTempCacheMsSql(String namespace, String key, byte[] value, long updatedAt) {
-
-        String table = getTempCacheTableName();
-
-        String sql = "MERGE INTO " + table + " AS target "
-                + "USING (VALUES (?, ?, ?, ?)) "
-                + "AS source (cache_namespace, cache_key, cache_value, updated_at) "
-                + "ON target.cache_namespace = source.cache_namespace "
-                + "AND target.cache_key = source.cache_key "
-                + "WHEN MATCHED THEN UPDATE SET "
-                + "cache_value = source.cache_value, "
-                + "updated_at = source.updated_at "
-                + "WHEN NOT MATCHED THEN INSERT "
-                + "(cache_namespace, cache_key, cache_value, updated_at) "
-                + "VALUES (source.cache_namespace, source.cache_key, "
-                + "source.cache_value, source.updated_at);";
-
-        executeTempCacheUpsert(sql, namespace, key, value, updatedAt);
-    }
-
-    /**
-     * Executes a temporary cache upsert.
-     */
-    private void executeTempCacheUpsert(String sql, String namespace, String key, byte[] value, long updatedAt) {
-
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-
-            statement.setString(1, namespace);
-            statement.setString(2, key);
-            statement.setBytes(3, value);
-            statement.setLong(4, updatedAt);
-            statement.executeUpdate();
-
-        } catch (SQLException e) {
-            throw new CacheCodec.CacheException("Failed writing database cache", e);
         }
     }
 

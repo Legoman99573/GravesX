@@ -253,10 +253,16 @@ public class Grave implements InventoryHolder, Serializable {
     }
 
     /**
-     * Folia-friendly accessor for the raw serialized location data.
-     * <p>
-     * Use this to schedule region-bound tasks with your scheduler before touching the world.
-     * </p>
+     * Sets the death location for the grave.
+     *
+     * @param data The death location to set.
+     */
+    public void setLocationDeathData(LocationData data) {
+        this.locationDeath = data;
+    }
+
+    /**
+     * Gets the raw serialized location data.
      *
      * @return the underlying {@link LocationData}, or {@code null} if unset.
      */

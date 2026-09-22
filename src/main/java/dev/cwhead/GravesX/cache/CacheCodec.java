@@ -9,16 +9,25 @@ import org.bukkit.util.io.BukkitObjectInputStream;
 import org.bukkit.util.io.BukkitObjectOutputStream;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Serializes and deserializes cached values.
  */
 public class CacheCodec {
+    private final Graves plugin;
+    private final boolean debug;
+
+    public boolean isDebugEnabled() {
+        return debug;
+    }
 
     /**
      * Creates a cache codec.
      */
     public CacheCodec(Graves plugin) {
+        this.plugin = plugin;
+        this.debug = DebugCacheCodec.enabled(plugin);
     }
 
     /**
@@ -26,6 +35,9 @@ public class CacheCodec {
      */
     public byte[] encode(Object value) {
         if (value == null) return null;
+        if (debug)
+            return DebugCacheCodec.write(value).getBytes(StandardCharsets.UTF_8);
+
         try {
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
             try (BukkitObjectOutputStream out = new BukkitObjectOutputStream(bytes)) {
@@ -59,12 +71,26 @@ public class CacheCodec {
      */
     public Object decode(byte[] data) {
         if (data == null) return null;
+        if (DebugCacheCodec.isText(data)) {
+            Object value = DebugCacheCodec.read(new String(data, StandardCharsets.UTF_8));
+            if (value instanceof Grave grave && plugin.getCacheManager() != null) {
+                Grave active = plugin.getCacheManager().getViewedGrave(grave.getUUID());
+
+                if (active != null)
+                    return active;
+            }
+            return value;
+        }
         try (BukkitObjectInputStream in =
                      new BukkitObjectInputStream(new ByteArrayInputStream(data))) {
             boolean graveEnvelope = in.readBoolean();
             Object value = in.readObject();
 
             if (graveEnvelope && value instanceof Grave grave) {
+                Grave active = plugin.getCacheManager().getViewedGrave(grave.getUUID());
+                if (active != null)
+                    return active;
+
                 int size = in.readInt();
                 if (size >= 0) {
                     int inventorySize = Math.max(9, ((size + 8) / 9) * 9);

@@ -861,11 +861,23 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
                     + "Reloading " + plugin.getName() + "...");
 
             final long start = System.nanoTime();
-            plugin.reload();
-            final long tookMs = (System.nanoTime() - start) / 1_000_000L;
-
-            commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
-                    + plugin.getName() + " reloaded. " + ChatColor.DARK_GRAY + "(" + tookMs + "ms)");
+            plugin.reloadAsync().whenComplete((unused, error) -> {
+                Runnable notifySender = () -> {
+                    if (error != null) {
+                        commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
+                                + "Reload failed or could not start. Check the server log for details.");
+                        return;
+                    }
+                    final long tookMs = (System.nanoTime() - start) / 1_000_000L;
+                    commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
+                            + plugin.getName() + " reloaded. " + ChatColor.DARK_GRAY + "(" + tookMs + "ms)");
+                };
+                if (commandSender instanceof Player player) {
+                    plugin.getSchedulerManager().execute(player, notifySender);
+                } else {
+                    plugin.getSchedulerManager().runTask(notifySender);
+                }
+            });
         } else {
             plugin.getEntityManager().sendMessage("message.permission-denied", (Player) commandSender);
         }

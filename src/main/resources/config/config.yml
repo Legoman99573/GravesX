@@ -145,8 +145,10 @@ settings:
   cache:
     # NORMAL: Stores cached data in memory (Uses available RAM. This option is highly recommended)
     # DISK: Stores cached data in the .cache directory. (Not recommended for HardDrives as this may cause server lag)
-    # DATABASE: Stores cached data in the configured database. (Will use the configured database storage configured. Recommended for those who are using the database locally as external databases with long latency may cause problems)
+    # DATABASE: Disables caching. Reads the existing grave/block/entity tables directly.
     type: NORMAL
+    # DISK/DATABASE only: write readable raw cache values instead of binary/Base64 payloads.
+    debug: false
 
   #########
   # Debug #
