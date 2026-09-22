@@ -23,7 +23,8 @@ public class ChunkData implements Serializable {
      * This {@link World} object represents the Minecraft world where the grave is situated.
      * </p>
      */
-    private final World world;
+    private transient World world;
+    private final String worldName;
 
     /**
      * The x-coordinate of the grave's location.
@@ -66,6 +67,7 @@ public class ChunkData implements Serializable {
      */
     public ChunkData(Location location) {
         this.world = location.getWorld();
+        this.worldName = this.world != null ? this.world.getName() : null;
         this.x = location.getBlockX() >> 4;
         this.z = location.getBlockZ() >> 4;
         this.blockDataMap = new HashMap<>();
@@ -84,6 +86,7 @@ public class ChunkData implements Serializable {
      * @param chunkZ    the chunk Z coordinate
      */
     public ChunkData(String worldName, int chunkX, int chunkZ) {
+        this.worldName = worldName;
         this.world = org.bukkit.Bukkit.getWorld(worldName);
         this.x = chunkX;
         this.z = chunkZ;
@@ -96,7 +99,14 @@ public class ChunkData implements Serializable {
      *
      * @return The world of the chunk.
      */
+    public String getWorldName() {
+        return worldName;
+    }
+
     public World getWorld() {
+        if (world == null && worldName != null) {
+            world = org.bukkit.Bukkit.getWorld(worldName);
+        }
         return world;
     }
 
@@ -133,7 +143,8 @@ public class ChunkData implements Serializable {
      * @return True if the chunk is loaded, false otherwise.
      */
     public boolean isLoaded() {
-        return world != null && world.isChunkLoaded(x, z);
+        World resolved = getWorld();
+        return resolved != null && resolved.isChunkLoaded(x, z);
     }
 
     /**
@@ -142,7 +153,7 @@ public class ChunkData implements Serializable {
      * @return The location of the chunk.
      */
     public Location getLocation() {
-        return new Location(world, (x << 4), 0, (z << 4));
+        return new Location(getWorld(), (x << 4), 0, (z << 4));
     }
 
     /**

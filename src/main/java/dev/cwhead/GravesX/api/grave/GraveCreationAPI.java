@@ -351,7 +351,6 @@ public class GraveCreationAPI {
             Location finalLocationDeath = createGrave.getLocationDeath() != null ? createGrave.getLocationDeath() : defaultLocationDeath;
 
             locationMap.put(finalLocationDeath, BlockData.BlockType.DEATH);
-            cacheManager.getGraveMap().put(grave.getUUID(), grave);
             grave.setLocationDeath(finalLocationDeath);
             grave.setInventory(graveManager.getGraveInventory(grave, (LivingEntity) victim, itemStackList, getRemovedItemStacks((LivingEntity) victim), null));
             grave.setEquipmentMap(equipmentMap != null ? equipmentMap : (!versionManager.is_v1_7() ? entityManager.getEquipmentMap((LivingEntity) victim, grave) : new HashMap<>()));

@@ -1,6 +1,7 @@
 package dev.cwhead.GravesX.api.inventory;
 
 import com.ranull.graves.Graves;
+import com.ranull.graves.type.Grave;
 import com.ranull.graves.util.InventoryUtil;
 import dev.cwhead.GravesX.api.util.UtilAPI;
 import org.bukkit.entity.Player;
@@ -40,6 +41,7 @@ public class InventoryAPI {
      */
     public void equipArmor(@NotNull Inventory inventory, @NotNull Player player) {
         InventoryUtil.equipArmor(inventory, player);
+        saveGraveInventory(inventory);
     }
 
     /**
@@ -50,6 +52,7 @@ public class InventoryAPI {
      */
     public void equipItems(@NotNull Inventory inventory, @NotNull Player player) {
         InventoryUtil.equipItems(inventory, player);
+        saveGraveInventory(inventory);
     }
 
     /**
@@ -72,5 +75,12 @@ public class InventoryAPI {
      */
     public Inventory stringToInventory(@NotNull InventoryHolder inventoryHolder, @NotNull String string, @NotNull String title) {
         return InventoryUtil.stringToInventory(inventoryHolder, string, title, plugin);
+    }
+    private void saveGraveInventory(Inventory inventory) {
+        if (inventory.getHolder() instanceof Grave grave) {
+            if (!plugin.getDataManager().saveGrave(grave)) {
+                throw new IllegalStateException("Grave no longer exists: " + grave.getUUID());
+            }
+        }
     }
 }
