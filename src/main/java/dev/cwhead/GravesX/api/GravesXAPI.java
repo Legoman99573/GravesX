@@ -1,6 +1,7 @@
 package dev.cwhead.GravesX.api;
 
 import com.ranull.graves.Graves;
+import dev.cwhead.GravesX.api.cache.CacheAPI;
 import dev.cwhead.GravesX.api.addon.AddonAPI;
 import dev.cwhead.GravesX.api.grave.GraveCreationAPI;
 import dev.cwhead.GravesX.api.grave.GraveManagementAPI;
@@ -20,6 +21,11 @@ import java.util.Objects;
  */
 public class GravesXAPI {
     private final Graves plugin;
+
+    /**
+     * Backend-independent cache and temporary interaction operations.
+     */
+    public final CacheAPI cache;
 
     /** Grave creation operations. */
     public final GraveCreationAPI gravesCreate;
@@ -51,6 +57,7 @@ public class GravesXAPI {
      * This constructor sets up and wires together the modular API classes:
      * </p>
      * <ul>
+     *   <li>{@link CacheAPI} – storage-independent cache access and interaction state</li>
      *   <li>{@link LocationAPI} – helpers for world and location utilities</li>
      *   <li>{@link UtilAPI} – general-purpose helpers (Base64, colors, XP, permissions, etc.)</li>
      *   <li>{@link InventoryAPI} – helpers for inventories, conversions, and equipping players</li>
@@ -72,6 +79,7 @@ public class GravesXAPI {
     public GravesXAPI(@NotNull Graves plugin) {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
 
+        this.cache = new CacheAPI(plugin);
         this.world = new LocationAPI(plugin);
         this.util = new UtilAPI(plugin, world);
         this.inventory = new InventoryAPI(plugin, util);
@@ -80,6 +88,10 @@ public class GravesXAPI {
         this.permission = new PermissionAPI(plugin);
         this.gravesManage = new GraveManagementAPI(plugin);
         this.gravesCreate = new GraveCreationAPI(plugin, world, util, gravesManage);
+    }
+
+    public @NotNull CacheAPI getCacheAPI() {
+        return cache;
     }
 
     /**

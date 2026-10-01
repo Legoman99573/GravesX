@@ -3,6 +3,7 @@ package com.ranull.graves.listener;
 import com.ranull.graves.Graves;
 import com.ranull.graves.compatibility.CompatibilityInventoryView;
 import com.ranull.graves.type.Grave;
+import com.ranull.graves.util.InventoryUtil;
 import dev.cwhead.GravesX.compatibility.CompatibilitySoundEnum;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -54,6 +55,11 @@ public class InventoryCloseListener implements Listener {
         if (isEmptyGrave(grave)) {
             handleEmptyGrave(event, player, grave);
         }
+
+        // Save the final Bukkit inventory after all click/close handlers have
+        // changed it. saveGrave does not resurrect an already removed grave.
+        plugin.getDataManager().updateGrave(grave, "inventory",
+                InventoryUtil.inventoryToString(grave.getInventory(), plugin));
 
         // Play a sound related to closing the inventory
         plugin.getEntityManager().playWorldSound("sound.close", player, grave);

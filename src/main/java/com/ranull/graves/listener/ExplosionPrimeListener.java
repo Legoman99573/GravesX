@@ -51,10 +51,7 @@ public class ExplosionPrimeListener implements Listener {
 
         Location explosionLocation = sourceEntity.getLocation().clone();
 
-        List<Grave> allGraves = plugin.getGraveManager().getAllGraves();
-        if (allGraves == null || allGraves.isEmpty()) {
-            return;
-        }
+        Iterable<Grave> allGraves = plugin.getCacheManager().graves();
 
         float blastRadius = event.getRadius();
         float blastRadiusSquared = blastRadius * blastRadius;

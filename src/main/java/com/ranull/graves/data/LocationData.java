@@ -96,6 +96,50 @@ public class LocationData implements Serializable {
         this.z = location.getZ();
     }
 
+    public LocationData(UUID uuid, String worldKey, String worldName,
+                        double x, double y, double z, float yaw, float pitch) {
+        this.uuid = uuid;
+        this.worldKey = worldKey;
+        this.worldName = worldName;
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.yaw = yaw;
+        this.pitch = pitch;
+    }
+
+    public UUID getWorldUUID() {
+        return uuid;
+    }
+
+    public String getWorldKey() {
+        return worldKey;
+    }
+
+    public String getWorldName() {
+        return worldName;
+    }
+
+    public double getX() {
+        return x;
+    }
+
+    public double getY() {
+        return y;
+    }
+
+    public double getZ() {
+        return z;
+    }
+
+    public float getYaw() {
+        return yaw;
+    }
+
+    public float getPitch() {
+        return pitch;
+    }
+
     /**
      * Converts the serialized data back into a Location object.
      * <p>

@@ -110,15 +110,18 @@ public class GraveManager {
      * @param graveRemoveList the list to which graves to be removed will be added.
      */
     private void processGraves(List<Grave> graveRemoveList) {
-        Collection<Grave> graves = plugin.getCacheManager().getGraveMap().values();
+        Iterable<Grave> graves = plugin.getCacheManager().graves();
 
-        for (Grave grave : new ArrayList<>(graves)) {
+        for (Grave grave : graves) {
             long remainingTime = grave.getTimeAliveRemaining();
 
 
             // -1 = unlimited / disabled timer
             if (remainingTime == -1 || grave.isAbandoned()) {
-                grave.setTimeAliveRemaining(-1);
+                if (grave.getTimeAlive() != -1) {
+                    grave.setTimeAliveRemaining(-1);
+                    plugin.getCacheManager().saveGrave(grave);
+                }
                 continue;
             }
 
@@ -205,6 +208,7 @@ public class GraveManager {
 
                     plugin.debugMessage("GraveTimeoutEvent cancelled → infinite life for " + grave.getUUID(), 2);
                     grave.setTimeAliveRemaining(-1L);
+                    plugin.getCacheManager().saveGrave(grave);
 
                 } else {
                     Location loc = tevModern.hasLocation() ? tevModern.getLocation() : tevLegacy.getLocation();
@@ -229,6 +233,7 @@ public class GraveManager {
                                     if (expired.isCancelled() || expired.isAddon()) {
                                         plugin.debugMessage("Expired cancelled — grave lives forever: " + grave.getUUID(), 2);
                                         grave.setTimeAliveRemaining(-1L);
+                                        plugin.getCacheManager().saveGrave(grave);
 
                                     } else {
                                         plugin.debugMessage("Expired: removing grave (drop handled by removeGrave): " + grave.getUUID(), 2);
@@ -280,6 +285,7 @@ public class GraveManager {
                                 if (expired.isCancelled() || expired.isAddon()) {
                                     plugin.debugMessage("Expired cancelled — grave lives forever: " + grave.getUUID(), 2);
                                     grave.setTimeAliveRemaining(-1L);
+                                    plugin.getCacheManager().saveGrave(grave);
 
                                 } else {
                                     plugin.debugMessage("Expired: removing grave (drop handled by removeGrave): " + grave.getUUID(), 2);
@@ -743,12 +749,7 @@ public class GraveManager {
         grave.setOwnerDisplayName("Abandoned");
         grave.setOwnerTexture("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZTYxZjFmY2Q0MmY0OGNhNTFmOWRhN2M1NWI3MmYzNWE4MjZlNzViNmEwMjA0OGExZGVhNWQ3MTE5YmM5Y2Q2OSJ9fX0=");
 
-        plugin.getDataManager().updateGrave(grave, "owner_name", grave.getOwnerName());
-        plugin.getDataManager().updateGrave(grave, "experience", grave.getExperience());
-        plugin.getDataManager().updateGrave(grave, "owner_name_display", grave.getOwnerDisplayName());
-        plugin.getDataManager().updateGrave(grave, "is_abandoned", grave.isAbandoned() ? 1 : 0);
-
-        // plugin.getDataManager().loadGraveMap();
+        plugin.getDataManager().saveGrave(grave);
     }
     /**
      * Spawns particle effects around a grave.
@@ -1123,7 +1124,9 @@ public class GraveManager {
                 }
 
                 try {
-                    plugin.getCacheManager().getGraveMap().remove(grave.getUUID());
+                    if (!plugin.getCacheManager().isCacheDisabled()) {
+                        plugin.getCacheManager().getGraveMap().remove(grave.getUUID());
+                    }
                     plugin.debugMessage("Grave " + grave.getUUID() + " removed from cache", 1);
                 } catch (Throwable ignored) {}
 
@@ -2031,6 +2034,7 @@ public class GraveManager {
                 }
 
                 inv.clear();
+                plugin.getDataManager().saveGrave(grave);
             } catch (Throwable t) {
                 plugin.debugMessage("dropGraveItems failed for " + grave.getUUID() + ": " + t.getMessage(), 2);
                 plugin.logStackTrace(t);
@@ -2062,6 +2066,7 @@ public class GraveManager {
                 }
                 player.giveExp(xp);
                 grave.setExperience(0);
+                plugin.getDataManager().updateGrave(grave, "experience", 0);
                 plugin.getEntityManager().playWorldSound("ENTITY_EXPERIENCE_ORB_PICKUP", player);
             });
             return;
@@ -2073,6 +2078,7 @@ public class GraveManager {
             }
             player.giveExp(xp);
             grave.setExperience(0);
+            plugin.getDataManager().updateGrave(grave, "experience", 0);
             plugin.getEntityManager().playWorldSound("ENTITY_EXPERIENCE_ORB_PICKUP", player);
         });
     }
@@ -2106,6 +2112,7 @@ public class GraveManager {
                 experienceOrb.setExperience(xp);
                 plugin.debugMessage("Dropping experience for grave " + grave.getUUID() + " in the amount of " + grave.getExperience(), 1);
                 grave.setExperience(0);
+                plugin.getDataManager().updateGrave(grave, "experience", 0);
             } catch (Throwable t) {
                 plugin.getLogger().severe("Unable to drop grave experience in the total of " + grave.getExperience() + ": " + t.getMessage());
                 plugin.logStackTrace(t);
@@ -2576,9 +2583,9 @@ public class GraveManager {
         }
 
         try {
-            Collection<Grave> graves = plugin.getCacheManager().getGraveMap().values();
+            Iterable<Grave> graves = plugin.getCacheManager().graves();
 
-            for (Grave grave : new ArrayList<>(graves)) {
+            for (Grave grave : graves) {
                 if (grave == null) {
                     continue;
                 }

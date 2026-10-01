@@ -1,5 +1,7 @@
 package com.ranull.graves.manager;
 
+import com.ranull.graves.Graves;
+import dev.cwhead.GravesX.cache.*;
 import com.ranull.graves.data.ChunkData;
 import com.ranull.graves.data.EntityData;
 import com.ranull.graves.type.Grave;
@@ -7,88 +9,147 @@ import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 public class CacheManager {
-    /**
-     * A map of grave UUIDs to their corresponding {@link Grave} objects.
-     * <p>
-     * This {@link Map} associates each {@link UUID} with a {@link Grave} instance, allowing for quick retrieval
-     * of grave information based on its unique identifier.
-     * </p>
-     */
+    private final Graves plugin;
+    private final CacheType cacheType;
+    private final CacheBackend backend;
+    private final CacheCodec codec;
+    private final DatabaseCacheBackend database;
+
     private final Map<UUID, Grave> graveMap;
-
-    /**
-     * A map of chunk identifiers to their corresponding {@link ChunkData} objects.
-     * <p>
-     * This {@link Map} associates each chunk identifier (as a {@link String}) with {@link ChunkData}, which holds
-     * information about the specific chunk.
-     * </p>
-     */
     private final Map<String, ChunkData> chunkMap;
-
-    /**
-     * A map of entity UUIDs to their last known {@link Location}.
-     * <p>
-     * This {@link Map} tracks the most recent {@link Location} for each entity identified by its {@link UUID}.
-     * </p>
-     */
     private final Map<UUID, Location> lastLocationMap;
-
-    /**
-     * A map of entity UUIDs to lists of removed {@link ItemStack} objects.
-     * <p>
-     * This {@link Map} associates each entity's {@link UUID} with a {@link List} of {@link ItemStack} objects
-     * that have been removed from the entity.
-     * </p>
-     */
     private final Map<UUID, List<ItemStack>> removedItemStackMap;
-
-    /**
-     * A map of block identifiers to their corresponding {@link Location} objects where the block was right-clicked.
-     * <p>
-     * This {@link Map} tracks the locations of blocks that have been right-clicked, identified by a {@link String}
-     * representing the block identifier.
-     * </p>
-     */
-    private final Map<String, Location> rightClickedBlocks = new HashMap<>();
-
-    /**
-     * A map of grave UUIDs to the UUID of the player currently viewing that grave.
-     * <p>
-     * Used to prevent multiple players from accessing the same grave at the same time.
-     * If a grave UUID is present in this map, the grave is considered "in use" / "locked".
-     * </p>
-     */
+    private final Map<String, Location> rightClickedBlocks;
     private final Map<UUID, UUID> graveViewerMap;
-
-    /**
-     * A map of entity UUIDs to their corresponding {@link EntityData}.
-     * <p>
-     * This provides a fast global lookup for tracked entity-backed grave data
-     * without requiring a chunk scan.
-     * </p>
-     */
     private final Map<UUID, EntityData> entityMap;
 
+    public CacheManager(Graves plugin) {
+        this.plugin = plugin;
+        this.cacheType = CacheType.fromString(plugin.getConfig().getString("settings.cache.type", "NORMAL"));
+        this.codec = new CacheCodec(plugin);
+
+        this.backend = switch (cacheType) {
+            case NORMAL -> new MemoryCacheBackend();
+            case DISK -> new DiskCacheBackend(plugin);
+            case DATABASE -> new DatabaseSessionBackend(plugin);
+        };
+
+        this.database = cacheType == CacheType.DATABASE ? new DatabaseCacheBackend(plugin) : null;
+        this.graveMap = database != null ? database.graveMap() : uuidMap("graves");
+        this.chunkMap = database != null ? database.chunkMap() : stringMap("chunks");
+        this.lastLocationMap = uuidMap("last-locations");
+        this.removedItemStackMap = uuidMap("removed-items");
+        this.rightClickedBlocks = stringMap("right-clicked-blocks");
+        this.graveViewerMap = uuidMap("grave-viewers");
+        this.entityMap = database != null ? database.entityMap() : uuidMap("entities");
+
+        plugin.getLogger().info(database != null
+                ? "Cache disabled: reading persistent database rows directly; transient player state uses database sessionstate"
+                : "Cache backend: " + cacheType);
+    }
+
+    private <V> CacheMap<UUID, V> uuidMap(String namespace) {
+        return new CacheMap<>(cacheType == CacheType.DATABASE ? CacheType.DISK : cacheType, namespace, backend, codec,
+                UUID::toString, UUID::fromString);
+    }
+
+    private <V> Map<String, V> stringMap(String namespace) {
+        return new CacheMap<>(cacheType == CacheType.DATABASE ? CacheType.DISK : cacheType, namespace, backend, codec,
+                value -> value, value -> value);
+    }
+
+    public boolean isDebugEnabled() { return codec.isDebugEnabled(); }
+
+    public CacheType getCacheType() {
+        return cacheType;
+    }
 
     /**
-     * Constructs a new {@link CacheManager} with initialized maps.
-     * <p>
-     * The constructor initializes all the maps used for caching data related to graves, chunks, locations, and items
-     * </p>
+     * Writes a mutated chunk to DISK. DATABASE reads source rows; DataManager owns those writes.
      */
-    public CacheManager() {
-        this.graveMap = new HashMap<>();
-        this.chunkMap = new HashMap<>();
-        this.lastLocationMap = new HashMap<>();
-        this.removedItemStackMap = new HashMap<>();
-        this.graveViewerMap = new HashMap<>();
-        this.entityMap = new HashMap<>();
+    public void saveChunk(String key, ChunkData chunkData) {
+        if (cacheType == CacheType.DISK && key != null && chunkData != null) {
+            chunkMap.put(key, chunkData);
+        }
+    }
+
+    /**
+     * Writes a changed grave to the selected backend without retaining it in RAM.
+     */
+    public void saveGrave(Grave grave) {
+        if (grave == null) return;
+        if (database != null) {
+            plugin.getDataManager().saveGraveDirect(grave);
+        } else if (graveMap instanceof CacheMap<UUID, Grave> cached) {
+            cached.saveExisting(grave.getUUID(), grave);
+        }
+    }
+
+    /**
+     * Iterates a snapshot of identifiers, fetching each grave only when needed.
+     * Callers may remove graves while iterating without retaining all values.
+     */
+    public Iterable<Grave> graves() {
+        return () -> new java.util.Iterator<>() {
+            private final java.util.Iterator<UUID> keys =
+                    new java.util.ArrayList<>(graveMap.keySet()).iterator();
+            private Grave next;
+
+            @Override
+            public boolean hasNext() {
+                while (next == null && keys.hasNext()) next = graveMap.get(keys.next());
+                return next != null;
+            }
+
+            @Override
+            public Grave next() {
+                if (!hasNext()) throw new java.util.NoSuchElementException();
+                Grave result = next;
+                next = null;
+                return result;
+            }
+        };
+    }
+
+    /**
+     * In uncached mode only Bukkit's open inventories can contain unsaved state.
+     * Do not load and rewrite every persistent grave during reload/shutdown.
+     */
+    public Iterable<Grave> gravesToFlush() {
+        if (database == null) return graves();
+        return () -> graveViewerMap.keySet().stream().map(this::getViewedGrave)
+                .filter(java.util.Objects::nonNull).iterator();
+    }
+
+    public void clear() {
+        if (database == null) {
+            graveMap.clear();
+            chunkMap.clear();
+            entityMap.clear();
+        }
+        lastLocationMap.clear();
+        removedItemStackMap.clear();
+        rightClickedBlocks.clear();
+        graveViewerMap.clear();
+        backend.clear();
+    }
+
+    public void shutdown() {
+        clear();
+        backend.close();
+    }
+
+    public void close() {
+        shutdown();
+    }
+
+    public void unload() {
+        shutdown();
     }
 
     /**
@@ -233,6 +294,24 @@ public class CacheManager {
     }
 
     /**
+     * Returns Bukkit's currently viewed grave, without an in-memory grave map.
+     * The live inventory is authoritative until the close handler saves it.
+     */
+    public Grave getViewedGrave(UUID graveUUID) {
+        UUID viewer = getGraveViewer(graveUUID);
+        org.bukkit.entity.Player player = viewer == null ? null : plugin.getServer().getPlayer(viewer);
+        if (player == null) return null;
+        org.bukkit.inventory.Inventory top =
+                com.ranull.graves.compatibility.CompatibilityInventoryView.getTopInventory(player.getOpenInventory());
+        return top.getHolder() instanceof Grave active && graveUUID.equals(active.getUUID()) ? active : null;
+    }
+
+    /** Whether persistent data must be queried directly instead of cached. */
+    public boolean isCacheDisabled() {
+        return database != null;
+    }
+
+    /**
      * Checks if a player can access a grave right now.
      * <p>
      * Access is allowed if the grave is not being viewed, or if it is being viewed by the same player.
@@ -266,7 +345,8 @@ public class CacheManager {
      * @return the matching {@link Grave}, or {@code null} if none is found
      */
     public Grave getGrave(Block block) {
-        for (Grave grave : graveMap.values()) {
+        if (database != null) return block == null ? null : database.getGrave(block.getLocation());
+        for (Grave grave : graves()) {
             if (grave == null) {
                 continue;
             }
@@ -290,10 +370,11 @@ public class CacheManager {
      * @return The oldest grave for the specified player.
      */
     public Grave getOldestGrave(UUID playerUUID) {
+        if (database != null) return database.oldestGrave(playerUUID);
         long oldestTime = Long.MAX_VALUE;
         Grave oldestGrave = null;
 
-        for (Grave cur : graveMap.values()) {
+        for (Grave cur : graves()) {
             if (cur.getOwnerUUID().equals(playerUUID)) {
                 long curTime = cur.getTimeCreation();
                 if (curTime < oldestTime) {
@@ -317,11 +398,12 @@ public class CacheManager {
      * @return the matching {@link Grave}, or {@code null} if none is found
      */
     public Grave getGrave(Location location) {
+        if (database != null) return database.getGrave(location);
         if (location == null || location.getWorld() == null) {
             return null;
         }
 
-        for (Grave grave : graveMap.values()) {
+        for (Grave grave : graves()) {
             Location graveLocation = grave.getLocationDeath();
             if (graveLocation == null || graveLocation.getWorld() == null) {
                 continue;
@@ -367,6 +449,7 @@ public class CacheManager {
      * @param entityData the entity data to cache
      */
     public void addEntityData(EntityData entityData) {
+        if (database != null) return;
         if (entityData == null || entityData.getUUIDEntity() == null) {
             return;
         }
@@ -380,6 +463,7 @@ public class CacheManager {
      * @param entityUUID the entity UUID
      */
     public void removeEntityData(UUID entityUUID) {
+        if (database != null) return;
         if (entityUUID == null) {
             return;
         }
@@ -399,4 +483,5 @@ public class CacheManager {
 
         removeEntityData(entityData.getUUIDEntity());
     }
+
 }

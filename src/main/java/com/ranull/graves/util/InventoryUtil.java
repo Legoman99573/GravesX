@@ -1,6 +1,7 @@
 package com.ranull.graves.util;
 
 import com.ranull.graves.Graves;
+import dev.cwhead.GravesX.cache.DebugCacheCodec;
 import dev.cwhead.GravesX.provider.CustomItemStorageProvider;
 import com.ranull.graves.type.Grave;
 import de.tr7zw.nbtapi.NBTItem;
@@ -159,6 +160,16 @@ public class InventoryUtil {
     }
 
     public static String inventoryToString(Inventory inventory, Graves plugin) {
+        if (DebugCacheCodec.enabled(plugin)) {
+            List<Object> slots = new ArrayList<>();
+
+            if (inventory != null) {
+                for (ItemStack item : inventory.getContents())
+                    slots.add(debugItem(item, plugin, inventory.getHolder()));
+            }
+
+            return DebugCacheCodec.write(slots);
+        }
         List<String> stringList = new ArrayList<>();
 
         if (inventory == null) {
@@ -173,6 +184,16 @@ public class InventoryUtil {
     }
 
     public static String equipmentMapToString(Map<EquipmentSlot, ItemStack> equipmentMap, Graves plugin, Grave grave) {
+        if (DebugCacheCodec.enabled(plugin)) {
+            Map<EquipmentSlot, Object> slots = new EnumMap<>(EquipmentSlot.class);
+
+            if (equipmentMap != null) equipmentMap.forEach((slot, item) -> {
+                if (slot != null)
+                    slots.put(slot, debugItem(item, plugin, grave));
+            });
+
+            return DebugCacheCodec.write(slots);
+        }
         Map<String, String> serializedEquipmentMap = new HashMap<>();
 
         if (equipmentMap != null) {
@@ -190,6 +211,26 @@ public class InventoryUtil {
         Map<EquipmentSlot, ItemStack> equipmentMap = new EnumMap<>(EquipmentSlot.class);
 
         if (string == null || string.isBlank()) {
+            return equipmentMap;
+        }
+
+        if (DebugCacheCodec.isText(string)) {
+            Object decoded = DebugCacheCodec.read(string);
+
+            if (!(decoded instanceof Map<?, ?> entries))
+                throw new IllegalArgumentException("Invalid readable equipment map");
+
+            entries.forEach((key, value) -> {
+                EquipmentSlot slot = parseEquipmentSlot(key);
+                if (slot == null)
+                    throw new IllegalArgumentException("Invalid equipment slot: " + key);
+
+                ItemStack item = readDebugItem(value, plugin, grave);
+
+                if (item != null && item.getType() != Material.AIR)
+                    equipmentMap.put(slot, item);
+            });
+
             return equipmentMap;
         }
 
@@ -229,6 +270,22 @@ public class InventoryUtil {
     }
 
     public static Inventory stringToInventory(InventoryHolder inventoryHolder, String string, String title, Graves plugin) {
+        if (DebugCacheCodec.isText(string)) {
+            Object decoded = DebugCacheCodec.read(string);
+
+            if (!(decoded instanceof List<?> slots))
+                throw new IllegalArgumentException("Invalid readable inventory");
+
+            if (slots.size() > 54)
+                throw new IllegalArgumentException("Grave inventory exceeds 54 slots");
+
+            Inventory inventory = plugin.getServer().createInventory(inventoryHolder, getInventorySize(slots.size()), title);
+
+            for (int slot = 0; slot < slots.size(); slot++)
+                inventory.setItem(slot, readDebugItem(slots.get(slot), plugin, inventoryHolder));
+
+            return inventory;
+        }
         String[] strings = string != null ? string.split("\\|") : new String[0];
 
         if (strings.length > 0 && !strings[0].equals("")) {
@@ -246,6 +303,34 @@ public class InventoryUtil {
         }
 
         return plugin.getServer().createInventory(inventoryHolder, strings.length, title);
+    }
+
+    /** Readable item payload, including provider IDs without Base64 wrapping. */
+    private static Object debugItem(ItemStack item, Graves plugin, InventoryHolder holder) {
+        if (item == null)
+            return null;
+
+        Map<String, Object> value = new LinkedHashMap<>();
+
+        value.put("item", normalizeItemStackForStorage(item));
+
+        CustomSerializedItem custom = getCustomSerializedItem(item, plugin, holder);
+
+        if (custom != null) {
+            value.put("provider-id", custom.providerId());
+            value.put("custom-item-id", custom.itemId());
+        }
+
+        return value;
+    }
+
+    private static ItemStack readDebugItem(Object value, Graves plugin, InventoryHolder holder) {
+        if (value == null)
+            return null;
+        if (!(value instanceof Map<?, ?> map) || !(map.get("item") instanceof ItemStack item)) {
+            throw new IllegalArgumentException("Invalid readable item payload");
+        }
+        return restoreCustomItem((String) map.get("provider-id"), (String) map.get("custom-item-id"), item, plugin, holder);
     }
 
     private static String itemStackToString(ItemStack itemStack, Graves plugin, InventoryHolder inventoryHolder) {
