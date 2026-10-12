@@ -1,9 +1,9 @@
 package com.ranull.graves;
 
 import dev.cwhead.GravesX.api.provider.RegisterGraveProviders;
-import dev.cwhead.GravesX.exception.GravesXIllegalArgumentException;
 import dev.cwhead.GravesX.exception.GravesXMethodNotSupportedException;
 import dev.cwhead.GravesX.listener.BlockEntityExplodeListener;
+import dev.cwhead.GravesX.listener.PlayerLocaleChangeListener;
 import me.croabeast.scheduler.GlobalScheduler;
 import com.ranull.graves.command.GravesCommand;
 import com.ranull.graves.compatibility.*;
@@ -69,6 +69,7 @@ public class Graves extends JavaPlugin {
     private DebugManager debugManager;
     private PermissionManager permissionManager;
     private ConfigManager configManager;
+    private LanguageManager languageManager;
     private ChunkManager chunkManager;
     private Compatibility compatibility;
     private FileConfiguration fileConfiguration;
@@ -166,6 +167,7 @@ public class Graves extends JavaPlugin {
         configManager.updateIfNeeded(isPluginDevelopmentBuild());
 
         configManager.reload();
+        getLanguageManager();
         loadLibraries();
 
         versionManager = new VersionManager();
@@ -471,6 +473,11 @@ public class Graves extends JavaPlugin {
     @Override
     public void reloadConfig() {
         getConfigManager().reload();
+        if (languageManager == null) {
+            getLanguageManager();
+        } else {
+            languageManager.reload();
+        }
     }
 
     @Override
@@ -679,6 +686,11 @@ public class Graves extends JavaPlugin {
         getConfigManager().ensureDefaultsExist();
         getConfigManager().updateIfNeeded(isPluginDevelopmentBuild());
         getConfigManager().reload();
+        if (languageManager == null) {
+            getLanguageManager();
+        } else {
+            languageManager.reload();
+        }
         saveTextFiles();
 
         loadLibraries();
@@ -850,6 +862,7 @@ public class Graves extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new CreatureSpawnListener(this), this);
         getServer().getPluginManager().registerEvents(new ExplosionPrimeListener(this), this);
         getServer().getPluginManager().registerEvents(new ProjectileHitListener(this), this);
+        getServer().getPluginManager().registerEvents(new PlayerLocaleChangeListener(this), this);
 
         // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
         if (!versionManager.is_v1_7()) {
@@ -1301,6 +1314,14 @@ public class Graves extends JavaPlugin {
      */
     public PermissionManager getPermissionManager() {
         return permissionManager;
+    }
+
+    /**
+     * @return the {@link LanguageManager} that manages Languages used by this plugin.
+     */
+    public LanguageManager getLanguageManager() {
+        if (languageManager == null) languageManager = new LanguageManager(this);
+        return languageManager;
     }
 
     /**

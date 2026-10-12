@@ -8,6 +8,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerLocaleChangeEvent;
 
 import java.util.List;
 
@@ -34,6 +36,7 @@ public class PlayerJoinListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
+        plugin.getLanguageManager().notifyFallback(player);
 
         if (shouldCheckForUpdates(player)) {
             plugin.getSchedulerManager().runTaskAsynchronously(
@@ -77,9 +80,7 @@ public class PlayerJoinListener implements Listener {
             return;
         }
 
-        String prefix = plugin.getConfigManager()
-                .getConfigSection("message.prefix", player)
-                .getString("message.prefix");
+        String prefix = plugin.getLanguageManager().get(player, "message.prefix");
 
         if (prefix == null) {
             prefix = "";
@@ -138,15 +139,8 @@ public class PlayerJoinListener implements Listener {
             String path,
             String latestVersion
     ) {
-        var configSection = plugin.getConfigManager()
-                .getConfigSection(path, player);
-
-        if (configSection == null) {
-            return;
-        }
-
         if (path.endsWith("outdated") || path.endsWith("development")) {
-            List<String> messages = configSection.getStringList(path);
+            List<String> messages = plugin.getLanguageManager().getList(player, path);
 
             for (String message : messages) {
                 if (latestVersion != null) {
@@ -156,7 +150,7 @@ public class PlayerJoinListener implements Listener {
                 sendMessage(player, prefix + message);
             }
         } else {
-            String message = configSection.getString(path);
+            String message = plugin.getLanguageManager().get(player, path);
 
             if (message != null) {
                 sendMessage(player, prefix + message);
