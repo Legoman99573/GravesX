@@ -11,6 +11,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPistonExtendEvent;
+import org.bukkit.event.block.BlockPistonRetractEvent;
 
 import java.util.List;
 import java.util.Objects;
@@ -41,14 +42,49 @@ public class BlockPistonExtendListener implements Listener {
         Block piston = event.getBlock();
         List<Block> blocks = event.getBlocks();
 
-        for (Block pushedBlock : blocks) {
-            Block destination = pushedBlock.getRelative(direction);
+        Grave directGrave = plugin.getCacheManager().getGrave(piston.getRelative(direction));
+        if (directGrave != null) {
+            handleGravePistonMove(event, directGrave, piston, direction, blocks);
+            return;
+        }
 
-            Grave grave = plugin.getCacheManager().getGrave(destination);
+        for (Block pushedBlock : blocks) {
+            Grave grave = plugin.getCacheManager().getGrave(pushedBlock);
+            if (grave == null) {
+                grave = plugin.getCacheManager().getGrave(pushedBlock.getRelative(direction));
+            }
             if (grave != null) {
                 handleGravePistonMove(event, grave, piston, direction, blocks);
                 return;
             }
+        }
+    }
+
+    /**
+     * Prevents sticky pistons from pulling protected grave blocks.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onBlockPistonRetract(BlockPistonRetractEvent event) {
+        Block piston = event.getBlock();
+        for (Block moved : event.getBlocks()) {
+            Grave grave = plugin.getCacheManager().getGrave(moved);
+            if (grave == null) {
+                grave = plugin.getCacheManager().getGrave(moved.getRelative(event.getDirection()));
+            }
+            if (grave != null && !plugin.getConfigManager()
+                    .getConfigSection("drop.piston-extend", grave)
+                    .getBoolean("drop.piston-extend", true)) {
+                event.setCancelled(true);
+                return;
+            }
+        }
+
+        Block front = piston.getRelative(event.getDirection());
+        Grave grave = plugin.getCacheManager().getGrave(front);
+        if (grave != null && !plugin.getConfigManager()
+                .getConfigSection("drop.piston-extend", grave)
+                .getBoolean("drop.piston-extend", true)) {
+            event.setCancelled(true);
         }
     }
 
@@ -99,6 +135,7 @@ public class BlockPistonExtendListener implements Listener {
             plugin.getGraveManager().playEffect("effect.loot", piston.getLocation(), grave);
             plugin.getEntityManager().runCommands("event.command.pistonextend", piston.getType().name(), piston.getLocation(), grave);
         } else {
+            event.setCancelled(true);
             plugin.debugMessage("Piston move for grave at " + grave.getLocationDeath() + " was cancelled or is an addon. No action taken.", 2);
         }
     }
