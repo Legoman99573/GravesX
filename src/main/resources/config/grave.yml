@@ -9,6 +9,8 @@ settings:
       # Grave #
       #########
       grave:
+        # Priority baseline for permission overrides. Higher values win; default graves use 0.
+        priority: 0
         # (Second) How long graves should stay alive for, 300 = 5 minutes, 10800 = 3 hours, -1 lasts forever.
         time: 10800
         # The max amount of graves an entity can have.

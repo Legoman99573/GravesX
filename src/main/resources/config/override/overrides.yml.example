@@ -1,0 +1,11 @@
+# Add settings under settings.default.<name>.
+# Grant permission graves.override.<name> or graves.permission<name> to the player.
+# Available settings are documented in config/grave.yml and will override the defaults.
+settings:
+  default:
+    premium:
+      grave:
+        priority: 10
+        time: -1
+      experience:
+        store: 1.0

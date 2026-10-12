@@ -9,10 +9,13 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.PermissionAttachmentInfo;
+import org.bukkit.permissions.Permission;
+import org.bukkit.permissions.PermissionDefault;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -48,6 +51,7 @@ public final class ConfigManager {
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private volatile FileConfiguration mergedConfig;
+    private volatile Map<String, ConfigurationSection> playerOverrides = Collections.emptyMap();
 
     public ConfigManager(@NotNull Graves plugin) {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
@@ -98,8 +102,107 @@ public final class ConfigManager {
             }
 
             mergedConfig = loaded;
+            playerOverrides = loadPlayerOverrides();
+            registerOverridePermissions(playerOverrides.keySet());
         } finally {
             lock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Loads independent, optional per-player override files; these are not merged globally.
+     */
+    private Map<String, ConfigurationSection> loadPlayerOverrides() {
+        File folder = new File(paths.configFolder, "override");
+
+        if (!folder.exists() && !folder.mkdirs()) {
+            plugin.getLogger().warning("Could not create the GravesX override folder");
+        }
+
+        File example = new File(folder, "overrides.yml.example");
+
+        String exampleText = "# Add settings under settings.default.<name>.\n"
+                + "# Grant permission graves.override.<name> or graves.permission<name> to the player.\n"
+                + "# Available settings are documented in config/grave.yml and will override the defaults\n"
+                + "settings:\n"
+                + "  default:\n"
+                + "    premium:\n"
+                + "      grave:\n"
+                + "        priority: 10\n"
+                + "        time: -1\n"
+                + "      experience:\n"
+                + "        store: 1.0\n";
+
+        try {
+            Files.writeString(example.toPath(), exampleText, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            plugin.getLogger().warning("Could not refresh override example: " + e.getMessage());
+        }
+
+        File[] files = folder.listFiles(f -> f.isFile() && f.getName().endsWith(".yml"));
+
+        if (files == null)
+            return Collections.emptyMap();
+
+        Arrays.sort(files, Comparator.comparing(File::getName));
+
+        Map<String, ConfigurationSection> overrides = new LinkedHashMap<>();
+        for (File file : files) {
+            try {
+                YamlConfiguration yaml = new YamlConfiguration();
+                yaml.load(file);
+
+                ConfigurationSection root = yaml.getConfigurationSection("settings.default");
+                if (root == null) {
+                    plugin.getLogger().warning("Override " + file.getName() + " must have a settings.default section");
+                    continue;
+                }
+
+                for (String key : root.getKeys(false)) {
+                    String name = key.toLowerCase(Locale.ROOT);
+                    if (!name.matches("[a-z0-9_-]+") || !key.equals(name)) {
+                        plugin.getLogger().warning("Invalid override name '" + key + "' in " + file.getName() + "; use lowercase letters, digits, _ or -");
+                        continue;
+                    }
+
+                    ConfigurationSection section = root.getConfigurationSection(key);
+                    if (section == null) {
+                        plugin.getLogger().warning("Override '" + name + "' must be a YAML section in " + file.getName());
+                        continue;
+                    }
+
+                    if (overrides.containsKey(name)) {
+                        plugin.getLogger().warning("Duplicate override name '" + name
+                                + "' in " + file.getName() + "; keeping the first definition");
+                        continue;
+                    }
+
+                    overrides.put(name, section);
+                }
+            } catch (Exception e) {
+                plugin.getLogger().warning("Invalid override file " + file.getName() + ": " + e.getMessage());
+            }
+        }
+        return Collections.unmodifiableMap(overrides);
+    }
+
+    /**
+     * Explicit opt-in permission nodes for every configured override.
+     */
+    private void registerOverridePermissions(Set<String> names) {
+        for (String name : names) {
+            registerOptInPermission("graves.override." + name);
+            registerOptInPermission("graves.permission." + name);
+        }
+    }
+
+    private void registerOptInPermission(String node) {
+        Permission permission = Bukkit.getPluginManager().getPermission(node);
+        if (permission == null) {
+            Bukkit.getPluginManager().addPermission(new Permission(node, PermissionDefault.FALSE));
+        } else if (permission.getDefault() != PermissionDefault.FALSE) {
+            permission.setDefault(PermissionDefault.FALSE);
+            permission.recalculatePermissibles();
         }
     }
 
@@ -161,7 +264,8 @@ public final class ConfigManager {
     /**
      * Priority order:
      * <ol>
-     *     <li>{@code settings.permission.<perm>}</li>
+     *     <li>Named overrides selected by {@code graves.override.<name>} or legacy {@code graves.permission.<name>}</li>
+     *     <li>Existing {@code settings.permission.<perm>} legacy sections, if present</li>
      *     <li>{@code settings.entity.<ENTITYTYPE>}</li>
      *     <li>{@code settings.default.default}</li>
      * </ol>
@@ -169,30 +273,47 @@ public final class ConfigManager {
     @Nullable
     public ConfigurationSection getConfigSection(String configKey, @Nullable EntityType entityType, @Nullable List<String> permissionList) {
         FileConfiguration cfg = config();
+        ConfigurationSection base = null;
 
-        if (permissionList != null && !permissionList.isEmpty()) {
+        if (permissionList != null) {
             for (String permission : permissionList) {
-                String sectionPath = "settings.permission." + permission;
-                if (cfg.isConfigurationSection(sectionPath)) {
-                    ConfigurationSection section = cfg.getConfigurationSection(sectionPath);
-                    if (section != null && contains(section, configKey)) {
-                        return section;
+                if (permission.startsWith("override:")) continue;
+                ConfigurationSection candidate = cfg.getConfigurationSection("settings.permission." + permission);
+                if (candidate != null && contains(candidate, configKey)) {
+                    base = candidate;
+                    break;
+                }
+            }
+        }
+        if (base == null && entityType != null) {
+            ConfigurationSection candidate = cfg.getConfigurationSection("settings.entity." + entityType.name());
+            if (candidate != null && contains(candidate, configKey))
+                base = candidate;
+        }
+        if (base == null)
+            base = cfg.getConfigurationSection("settings.default.default");
+
+        if (permissionList != null) {
+            for (String permission : permissionList) {
+                if (!permission.startsWith("override:")) continue;
+                ConfigurationSection override = playerOverrides.get(permission.substring("override:".length()));
+                if (override == null) continue;
+                if (!contains(override, configKey)) break;
+                YamlConfiguration resolved = new YamlConfiguration();
+                if (base != null) {
+                    for (String key : base.getKeys(true)) {
+                        if (!base.isConfigurationSection(key))
+                            resolved.set(key, base.get(key));
                     }
                 }
-            }
-        }
-
-        if (entityType != null) {
-            String sectionPath = "settings.entity." + entityType.name();
-            if (cfg.isConfigurationSection(sectionPath)) {
-                ConfigurationSection section = cfg.getConfigurationSection(sectionPath);
-                if (section != null && contains(section, configKey)) {
-                    return section;
+                for (String key : override.getKeys(true)) {
+                    if (!override.isConfigurationSection(key))
+                        resolved.set(key, override.get(key));
                 }
+                return resolved;
             }
         }
-
-        return cfg.getConfigurationSection("settings.default.default");
+        return base;
     }
 
     private boolean contains(@NotNull ConfigurationSection section, @NotNull String path) {
@@ -216,13 +337,43 @@ public final class ConfigManager {
         for (PermissionAttachmentInfo info : player.getEffectivePermissions()) {
             String perm = info.getPermission();
 
+            if (!info.getValue())
+                continue;
+
             if (perm.startsWith("graves.permission.")) {
-                String key = perm.replace("graves.permission.", "").toLowerCase(Locale.ROOT);
+                String key = perm.substring("graves.permission.".length()).toLowerCase(Locale.ROOT);
+                if (playerOverrides.containsKey(key)) {
+                    permissionListSorted.add("override:" + key);
+                }
                 if (cfg.isConfigurationSection("settings.permission." + key)) {
                     permissionList.add(key);
                 }
             }
         }
+
+        String selectedOverride = null;
+        int highestPriority = Math.max(0, cfg.getInt("settings.default.default.grave.priority", 0));
+        for (Map.Entry<String, ConfigurationSection> entry : playerOverrides.entrySet()) {
+            String name = entry.getKey();
+            if (!player.hasPermission("graves.override." + name) && !player.hasPermission("graves.permission." + name))
+                continue;
+
+            int priority = entry.getValue().getInt("grave.priority", 0);
+            if (priority < 0) {
+                plugin.getLogger().warning("Override '" + name + "' has negative grave.priority; ignoring it");
+                continue;
+            }
+
+            if (priority > highestPriority || (priority == highestPriority && selectedOverride != null
+                    && name.compareTo(selectedOverride) < 0)) {
+                highestPriority = priority;
+                selectedOverride = name;
+            }
+        }
+
+        permissionListSorted.removeIf(p -> p.startsWith("override:"));
+        if (selectedOverride != null)
+            permissionListSorted.add("override:" + selectedOverride);
 
         ConfigurationSection permissionRoot = cfg.getConfigurationSection("settings.permission");
         if (permissionRoot != null) {
@@ -387,6 +538,9 @@ public final class ConfigManager {
                 if (!YAMLUtil.isValidYAML(file)) continue;
 
                 if (file.isDirectory()) {
+                    if (file.getName().equals("override"))
+                        continue;
+
                     result.addDefaults(loadMergedFolderConfig(file));
                     continue;
                 }
