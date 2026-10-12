@@ -1839,6 +1839,26 @@ public class GraveManager {
     }
 
     /**
+     * Opens a grave with a title translated for the viewing player's locale.
+     * Also repairs inventories restored from caches without their titles.
+     *
+     * @param player player opening the grave
+     * @param grave grave to open
+     */
+    private void openLocalizedGraveInventory(Player player, Grave grave) {
+        Inventory current = grave.getInventory();
+
+        String rawTitle = plugin.getLanguageManager().get(player, "message.gui.title");
+        String parsedTitle = StringUtil.parseString(rawTitle, player, grave.getLocationDeath(), grave, plugin);
+        String title = plugin.getIntegrationManager().hasMiniMessage() ? MiniMessage.parseString(parsedTitle) : parsedTitle;
+
+        Inventory localized = plugin.getServer().createInventory(grave, current.getSize(), title);
+        localized.setContents(current.getContents());
+        grave.setInventory(localized);
+        player.openInventory(localized);
+    }
+
+    /**
      * Retrieves the grave inventory for a specified grave and living entity.
      *
      * @param grave                 the grave.
@@ -1848,11 +1868,7 @@ public class GraveManager {
      * @param permissionList        the list of permissions associated with the grave.
      * @return the created grave inventory.
      */
-    public Inventory getGraveInventory(Grave grave,
-            LivingEntity livingEntity,
-            List<org.bukkit.inventory.ItemStack> graveItemStackList,
-            List<org.bukkit.inventory.ItemStack> removedItemStackList,
-            List<String> permissionList) {
+    public Inventory getGraveInventory(Grave grave, LivingEntity livingEntity, List<org.bukkit.inventory.ItemStack> graveItemStackList, List<org.bukkit.inventory.ItemStack> removedItemStackList, List<String> permissionList) {
 
         String title;
         if (plugin.getIntegrationManager().hasMiniMessage()) {
@@ -2307,7 +2323,7 @@ public class GraveManager {
                         grave.setGravePreview(false);
                     }
 
-                    player.openInventory(grave.getInventory());
+                    openLocalizedGraveInventory(player, grave);
                     plugin.getEntityManager().runCommands("event.command.open", player, location, grave);
                     plugin.getEntityManager().playWorldSound("sound.open", location, grave);
                 }
@@ -2321,13 +2337,13 @@ public class GraveManager {
 
                 if (protPreview && gravePreview) {
                     grave.setGravePreview(preview);
-                    player.openInventory(grave.getInventory());
+                    openLocalizedGraveInventory(player, grave);
                     plugin.getEntityManager().runCommands("event.command.open", player, location, grave);
                     plugin.getEntityManager().playWorldSound("sound.open", location, grave);
 
                 } else if (protPreview) {
                     grave.setGravePreview(false);
-                    player.openInventory(grave.getInventory());
+                    openLocalizedGraveInventory(player, grave);
                     plugin.getEntityManager().runCommands("event.command.open", player, location, grave);
                     plugin.getEntityManager().playWorldSound("sound.open", location, grave);
 
