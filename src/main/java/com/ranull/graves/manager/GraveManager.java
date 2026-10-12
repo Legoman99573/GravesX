@@ -1372,7 +1372,7 @@ public class GraveManager {
         grave.setOwnerUUID(ownerUUID);
 
         Location baseLocation = entity.getLocation().clone();
-        String rawTitle = plugin.getConfigManager().getConfigSection("gui.grave.title", entity, permissionList).getString("gui.grave.title");
+        String rawTitle = plugin.getLanguageManager().get(entity instanceof Player player ? player : null, "message.gui.title");
         String parsedTitle = StringUtil.parseString(rawTitle, entity, baseLocation, grave, plugin);
         String storageModeStr = plugin.getConfigManager().getConfigSection("storage.mode", entity, permissionList).getString("storage.mode");
 
@@ -1856,10 +1856,10 @@ public class GraveManager {
 
         String title;
         if (plugin.getIntegrationManager().hasMiniMessage()) {
-            String newTitle = StringUtil.parseString(plugin.getConfigManager().getConfigSection("gui.grave.title", grave).getString("gui.grave.title"), livingEntity, grave.getLocationDeath(), grave, plugin);
+            String newTitle = StringUtil.parseString(plugin.getLanguageManager().get(plugin.getServer().getPlayer(grave.getOwnerUUID()), "message.gui.title"), livingEntity, grave.getLocationDeath(), grave, plugin);
             title = MiniMessage.parseString(newTitle);
         } else {
-            title = StringUtil.parseString(plugin.getConfigManager().getConfigSection("gui.grave.title", grave).getString("gui.grave.title"), livingEntity, grave.getLocationDeath(), grave, plugin);
+            title = StringUtil.parseString(plugin.getLanguageManager().get(plugin.getServer().getPlayer(grave.getOwnerUUID()), "message.gui.title"), livingEntity, grave.getLocationDeath(), grave, plugin);
         }
 
         Grave.StorageMode storageMode = getStorageMode(plugin.getConfigManager().getConfigSection("storage.mode", grave).getString("storage.mode"));

@@ -2786,9 +2786,7 @@ public class DataManager {
             grave.setPermissionList(resultSet.getString("permissions") != null
                     ? new ArrayList<>(Arrays.asList(resultSet.getString("permissions").split("\\|"))) : new ArrayList<>());
             grave.setInventory(InventoryUtil.stringToInventory(grave, resultSet.getString("inventory"),
-                    StringUtil.parseString(plugin.getConfigManager().getConfigSection("gui.grave.title", grave.getOwnerType(),
-                                    grave.getPermissionList())
-                            .getString("gui.grave.title"), grave.getLocationDeath(), grave, plugin), plugin));
+                    StringUtil.parseString(plugin.getLanguageManager().get(plugin.getServer().getPlayer(grave.getOwnerUUID()), "message.gui.title"), grave.getLocationDeath(), grave, plugin), plugin));
 
             if (!invalidationReason.isEmpty()) {
                 plugin.logInvalidGraveSite(uuidString, graveLocation, invalidationReason);

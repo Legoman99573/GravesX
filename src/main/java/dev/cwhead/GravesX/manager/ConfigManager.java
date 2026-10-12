@@ -594,6 +594,39 @@ public final class ConfigManager {
                 updateConfigFile("config.yml", CURRENT_CONFIG_VERSION, true);
                 updateConfigFile("entity.yml", CURRENT_CONFIG_VERSION, false);
                 updateConfigFile("grave.yml", CURRENT_CONFIG_VERSION, false);
+                updateBundledLanguages();
+            }
+        }
+
+        /**
+         *  Updates every bundled language without replacing administrator translations.
+         */
+        private void updateBundledLanguages() {
+            File folder = new File(paths.configFolder, "language");
+
+            if (!folder.isDirectory() && !folder.mkdirs()) {
+                plugin.getLogger().warning("Could not create language folder: " + folder);
+                return;
+            }
+
+            for (String code : LanguageManager.bundledLocales(plugin)) {
+                String resource = "config/language/" + code + ".yml";
+                File target = new File(folder, code + ".yml");
+
+                try (InputStream stream = plugin.getResource(resource)) {
+                    if (stream == null)
+                        continue;
+
+                    if (!target.isFile()) {
+                        Files.copy(stream, target.toPath());
+                    } else {
+                        ConfigUpdater.update(plugin, resource, target, Collections.emptyList());
+                    }
+
+                    plugin.getLogger().info("Updated bundled language: " + code);
+                } catch (IOException | RuntimeException e) {
+                    plugin.getLogger().warning("Failed to update language " + code + ": " + e.getMessage());
+                }
             }
         }
 

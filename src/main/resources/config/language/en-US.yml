@@ -3,10 +3,14 @@
 message:
   # Prefix for messages.
   prefix: "&c☠ &r"
+  language-fallback: "&eTranslation unavailable for your client language (&f%client_locale%&e). Using &f%fallback_locale%&e instead."
+  gui:
+    title: "%owner_name%'s Grave"
   # Messages for different interactions.
   looted: "You looted &c%owner_name%&r's grave at &c%x%&rx, &c%y%&ry, &c%z%&rz in &c%world_formatted%&r."
   experience: "Looted &c%level% &rlevels from grave."
   empty: "You don't have any graves."
+  empty-other: "&c%owner_name%&r has no graves."
   death: "You were killed in &c%world_formatted% &rby &c%killer_name%&r."
   block: "Grave created at &c%x%&rx, &c%y%&ry, &c%z%&rz in &c%world_formatted%&r."
   timeout: "Your grave at &c%x%&rx, &c%y%&ry, &c%z%&rz in &c%world_formatted%&r timed out with &c%item% &ritems and &c%experience% &rExperience."

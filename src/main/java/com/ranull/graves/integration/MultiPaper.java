@@ -106,7 +106,7 @@ public class MultiPaper {
                 final String title;
                 if (plugin.getIntegrationManager().hasMiniMessage()) {
                     final String newTitle = StringUtil.parseString(
-                            plugin.getConfigManager().getConfigSection("gui.grave.title", grave).getString("gui.grave.title"),
+                            plugin.getLanguageManager().get(plugin.getServer().getPlayer(grave.getOwnerUUID()), "message.gui.title"),
                             grave.getLocationDeath(),
                             grave,
                             plugin
@@ -114,7 +114,7 @@ public class MultiPaper {
                     title = MiniMessage.parseString(newTitle);
                 } else {
                     title = StringUtil.parseString(
-                            plugin.getConfigManager().getConfigSection("gui.grave.title", grave).getString("gui.grave.title"),
+                            plugin.getLanguageManager().get(plugin.getServer().getPlayer(grave.getOwnerUUID()), "message.gui.title"),
                             grave.getLocationDeath(),
                             grave,
                             plugin

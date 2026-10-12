@@ -40,6 +40,7 @@ public class PlayerQuitListener implements Listener {
         }
 
         removeLastSolidLocation(player);
+        plugin.getLanguageManager().clearPlayer(event.getPlayer());
     }
 
     /**

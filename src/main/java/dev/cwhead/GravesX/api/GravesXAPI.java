@@ -2,6 +2,7 @@ package dev.cwhead.GravesX.api;
 
 import com.ranull.graves.Graves;
 import dev.cwhead.GravesX.api.cache.CacheAPI;
+import dev.cwhead.GravesX.api.language.LanguageAPI;
 import dev.cwhead.GravesX.api.addon.AddonAPI;
 import dev.cwhead.GravesX.api.grave.GraveCreationAPI;
 import dev.cwhead.GravesX.api.grave.GraveManagementAPI;
@@ -26,6 +27,9 @@ public class GravesXAPI {
      * Backend-independent cache and temporary interaction operations.
      */
     public final CacheAPI cache;
+
+    /** Language loading and localized messages. */
+    public final LanguageAPI language;
 
     /** Grave creation operations. */
     public final GraveCreationAPI gravesCreate;
@@ -80,6 +84,7 @@ public class GravesXAPI {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
 
         this.cache = new CacheAPI(plugin);
+        this.language = new LanguageAPI(plugin);
         this.world = new LocationAPI(plugin);
         this.util = new UtilAPI(plugin, world);
         this.inventory = new InventoryAPI(plugin, util);
@@ -89,6 +94,13 @@ public class GravesXAPI {
         this.gravesManage = new GraveManagementAPI(plugin);
         this.gravesCreate = new GraveCreationAPI(plugin, world, util, gravesManage);
     }
+
+    /**
+     * Gets the language API for localized messages and locale registration.
+     *
+     * @return language API
+     */
+    public @NotNull LanguageAPI getLanguageAPI() { return language; }
 
     public @NotNull CacheAPI getCacheAPI() {
         return cache;

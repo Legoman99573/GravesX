@@ -89,6 +89,12 @@ public final class ModuleContext {
         return plugin;
     }
 
+    /** Shared translation API for module messages and locale registration. */
+    public dev.cwhead.GravesX.api.language.LanguageAPI getLanguageAPI() {
+        return new dev.cwhead.GravesX.api.language.LanguageAPI(plugin);
+    }
+
+
     /**
      * Gets this module's name.
      *
