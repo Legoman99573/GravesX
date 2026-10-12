@@ -538,7 +538,7 @@ public final class ConfigManager {
                 if (!YAMLUtil.isValidYAML(file)) continue;
 
                 if (file.isDirectory()) {
-                    if (file.getName().equals("override"))
+                    if (file.getName().equals("override") || file.getName().equals("language"))
                         continue;
 
                     result.addDefaults(loadMergedFolderConfig(file));

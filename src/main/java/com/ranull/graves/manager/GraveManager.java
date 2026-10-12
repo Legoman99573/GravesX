@@ -2633,7 +2633,7 @@ public class GraveManager {
      */
     @Deprecated(since = "2026.4.9.1")
     public String getDamageReason(EntityDamageEvent.DamageCause damageCause, Grave grave) {
-        List<String> reasons = plugin.getConfigManager().getConfigSection("message.death-reason", grave).getStringList("message.death-reason");
+        List<String> reasons = plugin.getLanguageManager().getList(plugin.getServer().getPlayer(grave.getOwnerUUID()), "message.death-reason");
         String causeName = damageCause.name();
 
         for (String reason : reasons) {
@@ -2652,7 +2652,7 @@ public class GraveManager {
      * @return the damage reason.
      */
     public String getDamageReason(Grave grave) {
-        List<String> reasons = plugin.getConfigManager().getConfigSection("message.death-reason", grave).getStringList("message.death-reason");
+        List<String> reasons = plugin.getLanguageManager().getList(plugin.getServer().getPlayer(grave.getOwnerUUID()), "message.death-reason");
         String causeName = grave.getDeathCause();
 
         for (String reason : reasons) {

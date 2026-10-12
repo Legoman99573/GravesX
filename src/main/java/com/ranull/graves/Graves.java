@@ -69,6 +69,7 @@ public class Graves extends JavaPlugin {
     private DebugManager debugManager;
     private PermissionManager permissionManager;
     private ConfigManager configManager;
+    private LanguageManager languageManager;
     private ChunkManager chunkManager;
     private Compatibility compatibility;
     private FileConfiguration fileConfiguration;
@@ -471,6 +472,7 @@ public class Graves extends JavaPlugin {
     @Override
     public void reloadConfig() {
         getConfigManager().reload();
+        if (languageManager != null) languageManager.reload();
     }
 
     @Override
@@ -679,6 +681,7 @@ public class Graves extends JavaPlugin {
         getConfigManager().ensureDefaultsExist();
         getConfigManager().updateIfNeeded(isPluginDevelopmentBuild());
         getConfigManager().reload();
+        if (languageManager != null) languageManager.reload();
         saveTextFiles();
 
         loadLibraries();
@@ -1301,6 +1304,14 @@ public class Graves extends JavaPlugin {
      */
     public PermissionManager getPermissionManager() {
         return permissionManager;
+    }
+
+    /**
+     * @return the {@link LanguageManager} that manages Languages used by this plugin.
+     */
+    public LanguageManager getLanguageManager() {
+        if (languageManager == null) languageManager = new LanguageManager(this);
+        return languageManager;
     }
 
     /**

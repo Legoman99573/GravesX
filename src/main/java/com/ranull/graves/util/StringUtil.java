@@ -11,6 +11,7 @@ import org.apache.commons.text.WordUtils;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -148,7 +149,7 @@ public class StringUtil {
 
         if (location != null && location.getWorld() != null && grave != null) {
             string = string.replace("%world_formatted%",
-                    location.getWorld() != null ? getWorldFormatted(location.getWorld().getName(), plugin) : "");
+                    location.getWorld() != null ? getWorldFormatted(location.getWorld().getName(), entity instanceof org.bukkit.entity.Player ? (org.bukkit.entity.Player) entity : (grave != null ? plugin.getServer().getPlayer(grave.getOwnerUUID()) : null), plugin) : "");
         } else {
             string = string.replace("%world_formatted%", "");
         }
@@ -200,12 +201,11 @@ public class StringUtil {
      * @param plugin    the plugin instance.
      * @return the formatted world name or the original if no match is found.
      */
-    private static String getWorldFormatted(String worldName, Graves plugin) {
-        List<String> worlds = plugin.getConfigManager().getConfigSection("message.world", EntityType.PLAYER, null)
-                .getStringList("message.world");
+    private static String getWorldFormatted(String worldName, Player player, Graves plugin) {
+        List<String> worlds = plugin.getLanguageManager().getList(player, "message.world");
 
         for (String worldEntry : worlds) {
-            if (worldEntry.contains(worldName)) {
+            if (worldEntry.startsWith(worldName + ":")) {
                 try {
                     String[] worldFinal = worldEntry.split(": ");
                     return worldFinal[1];

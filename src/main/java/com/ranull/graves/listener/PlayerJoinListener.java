@@ -77,9 +77,7 @@ public class PlayerJoinListener implements Listener {
             return;
         }
 
-        String prefix = plugin.getConfigManager()
-                .getConfigSection("message.prefix", player)
-                .getString("message.prefix");
+        String prefix = plugin.getLanguageManager().get(player, "message.prefix");
 
         if (prefix == null) {
             prefix = "";
@@ -138,15 +136,8 @@ public class PlayerJoinListener implements Listener {
             String path,
             String latestVersion
     ) {
-        var configSection = plugin.getConfigManager()
-                .getConfigSection(path, player);
-
-        if (configSection == null) {
-            return;
-        }
-
         if (path.endsWith("outdated") || path.endsWith("development")) {
-            List<String> messages = configSection.getStringList(path);
+            List<String> messages = plugin.getLanguageManager().getList(player, path);
 
             for (String message : messages) {
                 if (latestVersion != null) {
@@ -156,7 +147,7 @@ public class PlayerJoinListener implements Listener {
                 sendMessage(player, prefix + message);
             }
         } else {
-            String message = configSection.getString(path);
+            String message = plugin.getLanguageManager().get(player, path);
 
             if (message != null) {
                 sendMessage(player, prefix + message);
