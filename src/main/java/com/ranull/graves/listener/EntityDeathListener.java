@@ -175,25 +175,6 @@ public class EntityDeathListener implements Listener {
 
         final List<ItemStack> removedItemStackList = getRemovedItemStacks(livingEntity);
 
-        if (isPlayer && pde != null && location.getWorld() != null) {
-            InventoryView view = player.getOpenInventory();
-            if (view != null) {
-                Inventory top = CompatibilityInventoryView.getTopInventory(view);
-                if (top != null && (top.getType() == InventoryType.WORKBENCH || top.getType() == InventoryType.CRAFTING)) {
-                    ItemStack[] contents = top.getContents();
-                    for (int i = 1; i < contents.length; i++) {
-                        ItemStack item = contents[i];
-                        if (item != null && item.getType() != Material.AIR) {
-                            location.getWorld().dropItemNaturally(location, item);
-                            top.setItem(i, null);
-                        }
-                    }
-                }
-            }
-        }
-
-        event.getDrops().clear();
-
         createGrave(event, livingEntity, entityName, permissionList,
                 removedItemStackList, graveItemStackList, ignoredItemStackList,
                 location, pde, player);
@@ -562,13 +543,6 @@ public class EntityDeathListener implements Listener {
                     it.set(stored);
                 }
 
-                event.getDrops().clear();
-                for (ItemStack left : remainingDrops) {
-                    if (left != null && left.getType() != Material.AIR && left.getAmount() > 0) {
-                        event.getDrops().add(left);
-                    }
-                }
-
                 if (plugin.getIntegrationManager().hasBagOfGold()) {
                     plugin.getIntegrationManager().getBagOfGold().splitPhysicalMoney(
                             livingEntity,
@@ -781,7 +755,6 @@ public class EntityDeathListener implements Listener {
         if (plugin.getConfigManager().getConfigSection("placement.safe-location", grave).getBoolean("placement.safe-location", true)) {
             Location safeLocation = plugin.getLocationManager().getSafeGraveLocation(livingEntity, location, grave);
             Location target = safeLocation != null ? safeLocation : location;
-            event.setDroppedExp(0);
             if (plugin.getLocationManager().hasCachedGraveAt(target)) {
                 Location newLoc = plugin.getLocationManager().getNewLocationIfCachedGraveExists(livingEntity, target, grave);
                 if (newLoc != null) {
@@ -790,7 +763,6 @@ public class EntityDeathListener implements Listener {
             }
             modern.setDeathLocation(LocationUtil.roundLocation(target));
         } else {
-            event.setDroppedExp(0);
             Location target = location;
             if (plugin.getLocationManager().hasCachedGraveAt(target)) {
                 Location newLoc = plugin.getLocationManager().getNewLocationIfCachedGraveExists(livingEntity, target, grave);
@@ -831,31 +803,6 @@ public class EntityDeathListener implements Listener {
         }
 
         if (pre.isCancelled()) {
-            List<ItemStack> toReturn = new ArrayList<>();
-            Set<ItemStack> identitySet = Collections.newSetFromMap(new IdentityHashMap<>());
-
-            if (removedItemStackList != null) {
-                for (ItemStack item : removedItemStackList) {
-                    if (item == null || item.getType() == Material.AIR) continue;
-                    if (identitySet.add(item)) toReturn.add(item);
-                }
-            }
-            if (graveItemStackList != null) {
-                for (ItemStack item : graveItemStackList) {
-                    if (item == null || item.getType() == Material.AIR) continue;
-                    if (identitySet.add(item)) toReturn.add(item);
-                }
-            }
-            if (ignoredItemStackList != null) {
-                for (ItemStack item : ignoredItemStackList) {
-                    if (item == null || item.getType() == Material.AIR) continue;
-                    if (identitySet.add(item)) toReturn.add(item);
-                }
-            }
-
-            if (!toReturn.isEmpty()) {
-                event.getDrops().addAll(toReturn);
-            }
             return;
         }
 
@@ -952,6 +899,25 @@ public class EntityDeathListener implements Listener {
         }
 
         if (!cancelled) {
+            event.getDrops().clear();
+            event.setDroppedExp(0);
+            if (player != null && pde != null && location.getWorld() != null) {
+                InventoryView view = player.getOpenInventory();
+                if (view != null) {
+                    Inventory top = CompatibilityInventoryView.getTopInventory(view);
+                    if (top != null && (top.getType() == InventoryType.WORKBENCH || top.getType() == InventoryType.CRAFTING)) {
+                        ItemStack[] contents = top.getContents();
+                        for (int i = 1; i < contents.length; i++) {
+                            ItemStack item = contents[i];
+                            if (item != null && item.getType() != Material.AIR) {
+                                location.getWorld().dropItemNaturally(location, item);
+                                top.setItem(i, null);
+                            }
+                        }
+                    }
+                }
+            }
+
             grave.setOwnerType(modern.getOwnerType());
             grave.setOwnerName(modern.getOwnerName());
             grave.setOwnerNameDisplay(modern.getOwnerNameDisplay());
@@ -979,6 +945,9 @@ public class EntityDeathListener implements Listener {
                     || (world != null && deathLoc.getY() > world.getMaxHeight())
                     || !allowNetherRoof && (world != null && world.getEnvironment() == World.Environment.NETHER && plugin.getSafeLocationManager().isAboveNetherRoof(grave.getLocationDeath(), grave))) {
                 handleFailedGravePlacement(event, grave, deathLoc, livingEntity, removedItemStackList, graveItemStackList);
+                if (!(event instanceof PlayerDeathEvent deathEvent && deathEvent.getKeepInventory())) {
+                    appendValidDrops(event.getDrops(), effectiveIgnoredItems);
+                }
                 return;
             }
 
@@ -997,29 +966,6 @@ public class EntityDeathListener implements Listener {
                 dropIgnored(livingEntity, deathLoc, event, effectiveIgnoredItems, effectiveIgnoredBlocks);
             }
             return;
-        }
-
-        List<ItemStack> toReturn = new ArrayList<>();
-        Set<ItemStack> identitySet = Collections.newSetFromMap(new IdentityHashMap<>());
-
-        if (graveItemStackList != null) {
-            for (ItemStack item : graveItemStackList) {
-                if (item == null || item.getType() == Material.AIR) continue;
-                if (identitySet.add(item)) {
-                    toReturn.add(item);
-                }
-            }
-        }
-
-        for (ItemStack item : effectiveIgnoredItems) {
-            if (item == null || item.getType() == Material.AIR) continue;
-            if (identitySet.add(item)) {
-                toReturn.add(item);
-            }
-        }
-
-        if (!toReturn.isEmpty()) {
-            event.getDrops().addAll(toReturn);
         }
 
         if (!effectiveIgnoredBlocks.isEmpty()) {
@@ -1550,24 +1496,15 @@ public class EntityDeathListener implements Listener {
         } else {
             plugin.getEntityManager().sendMessage("message.failure", livingEntity, location, grave);
 
-            List<ItemStack> toReturn = new ArrayList<>();
-            Set<ItemStack> identitySet = Collections.newSetFromMap(new IdentityHashMap<>());
+            appendValidDrops(event.getDrops(), graveItemStackList);
+        }
+    }
 
-            if (removedItemStackList != null) {
-                for (ItemStack item : removedItemStackList) {
-                    if (item == null || item.getType() == Material.AIR) continue;
-                    if (identitySet.add(item)) toReturn.add(item);
-                }
-            }
-            if (graveItemStackList != null) {
-                for (ItemStack item : graveItemStackList) {
-                    if (item == null || item.getType() == Material.AIR) continue;
-                    if (identitySet.add(item)) toReturn.add(item);
-                }
-            }
-
-            if (!toReturn.isEmpty()) {
-                event.getDrops().addAll(toReturn);
+    private void appendValidDrops(List<ItemStack> drops, Collection<ItemStack> items) {
+        if (items == null) return;
+        for (ItemStack item : items) {
+            if (item != null && item.getType() != Material.AIR && item.getAmount() > 0) {
+                drops.add(item);
             }
         }
     }
