@@ -181,6 +181,7 @@ public class VersionManager {
      */
     public VersionManager() {
         this.version = getVersion();
+        // TODO(2027.4.9.1): Remove pre-1.20 capability flags and simplify feature detection; retain 1.20+ gates.
         this.hasConfigContains = !is_v1_7() && !is_v1_8() && !is_v1_9();
         this.hasAPIVersion = !is_v1_7() && !is_v1_8() && !is_v1_9() && !is_v1_10() && !is_v1_11() && !is_v1_12();
         this.hasBlockData = !is_v1_7() && !is_v1_8() && !is_v1_9() && !is_v1_10() && !is_v1_11() && !is_v1_12();
@@ -407,8 +408,10 @@ public class VersionManager {
      * Checks if the server version is 1.7.
      *
      * @return True if the server version is 1.7, otherwise false.
+     * @deprecated Legacy Minecraft 1.7 support; removal in GravesX 2027.4.9.1.
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+    // TODO(2027.4.9.1): Remove version checks for 1.7–1.19 after the minimum becomes 1.20.
     public boolean is_v1_7() {
         return version.matches("(?i)v1_7_R1|v1_7_R2|v1_7_R3|v1_7_R4");
     }
@@ -417,6 +420,7 @@ public class VersionManager {
      * Checks if the server version is 1.8.
      *
      * @return True if the server version is 1.8, otherwise false.
+     * @deprecated Legacy Minecraft 1.8 support; removal in GravesX 2027.4.9.1.
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean is_v1_8() {
@@ -427,6 +431,7 @@ public class VersionManager {
      * Checks if the server version is 1.9.
      *
      * @return True if the server version is 1.9, otherwise false.
+     * @deprecated Legacy Minecraft 1.9 support; removal in GravesX 2027.4.9.1.
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean is_v1_9() {
@@ -437,6 +442,7 @@ public class VersionManager {
      * Checks if the server version is 1.10.
      *
      * @return True if the server version is 1.10, otherwise false.
+     * @deprecated Legacy Minecraft 1.10 support; removal in GravesX 2027.4.9.1.
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean is_v1_10() {
@@ -447,6 +453,7 @@ public class VersionManager {
      * Checks if the server version is 1.11.
      *
      * @return True if the server version is 1.11, otherwise false.
+     * @deprecated Legacy Minecraft 1.11 support; removal in GravesX 2027.4.9.1.
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean is_v1_11() {
@@ -457,6 +464,7 @@ public class VersionManager {
      * Checks if the server version is 1.12.
      *
      * @return True if the server version is 1.12, otherwise false.
+     * @deprecated Legacy Minecraft 1.12 support; removal in GravesX 2027.4.9.1.
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean is_v1_12() {
@@ -467,6 +475,7 @@ public class VersionManager {
      * Checks if the server version is 1.13.
      *
      * @return True if the server version is 1.13, otherwise false.
+     * @deprecated Legacy Minecraft 1.13 support; removal in GravesX 2027.4.9.1.
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean is_v1_13() {
@@ -477,6 +486,7 @@ public class VersionManager {
      * Checks if the server version is 1.14.
      *
      * @return True if the server version is 1.14, otherwise false.
+     * @deprecated Legacy Minecraft 1.14 support; removal in GravesX 2027.4.9.1.
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean is_v1_14() {
@@ -487,6 +497,7 @@ public class VersionManager {
      * Checks if the server version is 1.15.
      *
      * @return True if the server version is 1.15, otherwise false.
+     * @deprecated Legacy Minecraft 1.15 support; removal in GravesX 2027.4.9.1.
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean is_v1_15() {
@@ -497,6 +508,7 @@ public class VersionManager {
      * Checks if the server version is 1.16.
      *
      * @return True if the server version is 1.16, otherwise false.
+     * @deprecated Legacy Minecraft 1.16 support; removal in GravesX 2027.4.9.1.
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean is_v1_16() {
@@ -507,6 +519,7 @@ public class VersionManager {
      * Checks if the server version is 1.17.
      *
      * @return True if the server version is 1.17, otherwise false.
+     * @deprecated Legacy Minecraft 1.17 support; removal in GravesX 2027.4.9.1.
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean is_v1_17() {
@@ -517,6 +530,7 @@ public class VersionManager {
      * Checks if the server version is 1.18.
      *
      * @return True if the server version is 1.18, otherwise false.
+     * @deprecated Legacy Minecraft 1.18 support; removal in GravesX 2027.4.9.1.
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean is_v1_18() {
@@ -527,6 +541,7 @@ public class VersionManager {
      * Checks if the server version is 1.19.
      *
      * @return True if the server version is 1.19, otherwise false.
+     * @deprecated Legacy Minecraft 1.19 support; removal in GravesX 2027.4.9.1.
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean is_v1_19() {

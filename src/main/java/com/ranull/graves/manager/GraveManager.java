@@ -762,6 +762,7 @@ public class GraveManager {
      * @param grave    the grave to spawn particles for.
      */
     public void graveParticle(Location location, Grave grave) {
+        // TODO(2027.4.9.1): Remove the pre-1.20 capability fallback; keep modern API behavior.
         if (!plugin.getVersionManager().hasParticle()
                 || location == null
                 || location.getWorld() == null
@@ -1916,6 +1917,7 @@ public class GraveManager {
             return inventory;
 
         } else if (storageMode == Grave.StorageMode.EXACT) {
+            // TODO(2027.4.9.1): Remove the pre-1.20 capability fallback; keep modern API behavior.
             if (plugin.getVersionManager().hasEnchantmentCurse()) {
                 itemStackList.removeIf(itemStack -> itemStack != null && itemStack.containsEnchantment(Enchantment.VANISHING_CURSE));
             }
@@ -2457,6 +2459,7 @@ public class GraveManager {
                                 player.getInventory().setItem(counter, itemStack);
                                 grave.getInventory().remove(itemStack);
 
+                                // TODO(2027.4.9.1): Remove the pre-1.20 capability fallback; keep modern API behavior.
                                 if (counter == 17 && plugin.getVersionManager().hasSecondHand()) {
                                     player.getInventory().setItem(17, itemStack);
                                     grave.getInventory().remove(itemStack);

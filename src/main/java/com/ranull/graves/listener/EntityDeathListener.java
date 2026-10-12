@@ -899,24 +899,27 @@ public class EntityDeathListener implements Listener {
         }
 
         if (!cancelled) {
+            // Only consume drops once all grave-create listeners have approved creation.
+            // Before this point, cancellation leaves event.getDrops() untouched.
             event.getDrops().clear();
             event.setDroppedExp(0);
-            if (player != null && pde != null && location.getWorld() != null) {
-                InventoryView view = player.getOpenInventory();
-                if (view != null) {
-                    Inventory top = CompatibilityInventoryView.getTopInventory(view);
-                    if (top != null && (top.getType() == InventoryType.WORKBENCH || top.getType() == InventoryType.CRAFTING)) {
-                        ItemStack[] contents = top.getContents();
-                        for (int i = 1; i < contents.length; i++) {
-                            ItemStack item = contents[i];
-                            if (item != null && item.getType() != Material.AIR) {
-                                location.getWorld().dropItemNaturally(location, item);
-                                top.setItem(i, null);
-                            }
+            // Crafting-grid items are manually dropped only when grave creation proceeds.
+        if (player != null && pde != null && location.getWorld() != null) {
+            InventoryView view = player.getOpenInventory();
+            if (view != null) {
+                Inventory top = CompatibilityInventoryView.getTopInventory(view);
+                if (top != null && (top.getType() == InventoryType.WORKBENCH || top.getType() == InventoryType.CRAFTING)) {
+                    ItemStack[] contents = top.getContents();
+                    for (int i = 1; i < contents.length; i++) {
+                        ItemStack item = contents[i];
+                        if (item != null && item.getType() != Material.AIR) {
+                            location.getWorld().dropItemNaturally(location, item);
+                            top.setItem(i, null);
                         }
                     }
                 }
             }
+        }
 
             grave.setOwnerType(modern.getOwnerType());
             grave.setOwnerName(modern.getOwnerName());
@@ -1005,6 +1008,7 @@ public class EntityDeathListener implements Listener {
         graveCreateEvent.setYaw(livingEntity.getLocation().getYaw());
         graveCreateEvent.setPitch(livingEntity.getLocation().getPitch());
         graveCreateEvent.setTimeAlive(plugin.getConfigManager().getConfigSection("grave.time", grave).getInt("grave.time") * 1000L);
+        // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
         if (!plugin.getVersionManager().is_v1_7()) {
             if (plugin.getVersionManager().isPost1_21_9()) {
                 graveCreateEvent.setOwnerTexture(SkinTextureUtil_post_1_21_9.getTexture(livingEntity));
@@ -1236,6 +1240,7 @@ public class EntityDeathListener implements Listener {
         setupSkull(grave, graveItemStackList, livingEntity, location);
 
         grave.setInventory(plugin.getGraveManager().getGraveInventory(grave, livingEntity, graveItemStackList, removedItemStackList, permissionList));
+        // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
         grave.setEquipmentMap(!plugin.getVersionManager().is_v1_7()
                 ? plugin.getEntityManager().getEquipmentMap(livingEntity, grave)
                 : new HashMap<>());

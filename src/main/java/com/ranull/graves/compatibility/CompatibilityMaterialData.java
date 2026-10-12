@@ -94,6 +94,7 @@ public class CompatibilityMaterialData implements Compatibility {
             placedAgainst = placedBlock.getRelative(BlockFace.DOWN);
         }
 
+        // TODO(2027.4.9.1): Remove the legacy BlockPlaceEvent constructor path (<1.9).
         if (plugin.getVersionManager().is_v1_8() || plugin.getVersionManager().is_v1_7()) {
             @SuppressWarnings("deprecation")
             BlockPlaceEvent legacyEvent = new BlockPlaceEvent(
@@ -205,6 +206,7 @@ public class CompatibilityMaterialData implements Compatibility {
         skull.setSkullType(SkullType.PLAYER);
         skull.setRotation(BlockFaceUtil.getYawBlockFace(grave.getYaw()).getOppositeFace());
 
+        // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
         boolean useFallback = plugin.getVersionManager().is_v1_7();
 
         try {

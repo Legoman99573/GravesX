@@ -47,6 +47,7 @@ public class EntityDamageByEntityListener implements Listener {
      */
     private boolean shouldCancelDamage(Entity entity) {
         return (entity instanceof ItemFrame
+                // TODO(2027.4.9.1): Remove redundant 1.7 version gating and its helper.
                 || (isVersion1_7OrAbove() && entity instanceof ArmorStand))
                 && isAssociatedWithGrave(entity);
     }
@@ -57,6 +58,7 @@ public class EntityDamageByEntityListener implements Listener {
      * @return True if the server version is 1.7 or above, false otherwise.
      */
     private boolean isVersion1_7OrAbove() {
+        // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
         return plugin.getVersionManager().is_v1_7();
     }
 

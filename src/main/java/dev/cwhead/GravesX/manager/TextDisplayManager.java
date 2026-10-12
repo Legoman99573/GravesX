@@ -33,6 +33,7 @@ public class TextDisplayManager extends EntityDataManager {
     }
 
     public void createHologram(Location location, Grave grave) {
+        // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
         if (plugin.getVersionManager().is_v1_7()) return;
 
         if (!plugin.getConfigManager()

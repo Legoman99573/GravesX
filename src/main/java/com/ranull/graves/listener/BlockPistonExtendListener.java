@@ -60,9 +60,7 @@ public class BlockPistonExtendListener implements Listener {
         }
     }
 
-    /**
-     * Prevents sticky pistons from pulling protected grave blocks.
-     */
+    /** Prevents sticky pistons from pulling protected grave blocks. */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockPistonRetract(BlockPistonRetractEvent event) {
         Block piston = event.getBlock();
@@ -124,6 +122,7 @@ public class BlockPistonExtendListener implements Listener {
                 try {
                     loc.getWorld().playSound(loc, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("ENTITY_GENERIC_EXPLODE")), 1.0f, 1.0f);
                 } catch (Exception e) {
+                    // TODO(2027.4.9.1): Remove the pre-1.9 EXPLODE sound fallback.
                     loc.getWorld().playSound(loc, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("EXPLODE")), 1.0f, 1.0f);
                 }
             } catch (Exception ignored) {

@@ -31,6 +31,7 @@ public class ArmorStandManager extends EntityDataManager {
      * Spawns each ArmorStand on the region thread for that line location.
      */
     public void createHologram(Location location, Grave grave) {
+        // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
         if (plugin.getVersionManager().is_v1_7()) return;
 
         if (!plugin.getConfigManager()
@@ -83,10 +84,12 @@ public class ArmorStandManager extends EntityDataManager {
                     armorStand.setCustomName(parsed);
                 }
 
+                // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
                 if (!plugin.getVersionManager().is_v1_7()) {
                     try { armorStand.setMarker(marker); } catch (NoSuchMethodError ignored) {}
                 }
 
+                // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
                 if (!plugin.getVersionManager().is_v1_7() && !plugin.getVersionManager().is_v1_8()) {
                     armorStand.setInvulnerable(true);
                 }

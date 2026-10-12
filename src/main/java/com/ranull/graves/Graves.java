@@ -851,6 +851,7 @@ public class Graves extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new ExplosionPrimeListener(this), this);
         getServer().getPluginManager().registerEvents(new ProjectileHitListener(this), this);
 
+        // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
         if (!versionManager.is_v1_7()) {
             getServer().getPluginManager().registerEvents(new PlayerInteractAtEntityListener(this), this);
         }

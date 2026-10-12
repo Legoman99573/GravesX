@@ -65,6 +65,7 @@ public class EntityManager extends EntityDataManager {
      * @param player the player whose main hand to swing.
      */
     public void swingMainHand(Player player) {
+        // TODO(2027.4.9.1): Remove the pre-1.20 capability fallback; keep modern API behavior.
         if (plugin.getVersionManager().hasSwingHand()) {
             player.swingMainHand();
         } else {
@@ -89,6 +90,7 @@ public class EntityManager extends EntityDataManager {
         plugin.getServer().getPluginManager().callEvent(legacy);
 
         if (!modern.isCancelled() || !modern.isAddon() || !legacy.isCancelled() || !legacy.isAddon()) {
+            // TODO(2027.4.9.1): Remove the pre-1.20 capability fallback; keep modern API behavior.
             if (!plugin.getVersionManager().hasPersistentData()) {
                 return null;
             }
@@ -757,6 +759,7 @@ public class EntityManager extends EntityDataManager {
 
             plugin.getServer().getPluginManager().callEvent(serverCommandEvent);
 
+            // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
             if ((plugin.getVersionManager().is_v1_7() || plugin.getVersionManager().is_v1_8())
                     || !serverCommandEvent.isCancelled()) {
                 plugin.getSchedulerManager().callSyncMethod(() -> plugin.getServer()
@@ -1268,6 +1271,7 @@ public class EntityManager extends EntityDataManager {
      * @param grave    the grave associated with the armor stand.
      */
     public void createArmorStand(Location location, Grave grave) {
+        // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
         if (!plugin.getVersionManager().is_v1_7()
                 && plugin.getConfigManager().getConfigSection("armor-stand.enabled", grave).getBoolean("armor-stand.enabled")) {
             double offsetX = plugin.getConfigManager().getConfigSection("armor-stand.offset.x", grave).getDouble("armor-stand.offset.x");
@@ -1302,6 +1306,7 @@ public class EntityManager extends EntityDataManager {
                                     EntityData.Type.ARMOR_STAND);
 
                             boolean marker = plugin.getConfigManager().getConfigSection("armor-stand.marker", grave).getBoolean("armor-stand.marker");
+                            // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
                             if (!plugin.getVersionManager().is_v1_7()) {
                                 try {
                                     armorStand.setMarker(marker);
@@ -1309,10 +1314,12 @@ public class EntityManager extends EntityDataManager {
                                 }
                             }
 
+                            // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
                             if (!plugin.getVersionManager().is_v1_7() && !plugin.getVersionManager().is_v1_8()) {
                                 armorStand.setInvulnerable(true);
                             }
 
+                            // TODO(2027.4.9.1): Remove the pre-1.20 capability fallback; keep modern API behavior.
                             if (plugin.getVersionManager().hasScoreboardTags()) {
                                 armorStand.getScoreboardTags().add("graveArmorStand");
                                 armorStand.getScoreboardTags().add("graveArmorStandUUID:" + grave.getUUID());
@@ -1385,6 +1392,7 @@ public class EntityManager extends EntityDataManager {
                             itemFrame.setCustomNameVisible(false);
                             itemFrame.setItem(itemStack);
 
+                            // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
                             if (!plugin.getVersionManager().is_v1_7() && !plugin.getVersionManager().is_v1_8()) {
                                 itemFrame.setInvulnerable(true);
                             }
@@ -1466,6 +1474,7 @@ public class EntityManager extends EntityDataManager {
                 equipmentSlotItemStackMap.put(EquipmentSlot.FEET, entityEquipment.getBoots());
             }
 
+            // TODO(2027.4.9.1): Remove the pre-1.20 capability fallback; keep modern API behavior.
             if (plugin.getVersionManager().hasSecondHand()) {
                 if (entityEquipment.getItemInMainHand().getType() != Material.AIR
                         && grave.getInventory().contains(entityEquipment.getItemInMainHand())) {
@@ -1501,6 +1510,7 @@ public class EntityManager extends EntityDataManager {
         if (entity != null) {
             if (entity instanceof Player player) {
                 return player.getName(); // Need redundancy for legacy support
+            // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
             } else if (!plugin.getVersionManager().is_v1_7()) {
                 return entity.getName();
             }

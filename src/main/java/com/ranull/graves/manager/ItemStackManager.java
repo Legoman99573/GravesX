@@ -80,13 +80,17 @@ public class ItemStackManager extends EntityDataManager {
 
             if (plugin.getConfigManager().getConfigSection("obituary.glow", grave).getBoolean("obituary.glow")) {
                 bookMeta.addEnchant(durability, 1, true);
+                // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
                 if (!plugin.getVersionManager().is_v1_7()) {
                     bookMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
                 }
             }
 
+            // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
             if (!plugin.getVersionManager().is_v1_7()
+                    // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
                     && !plugin.getVersionManager().is_v1_8()
+                    // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
                     && !plugin.getVersionManager().is_v1_9()) {
                 bookMeta.setGeneration(null);
             }
@@ -137,13 +141,17 @@ public class ItemStackManager extends EntityDataManager {
 
             if (plugin.getConfigManager().getConfigSection("obituary.glow", grave).getBoolean("obituary.glow")) {
                 bookMeta.addEnchant(durability, 1, true);
+                // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
                 if (!plugin.getVersionManager().is_v1_7()) {
                     bookMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
                 }
             }
 
+            // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
             if (!plugin.getVersionManager().is_v1_7()
+                    // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
                     && !plugin.getVersionManager().is_v1_8()
+                    // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
                     && !plugin.getVersionManager().is_v1_9()) {
                 bookMeta.setGeneration(null);
             }
@@ -239,6 +247,7 @@ public class ItemStackManager extends EntityDataManager {
             String materialString = plugin.getConfigManager().getConfigSection("block.material", grave)
                     .getString("block.material", "CHEST");
 
+            // TODO(2027.4.9.1): Remove the pre-1.20 capability fallback; keep modern API behavior.
             if ("PLAYER_HEAD".equals(materialString) && !plugin.getVersionManager().hasBlockData()) {
                 materialString = "SKULL_ITEM";
             }

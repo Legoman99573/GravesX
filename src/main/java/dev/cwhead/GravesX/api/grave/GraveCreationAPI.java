@@ -353,6 +353,7 @@ public class GraveCreationAPI {
             locationMap.put(finalLocationDeath, BlockData.BlockType.DEATH);
             grave.setLocationDeath(finalLocationDeath);
             grave.setInventory(graveManager.getGraveInventory(grave, (LivingEntity) victim, itemStackList, getRemovedItemStacks((LivingEntity) victim), null));
+            // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
             grave.setEquipmentMap(equipmentMap != null ? equipmentMap : (!versionManager.is_v1_7() ? entityManager.getEquipmentMap((LivingEntity) victim, grave) : new HashMap<>()));
 
             dataManager.addGrave(grave);

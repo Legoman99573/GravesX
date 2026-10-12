@@ -281,6 +281,7 @@ public class RecipeManager {
      */
     @Deprecated (forRemoval = true, since = "4.9.10.10")
     public void setRecipeData(String token, ItemStack itemStack) {
+        // TODO(2027.4.9.1): Remove the pre-1.20 capability fallback; keep modern API behavior.
         if (plugin.getVersionManager().hasPersistentData()) {
             ItemMeta itemMeta = itemStack.getItemMeta();
 

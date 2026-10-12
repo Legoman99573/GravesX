@@ -59,6 +59,7 @@ public class PlayerDeathListener implements Listener {
     private boolean isCompassToRemove(PlayerDeathEvent event, ItemStack itemStack) {
         if (itemStack == null) return false;
 
+        // TODO(2027.4.9.1): Review legacy compass material fallbacks when dropping pre-1.20 support.
         // Support across MC versions: COMPASS (1.8+) and RECOVERY_COMPASS (1.19+)
         String typeName = itemStack.getType().name(); // already upper-case
         boolean isAnyCompass = typeName.contains("COMPASS");

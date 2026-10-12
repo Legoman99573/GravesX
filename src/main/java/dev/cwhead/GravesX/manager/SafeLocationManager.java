@@ -1719,10 +1719,15 @@ public final class SafeLocationManager {
     public boolean isInsideBorder(Location location) {
         if (location == null) return false;
 
+        // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
         return plugin.getVersionManager().is_v1_7()
+                // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
                 || plugin.getVersionManager().is_v1_8()
+                // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
                 || plugin.getVersionManager().is_v1_9()
+                // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
                 || plugin.getVersionManager().is_v1_10()
+                // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
                 || plugin.getVersionManager().is_v1_11()
                 || (location.getWorld() != null && location.getWorld().getWorldBorder().isInside(location));
     }

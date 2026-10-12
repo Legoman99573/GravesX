@@ -113,6 +113,7 @@ public class BlockManager {
                 String materialString = plugin.getConfigManager().getConfigSection("block.material", grave)
                         .getString("block.material", "CHEST");
 
+                // TODO(2027.4.9.1): Remove the pre-1.20 capability fallback; keep modern API behavior.
                 if (materialString.equals("PLAYER_HEAD") && !plugin.getVersionManager().hasBlockData()) {
                     materialString = "SKULL";
                 }

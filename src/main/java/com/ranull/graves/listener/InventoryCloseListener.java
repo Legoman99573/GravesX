@@ -13,13 +13,21 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
 
+import java.util.Collections;
 import java.util.Objects;
+import java.util.Set;
+import java.util.WeakHashMap;
 
 /**
  * Listener for handling InventoryCloseEvent to manage actions when a grave inventory is closed.
  */
 public class InventoryCloseListener implements Listener {
     private final Graves plugin;
+
+    // Multiple viewers can close the same empty grave before its scheduled removal finishes.
+    // Weak keys avoid retaining completed graves after they are no longer referenced.
+    private final Set<Grave> lootingGraves = Collections.synchronizedSet(
+            Collections.newSetFromMap(new WeakHashMap<Grave, Boolean>()));
 
     /**
      * Constructs an InventoryCloseListener with the specified Graves plugin.
@@ -52,8 +60,10 @@ public class InventoryCloseListener implements Listener {
         callGraveCloseEvent(event, grave, player);
 
         // If empty, handle as "looted"
-        if (isEmptyGrave(grave)) {
-            handleEmptyGrave(event, player, grave);
+        if (isEmptyGrave(grave) && handleEmptyGrave(event, player, grave)) {
+            // The grave is being removed. Do not save a stale inventory or play
+            // another close sound for a viewer closed by removeGrave().
+            return;
         }
 
         // Save the final Bukkit inventory after all click/close handlers have
@@ -88,48 +98,59 @@ public class InventoryCloseListener implements Listener {
     /**
      * Handles actions for an empty (fully looted) grave.
      */
-    private void handleEmptyGrave(InventoryCloseEvent event, Player player, Grave grave) {
-        dev.cwhead.GravesX.event.GraveLootedEvent modern =
-                new dev.cwhead.GravesX.event.GraveLootedEvent(event.getView(), grave, player);
-        plugin.getServer().getPluginManager().callEvent(modern);
+    private boolean handleEmptyGrave(InventoryCloseEvent event, Player player, Grave grave) {
+        // Claim the completion before firing events: listeners and removeGrave()
+        // can cause other viewers to close recursively or on another region.
+        if (!lootingGraves.add(grave)) return true;
 
-        com.ranull.graves.event.GraveLootedEvent legacy =
-                new com.ranull.graves.event.GraveLootedEvent(event.getView(), grave, player);
-        plugin.getServer().getPluginManager().callEvent(legacy);
+        boolean completed = false;
+        try {
+            dev.cwhead.GravesX.event.GraveLootedEvent modern =
+                    new dev.cwhead.GravesX.event.GraveLootedEvent(event.getView(), grave, player);
+            plugin.getServer().getPluginManager().callEvent(modern);
 
-        grave.getInventory().getViewers().remove(player);
+            com.ranull.graves.event.GraveLootedEvent legacy =
+                    new com.ranull.graves.event.GraveLootedEvent(event.getView(), grave, player);
+            plugin.getServer().getPluginManager().callEvent(legacy);
 
-        if (!(modern.isCancelled() || modern.isAddon() || legacy.isCancelled() || legacy.isAddon())) {
-            plugin.getEntityManager().runCommands("event.command.loot", player, player.getLocation(), grave);
-            plugin.getEntityManager().sendMessage("message.looted", player, player.getLocation(), grave);
+            if (!(modern.isCancelled() || modern.isAddon() || legacy.isCancelled() || legacy.isAddon())) {
+                completed = true;
+                plugin.getEntityManager().runCommands("event.command.loot", player, player.getLocation(), grave);
+                plugin.getEntityManager().sendMessage("message.looted", player, player.getLocation(), grave);
 
-            plugin.getEntityManager().spawnZombie(grave.getLocationDeath(), player, player, grave);
+                plugin.getEntityManager().spawnZombie(grave.getLocationDeath(), player, player, grave);
 
-            if (plugin.getConfigManager().getConfigSection("drop.looted-explosion-effect", grave).getBoolean("drop.looted-explosion-effect", false)) {
-                try {
-                    Location location = grave.getLocationDeath();
-                    Objects.requireNonNull(location.getWorld()).spawnParticle(plugin.getVersionManager().getParticleForVersion("EXPLOSION"), location, 1);
+                if (plugin.getConfigManager().getConfigSection("drop.looted-explosion-effect", grave).getBoolean("drop.looted-explosion-effect", false)) {
                     try {
-                        location.getWorld().playSound(location, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("ENTITY_GENERIC_EXPLODE")), 1.0f, 1.0f);
-                    } catch (Exception e) {
-                        location.getWorld().playSound(location, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("EXPLODE")), 1.0f, 1.0f); // pre 1.9
+                        Location location = grave.getLocationDeath();
+                        Objects.requireNonNull(location.getWorld()).spawnParticle(plugin.getVersionManager().getParticleForVersion("EXPLOSION"), location, 1);
+                        try {
+                            location.getWorld().playSound(location, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("ENTITY_GENERIC_EXPLODE")), 1.0f, 1.0f);
+                        } catch (Exception e) {
+                            // TODO(2027.4.9.1): Remove the pre-1.9 EXPLODE sound fallback.
+                            location.getWorld().playSound(location, Objects.requireNonNull(CompatibilitySoundEnum.valueOf("EXPLODE")), 1.0f, 1.0f); // pre 1.9
+                        }
+                    } catch (Exception ignored) {
+                        // ignored
                     }
-                } catch (Exception ignored) {
-                    // ignored
+                }
+
+                plugin.getGraveManager().giveGraveExperience(player, grave);
+                plugin.getGraveManager().removeGrave(grave);
+
+                if (plugin.getIntegrationManager().hasNoteBlockAPI()) {
+                    if (plugin.getIntegrationManager().getNoteBlockAPI().isSongPlayingForPlayer(player)) {
+                        plugin.getIntegrationManager().getNoteBlockAPI().stopSongForPlayer(player);
+                    }
+                    if (plugin.getIntegrationManager().getNoteBlockAPI().isSongPlayingForAllPlayers()) {
+                        plugin.getIntegrationManager().getNoteBlockAPI().stopSongForAllPlayers();
+                    }
                 }
             }
-
-            plugin.getGraveManager().giveGraveExperience(player, grave);
-            plugin.getGraveManager().removeGrave(grave);
-
-            if (plugin.getIntegrationManager().hasNoteBlockAPI()) {
-                if (plugin.getIntegrationManager().getNoteBlockAPI().isSongPlayingForPlayer(player)) {
-                    plugin.getIntegrationManager().getNoteBlockAPI().stopSongForPlayer(player);
-                }
-                if (plugin.getIntegrationManager().getNoteBlockAPI().isSongPlayingForAllPlayers()) {
-                    plugin.getIntegrationManager().getNoteBlockAPI().stopSongForAllPlayers();
-                }
-            }
+            return completed;
+        } finally {
+            // Cancelled/addon-owned graves must be eligible for a future attempt.
+            if (!completed) lootingGraves.remove(grave);
         }
     }
 }
