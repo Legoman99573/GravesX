@@ -13,6 +13,7 @@ import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -65,15 +66,23 @@ public final class LanguageManager {
             plugin.getLogger().warning("Could not create language folder: " + folder);
         }
 
+        Path folderPath = folder.toPath().toAbsolutePath().normalize();
+
         for (String locale : bundledLocales(plugin)) {
             File file = new File(folder, locale + ".yml");
+            Path targetPath = file.toPath().toAbsolutePath().normalize();
+
+            if (!targetPath.startsWith(folderPath)) {
+                plugin.getLogger().warning("Blocked suspicious language path: " + targetPath);
+                continue;
+            }
 
             if (file.isFile())
                 continue;
 
             try (InputStream resource = plugin.getResource(RESOURCE_PATH + locale + ".yml")) {
                 if (resource != null) {
-                    Files.copy(resource, file.toPath());
+                    Files.copy(resource, targetPath);
                 }
             } catch (IOException e) {
                 plugin.getLogger().warning("Could not extract language " + locale + ": " + e.getMessage());
