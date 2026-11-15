@@ -26,6 +26,7 @@ public class CacheManager {
     private final Map<UUID, List<ItemStack>> removedItemStackMap;
     private final Map<String, Location> rightClickedBlocks;
     private final Map<UUID, UUID> graveViewerMap;
+    private final Map<UUID, Grave> viewedGraveRefs = new java.util.concurrent.ConcurrentHashMap<>();
     private final Map<UUID, EntityData> entityMap;
 
     public CacheManager(Graves plugin) {
@@ -136,6 +137,7 @@ public class CacheManager {
         removedItemStackMap.clear();
         rightClickedBlocks.clear();
         graveViewerMap.clear();
+        viewedGraveRefs.clear();
         backend.clear();
     }
 
@@ -250,6 +252,7 @@ public class CacheManager {
         UUID current = graveViewerMap.get(graveUUID);
         if (current != null && current.equals(viewerUUID)) {
             graveViewerMap.remove(graveUUID);
+            viewedGraveRefs.remove(graveUUID);
         }
     }
 
@@ -261,6 +264,19 @@ public class CacheManager {
      */
     public void clearGraveViewer(UUID graveUUID) {
         graveViewerMap.remove(graveUUID);
+        viewedGraveRefs.remove(graveUUID);
+    }
+
+    /**
+     * Remembers the grave a viewer currently has open so it can be flushed from
+     * threads that do not own the viewer (shutdown, reload) without touching the player.
+     *
+     * @param grave the grave that was just opened
+     */
+    public void trackViewedGrave(Grave grave) {
+        if (grave != null && grave.getUUID() != null) {
+            viewedGraveRefs.put(grave.getUUID(), grave);
+        }
     }
 
     /**
@@ -270,7 +286,12 @@ public class CacheManager {
      * @param viewerUUID the player's UUID
      */
     public void clearAllGraveViewersFor(UUID viewerUUID) {
-        graveViewerMap.entrySet().removeIf(e -> viewerUUID.equals(e.getValue()));
+        graveViewerMap.entrySet().removeIf(e -> {
+            boolean mine = viewerUUID.equals(e.getValue());
+            if (mine)
+                viewedGraveRefs.remove(e.getKey());
+            return mine;
+        });
     }
 
     /**
@@ -301,6 +322,9 @@ public class CacheManager {
         UUID viewer = getGraveViewer(graveUUID);
         org.bukkit.entity.Player player = viewer == null ? null : plugin.getServer().getPlayer(viewer);
         if (player == null) return null;
+        if (!plugin.getSchedulerManager().isEntityThread(player)) {
+            return viewedGraveRefs.get(graveUUID);
+        }
         org.bukkit.inventory.Inventory top =
                 com.ranull.graves.compatibility.CompatibilityInventoryView.getTopInventory(player.getOpenInventory());
         return top.getHolder() instanceof Grave active && graveUUID.equals(active.getUUID()) ? active : null;

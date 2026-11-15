@@ -1,5 +1,6 @@
 package com.ranull.graves.listener;
 
+import dev.cwhead.GravesX.compatibility.CompatibilityTeleport;
 import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.event.GravePreExplodeEvent;
@@ -90,7 +91,7 @@ public class ExplosionPrimeListener implements Listener {
                     explosionLocation = newExplosionLocation.clone();
 
                     if (!sourceEntity.getLocation().equals(newExplosionLocation)) {
-                        sourceEntity.teleport(newExplosionLocation);
+                        CompatibilityTeleport.teleportSafely(sourceEntity, newExplosionLocation, plugin);
                     }
                 }
             }

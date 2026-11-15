@@ -166,16 +166,7 @@ public final class DebugManager {
             return;
         }
 
-        if (Bukkit.isPrimaryThread()) {
-            sendToAdmins(admins, message, severity, caller);
-        } else {
-            CallerInfo finalCaller = caller;
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                if (!unloaded.get()) {
-                    sendToAdmins(admins, message, severity, finalCaller);
-                }
-            });
-        }
+        sendToAdmins(admins, message, severity, caller);
     }
 
     /**
@@ -230,11 +221,21 @@ public final class DebugManager {
                     ? ChatColor.DARK_GRAY + " [" + caller.toShortString() + "]" + ChatColor.RESET
                     : "";
 
-            player.sendMessage(
+            final Player target = player;
+            final String formatted =
                     ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " +
                             sevColor + labelBase + " " + ChatColor.DARK_GRAY + "(" + sevLabel + "):" +
-                            ChatColor.RESET + " " + message + callerSuffix
-            );
+                            ChatColor.RESET + " " + message + callerSuffix;
+
+            try {
+                plugin.getSchedulerManager().execute(target, () -> {
+                    if (!unloaded.get()) {
+                        target.sendMessage(formatted);
+                    }
+                });
+            } catch (Throwable ignored) {
+                // Plugin is shutting down or the scheduler is unavailable; drop the debug line.
+            }
         }
     }
 

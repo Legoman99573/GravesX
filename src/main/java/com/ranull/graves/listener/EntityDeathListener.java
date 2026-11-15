@@ -503,7 +503,7 @@ public class EntityDeathListener implements Listener {
                             it.set(null);
                             consumeFromDropsBySimilarity(remainingDrops, invItem);
 
-                            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                            plugin.getSchedulerManager().runTask(player, () -> {
                                 if (player.isOnline()) {
                                     player.getInventory().setItem(slot, boundItem);
                                     player.updateInventory();
@@ -591,7 +591,7 @@ public class EntityDeathListener implements Listener {
 
                             if (slot >= 0) {
                                 int finalSlot = slot;
-                                plugin.getServer().getScheduler().runTask(plugin, () -> {
+                                plugin.getSchedulerManager().runTask(player, () -> {
                                     player.getInventory().setItem(finalSlot, boundItem);
                                     player.updateInventory();
                                 });

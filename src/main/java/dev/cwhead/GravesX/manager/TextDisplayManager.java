@@ -1,5 +1,6 @@
 package dev.cwhead.GravesX.manager;
 
+import dev.cwhead.GravesX.compatibility.CompatibilityTeleport;
 import com.ranull.graves.Graves;
 import com.ranull.graves.data.EntityData;
 import com.ranull.graves.data.HologramData;
@@ -356,9 +357,7 @@ public class TextDisplayManager extends EntityDataManager {
                 executeRegion(finalLocation, remover);
 
             } else {
-                plugin.getServer()
-                        .getScheduler()
-                        .runTask(plugin, remover);
+                plugin.getSchedulerManager().runTask(remover);
             }
         }
 
@@ -393,7 +392,7 @@ public class TextDisplayManager extends EntityDataManager {
                 double dy = cur.getY() - expectedLoc.getY();
                 double dz = cur.getZ() - expectedLoc.getZ();
                 if ((dx * dx + dy * dy + dz * dz) > 0.0001D) {
-                    textDisplay.teleport(expectedLoc);
+                    CompatibilityTeleport.teleportSafely(textDisplay, expectedLoc, plugin);
                 }
             }
         } catch (Throwable t) {
@@ -778,7 +777,7 @@ public class TextDisplayManager extends EntityDataManager {
             }
         }
 
-        plugin.getServer().getScheduler().runTask(plugin, task);
+        plugin.getSchedulerManager().runTask(task);
     }
 
     private void executeRegion(Entity entity, Runnable task) {
@@ -795,8 +794,9 @@ public class TextDisplayManager extends EntityDataManager {
             return;
         }
 
-        plugin.getServer().getScheduler().runTask(plugin, task);
+        plugin.getSchedulerManager().runTask(entity, task);
     }
+
 
     private boolean executePaperEntityTask(Entity entity, Runnable task) {
         if (entity == null) {

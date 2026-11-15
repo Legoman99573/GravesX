@@ -15,6 +15,8 @@ import java.lang.management.OperatingSystemMXBean;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Utility class for gathering server information and generating server dumps.
@@ -100,11 +102,7 @@ public class ServerUtil {
         }
 
         // Players
-        stringList.add("Players Online: " + plugin.getServer().getOnlinePlayers().size() + "/" + plugin.getServer().getMaxPlayers());
-        for (Player player : plugin.getServer().getOnlinePlayers()) {
-            int ping = getPlayerPing(player);
-            stringList.add("- " + player.getName() + " UUID: " + player.getUniqueId() + " Ping: " + ping + "ms");
-        }
+        collectPlayerLines(plugin, stringList);
 
         stringList.add("");
 
@@ -348,6 +346,58 @@ public class ServerUtil {
         char[] chars = new char[times];
         Arrays.fill(chars, ch);
         return new String(chars);
+    }
+
+    /**
+     * Adds the online player section of the dump.
+     */
+    private static void collectPlayerLines(Graves plugin, List<String> out) {
+        final int max = plugin.getServer().getMaxPlayers();
+        final CompletableFuture<List<CompletableFuture<String>>> snapshot =
+                new CompletableFuture<>();
+
+        try {
+            plugin.getSchedulerManager().execute(() -> {
+                try {
+                    List<CompletableFuture<String>> parts = new ArrayList<>();
+
+                    for (Player player : new ArrayList<>(plugin.getServer().getOnlinePlayers())) {
+                        final CompletableFuture<String> part = new CompletableFuture<>();
+                        parts.add(part);
+
+                        try {
+                            plugin.getSchedulerManager().execute(player, () -> {
+                                try {
+                                    part.complete("- " + player.getName() + " UUID: " + player.getUniqueId() + " Ping: " + getPlayerPing(player) + "ms");
+                                } catch (Throwable t) {
+                                    part.complete("- (player details unavailable)");
+                                }
+                            });
+                        } catch (Throwable t) {
+                            part.complete("- (player details unavailable)");
+                        }
+                    }
+
+                    snapshot.complete(parts);
+                } catch (Throwable t) {
+                    snapshot.completeExceptionally(t);
+                }
+            });
+
+            List<CompletableFuture<String>> parts = snapshot.get(5, TimeUnit.SECONDS);
+
+            out.add("Players Online: " + parts.size() + "/" + max);
+
+            for (CompletableFuture<String> part : parts) {
+                try {
+                    out.add(part.get(2, TimeUnit.SECONDS));
+                } catch (Exception e) {
+                    out.add("- (player details unavailable)");
+                }
+            }
+        } catch (Exception e) {
+            out.add("Players Online: unavailable (/" + max + ")");
+        }
     }
 
     private static int getPlayerPing(Player player) {

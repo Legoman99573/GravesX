@@ -200,7 +200,7 @@ public class CoreProtectListener implements Listener {
         if (originalMaterial.isAir())
             return;
 
-        plugin.getServer().getScheduler().runTask(plugin, () -> {
+        plugin.getSchedulerManager().runTask(location, () -> {
 
             Block currentBlock = location.getBlock();
 

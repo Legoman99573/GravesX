@@ -383,7 +383,7 @@ public final class Mannequins extends EntityDataManager {
      */
     private void applySkinPaperResolvable(LivingEntity mannequin, String username, String texturesBase64, String sig) {
         // Do the heavy work async (especially if update() happens)
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        plugin.getSchedulerManager().runTaskAsynchronously(() -> {
             try {
                 Object resolved;
 
@@ -402,7 +402,7 @@ public final class Mannequins extends EntityDataManager {
                 }
 
                 Object finalResolved = resolved;
-                Bukkit.getScheduler().runTask(plugin, () -> {
+                plugin.getSchedulerManager().runTask(mannequin, () -> {
                     if (!mannequin.isValid()) return;
                     try {
                         setProfile.invoke(mannequin, finalResolved);
@@ -416,7 +416,7 @@ public final class Mannequins extends EntityDataManager {
                 plugin.debugMessage("[Mannequins] applySkinPaperResolvable failed: " + t, 1);
 
                 // Default skin fallback (Steve-ish) like the other plugin
-                Bukkit.getScheduler().runTask(plugin, () -> {
+                plugin.getSchedulerManager().runTask(mannequin, () -> {
                     if (!mannequin.isValid()) return;
                     try {
                         Object resolved = PaperSkin.buildResolvedDefault(username);

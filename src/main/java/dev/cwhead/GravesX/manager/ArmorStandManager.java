@@ -377,7 +377,7 @@ public class ArmorStandManager extends EntityDataManager {
                 plugin.debugMessage("[Holograms] Executing fallback main-thread removal for hologram entity="
                         + data.getUUIDEntity(), 2);
 
-                plugin.getServer().getScheduler().runTask(plugin, remover);
+                plugin.getSchedulerManager().runTask(remover);
             }
         }
 
@@ -688,7 +688,7 @@ public class ArmorStandManager extends EntityDataManager {
             }
         }
 
-        plugin.getServer().getScheduler().runTask(plugin, task);
+        plugin.getSchedulerManager().runTask(task);
     }
 
     private void executeRegion(Entity entity, Runnable task) {
@@ -705,7 +705,7 @@ public class ArmorStandManager extends EntityDataManager {
             return;
         }
 
-        plugin.getServer().getScheduler().runTask(plugin, task);
+        plugin.getSchedulerManager().runTask(entity, task);
     }
 
     private boolean executePaperEntityTask(Entity entity, Runnable task) {

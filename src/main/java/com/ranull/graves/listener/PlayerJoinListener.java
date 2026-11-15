@@ -80,12 +80,6 @@ public class PlayerJoinListener implements Listener {
             return;
         }
 
-        String prefix = plugin.getLanguageManager().get(player, "message.prefix");
-
-        if (prefix == null) {
-            prefix = "";
-        }
-
         final int comparisonResult;
 
         try {
@@ -101,28 +95,25 @@ public class PlayerJoinListener implements Listener {
             return;
         }
 
-        if (comparisonResult < 0) {
-            sendVersionMessage(
-                    player,
-                    prefix,
-                    "message.grave-plugin-version-outdated",
-                    latestVersion
-            );
-        } else if (comparisonResult > 0) {
-            sendVersionMessage(
-                    player,
-                    prefix,
-                    "message.grave-plugin-version-development",
-                    latestVersion
-            );
-        } else {
-            sendVersionMessage(
-                    player,
-                    prefix,
-                    "message.grave-plugin-version-latest",
-                    null
-            );
-        }
+        plugin.getSchedulerManager().execute(player, () -> {
+            if (!player.isOnline()) {
+                return;
+            }
+
+            String prefix = plugin.getLanguageManager().get(player, "message.prefix");
+
+            if (prefix == null) {
+                prefix = "";
+            }
+
+            if (comparisonResult < 0) {
+                sendVersionMessage(player, prefix, "message.grave-plugin-version-outdated", latestVersion);
+            } else if (comparisonResult > 0) {
+                sendVersionMessage(player, prefix, "message.grave-plugin-version-development", latestVersion);
+            } else {
+                sendVersionMessage(player, prefix, "message.grave-plugin-version-latest", null);
+            }
+        });
     }
 
     /**

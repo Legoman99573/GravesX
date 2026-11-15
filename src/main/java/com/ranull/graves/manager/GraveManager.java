@@ -1,5 +1,6 @@
 package com.ranull.graves.manager;
 
+import dev.cwhead.GravesX.compatibility.CompatibilityTeleport;
 import com.ranull.graves.Graves;
 import com.ranull.graves.compatibility.CompatibilityInventoryView;
 import com.ranull.graves.data.BlockData;
@@ -597,7 +598,7 @@ public class GraveManager {
                         double dy = cur.getY() - expectedLineLoc.getY();
                         double dz = cur.getZ() - expectedLineLoc.getZ();
                         if ((dx * dx + dy * dy + dz * dz) > 0.0001D) {
-                            target.teleport(expectedLineLoc);
+                            CompatibilityTeleport.teleportSafely(target, expectedLineLoc, plugin);
                         }
                     }
                 } catch (Throwable t) {
@@ -662,31 +663,50 @@ public class GraveManager {
      */
     @SuppressWarnings("ConstantConditions")
     public void unload() {
-        for (Player player : plugin.getServer().getOnlinePlayers()) {
-            InventoryView view = player.getOpenInventory();
-            if (view == null) {
-                continue;
-            }
-
-            Inventory topInventory = CompatibilityInventoryView.getTopInventory(view);
-            if (topInventory == null) {
-                continue;
-            }
-
-            InventoryHolder inventoryHolder = topInventory.getHolder();
-            if (inventoryHolder == null) {
-                continue;
-            }
+        for (Player player : new ArrayList<>(plugin.getServer().getOnlinePlayers())) {
+            Runnable closer = () -> closeGraveInventories(player);
 
             try {
-                if (inventoryHolder instanceof Grave
-                        || inventoryHolder instanceof GraveList
-                        || inventoryHolder instanceof GraveMenu) {
-                    player.closeInventory();
+                if (plugin.getSchedulerManager().isEntityThread(player)) {
+                    closer.run();
+                } else {
+                    plugin.getSchedulerManager().execute(player, closer);
                 }
-            } catch (Exception ignored) {
-                // ignore any platform-specific edge cases
+            } catch (Throwable ignored) {
+                // Scheduler unavailable (plugin or server is shutting down);
+                // the server closes open inventories when the player disconnects.
             }
+        }
+    }
+
+    /**
+     * Closes any grave, grave list or grave menu inventory the player has open.
+     * Must run on the player's owning scheduler.
+     */
+    private void closeGraveInventories(Player player) {
+        InventoryView view = player.getOpenInventory();
+        if (view == null) {
+            return;
+        }
+
+        Inventory topInventory = CompatibilityInventoryView.getTopInventory(view);
+        if (topInventory == null) {
+            return;
+        }
+
+        InventoryHolder inventoryHolder = topInventory.getHolder();
+        if (inventoryHolder == null) {
+            return;
+        }
+
+        try {
+            if (inventoryHolder instanceof Grave
+                    || inventoryHolder instanceof GraveList
+                    || inventoryHolder instanceof GraveMenu) {
+                player.closeInventory();
+            }
+        } catch (Exception ignored) {
+            // ignore any platform-specific edge cases
         }
     }
 
@@ -2321,6 +2341,10 @@ public class GraveManager {
                         grave.setGravePreview(preview);
                     } else {
                         grave.setGravePreview(false);
+                    }
+
+                    if (!preview) {
+                        plugin.getCacheManager().trackViewedGrave(grave);
                     }
 
                     openLocalizedGraveInventory(player, grave);
