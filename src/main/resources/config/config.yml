@@ -7,6 +7,10 @@ config-version: 27
 # Core config for backend processes or misc options.
 # If you are looking to edit graves, the main grave config file is grave.yml.
 settings:
+  # Default language when the client locale has no matching translation.
+  language:
+    default: en-US
+
   
   ###########
   # Storage #

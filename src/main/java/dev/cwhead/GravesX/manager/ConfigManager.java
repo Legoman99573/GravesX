@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -538,7 +539,7 @@ public final class ConfigManager {
                 if (!YAMLUtil.isValidYAML(file)) continue;
 
                 if (file.isDirectory()) {
-                    if (file.getName().equals("override"))
+                    if (file.getName().equals("override") || file.getName().equals("language"))
                         continue;
 
                     result.addDefaults(loadMergedFolderConfig(file));
@@ -594,6 +595,47 @@ public final class ConfigManager {
                 updateConfigFile("config.yml", CURRENT_CONFIG_VERSION, true);
                 updateConfigFile("entity.yml", CURRENT_CONFIG_VERSION, false);
                 updateConfigFile("grave.yml", CURRENT_CONFIG_VERSION, false);
+                updateBundledLanguages();
+            }
+        }
+
+        /**
+         *  Updates every bundled language without replacing administrator translations.
+         */
+        private void updateBundledLanguages() {
+            File folder = new File(paths.configFolder, "language");
+
+            if (!folder.isDirectory() && !folder.mkdirs()) {
+                plugin.getLogger().warning("Could not create language folder: " + folder);
+                return;
+            }
+
+            Path folderPath = folder.toPath().toAbsolutePath().normalize();
+
+            for (String code : LanguageManager.bundledLocales(plugin)) {
+                String resource = "config/language/" + code + ".yml";
+                File target = new File(folder, code + ".yml");
+                Path targetPath = target.toPath().toAbsolutePath().normalize();
+
+                if (!targetPath.startsWith(folderPath)) {
+                    plugin.getLogger().warning("Blocked suspicious language path: " + targetPath);
+                    continue;
+                }
+
+                try (InputStream stream = plugin.getResource(resource)) {
+                    if (stream == null)
+                        continue;
+
+                    if (!target.isFile()) {
+                        Files.copy(stream, targetPath);
+                    } else {
+                        ConfigUpdater.update(plugin, resource, target, Collections.emptyList());
+                    }
+
+                    plugin.getLogger().info("Updated bundled language: " + code);
+                } catch (IOException | RuntimeException e) {
+                    plugin.getLogger().warning("Failed to update language " + code + ": " + e.getMessage());
+                }
             }
         }
 

@@ -290,7 +290,7 @@ public class EntityManager extends EntityDataManager {
                     BossBar bossBar;
                     if (plugin.getIntegrationManager().hasMiniMessage()) {
                         String mmText = StringUtil.parseString(
-                                plugin.getConfigManager().getConfigSection("message.teleport-waiting", grave).getString("message.teleport-waiting"),
+                                plugin.getLanguageManager().get(player, "message.teleport-waiting"),
                                 base, grave, plugin
                         );
                         bossBar = plugin.getServer().createBossBar(
@@ -300,7 +300,7 @@ public class EntityManager extends EntityDataManager {
                     } else {
                         bossBar = plugin.getServer().createBossBar(
                                 StringUtil.parseString(
-                                        plugin.getConfigManager().getConfigSection("message.teleport-waiting", grave).getString("message.teleport-waiting"),
+                                        plugin.getLanguageManager().get(player, "message.teleport-waiting"),
                                         base, grave, plugin
                                 ),
                                 BarColor.RED, BarStyle.SOLID
@@ -681,21 +681,8 @@ public class EntityManager extends EntityDataManager {
     private void sendMessage(String string, Entity entity, String name, Location location, Grave grave, List<String> permissionList) {
         if (entity instanceof Player player) {
             String originalConfigString = string;
-            if (grave != null) {
-                if (StringUtil.isStringEmpty(plugin.getConfigManager().getConfigSection(string, grave).getString(originalConfigString))) {
-                    plugin.debugMessage(string + " was either null or empty. Not sending message out.", 2);
-                    return;
-                }
-                string = plugin.getConfigManager().getConfigSection(string, grave).getString(string);
-            } else {
-                if (StringUtil.isStringEmpty(plugin.getConfigManager().getConfigSection(string, entity.getType(), permissionList).getString(originalConfigString))) {
-                    plugin.debugMessage(string + " was either null or empty. Not sending message out.", 2);
-                    return;
-                }
-                string = plugin.getConfigManager().getConfigSection(string, entity.getType(), permissionList).getString(string);
-            }
-
-            String prefix = plugin.getConfigManager().getConfigSection("message.prefix", entity.getType(), permissionList).getString("message.prefix");
+            string = plugin.getLanguageManager().get(player, originalConfigString);
+            String prefix = plugin.getLanguageManager().get(player, "message.prefix");
 
             if (string != null && !string.isEmpty()) {
                 if (prefix != null && !prefix.isEmpty()) {
@@ -709,7 +696,7 @@ public class EntityManager extends EntityDataManager {
                 }
 
                 String message = StringUtil.parseString(string, entity, name, location, grave, plugin);
-                plugin.debugMessage("Message found for " + string + " in grave.yml. Sending message to " + entity.getName() + ".", 2);
+                plugin.debugMessage("Message found for " + string + " in language file. Sending message to " + entity.getName() + ".", 2);
                 if (plugin.getIntegrationManager().hasMiniMessage()) {
                     MiniMessage.sendMessage(player, message);
                 } else {

@@ -255,7 +255,7 @@ public class ItemStackManager extends EntityDataManager {
             material = Material.matchMaterial(materialString);
         } else {
             material = Material.matchMaterial(plugin.getConfigManager().getConfigSection("gui.menu.list.item.material", grave)
-                    .getString("gui.menu.list.item.block", "CHEST"));
+                    .getString("gui.menu.list.item.material", "CHEST"));
         }
 
         ItemStack itemStack = new ItemStack(material != null ? material : Material.CHEST);

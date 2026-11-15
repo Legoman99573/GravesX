@@ -247,22 +247,10 @@ public class GUIManager {
     public void openGraveMenu(Entity entity, Grave grave, boolean sound) {
         if (entity instanceof Player player) {
             GraveMenu graveMenu = new GraveMenu(grave);
-            String title;
-
-            if (plugin.getIntegrationManager().hasMiniMessage()) {
-                String newTitle = StringUtil.parseString(
-                        plugin.getConfigManager().getConfigSection("gui.menu.grave.title", player, grave.getPermissionList())
-                                .getString("gui.menu.grave.title", "Grave"),
-                        player, plugin
-                );
-                title = MiniMessage.parseString(newTitle);
-            } else {
-                title = StringUtil.parseString(
-                        plugin.getConfigManager().getConfigSection("gui.menu.grave.title", player, grave.getPermissionList())
-                                .getString("gui.menu.grave.title", "Grave"),
-                        player, plugin
-                );
-            }
+            String localizedTitle = StringUtil.parseString(
+                    plugin.getLanguageManager().get(player, "message.gui.title"), grave, plugin);
+            String title = plugin.getIntegrationManager().hasMiniMessage()
+                    ? MiniMessage.parseString(localizedTitle) : localizedTitle;
 
             int size = computeGraveMenuSize(grave);
 

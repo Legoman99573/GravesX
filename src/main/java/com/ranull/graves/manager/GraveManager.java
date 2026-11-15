@@ -1372,7 +1372,7 @@ public class GraveManager {
         grave.setOwnerUUID(ownerUUID);
 
         Location baseLocation = entity.getLocation().clone();
-        String rawTitle = plugin.getConfigManager().getConfigSection("gui.grave.title", entity, permissionList).getString("gui.grave.title");
+        String rawTitle = plugin.getLanguageManager().get(entity instanceof Player player ? player : null, "message.gui.title");
         String parsedTitle = StringUtil.parseString(rawTitle, entity, baseLocation, grave, plugin);
         String storageModeStr = plugin.getConfigManager().getConfigSection("storage.mode", entity, permissionList).getString("storage.mode");
 
@@ -1839,6 +1839,26 @@ public class GraveManager {
     }
 
     /**
+     * Opens a grave with a title translated for the viewing player's locale.
+     * Also repairs inventories restored from caches without their titles.
+     *
+     * @param player player opening the grave
+     * @param grave grave to open
+     */
+    private void openLocalizedGraveInventory(Player player, Grave grave) {
+        Inventory current = grave.getInventory();
+
+        String rawTitle = plugin.getLanguageManager().get(player, "message.gui.title");
+        String parsedTitle = StringUtil.parseString(rawTitle, player, grave.getLocationDeath(), grave, plugin);
+        String title = plugin.getIntegrationManager().hasMiniMessage() ? MiniMessage.parseString(parsedTitle) : parsedTitle;
+
+        Inventory localized = plugin.getServer().createInventory(grave, current.getSize(), title);
+        localized.setContents(current.getContents());
+        grave.setInventory(localized);
+        player.openInventory(localized);
+    }
+
+    /**
      * Retrieves the grave inventory for a specified grave and living entity.
      *
      * @param grave                 the grave.
@@ -1848,18 +1868,14 @@ public class GraveManager {
      * @param permissionList        the list of permissions associated with the grave.
      * @return the created grave inventory.
      */
-    public Inventory getGraveInventory(Grave grave,
-            LivingEntity livingEntity,
-            List<org.bukkit.inventory.ItemStack> graveItemStackList,
-            List<org.bukkit.inventory.ItemStack> removedItemStackList,
-            List<String> permissionList) {
+    public Inventory getGraveInventory(Grave grave, LivingEntity livingEntity, List<org.bukkit.inventory.ItemStack> graveItemStackList, List<org.bukkit.inventory.ItemStack> removedItemStackList, List<String> permissionList) {
 
         String title;
         if (plugin.getIntegrationManager().hasMiniMessage()) {
-            String newTitle = StringUtil.parseString(plugin.getConfigManager().getConfigSection("gui.grave.title", grave).getString("gui.grave.title"), livingEntity, grave.getLocationDeath(), grave, plugin);
+            String newTitle = StringUtil.parseString(plugin.getLanguageManager().get(plugin.getServer().getPlayer(grave.getOwnerUUID()), "message.gui.title"), livingEntity, grave.getLocationDeath(), grave, plugin);
             title = MiniMessage.parseString(newTitle);
         } else {
-            title = StringUtil.parseString(plugin.getConfigManager().getConfigSection("gui.grave.title", grave).getString("gui.grave.title"), livingEntity, grave.getLocationDeath(), grave, plugin);
+            title = StringUtil.parseString(plugin.getLanguageManager().get(plugin.getServer().getPlayer(grave.getOwnerUUID()), "message.gui.title"), livingEntity, grave.getLocationDeath(), grave, plugin);
         }
 
         Grave.StorageMode storageMode = getStorageMode(plugin.getConfigManager().getConfigSection("storage.mode", grave).getString("storage.mode"));
@@ -2307,7 +2323,7 @@ public class GraveManager {
                         grave.setGravePreview(false);
                     }
 
-                    player.openInventory(grave.getInventory());
+                    openLocalizedGraveInventory(player, grave);
                     plugin.getEntityManager().runCommands("event.command.open", player, location, grave);
                     plugin.getEntityManager().playWorldSound("sound.open", location, grave);
                 }
@@ -2321,13 +2337,13 @@ public class GraveManager {
 
                 if (protPreview && gravePreview) {
                     grave.setGravePreview(preview);
-                    player.openInventory(grave.getInventory());
+                    openLocalizedGraveInventory(player, grave);
                     plugin.getEntityManager().runCommands("event.command.open", player, location, grave);
                     plugin.getEntityManager().playWorldSound("sound.open", location, grave);
 
                 } else if (protPreview) {
                     grave.setGravePreview(false);
-                    player.openInventory(grave.getInventory());
+                    openLocalizedGraveInventory(player, grave);
                     plugin.getEntityManager().runCommands("event.command.open", player, location, grave);
                     plugin.getEntityManager().playWorldSound("sound.open", location, grave);
 
@@ -2633,7 +2649,10 @@ public class GraveManager {
      */
     @Deprecated(since = "2026.4.9.1")
     public String getDamageReason(EntityDamageEvent.DamageCause damageCause, Grave grave) {
-        List<String> reasons = plugin.getConfigManager().getConfigSection("message.death-reason", grave).getStringList("message.death-reason");
+        UUID ownerUUID = grave.getOwnerUUID();
+        Player owner = ownerUUID != null ? plugin.getServer().getPlayer(ownerUUID) : null;
+
+        List<String> reasons = plugin.getLanguageManager().getList(owner, "message.death-reason");
         String causeName = damageCause.name();
 
         for (String reason : reasons) {
@@ -2652,7 +2671,10 @@ public class GraveManager {
      * @return the damage reason.
      */
     public String getDamageReason(Grave grave) {
-        List<String> reasons = plugin.getConfigManager().getConfigSection("message.death-reason", grave).getStringList("message.death-reason");
+        UUID ownerUUID = grave.getOwnerUUID();
+        Player owner = ownerUUID != null ? Bukkit.getPlayer(ownerUUID) : null;
+
+        List<String> reasons = plugin.getLanguageManager().getList(owner, "message.death-reason");
         String causeName = grave.getDeathCause();
 
         for (String reason : reasons) {

@@ -3,6 +3,8 @@ package com.ranull.graves.command;
 import com.ranull.graves.Graves;
 import com.ranull.graves.data.EntityData;
 import com.ranull.graves.data.HologramData;
+import com.ranull.graves.util.StringUtil;
+import com.ranull.graves.integration.MiniMessage;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.compatibility.CompatibilityTeleport;
 import dev.cwhead.GravesX.util.PluginDownloadUtil;
@@ -566,6 +568,25 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
         return stringList;
     }
 
+    /**
+     *  Sends an owner-specific, localized message with the normal formatting pipeline.
+     */
+    private void sendLocalizedNoGraves(Player viewer, String key, String ownerName) {
+        String message = plugin.getLanguageManager().get(viewer, key);
+
+        if (message == null || message.isEmpty())
+            return;
+        String prefix = plugin.getLanguageManager().get(viewer, "message.prefix");
+        String combined = (prefix == null ? "" : prefix) + message.replace("%owner_name%", ownerName);
+        String formatted = StringUtil.parseString(combined, viewer, plugin);
+
+        if (plugin.getIntegrationManager().hasMiniMessage()) {
+            MiniMessage.sendMessage(viewer, formatted);
+        } else {
+            viewer.sendMessage(formatted);
+        }
+    }
+
     private void handleListGuiCommand(CommandSender commandSender, String[] args) {
         if (commandSender instanceof Player player) {
 
@@ -582,8 +603,7 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
                     if (!plugin.getGraveManager().getGraveList(otherPlayer).isEmpty()) {
                         plugin.getGUIManager().openGraveList(player, otherPlayer.getUniqueId());
                     } else {
-                        commandSender.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » "
-                                + ChatColor.RESET + ChatColor.RED + args[1] + ChatColor.RESET + " has no graves.");
+                        sendLocalizedNoGraves(player, "message.empty-other", args[1]);
                     }
                 } else {
                     plugin.getEntityManager().sendMessage("message.permission-denied", player);
@@ -635,16 +655,14 @@ public class GravesCommand implements CommandExecutor, TabCompleter {
             var graves = plugin.getGraveManager().getGraveList(player);
 
             if (graves == null || graves.isEmpty()) {
-                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » "
-                        + ChatColor.RESET + "You have no graves.");
+                plugin.getEntityManager().sendMessage("message.empty", player);
                 return;
             }
 
             Grave grave = graves.get(0);
 
             if (grave == null) {
-                player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » "
-                        + ChatColor.RESET + "You have no graves.");
+                plugin.getEntityManager().sendMessage("message.empty", player);
                 return;
             }
 

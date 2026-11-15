@@ -368,7 +368,7 @@ public class ImportManager {
 
         if (!itemStackList.isEmpty() && grave.getLocationDeath() != null) {
             String title = StringUtil.parseString(
-                    plugin.getConfigManager().getConfigSection("gui.grave.title", grave).getString("gui.grave.title", "Grave"),
+                    plugin.getLanguageManager().get(plugin.getServer().getPlayer(grave.getOwnerUUID()), "message.gui.title"),
                     grave.getLocationDeath(), grave, plugin
             );
 
