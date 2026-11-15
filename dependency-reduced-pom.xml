@@ -817,6 +817,6 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build.revision>2026.4.9.3</build.revision>
     <java.version>17</java.version>
-    <build.suffix>-self</build.suffix>
+    <build.suffix>-multi-language-1</build.suffix>
   </properties>
 </project>

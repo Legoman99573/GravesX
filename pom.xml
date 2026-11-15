@@ -34,7 +34,7 @@
 
         <build.revision>2026.4.9.3</build.revision>
 
-        <build.suffix>-self</build.suffix>
+        <build.suffix>-multi-language-1</build.suffix>
     </properties>
 
     <distributionManagement>
@@ -866,7 +866,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>33.7.1-jre</version>
+            <version>33.7.2-jre</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

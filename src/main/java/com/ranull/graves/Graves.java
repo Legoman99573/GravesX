@@ -435,7 +435,7 @@ public class Graves extends JavaPlugin {
         try {
             Class.forName("com.google.common.collect.ImmutableList");
         } catch (ClassNotFoundException e) {
-            libraryLoaderUtil.loadLibrary("com{}google{}guava", "guava", "33.7.1-jre", false);
+            libraryLoaderUtil.loadLibrary("com{}google{}guava", "guava", "33.7.2-jre", false);
         }
 
         //libraryLoaderUtil.loadLibrary("com{}github{}oshi", "oshi-core", "6.8.2", false);
