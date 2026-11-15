@@ -694,7 +694,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>33.7.1-jre</version>
+      <version>33.7.2-jre</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -817,6 +817,6 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build.revision>2026.4.9.3</build.revision>
     <java.version>17</java.version>
-    <build.suffix>-multi-language-1</build.suffix>
+    <build.suffix>-self</build.suffix>
   </properties>
 </project>

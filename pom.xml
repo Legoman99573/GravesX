@@ -34,7 +34,7 @@
 
         <build.revision>2026.4.9.3</build.revision>
 
-        <build.suffix>-multi-language-1</build.suffix>
+        <build.suffix>-self</build.suffix>
     </properties>
 
     <distributionManagement>
