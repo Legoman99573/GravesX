@@ -159,7 +159,7 @@ public class PlayerJoinListener implements Listener {
         String parsed = StringUtil.parseString(message, player, plugin);
 
         if (plugin.getIntegrationManager().hasMiniMessage()) {
-            player.sendMessage(MiniMessage.parseString(parsed));
+            MiniMessage.sendMessage(player, parsed);
         } else {
             player.sendMessage(parsed);
         }

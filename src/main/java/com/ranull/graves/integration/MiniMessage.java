@@ -3,7 +3,8 @@ package com.ranull.graves.integration;
 import com.ranull.graves.Graves;
 import com.ranull.graves.type.Grave;
 import dev.cwhead.GravesX.util.CustomModelDataUtil;
-import me.imdanix.text.MiniTranslator;
+import dev.cwhead.GravesX.util.LegacyToMiniMessageUtil;
+import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import net.kyori.adventure.text.minimessage.tag.standard.StandardTags;
@@ -12,6 +13,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,28 +25,7 @@ import java.util.List;
  */
 public class MiniMessage {
 
-    private static final TagResolver STANDARD_TAGS =
-            TagResolver.builder()
-                    .resolver(StandardTags.defaults())
-                    .resolver(StandardTags.hoverEvent())
-                    .resolver(StandardTags.clickEvent())
-                    .resolver(StandardTags.insertion())
-                    .resolver(StandardTags.rainbow())
-                    .resolver(StandardTags.gradient())
-                    .resolver(StandardTags.newline())
-                    .resolver(StandardTags.score())
-                    .resolver(StandardTags.nbt())
-                    .resolver(StandardTags.font())
-                    .resolver(StandardTags.decorations())
-                    .resolver(StandardTags.keybind())
-                    .resolver(StandardTags.selector())
-                    .resolver(StandardTags.transition())
-                    .resolver(StandardTags.translatable())
-                    .resolver(StandardTags.translatableFallback())
-                    .resolver(StandardTags.reset())
-                    .resolver(StandardTags.pride())
-                    .resolver(StandardTags.shadowColor())
-                    .build();
+    private static final TagResolver STANDARD_TAGS = buildStandardTags();
 
     private static final net.kyori.adventure.text.minimessage.MiniMessage MINI_MESSAGE =
             net.kyori.adventure.text.minimessage.MiniMessage.builder()
@@ -115,45 +97,7 @@ public class MiniMessage {
      * @return converted MiniMessage string
      */
     public static String convertLegacyToMiniMessage(String legacyText) {
-        String color = MiniTranslator.toMini(
-                legacyText,
-                MiniTranslator.Option.COLOR
-        );
-
-        String format = MiniTranslator.toMini(
-                color,
-                MiniTranslator.Option.FORMAT
-        );
-
-        String gradient = MiniTranslator.toMini(
-                format,
-                MiniTranslator.Option.GRADIENT
-        );
-
-        String closeColor = MiniTranslator.toMini(
-                gradient,
-                MiniTranslator.Option.CLOSE_COLORS
-        );
-
-        String hexColors = MiniTranslator.toMini(
-                closeColor,
-                MiniTranslator.Option.HEX_COLOR_STANDALONE
-        );
-
-        String doubleToEscape = MiniTranslator.toMini(
-                hexColors,
-                MiniTranslator.Option.DOUBLE_TO_ESCAPE
-        );
-
-        String verboseHexColor = MiniTranslator.toMini(
-                doubleToEscape,
-                MiniTranslator.Option.VERBOSE_HEX_COLOR
-        );
-
-        return MiniTranslator.toMini(
-                verboseHexColor,
-                MiniTranslator.Option.FAST_RESET
-        );
+        return LegacyToMiniMessageUtil.toMini(legacyText);
     }
 
     /**
@@ -163,18 +107,16 @@ public class MiniMessage {
      * @return Adventure Component
      */
     public static Component convertLegacyToComponent(String legacyText) {
-        String miniMessageText = MiniTranslator.toMini(
-                legacyText,
-                MiniTranslator.Option.COLOR,
-                MiniTranslator.Option.FORMAT,
-                MiniTranslator.Option.GRADIENT,
-                MiniTranslator.Option.CLOSE_COLORS,
-                MiniTranslator.Option.HEX_COLOR_STANDALONE,
-                MiniTranslator.Option.DOUBLE_TO_ESCAPE,
-                MiniTranslator.Option.VERBOSE_HEX_COLOR,
-                MiniTranslator.Option.FAST_RESET
-        );
+        return MINI_MESSAGE.deserialize(LegacyToMiniMessageUtil.toMini(legacyText));
+    }
 
+    /**
+     * Deserializes MiniMessage text into an Adventure Component without converting legacy codes.
+     *
+     * @param miniMessageText MiniMessage text
+     * @return Adventure Component
+     */
+    public static Component parseComponent(String miniMessageText) {
         return MINI_MESSAGE.deserialize(miniMessageText);
     }
 
@@ -231,14 +173,20 @@ public class MiniMessage {
     }
 
     /**
-     * Sends a formatted message to a player using Paper's native Adventure API.
+     * Sends a MiniMessage message to a player as a native Adventure Component.
      *
      * @param player  player receiving the message
-     * @param message legacy-formatted message
+     * @param message the MiniMessage text
      */
     public static void sendMessage(final Player player, final String message) {
-        String output = convertLegacyToMiniMessage(message);
-        player.sendMessage(LEGACY_COMPONENT_SERIALIZER.serialize(MINI_MESSAGE.deserialize(output)));
+        final Component component = MINI_MESSAGE.deserialize(message);
+
+        if (player instanceof Audience audience) {
+            audience.sendMessage(component);
+            return;
+        }
+
+        player.sendMessage(LEGACY_COMPONENT_SERIALIZER.serialize(component));
     }
 
     /**
@@ -248,5 +196,28 @@ public class MiniMessage {
      */
     public static net.kyori.adventure.text.minimessage.MiniMessage miniMessage() {
         return MINI_MESSAGE;
+    }
+
+    /**
+     * Builds a {@link TagResolver} containing every standard tag the running server provides.
+     *
+     * @return a resolver covering all standard tags available on this server
+     */
+    private static TagResolver buildStandardTags() {
+        TagResolver.Builder builder = TagResolver.builder().resolver(StandardTags.defaults());
+
+        for (Method method : StandardTags.class.getMethods()) {
+            if (!Modifier.isStatic(method.getModifiers()) || method.getParameterCount() != 0 || !TagResolver.class.isAssignableFrom(method.getReturnType())) {
+                continue;
+            }
+
+            try {
+                builder.resolver((TagResolver) method.invoke(null));
+            } catch (ReflectiveOperationException | RuntimeException ignored) {
+                // A resolver this server cannot provide is skipped; the others still load.
+            }
+        }
+
+        return builder.build();
     }
 }

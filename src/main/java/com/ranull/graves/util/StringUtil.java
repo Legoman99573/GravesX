@@ -4,7 +4,7 @@ import com.ranull.graves.Graves;
 import com.ranull.graves.integration.MineDown;
 import com.ranull.graves.type.Grave;
 import me.clip.placeholderapi.PlaceholderAPI;
-import me.imdanix.text.MiniTranslator;
+import dev.cwhead.GravesX.util.LegacyToMiniMessageUtil;
 import net.md_5.bungee.api.ChatColor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.WordUtils;
@@ -16,7 +16,6 @@ import org.bukkit.entity.Player;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -196,6 +195,10 @@ public class StringUtil {
             string = MineDown.parseString(string);
         }
 
+        if (plugin.getIntegrationManager().hasMiniMessage()) {
+            return LegacyToMiniMessageUtil.toMini(string);
+        }
+
         Pattern pattern = Pattern.compile("&#[A-Fa-f0-9]{6}");
         Matcher matcher = pattern.matcher(string);
 
@@ -205,11 +208,6 @@ public class StringUtil {
                     ? string.replace("&" + colorHex, ChatColor.of(colorHex).toString())
                     : string.replace(colorHex, "");
             matcher = pattern.matcher(string);
-        }
-
-        if (plugin.getIntegrationManager().hasMiniMessage()) {
-            string = string.replace("§", "&");
-            return MiniTranslator.toMini(string);
         }
 
         return string.replace("&", "§");

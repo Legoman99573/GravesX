@@ -85,7 +85,6 @@
                                 <includes>
                                     <include>com.alessiodp:libby</include>
                                     <include>me.croabeast:GlobalScheduler</include>
-                                    <include>com.github.imDaniX:MiniTranslator</include>
                                     <include>com.tchristofferson:ConfigUpdater</include>
                                 </includes>
                             </artifactSet>
@@ -595,12 +594,6 @@
             <version>3.2.1</version>
             <scope>compile</scope>
             <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>com.github.imDaniX</groupId>
-            <artifactId>MiniTranslator</artifactId>
-            <version>v2.6.1-graves</version>
-            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.tchristofferson</groupId>
