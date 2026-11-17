@@ -58,6 +58,27 @@ public class StringUtil {
         return parseString(string, null, null, location, grave, plugin);
     }
 
+    /**
+     * Parses hologram text without ever throwing. Placeholder, language and integration lookups can fail
+     * (for example when run away from the thread that owns a player); a hologram must still be created and
+     * tracked, so on failure the raw text is used with unresolved placeholders removed.
+     *
+     * @param string   the text to parse
+     * @param location the line location
+     * @param grave    the grave
+     * @param plugin   the plugin instance
+     * @return the parsed text, or a safe fallback
+     */
+    public static String parseStringSafe(String string, Location location, Grave grave, Graves plugin) {
+        try {
+            return parseString(string, location, grave, plugin);
+        } catch (Throwable throwable) {
+            plugin.debugMessage("[Holograms] Failed to parse hologram line, using raw text: " + throwable, 1);
+
+            return string == null ? "" : string.replaceAll("%[A-Za-z_]+%", "").replace("&", "\u00A7");
+        }
+    }
+
     public static String parseString(String string, Entity entity, Location location, Grave grave, Graves plugin) {
         return parseString(string, entity, plugin.getEntityManager().getEntityName(entity), location, grave, plugin);
     }

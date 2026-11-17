@@ -864,6 +864,20 @@ public class Graves extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new ProjectileHitListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerLocaleChangeListener(this), this);
 
+        boolean entitiesLoadEvent;
+        try {
+            Class.forName("org.bukkit.event.world.EntitiesLoadEvent");
+            entitiesLoadEvent = true;
+        } catch (ClassNotFoundException exception) {
+            entitiesLoadEvent = false;
+        }
+
+        if (entitiesLoadEvent) {
+            getServer().getPluginManager().registerEvents(new dev.cwhead.GravesX.listener.HologramEntitiesLoadListener(this), this);
+        } else {
+            getServer().getPluginManager().registerEvents(new dev.cwhead.GravesX.listener.HologramChunkLoadListener(this), this);
+        }
+
         // TODO(2027.4.9.1): Remove pre-1.20 version checks and simplify this branch.
         if (!versionManager.is_v1_7()) {
             getServer().getPluginManager().registerEvents(new PlayerInteractAtEntityListener(this), this);

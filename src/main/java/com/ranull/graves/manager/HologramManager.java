@@ -6,6 +6,7 @@ import com.ranull.graves.type.Grave;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -15,6 +16,7 @@ import java.util.UUID;
  */
 public class HologramManager extends EntityDataManager {
     private final Graves plugin;
+    private final long purgeNotBefore = System.currentTimeMillis() + 60_000L;
 
     public HologramManager(Graves plugin) {
         super(plugin);
@@ -146,6 +148,31 @@ public class HologramManager extends EntityDataManager {
         }
 
         plugin.debugMessage("[Cleanup] Finished hologram purge dispatch", 1);
+    }
+
+    /**
+     * Removes orphaned grave holograms among entities that just loaded.
+     *
+     * @param entities the entities that just loaded
+     */
+    public void purgeLoadedEntities(Collection<? extends Entity> entities) {
+        if (entities == null || entities.isEmpty()) {
+            return;
+        }
+
+        if (!plugin.getConfig().getBoolean("hologram.purge-on-load", true)) {
+            return;
+        }
+
+        if (System.currentTimeMillis() < purgeNotBefore || plugin.getCacheManager().getGraveMap().isEmpty()) {
+            return;
+        }
+
+        if (plugin.getVersionManager().isHasTextDisplays()) {
+            plugin.getTextDisplayManager().purgeLoadedEntities(entities);
+        }
+
+        plugin.getArmorStandManager().purgeLoadedEntities(entities);
     }
 
     /**

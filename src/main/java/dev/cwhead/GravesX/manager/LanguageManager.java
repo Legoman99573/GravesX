@@ -42,6 +42,7 @@ public final class LanguageManager {
     private final Map<String, YamlConfiguration> addonTranslations = new HashMap<>();
 
     private final Map<UUID, String> lastNotifiedLocale = new HashMap<>();
+    private final Map<UUID, String> playerLocales = new java.util.concurrent.ConcurrentHashMap<>();
 
     private YamlConfiguration english = new YamlConfiguration();
     private YamlConfiguration bundledEnglish = new YamlConfiguration();
@@ -119,6 +120,7 @@ public final class LanguageManager {
         english = translations.getOrDefault(normalize(ENGLISH), bundledEnglish);
 
         lastNotifiedLocale.clear();
+        playerLocales.clear();
 
         plugin.getLogger().info("Loaded " + translations.size() + " language file(s)" + (translations.isEmpty() ? "." : ": " + String.join(", ", translations.keySet().stream().sorted().toList())));
     }
@@ -375,9 +377,41 @@ public final class LanguageManager {
      * @return selected language configuration
      */
     private YamlConfiguration select(@Nullable Player player) {
-        String requested = player == null ? configuredLocale() : player.getLocale();
+        return translations.getOrDefault(resolveLocale(localeOf(player)), english);
+    }
 
-        return translations.getOrDefault(resolveLocale(requested), english);
+    /**
+     * Gets the locale to use for a player without ever throwing.
+     *
+     * @param player player, or null for the server default
+     * @return locale code to resolve
+     */
+    private String localeOf(@Nullable Player player) {
+        if (player == null)
+            return configuredLocale();
+
+        try {
+            String live = player.getLocale();
+
+            if (live != null && !live.isBlank()) {
+                playerLocales.put(player.getUniqueId(), live);
+
+                return live;
+            }
+        } catch (Throwable ignored) {
+            // Not the owning thread (Folia) or unsupported on this server; fall back below.
+        }
+
+        try {
+            String known = playerLocales.get(player.getUniqueId());
+
+            if (known != null)
+                return known;
+        } catch (Throwable ignored) {
+            // Fall through to the default.
+        }
+
+        return configuredLocale();
     }
 
     /**
@@ -397,6 +431,8 @@ public final class LanguageManager {
      */
     public void notifyFallback(Player player) {
         String clientLocale = normalize(player.getLocale());
+
+        playerLocales.put(player.getUniqueId(), player.getLocale());
 
         if (translations.containsKey(clientLocale)) {
             lastNotifiedLocale.remove(player.getUniqueId());
@@ -425,5 +461,6 @@ public final class LanguageManager {
      */
     public void clearPlayer(Player player) {
         lastNotifiedLocale.remove(player.getUniqueId());
+        playerLocales.remove(player.getUniqueId());
     }
 }
