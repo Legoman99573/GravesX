@@ -356,7 +356,7 @@ settings:
     ###############
     # MiniMessage #
     ###############
-    # Source: https://docs.adventure.kyori.net/minimessage/index.html
+    # Source: https://docs.papermc.io/adventure/minimessage/
     minimessage:
       # Should MiniMessage integration be enabled. Shaded into plugin.
       enabled: true
