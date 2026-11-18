@@ -3180,15 +3180,27 @@ public class DataManager {
         sourceConfig.setConnectionInitSql("PRAGMA journal_mode=" + jm + "; PRAGMA synchronous=" + syn + ";");
         sourceConfig.setConnectionTestQuery("SELECT 1");
 
+        boolean migrated = false;
+
         try (HikariDataSource sourceDataSource = new HikariDataSource(sourceConfig);
              Connection sourceConn = sourceDataSource.getConnection();
              Connection targetConn = getConnection()) {
 
-            migrateFromConnection(sourceConn, targetConn, Type.SQLITE);
-            renameMigratedSQLiteFile(sqliteFile);
+            migrated = migrateFromConnection(sourceConn, targetConn, Type.SQLITE);
         } catch (Exception exception) {
             plugin.getLogger().severe("Failed to migrate legacy SQLite database.");
             plugin.logStackTrace(exception);
+        }
+
+        if (migrated) {
+            try {
+                renameMigratedSQLiteFile(sqliteFile);
+            } catch (IOException exception) {
+                plugin.getLogger().severe("SQLite data was migrated, but data.db could not be renamed to data.migrated.db.");
+                plugin.logStackTrace(exception);
+            }
+        } else {
+            plugin.getLogger().severe("Legacy SQLite migration did not complete; data.db was left untouched.");
         }
     }
 
@@ -3246,7 +3258,10 @@ public class DataManager {
              Connection sourceConn = sourceDs.getConnection();
              Connection targetConn = getConnection()) {
 
-            migrateFromConnection(sourceConn, targetConn, Type.H2);
+            if (!migrateFromConnection(sourceConn, targetConn, Type.H2)) {
+                plugin.getLogger().severe("H2 migration did not complete; source files were left untouched.");
+                return;
+            }
 
             renameMigratedH2File(mvFile);
             if (Files.exists(traceFile)) {
@@ -3258,13 +3273,19 @@ public class DataManager {
         }
     }
 
-    private void migrateFromConnection(Connection sourceConn, Connection targetConn, Type sourceType) throws Exception {
+    private boolean migrateFromConnection(Connection sourceConn, Connection targetConn, Type sourceType) throws Exception {
         if (targetConn == null) {
             plugin.getLogger().severe("Migration aborted: target database connection is null.");
-            return;
+            return false;
         }
 
         List<String> tableNames = getMigrationTableNames(sourceConn, sourceType);
+        if (tableNames.isEmpty()) {
+            plugin.getLogger().severe("Migration aborted: no tables were found in the " + sourceType + " source database.");
+            return false;
+        }
+
+        Map<String, List<String>> tableColumns = new LinkedHashMap<>();
 
         for (String tableName : tableNames) {
             List<String> columns = new ArrayList<>();
@@ -3279,7 +3300,12 @@ public class DataManager {
                     String sourceColumnType = md.getColumnTypeName(i);
                     String targetColumnType = mapSourceTypeToTargetDB(sourceType, sourceColumnType, columnName);
 
-                    if (targetColumnType == null) continue;
+                    if (targetColumnType == null) {
+                        if (sourceType == Type.SQLITE) {
+                            throw new IllegalStateException("Cannot migrate column '" + columnName + "' (type '" + sourceColumnType + "') of table '" + tableName + "': no type mapping. Aborting so no data is lost.");
+                        }
+                        continue;
+                    }
 
                     columns.add(columnName);
                     defs.add(columnName + " " + targetColumnType);
@@ -3291,35 +3317,103 @@ public class DataManager {
                 continue;
             }
 
-            String createSql = "CREATE TABLE IF NOT EXISTS " + tableName + " (" + defs + ")";
-            executeUpdate(createSql, new Object[0]);
+            executeUpdate("CREATE TABLE IF NOT EXISTS " + tableName + " (" + defs + ")", new Object[0]);
 
-            if (tableName.equals(getStoragePrefix() + "grave")) {
+            if (tableName.equalsIgnoreCase(getStoragePrefix() + "grave")) {
                 adjustGraveTableForTargetDB();
             }
 
-            copyRows(sourceConn, targetConn, sourceType, tableName, columns);
+            tableColumns.put(tableName, columns);
+        }
+
+        boolean previousAutoCommit = targetConn.getAutoCommit();
+        targetConn.setAutoCommit(false);
+
+        try {
+            for (Map.Entry<String, List<String>> entry : tableColumns.entrySet()) {
+                String tableName = entry.getKey();
+                long sourceCount = countRows(sourceConn, tableName);
+                long existing = countRows(targetConn, tableName);
+
+                if (sourceCount == 0) {
+                    plugin.getLogger().info("Table '" + tableName + "' is empty in the " + sourceType + " source; nothing to copy.");
+                    continue;
+                }
+
+                if (existing >= sourceCount) {
+                    plugin.getLogger().info("Table '" + tableName + "' already holds " + existing + " row(s) (source has " + sourceCount + "); skipping copy.");
+                    continue;
+                }
+
+                if (existing > 0) {
+                    throw new IllegalStateException("Table '" + tableName + "' in the target already has " + existing + " row(s) but the source has " + sourceCount + ". Refusing to merge automatically.");
+                }
+
+                int copied = copyRows(sourceConn, targetConn, sourceType, tableName, entry.getValue());
+                long inTarget = countRows(targetConn, tableName);
+
+                if (copied != sourceCount || inTarget != sourceCount) {
+                    throw new IllegalStateException("Row count mismatch for table '" + tableName + "': source=" + sourceCount + ", copied=" + copied + ", target=" + inTarget);
+                }
+
+                plugin.getLogger().info("Migrated " + copied + " row(s) from " + sourceType + " table '" + tableName + "'.");
+            }
+
+            targetConn.commit();
+        } catch (Exception exception) {
+            try {
+                targetConn.rollback();
+            } catch (SQLException rollbackException) {
+                plugin.getLogger().severe("Failed to roll back partial migration: " + rollbackException.getMessage());
+            }
+            throw exception;
+        } finally {
+            try {
+                targetConn.setAutoCommit(previousAutoCommit);
+            } catch (SQLException ignored) {
+            }
+        }
+
+        return true;
+    }
+
+    private long countRows(Connection connection, String tableName) throws SQLException {
+        try (Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery("SELECT COUNT(*) FROM " + tableName)) {
+            return resultSet.next() ? resultSet.getLong(1) : 0L;
         }
     }
 
     private List<String> getMigrationTableNames(Connection sourceConn, Type sourceType) throws SQLException {
         List<String> tables = new ArrayList<>();
+        String prefix = getStoragePrefix().toLowerCase(Locale.ROOT);
 
-        String prefix = getStoragePrefix();
+        try (ResultSet rs = sourceConn.getMetaData().getTables(null, null, "%", null)) {
+            while (rs.next()) {
+                String name = rs.getString("TABLE_NAME");
+                String schema = rs.getString("TABLE_SCHEM");
+                String tableType = rs.getString("TABLE_TYPE");
 
-        addTableIfExists(tables, prefix + "grave");
-        addTableIfExists(tables, prefix + "hologram");
-        addTableIfExists(tables, prefix + "armorstand");
-        addTableIfExists(tables, prefix + "itemframe");
-        addTableIfExists(tables, prefix + "chunk");
+                if (name == null)
+                    continue;
+                if (schema != null && schema.equalsIgnoreCase("INFORMATION_SCHEMA"))
+                    continue;
+                if (tableType == null || !(tableType.equalsIgnoreCase("TABLE") || tableType.equalsIgnoreCase("BASE TABLE")))
+                    continue;
 
-        return tables;
-    }
+                String lower = name.toLowerCase(Locale.ROOT);
+                if (lower.startsWith("sqlite_"))
+                    continue;
+                if (!prefix.isEmpty() && !lower.startsWith(prefix))
+                    continue;
 
-    private void addTableIfExists(List<String> tables, String tableName) {
-        if (tableExists(tableName)) {
-            tables.add(tableName);
+                tables.add(lower);
+            }
         }
+
+        String graveTable = prefix + "grave";
+        tables.sort(Comparator.comparing((String name) -> !name.equals(graveTable)));
+        return tables;
     }
 
     private String mapSourceTypeToTargetDB(Type sourceType, String sourceColumnType, String columnName) {
@@ -3349,8 +3443,9 @@ public class DataManager {
         };
     }
 
-    private void copyRows(Connection sourceConn, Connection targetConn, Type sourceType, String tableName, List<String> columns)
+    private int copyRows(Connection sourceConn, Connection targetConn, Type sourceType, String tableName, List<String> columns)
             throws SQLException {
+        int copied = 0;
 
         String placeholders = String.join(", ", Collections.nCopies(columns.size(), "?"));
         String insertSql = "INSERT INTO " + tableName +
@@ -3366,8 +3461,11 @@ public class DataManager {
                     insert.setObject(idx + 1, value);
                 }
                 insert.executeUpdate();
+                copied++;
             }
         }
+
+        return copied;
     }
 
     private void renameMigratedH2File(Path source) throws IOException {
@@ -3384,6 +3482,13 @@ public class DataManager {
     private void renameMigratedSQLiteFile(Path sqliteFile) throws IOException {
         Path target = sqliteFile.resolveSibling("data.migrated.db");
         Files.move(sqliteFile, target, StandardCopyOption.REPLACE_EXISTING);
+
+        for (String suffix : new String[]{"-wal", "-shm"}) {
+            Path sidecar = sqliteFile.resolveSibling(sqliteFile.getFileName() + suffix);
+            if (Files.exists(sidecar)) {
+                Files.move(sidecar, target.resolveSibling(target.getFileName() + suffix), StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
     }
 
     /**
