@@ -925,6 +925,16 @@ public class Graves extends JavaPlugin {
     }
 
     /**
+     * Sends a database debug message, controlled by {@code settings.debug.database-level}.
+     *
+     * @param string the message
+     * @param level  0=Nothing, 1=Information, 2=Failures
+     */
+    public void databaseDebug(String string, int level) {
+        getDebugManager().database("[Database] " + string, level);
+    }
+
+    /**
      * Logs a warning message to the console with a "Warning" prefix.
      *
      * @param string the message to log

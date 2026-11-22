@@ -167,8 +167,11 @@ settings:
     show-caller: true
     # Should we show what class and line number called this? This is intended for developers and not for production reasons though we won't stop you :)
     show-caller-class: false
-    # 0 = Nothing, 1 = Information, 2 = Failures
+    # 0 = Nothing, 1 = Information, 2 = Information and Failures/Warnings
     level: 0
+    # Database debugging, independent of the level above. Prints what the database inserts, reads, updates, and removes.
+    # 0 = Nothing, 1 = Information, 2 = Information and Failures/Warnings
+    database-level: 0
 
   #########
   # Dump  #

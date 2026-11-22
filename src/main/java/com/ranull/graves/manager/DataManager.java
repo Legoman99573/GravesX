@@ -116,23 +116,30 @@ public class DataManager {
      */
     private void runAsyncDatabaseTask(Runnable task) {
         if (isCacheDisabled()) {
+            plugin.databaseDebug("Running database write synchronously (cache disabled).", 1);
             task.run();
             return;
         }
         if (shuttingDown) {
+            plugin.databaseDebug("Running database write synchronously (plugin shutting down).", 1);
             try {
                 task.run();
             } catch (Exception e) {
+                plugin.databaseDebug("Database write failed during shutdown: " + e, 2);
                 plugin.getLogger().severe("Failed to run database write during shutdown: " + e.getCause());
                 plugin.logStackTrace(e);
             }
             return;
         }
 
-        pendingWrites.incrementAndGet();
+        int queued = pendingWrites.incrementAndGet();
+        plugin.databaseDebug("Queued async database write (pending writes: " + queued + ").", 1);
         plugin.getSchedulerManager().runTaskAsynchronously(() -> {
             try {
                 task.run();
+            } catch (RuntimeException | Error e) {
+                plugin.databaseDebug("Async database write threw an unexpected error: " + e, 2);
+                throw e;
             } finally {
                 pendingWrites.decrementAndGet();
             }
@@ -184,6 +191,7 @@ public class DataManager {
         this.plugin = plugin;
 
         String typeStr = plugin.getConfig().getString("settings.storage.type", "SQLITE");
+        plugin.databaseDebug("Initializing DataManager with configured storage type '" + typeStr + "'.", 1);
         try {
             this.type = Type.valueOf(typeStr.toUpperCase());
         } catch (IllegalArgumentException e) {
@@ -199,6 +207,7 @@ public class DataManager {
                     DatabaseMigrator.migrate(plugin, this, this.type);
                     keepConnectionAlive(); // If we don't enable this, connection will close or time out :/
                 } else {
+                    plugin.databaseDebug("Could not connect to the H2 database, disabling plugin.", 2);
                     plugin.getLogger().severe("Failed to connect to " + Type.H2 + " database. Disabling plugin...");
                     plugin.getServer().getPluginManager().disablePlugin(this.plugin);
                 }
@@ -209,6 +218,7 @@ public class DataManager {
                     DatabaseMigrator.migrate(plugin, this, this.type);
                     keepConnectionAlive(); // If we don't enable this, connection will close or time out :/
                 } else {
+                    plugin.databaseDebug("Could not connect to the configured database, disabling plugin.", 2);
                     plugin.getLogger().severe("Failed to connect to " + this.type + " database. Disabling plugin...");
                     plugin.getServer().getPluginManager().disablePlugin(this.plugin);
                 }
@@ -219,11 +229,13 @@ public class DataManager {
                     DatabaseMigrator.migrate(plugin, this, this.type);
                     keepConnectionAlive();
                 } else {
+                    plugin.databaseDebug("Could not connect to the configured database, disabling plugin.", 2);
                     plugin.getLogger().severe("Failed to connect to " + this.type + " database. Disabling plugin...");
                     plugin.getServer().getPluginManager().disablePlugin(this.plugin);
                 }
             }
             default -> {
+                plugin.databaseDebug("Invalid database type configured, disabling plugin.", 2);
                 plugin.getLogger().severe("Database Type is invalid. Only valid options: SQLITE, H2, POSTGRESQL, MARIADB, and MYSQL. Disabling plugin...");
                 plugin.getServer().getPluginManager().disablePlugin(this.plugin);
             }
@@ -336,10 +348,14 @@ public class DataManager {
         if (pendingLoad != null && !pendingLoad.isDone()) return;
         PendingLoad loading = new PendingLoad();
         pendingLoad = loading;
+        plugin.databaseDebug("Starting database load (tables, grave, block, entity and hologram maps).", 1);
         loading.completion().whenComplete((unused, error) -> {
             if (error != null) {
+                plugin.databaseDebug("Database loading failed: " + error, 2);
                 plugin.getLogger().severe("Database loading failed.");
                 plugin.logStackTrace(error);
+            } else {
+                plugin.databaseDebug("Database loading completed.", 1);
             }
         });
         try {
@@ -349,6 +365,7 @@ public class DataManager {
                 } catch (Throwable ignored) {}
                 snapshotCustomProviders();
             } catch (Throwable t) {
+                plugin.databaseDebug("Failed while snapshotting GraveProviders: " + t, 2);
                 plugin.getLogger().severe("Failed while snapshotting GraveProviders (sync).");
                 loadFailed(t);
                 plugin.logStackTrace(t);
@@ -390,6 +407,7 @@ public class DataManager {
                         createEntityDataMapTable(integration);
                         loadEntityDataMap(integration, type);
                     } catch (Throwable t) {
+                        plugin.databaseDebug("Failed initializing integration entity data map for " + integration + ": " + t, 2);
                         plugin.getLogger().severe("Failed initializing integration entity data map for: " + integration);
                         loadFailed(t);
                         plugin.logStackTrace(t);
@@ -415,6 +433,7 @@ public class DataManager {
                         createEntityDataMapTable(key);
                         loadEntityDataMap(key, EntityData.Type.CUSTOM);
                     } catch (Throwable t) {
+                        plugin.databaseDebug("Failed initializing custom provider for key " + key + ": " + t, 2);
                         plugin.getLogger().severe("Failed initializing custom provider for key: " + key);
                         loadFailed(t);
                         plugin.logStackTrace(t);
@@ -463,11 +482,13 @@ public class DataManager {
      * @throws SQLException if an SQL error occurs.
      */
     private void loadTables() throws SQLException {
+        plugin.databaseDebug("Setting up database tables (grave, block, hologram, entity).", 1);
         setupGraveTable();
         setupBlockTable();
         setupHologramTable();
         setupEntityTables();
         storageReady = true;
+        plugin.databaseDebug("Database tables are ready.", 1);
     }
 
     /**
@@ -518,6 +539,7 @@ public class DataManager {
      * @param type the type of database.
      */
     public void reload(Type type) {
+        plugin.databaseDebug("Reloading database manager for type " + type + ".", 1);
         switch (type) {
             case SQLITE -> {
                 plugin.getLogger().warning("Database Option SQLITE is set for removal in a future release. Use H2 Database option instead for better reliance.");
@@ -532,6 +554,7 @@ public class DataManager {
                     load();
                     keepConnectionAlive(); // If we don't enable this, connection will close or time out :/
                 } else {
+                    plugin.databaseDebug("Could not connect to " + type + " database, disabling plugin.", 2);
                     plugin.getLogger().severe("Failed to connect to " + type + " database. Disabling plugin...");
                     plugin.getServer().getPluginManager().disablePlugin(this.plugin);
                 }
@@ -543,11 +566,13 @@ public class DataManager {
                     load();
                     keepConnectionAlive();
                 } else {
+                    plugin.databaseDebug("Could not connect to " + type + " database, disabling plugin.", 2);
                     plugin.getLogger().severe("Failed to connect to " + type + " database. Disabling plugin...");
                     plugin.getServer().getPluginManager().disablePlugin(this.plugin);
                 }
             }
             default -> {
+                plugin.databaseDebug("Invalid database type configured, disabling plugin.", 2);
                 plugin.getLogger().severe("Database Type is invalid. Only valid options: SQLITE, H2, POSTGRESQL, MARIADB, and MYSQL. Disabling plugin...");
                 plugin.getServer().getPluginManager().disablePlugin(this.plugin);
             }
@@ -561,6 +586,7 @@ public class DataManager {
      */
     public void loadType(Type type) {
         this.type = type;
+        plugin.databaseDebug("Loading database type " + type + " and creating the connection pool.", 1);
         HikariConfig config = new HikariConfig();
 
         switch (type) {
@@ -578,6 +604,7 @@ public class DataManager {
         }
 
         dataSource = new HikariDataSource(config);
+        plugin.databaseDebug("Connection pool created for " + type + ".", 1);
         checkAndUnlockDatabase();
         if (type == MYSQL) checkMariaDBasMySQL();
     }
@@ -997,6 +1024,7 @@ public class DataManager {
 
         try (Connection connection = getConnection()) {
             if (connection == null) {
+                plugin.databaseDebug("Could not list columns for table '" + tableName + "': connection is null.", 2);
                 return columnList;
             }
             try (Statement statement = connection.createStatement();
@@ -1012,6 +1040,7 @@ public class DataManager {
                 }
             }
         } catch (SQLException exception) {
+            plugin.databaseDebug("Failed to list columns for table '" + tableName + "': " + exception.getMessage(), 2);
             plugin.getLogger().severe("Error occurred while getting Column List");
             plugin.getLogger().severe("Query: " + query);
             plugin.logStackTrace(exception);
@@ -1050,24 +1079,29 @@ public class DataManager {
 
         try (Connection connection = getConnection()) {
             if (connection == null) {
+                plugin.databaseDebug("Could not check table '" + tableName + "': connection is null.", 2);
                 return false;
             }
             try (Statement statement = connection.createStatement();
                  ResultSet resultSet = statement.executeQuery(query)) {
 
                 if (!resultSet.next()) {
+                    plugin.databaseDebug("Table '" + tableName + "' does not exist.", 1);
                     return false;
                 }
 
-                return switch (type) {
+                boolean exists = switch (type) {
                     case POSTGRESQL -> resultSet.getBoolean(1);
                     case H2 -> resultSet.getInt(1) > 0;
                     case MSSQL -> resultSet.getInt("TableExists") == 1;
                     case MYSQL, MARIADB, SQLITE -> true;
                     default -> false;
                 };
+                plugin.databaseDebug("Table '" + tableName + "' exists: " + exists + ".", 1);
+                return exists;
             }
         } catch (SQLException exception) {
+            plugin.databaseDebug("Failed to check if table '" + tableName + "' exists: " + exception.getMessage(), 2);
             plugin.getLogger().severe("Error occurred while checking if table exists");
             plugin.getLogger().severe("Query: " + query);
             plugin.logStackTrace(exception);
@@ -1145,12 +1179,13 @@ public class DataManager {
             case H2, MSSQL ->
                     "ALTER TABLE " + getStoragePrefix() + tableName + " ALTER COLUMN " + columnName + " " + columnDefinition + ";";
             case SQLITE -> {
-                plugin.debugMessage(
+                plugin.databaseDebug(
                         "SQLite does not support altering columns. Skipping alteration of column '"
                                 + columnName + "' in table '" + getStoragePrefix() + tableName + "'.", 2);
                 yield null;
             }
             default -> {
+                plugin.databaseDebug("Unsupported database type: " + type, 2);
                 plugin.getLogger().severe("Unsupported database type: " + type);
                 yield null;
             }
@@ -1199,6 +1234,7 @@ public class DataManager {
     public void setupGraveTable() throws SQLException {
         String name = getStoragePrefix() + "grave";
         if (!tableExists(name)) {
+            plugin.databaseDebug("Table '" + name + "' is missing, creating it.", 1);
             String create = switch (type) {
                 case H2, POSTGRESQL ->
                         "CREATE TABLE IF NOT EXISTS " + name + " ("
@@ -1437,6 +1473,7 @@ public class DataManager {
             addColumnIfNotExists(name, "provider_id", "VARCHAR(255)");
             alterColumnIfExists(name, "provider_id", "VARCHAR(255)");
         }
+        plugin.databaseDebug("Table '" + name + "' schema verified.", 1);
     }
 
     /**
@@ -1448,6 +1485,7 @@ public class DataManager {
         String name = getStoragePrefix() + "block";
 
         if (!tableExists(name)) {
+            plugin.databaseDebug("Table '" + name + "' is missing, creating it.", 1);
             String replaceDataType = switch (type) {
                 case MSSQL -> "NVARCHAR(MAX)";
                 default -> "TEXT";
@@ -1479,6 +1517,7 @@ public class DataManager {
         };
         addColumnIfNotExists(name, "replace_data", replaceDataTypeForAlter);
         alterColumnIfExists(name, "replace_data", replaceDataTypeForAlter);
+        plugin.databaseDebug("Table '" + name + "' schema verified.", 1);
     }
 
 
@@ -1491,6 +1530,7 @@ public class DataManager {
         String name = getStoragePrefix() + "hologram";
 
         if (!tableExists(name)) {
+            plugin.databaseDebug("Table '" + name + "' is missing, creating it.", 1);
             String createTableQuery = switch (type) {
                 case MYSQL, MARIADB ->
                         "CREATE TABLE IF NOT EXISTS " + name + " ("
@@ -1518,6 +1558,7 @@ public class DataManager {
                                 + "backend NVARCHAR(255)"
                                 + ");";
                 default -> {
+                    plugin.databaseDebug("Unsupported database type: " + type, 2);
                     plugin.getLogger().severe("Unsupported database type: " + type);
                     yield null;
                 }
@@ -1568,7 +1609,7 @@ public class DataManager {
             submitLoad(task -> plugin.getSchedulerManager().runTaskLaterAsynchronously(task, 40L), () -> {
                 List<String> columns = getColumnList(finalName);
                 if (!columns.contains("backend")) {
-                    plugin.debugMessage(
+                    plugin.databaseDebug(
                             "Skipping hologram backend backfill for table '" + finalName + "' because column 'backend' is still missing.",
                             2
                     );
@@ -1579,12 +1620,15 @@ public class DataManager {
                     executeUpdate(finalBackfillBackend, new Object[0], true);
                 } catch (SQLException exception) {
                     loadFailed(exception);
+                    plugin.databaseDebug("Error executing hologram backend backfill", 2);
                     plugin.getLogger().severe("Error executing hologram backend backfill");
+                    plugin.databaseDebug("Failed SQL statement: " + finalBackfillBackend, 2);
                     plugin.getLogger().severe("Failed SQL statement: " + finalBackfillBackend);
                     plugin.logStackTrace(exception);
                 }
             });
         }
+        plugin.databaseDebug("Table '" + name + "' schema verified.", 1);
     }
 
     /**
@@ -1597,6 +1641,7 @@ public class DataManager {
         String table = getStoragePrefix() + name;
 
         if (!tableExists(table)) {
+            plugin.databaseDebug("Table '" + table + "' is missing, creating it.", 1);
             String createTableQuery = switch (type) {
                 case MYSQL, MARIADB, POSTGRESQL, H2 ->
                         "CREATE TABLE IF NOT EXISTS " + table + " ("
@@ -1618,6 +1663,7 @@ public class DataManager {
                                 + "uuid_grave NVARCHAR(255)"
                                 + ");";
                 default -> {
+                    plugin.databaseDebug("Unsupported database type: " + type, 2);
                     plugin.getLogger().severe("Unsupported database type: " + type);
                     yield null;
                 }
@@ -1643,6 +1689,7 @@ public class DataManager {
 
         addColumnIfNotExists(table, "uuid_grave", varcharDef);
         alterColumnIfExists(table, "uuid_grave", varcharDef);
+        plugin.databaseDebug("Table '" + table + "' schema verified.", 1);
     }
 
     /**
@@ -1651,6 +1698,7 @@ public class DataManager {
     public void loadGraveMap() {
         if (isCacheDisabled()) return;
         plugin.getCacheManager().getGraveMap().clear();
+        plugin.databaseDebug("Loading grave maps...", 1);
         plugin.getLogger().info("Loading grave maps...");
         String query = "SELECT * FROM " + getStoragePrefix() + "grave;";
         int graveCount = 0;
@@ -1660,16 +1708,20 @@ public class DataManager {
              ResultSet resultSet = statement.executeQuery(query)) {
 
             while (resultSet.next()) {
+                logRow("grave", resultSet);
                 Grave grave = resultSetToGrave(resultSet);
                 if (grave != null) {
                     plugin.getCacheManager().getGraveMap().put(grave.getUUID(), grave);
                     graveCount++;
+                    plugin.databaseDebug("Read grave " + grave.getUUID() + " (owner=" + grave.getOwnerName() + ", location=" + (grave.getLocationDeath() != null ? LocationUtil.locationToString(grave.getLocationDeath()) : "null") + ").", 1);
                 }
             }
 
             if (graveCount == 0) {
+                plugin.databaseDebug("Found 0 grave maps to load into cache.", 1);
                 plugin.getLogger().info("Found 0 grave maps to load into cache.");
             } else {
+                plugin.databaseDebug("Loaded " + graveCount + " grave maps into cache.", 1);
                 plugin.getLogger().info("Loaded " + graveCount + " grave maps into cache.");
             }
         } catch (SQLException exception) {
@@ -1684,13 +1736,16 @@ public class DataManager {
                     || "X0Y32".equals(sqlState)
                     || "42000".equals(sqlState)
                     || ("SQLITE_ERROR".equals(sqlState) && message.contains("duplicate column name"))) {
+                plugin.databaseDebug("Found 0 grave maps to load into cache.", 1);
                 plugin.getLogger().info("Found 0 grave maps to load into cache.");
             } else {
+                plugin.databaseDebug("Error occurred while loading Grave Map: " + exception.getMessage(), 2);
                 plugin.getLogger().severe("Error occurred while loading Grave Map");
                 plugin.logStackTrace(exception);
             }
         } catch (NullPointerException exception) {
             loadFailed(exception);
+            plugin.databaseDebug("A null pointer exception occurred while loading Grave Map: " + exception.getMessage(), 2);
             plugin.getLogger().severe("A null pointer exception occurred while loading Grave Map");
             plugin.logStackTrace(exception);
         }
@@ -1707,6 +1762,7 @@ public class DataManager {
         String query = "SELECT * FROM " + getStoragePrefix() + "block;";
 
         submitLoad(task -> plugin.getSchedulerManager().runTaskAsynchronously(task), () -> {
+            plugin.databaseDebug("Loading Block Map cache...", 1);
             plugin.getLogger().info("Loading Block Map cache...");
 
             class BlockWork {
@@ -1722,6 +1778,7 @@ public class DataManager {
                  ResultSet resultSet = statement.executeQuery()) {
 
                 while (resultSet.next()) {
+                    logRow("block", resultSet);
                     try {
                         Location location = LocationUtil.stringToLocation(resultSet.getString("location"));
                         UUID uuidGrave = UUID.fromString(resultSet.getString("uuid_grave"));
@@ -1729,6 +1786,7 @@ public class DataManager {
                         String replaceData = resultSet.getString("replace_data");
 
                         if (location.getWorld() == null) {
+                            plugin.databaseDebug("Skipping block entry with invalid/missing location for Grave " + uuidGrave, 2);
                             plugin.getLogger().warning("Skipping block entry with invalid/missing location for Grave " + uuidGrave);
                             continue;
                         }
@@ -1748,8 +1806,10 @@ public class DataManager {
                                 .add(new BlockWork(location, bd));
 
                         scheduledCount++;
+                        plugin.databaseDebug("Read block data (grave=" + bd.getGraveUUID() + ", location=" + LocationUtil.locationToString(location) + ").", 1);
                     } catch (Exception e) {
                         String uuidGraveStr = resultSet.getString("uuid_grave");
+                        plugin.databaseDebug("Failed to process a block entry for Grave " + uuidGraveStr, 2);
                         plugin.getLogger().warning("Failed to process a block entry for Grave " + uuidGraveStr);
                         plugin.logStackTrace(e);
                     }
@@ -1768,12 +1828,14 @@ public class DataManager {
                                 saveChunkCache(w.loc, cachedChunk);
                             } catch (Throwable t) {
                                 loadFailed(t);
+                                plugin.databaseDebug("Failed to cache block at " + w.loc + ": " + t.getMessage(), 2);
                                 plugin.getLogger().warning("Failed to cache block at " + w.loc + ": " + t.getMessage());
                             }
                         }
                     });
                 }
 
+                plugin.databaseDebug("Queued " + scheduledCount + " Blocks into the Block Map Cache (batched by chunk).", 1);
                 plugin.getLogger().info("Queued " + scheduledCount + " Blocks into the Block Map Cache (batched by chunk).");
 
             } catch (SQLException exception) {
@@ -1790,8 +1852,10 @@ public class DataManager {
                         || "X0Y32".equals(sqlState)
                         || "42000".equals(sqlState)
                         || ("SQLITE_ERROR".equals(sqlState) && message.contains("duplicate column name"))) {
+                    plugin.databaseDebug("Loaded 0 Blocks into Block Map Cache.", 1);
                     plugin.getLogger().info("Loaded 0 Blocks into Block Map Cache.");
                 } else {
+                    plugin.databaseDebug("Error occurred while loading Block Map: " + exception.getMessage(), 2);
                     plugin.getLogger().severe("Error occurred while loading Block Map");
                     plugin.logStackTrace(exception);
                 }
@@ -1810,6 +1874,7 @@ public class DataManager {
         String query = "SELECT * FROM " + getStoragePrefix() + table + ";";
 
         submitLoad(task -> plugin.getSchedulerManager().runTaskAsynchronously(task), () -> {
+            plugin.databaseDebug("Loading Entity Map Cache for " + table + "...", 1);
             plugin.getLogger().info("Loading Entity Map Cache for " + table + "...");
             int entityCount = 0;
 
@@ -1818,14 +1883,17 @@ public class DataManager {
                  ResultSet resultSet = statement.executeQuery()) {
 
                 while (resultSet.next()) {
+                    logRow("" + table + "", resultSet);
                     String locationString = resultSet.getString("location");
                     if (locationString == null) {
+                        plugin.databaseDebug("EntityMap row skipped: location is null (table=" + table + ").", 2);
                         plugin.getLogger().warning("EntityMap row skipped: location is null (table=" + table + ").");
                         continue;
                     }
 
                     Location location = LocationUtil.stringToLocation(locationString);
                     if (location.getWorld() == null) {
+                        plugin.databaseDebug("EntityMap row skipped: invalid location '" + locationString + "' (table=" + table + ").", 2);
                         plugin.getLogger().warning("EntityMap row skipped: invalid location '" + locationString + "' (table=" + table + ").");
                         continue;
                     }
@@ -1833,6 +1901,7 @@ public class DataManager {
                     String uuidEntityString = resultSet.getString("uuid_entity");
                     String uuidGraveString = resultSet.getString("uuid_grave");
                     if (uuidEntityString == null || uuidGraveString == null) {
+                        plugin.databaseDebug("EntityMap row skipped: missing UUIDs (location=" + location + ", table=" + table + ").", 2);
                         plugin.getLogger().warning("EntityMap row skipped: missing UUIDs (location=" + location + ", table=" + table + ").");
                         continue;
                     }
@@ -1846,19 +1915,25 @@ public class DataManager {
                         saveChunkCache(location, cachedChunk);
                         plugin.getCacheManager().addEntityData(entityData);
                         entityCount++;
+                        plugin.databaseDebug("Read entity data (table=" + table + ", type=" + entityData.getType() + ", entity=" + entityData.getUUIDEntity() + ", grave=" + entityData.getUUIDGrave() + ").", 1);
                     } catch (IllegalArgumentException ex) {
+                        plugin.databaseDebug("EntityMap row skipped: malformed UUIDs (entity=" + uuidEntityString
+                                + ", grave=" + uuidGraveString + ", table=" + table + ").", 2);
                         plugin.getLogger().warning("EntityMap row skipped: malformed UUIDs (entity=" + uuidEntityString
                                 + ", grave=" + uuidGraveString + ", table=" + table + ").");
                     }
                 }
 
                 if (entityCount == 0) {
+                    plugin.databaseDebug("Loaded 0 entities into Entity Map Cache for " + getStoragePrefix() + table + ".", 1);
                     plugin.getLogger().info("Loaded 0 entities into Entity Map Cache for " + getStoragePrefix() + table + ".");
                 } else {
+                    plugin.databaseDebug("Loaded " + entityCount + " entities into Entity Map Cache for " + getStoragePrefix() + table + ".", 1);
                     plugin.getLogger().info("Loaded " + entityCount + " entities into Entity Map Cache for " + getStoragePrefix() + table + ".");
                 }
             } catch (SQLException exception) {
                 loadFailed(exception);
+                plugin.databaseDebug("Error occurred while loading Entity Map for " + table, 2);
                 plugin.getLogger().severe("Error occurred while loading Entity Map for " + table);
                 plugin.logStackTrace(exception);
             }
@@ -1873,6 +1948,7 @@ public class DataManager {
         String query = "SELECT * FROM " + getStoragePrefix() + "hologram;";
 
         submitLoad(task -> plugin.getSchedulerManager().runTaskAsynchronously(task), () -> {
+            plugin.databaseDebug("Loading Holograms into Hologram Map Cache...", 1);
             plugin.getLogger().info("Loading Holograms into Hologram Map Cache...");
             int hologramCount = 0;
 
@@ -1881,14 +1957,17 @@ public class DataManager {
                  ResultSet resultSet = statement.executeQuery()) {
 
                 while (resultSet.next()) {
+                    logRow("hologram", resultSet);
                     String locationString = resultSet.getString("location");
                     if (locationString == null) {
+                        plugin.databaseDebug("Hologram row skipped: location is null.", 2);
                         plugin.getLogger().warning("Hologram row skipped: location is null.");
                         continue;
                     }
 
                     Location location = LocationUtil.stringToLocation(locationString);
                     if (location.getWorld() == null) {
+                        plugin.databaseDebug("Hologram row skipped: invalid location '" + locationString + "'.", 2);
                         plugin.getLogger().warning("Hologram row skipped: invalid location '" + locationString + "'.");
                         continue;
                     }
@@ -1896,6 +1975,7 @@ public class DataManager {
                     String uuidEntityString = resultSet.getString("uuid_entity");
                     String uuidGraveString = resultSet.getString("uuid_grave");
                     if (uuidEntityString == null || uuidGraveString == null) {
+                        plugin.databaseDebug("Hologram row skipped: missing UUIDs (location=" + location + ").", 2);
                         plugin.getLogger().warning("Hologram row skipped: missing UUIDs (location=" + location + ").");
                         continue;
                     }
@@ -1927,19 +2007,24 @@ public class DataManager {
                         saveChunkCache(location, cachedChunk);
                         plugin.getCacheManager().addEntityData(hologramData);
                         hologramCount++;
+                        plugin.databaseDebug("Read hologram data (grave=" + hologramData.getUUIDGrave() + ", line=" + hologramData.getLine() + ", entity=" + hologramData.getUUIDEntity() + ").", 1);
                     } catch (IllegalArgumentException ex) {
+                        plugin.databaseDebug("Hologram row skipped: malformed UUIDs (entity=" + uuidEntityString + ", grave=" + uuidGraveString + ").", 2);
                         plugin.getLogger().warning("Hologram row skipped: malformed UUIDs (entity=" + uuidEntityString + ", grave=" + uuidGraveString + ").");
                     }
                 }
 
                 if (hologramCount == 0) {
+                    plugin.databaseDebug("Loaded 0 Holograms into Hologram Map Cache.", 1);
                     plugin.getLogger().info("Loaded 0 Holograms into Hologram Map Cache.");
                 } else {
+                    plugin.databaseDebug("Loaded " + hologramCount + " Holograms into Hologram Map Cache.", 1);
                     plugin.getLogger().info("Loaded " + hologramCount + " Holograms into Hologram Map Cache.");
                 }
 
             } catch (SQLException exception) {
                 loadFailed(exception);
+                plugin.databaseDebug("Error occurred while loading Hologram Map: " + exception.getMessage(), 2);
                 plugin.getLogger().severe("Error occurred while loading Hologram Map");
                 plugin.logStackTrace(exception);
             }
@@ -1975,6 +2060,7 @@ public class DataManager {
                             + "uuid_grave NVARCHAR(255)"
                             + ");";
             default -> {
+                plugin.databaseDebug("Unsupported database type: " + type, 2);
                 plugin.getLogger().severe("Unsupported database type: " + type);
                 yield null;
             }
@@ -1988,6 +2074,7 @@ public class DataManager {
             executeUpdate(createTableQuery, new Object[0], true);
         } catch (SQLException e) {
             loadFailed(e);
+            plugin.databaseDebug("Failed to create entity data map table: " + physicalTable, 2);
             plugin.getLogger().severe("Failed to create entity data map table: " + physicalTable);
             plugin.logStackTrace(e);
         }
@@ -2019,6 +2106,7 @@ public class DataManager {
         String query = "SELECT location, uuid_entity, uuid_grave FROM " + physicalTable + ";";
 
         submitLoad(task -> plugin.getSchedulerManager().runTaskAsynchronously(task), () -> {
+            plugin.databaseDebug("Loading Entity Data Map Cache for " + physicalTable + "...", 1);
             plugin.getLogger().info("Loading Entity Data Map Cache for " + physicalTable + "...");
             int entityCount = 0;
 
@@ -2027,14 +2115,17 @@ public class DataManager {
                  ResultSet resultSet = statement.executeQuery()) {
 
                 while (resultSet.next()) {
+                    logRow("" + physicalTable + "", resultSet);
                     String locationString = resultSet.getString("location");
                     if (locationString == null) {
+                        plugin.databaseDebug("Entity Data row skipped: location is null (" + physicalTable + ").", 2);
                         plugin.getLogger().warning("Entity Data row skipped: location is null (" + physicalTable + ").");
                         continue;
                     }
 
                     Location location = LocationUtil.stringToLocation(locationString);
                     if (location.getWorld() == null) {
+                        plugin.databaseDebug("Entity Data row skipped: invalid location '" + locationString + "' (" + physicalTable + ").", 2);
                         plugin.getLogger().warning("Entity Data row skipped: invalid location '" + locationString + "' (" + physicalTable + ").");
                         continue;
                     }
@@ -2042,6 +2133,7 @@ public class DataManager {
                     String uuidEntityString = resultSet.getString("uuid_entity");
                     String uuidGraveString = resultSet.getString("uuid_grave");
                     if (uuidEntityString == null || uuidGraveString == null) {
+                        plugin.databaseDebug("Entity Data row skipped: missing UUIDs (location=" + location + ", table=" + physicalTable + ").", 2);
                         plugin.getLogger().warning("Entity Data row skipped: missing UUIDs (location=" + location + ", table=" + physicalTable + ").");
                         continue;
                     }
@@ -2055,19 +2147,25 @@ public class DataManager {
                         saveChunkCache(location, cachedChunk);
                         plugin.getCacheManager().addEntityData(entityData);
                         entityCount++;
+                        plugin.databaseDebug("Read entity data (table=" + physicalTable + ", type=" + entityData.getType() + ", entity=" + entityData.getUUIDEntity() + ", grave=" + entityData.getUUIDGrave() + ").", 1);
                     } catch (IllegalArgumentException ex) {
+                        plugin.databaseDebug("Entity Data row skipped: malformed UUIDs (entity=" + uuidEntityString
+                                + ", grave=" + uuidGraveString + ", table=" + physicalTable + ").", 2);
                         plugin.getLogger().warning("Entity Data row skipped: malformed UUIDs (entity=" + uuidEntityString
                                 + ", grave=" + uuidGraveString + ", table=" + physicalTable + ").");
                     }
                 }
 
                 if (entityCount == 0) {
+                    plugin.databaseDebug("Loaded 0 entities into Entity Data Map Cache for " + physicalTable + ".", 1);
                     plugin.getLogger().info("Loaded 0 entities into Entity Data Map Cache for " + physicalTable + ".");
                 } else {
+                    plugin.databaseDebug("Loaded " + entityCount + " entities into Entity Data Map Cache for " + physicalTable + ".", 1);
                     plugin.getLogger().info("Loaded " + entityCount + " entities into Entity Data Map Cache for " + physicalTable + ".");
                 }
             } catch (SQLException | NullPointerException exception) {
                 loadFailed(exception);
+                plugin.databaseDebug("Error occurred while loading Entity Data Map for " + physicalTable, 2);
                 plugin.getLogger().severe("Error occurred while loading Entity Data Map for " + physicalTable);
                 plugin.logStackTrace(exception);
             }
@@ -2111,10 +2209,12 @@ public class DataManager {
                 blockData.getReplaceData()
         };
 
+        plugin.databaseDebug("Adding block data for grave " + blockData.getGraveUUID() + " at " + LocationUtil.locationToString(blockData.getLocation()) + ".", 1);
         runAsyncDatabaseTask(() -> {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException exception) {
+                plugin.databaseDebug("Failed to add block data: " + exception.getMessage(), 2);
                 plugin.getLogger().severe("Failed to add block data");
                 plugin.logStackTrace(exception);
             }
@@ -2131,8 +2231,10 @@ public class DataManager {
      */
     public void removeBlockData(Location location) {
         if (location == null || location.getWorld() == null) {
+            plugin.databaseDebug("Skipped removing block data: location/world is null.", 2);
             return;
         }
+        plugin.databaseDebug("Removing block data at " + LocationUtil.locationToString(location) + ".", 1);
 
         plugin.getSchedulerManager().execute(location, () -> {
             if (!isCacheDisabled()) {
@@ -2151,6 +2253,7 @@ public class DataManager {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException exception) {
+                plugin.databaseDebug("Failed to remove block data: " + exception.getMessage(), 2);
                 plugin.getLogger().severe("Failed to remove block data");
                 plugin.logStackTrace(exception);
             }
@@ -2168,10 +2271,12 @@ public class DataManager {
     public void addHologramData(HologramData hologramData) {
         Location loc = hologramData.getLocation();
         if (loc == null || loc.getWorld() == null) {
+            plugin.databaseDebug("Skipped adding hologram data: location/world is null.", 2);
             plugin.getLogger().warning("Skipped adding hologram data: location/world is null.");
             return;
         }
 
+        plugin.databaseDebug("Adding hologram data (line " + hologramData.getLine() + ") for grave " + hologramData.getUUIDGrave() + ".", 1);
         plugin.getSchedulerManager().execute(loc, () -> {
             if (!isCacheDisabled()) {
                 ChunkData cachedChunk = getChunkData(loc);
@@ -2196,6 +2301,7 @@ public class DataManager {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException exception) {
+                plugin.databaseDebug("Failed to add hologram data: " + exception.getMessage(), 2);
                 plugin.getLogger().severe("Failed to add hologram data");
                 plugin.logStackTrace(exception);
             }
@@ -2222,6 +2328,7 @@ public class DataManager {
 
                 try (ResultSet rs = selectStmt.executeQuery()) {
                     while (rs.next()) {
+                        logRow("hologram (pending removal)", rs);
                         String uuidEntityStr = rs.getString("uuid_entity");
                         String locString = rs.getString("location");
 
@@ -2283,9 +2390,10 @@ public class DataManager {
                     deleteStmt.executeUpdate();
                 }
 
-                plugin.debugMessage("Deleted " + scheduledRemovals + " holograms from DB for grave UUID: " + grave.getUUID(), 2);
+                plugin.databaseDebug("Deleted " + scheduledRemovals + " holograms from DB for grave UUID: " + grave.getUUID(), 2);
 
             } catch (SQLException e) {
+                plugin.databaseDebug("Error deleting holograms for grave " + grave.getUUID(), 2);
                 plugin.getLogger().severe("Error deleting holograms for grave " + grave.getUUID());
                 plugin.logStackTrace(e);
             }
@@ -2300,10 +2408,12 @@ public class DataManager {
     public void addEntityData(EntityData entityData) {
         Location loc = entityData.getLocation();
         if (loc == null || loc.getWorld() == null) {
+            plugin.databaseDebug("Skipped adding entity data: location/world is null (type=" + entityData.getType() + ").", 2);
             plugin.getLogger().warning("Skipped adding entity data: location/world is null (type=" + entityData.getType() + ").");
             return;
         }
 
+        plugin.databaseDebug("Adding entity data (type=" + entityData.getType() + ") for grave " + entityData.getUUIDGrave() + ".", 1);
         plugin.getSchedulerManager().execute(loc, () -> {
             if (!isCacheDisabled()) {
                 ChunkData cachedChunk = getChunkData(loc);
@@ -2326,6 +2436,7 @@ public class DataManager {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException e) {
+                plugin.databaseDebug("Failed to add entity data: " + e.getMessage(), 2);
                 plugin.getLogger().severe("Failed to add entity data");
                 plugin.logStackTrace(e);
             }
@@ -2377,9 +2488,10 @@ public class DataManager {
                     String query = "DELETE FROM " + getStoragePrefix() + table + " WHERE uuid_entity = ?";
                     executeUpdate(query, new Object[] { entityData.getUUIDEntity().toString() });
 
-                    plugin.debugMessage("Removing " + getStoragePrefix() + table + " for grave " + entityData.getUUIDGrave(), 1);
+                    plugin.databaseDebug("Removing " + getStoragePrefix() + table + " for grave " + entityData.getUUIDGrave(), 1);
                 }
             } catch (SQLException e) {
+                plugin.databaseDebug("Failed to remove entity data: " + e.getMessage(), 2);
                 plugin.getLogger().severe("Failed to remove entity data");
                 plugin.logStackTrace(e);
             }
@@ -2408,6 +2520,7 @@ public class DataManager {
                 }
             }
         } catch (SQLException e) {
+            plugin.databaseDebug("Failed to check if grave exists at location: " + e.getMessage(), 2);
             plugin.getLogger().severe("Failed to check if grave exists at location: " + e.getMessage());
         }
         return false;
@@ -2456,9 +2569,12 @@ public class DataManager {
 
         Object[] parameters = graveParameters(grave);
 
+        plugin.databaseDebug("Adding grave " + grave.getUUID() + " to the database.", 1);
         try {
             executeUpdate(query, parameters, true);
+            plugin.databaseDebug("Grave " + grave.getUUID() + " added to the database.", 1);
         } catch (SQLException ex) {
+            plugin.databaseDebug("Failed to add grave " + grave.getUUID() + ": " + ex.getMessage(), 2);
             throw new CacheCodec.CacheException("Failed to create grave", ex);
         }
         if (!isCacheDisabled()) {
@@ -2513,18 +2629,27 @@ public class DataManager {
     }
 
     public boolean saveGrave(Grave grave) {
-        if (grave == null || !writeGraveRow(grave))
+        if (grave == null) {
+            plugin.databaseDebug("Skipped saving grave: grave is null.", 2);
             return false;
+        }
+        if (!writeGraveRow(grave)) {
+            plugin.databaseDebug("Grave " + grave.getUUID() + " was not saved: no row was written.", 2);
+            return false;
+        }
 
         if (!isCacheDisabled())
             plugin.getCacheManager().saveGrave(grave);
 
+        plugin.databaseDebug("Grave " + grave.getUUID() + " saved.", 1);
         return true;
     }
 
     public void saveGraveDirect(Grave grave) {
-        if (isCacheDisabled() && grave != null)
+        if (isCacheDisabled() && grave != null) {
+            plugin.databaseDebug("Saving grave " + grave.getUUID() + " directly (cache disabled).", 1);
             writeGraveRow(grave);
+        }
     }
 
     private boolean writeGraveRow(Grave grave) {
@@ -2537,6 +2662,7 @@ public class DataManager {
                     "owner_type = ?, owner_name = ?, owner_name_display = ?, owner_uuid = ?, owner_texture = ?, owner_texture_signature = ?, killer_type = ?, killer_name = ?, killer_name_display = ?, killer_uuid = ?, location_death = ?, yaw = ?, pitch = ?, inventory = ?, equipment = ?, experience = ?, protection = ?, is_abandoned = ?, time_alive = ?, time_protection = ?, time_creation = ?, permissions = ?, provider_id = ?, death_reason = ? WHERE uuid = ?", parameters, true);
             return changed > 0 || graveRowExists(grave.getUUID());
         } catch (SQLException ex) {
+            plugin.databaseDebug("Failed saving grave " + grave.getUUID() + " to the persistent database: " + ex.getMessage(), 2);
             throw new CacheCodec.CacheException("Failed saving grave to persistent database", ex);
         }
     }
@@ -2560,6 +2686,7 @@ public class DataManager {
     }
 
     public void removeGrave(UUID uuid) {
+        plugin.databaseDebug("Removing grave " + uuid + " from cache and database.", 1);
         Grave grave = isCacheDisabled() ? plugin.getCacheManager().getGrave(uuid)
                 : plugin.getCacheManager().getGraveMap().remove(uuid);
 
@@ -2581,10 +2708,11 @@ public class DataManager {
 
         runAsyncDatabaseTask(() -> {
             try {
-                plugin.debugMessage("Attempting to remove grave for UUID: " + uuid, 1);
+                plugin.databaseDebug("Attempting to remove grave for UUID: " + uuid, 1);
                 executeUpdate(deleteQuery, deleteParams);
-                plugin.debugMessage("Grave successfully removed for UUID: " + uuid, 1);
+                plugin.databaseDebug("Grave successfully removed for UUID: " + uuid, 1);
             } catch (SQLException e) {
+                plugin.databaseDebug("Failed to remove grave: " + e.getMessage(), 2);
                 plugin.getLogger().severe("Failed to remove grave");
                 plugin.logStackTrace(e);
             }
@@ -2599,6 +2727,7 @@ public class DataManager {
      * @param integer the new integer value for the column.
      */
     public void updateGrave(Grave grave, String column, int integer) {
+        plugin.databaseDebug("Updating grave " + grave.getUUID() + " column '" + column + "' to " + integer + ".", 1);
         plugin.getCacheManager().saveGrave(grave);
         String query = "UPDATE " + getStoragePrefix() + "grave SET " + column + " = ? WHERE uuid = ?";
         Object[] parameters = new Object[] { integer, grave.getUUID() };
@@ -2607,6 +2736,7 @@ public class DataManager {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException e) {
+                plugin.databaseDebug("Failed to update grave: " + e.getMessage(), 2);
                 plugin.getLogger().severe("Failed to update grave");
                 plugin.logStackTrace(e);
             }
@@ -2621,6 +2751,7 @@ public class DataManager {
      * @param string the new value for the column.
      */
     public void updateGrave(Grave grave, String column, String string) {
+        plugin.databaseDebug("Updating grave " + grave.getUUID() + " column '" + column + "'.", 1);
         plugin.getCacheManager().saveGrave(grave);
         String query = "UPDATE " + getStoragePrefix() + "grave SET " + column + " = ? WHERE uuid = ?";
         Object[] parameters = new Object[] { string, grave.getUUID() };
@@ -2629,6 +2760,7 @@ public class DataManager {
             try {
                 executeUpdate(query, parameters);
             } catch (SQLException e) {
+                plugin.databaseDebug("Failed to update grave: " + e.getMessage(), 2);
                 plugin.getLogger().severe("Failed to update grave");
                 plugin.logStackTrace(e);
             }
@@ -2644,6 +2776,7 @@ public class DataManager {
      */
     @ApiStatus.Experimental
     public void updateGraveMainThread(Grave grave, String column, String string) {
+        plugin.databaseDebug("Updating grave " + grave.getUUID() + " column '" + column + "' on the main thread.", 1);
         plugin.getCacheManager().saveGrave(grave);
         String query = "UPDATE " + getStoragePrefix() + "grave SET " + column + " = ? WHERE uuid = ?";
         Object[] parameters = new Object[] { string, grave.getUUID() };
@@ -2651,6 +2784,7 @@ public class DataManager {
         try {
             executeUpdateMainThread(query, parameters);
         } catch (SQLException e) {
+            plugin.databaseDebug("Failed to update grave over main thread: " + e.getMessage(), 2);
             plugin.getLogger().severe("Failed to update grave over main thread");
             plugin.logStackTrace(e);
         }
@@ -2666,6 +2800,7 @@ public class DataManager {
         try {
             String uuidString = resultSet.getString("uuid");
             if (uuidString == null) {
+                plugin.databaseDebug("Skipping grave at row " + resultSet.getRow() + " due to null UUID.", 2);
                 plugin.getLogger().warning("Skipping grave at row " + resultSet.getRow() + " due to null UUID.");
                 return null;
             }
@@ -2680,6 +2815,7 @@ public class DataManager {
 
             String ownerName = resultSet.getString("owner_name");
             if (ownerType != null && ownerName == null) {
+                plugin.databaseDebug("Skipping grave at row " + resultSet.getRow() + " due to null Owner Name.", 2);
                 plugin.getLogger().warning("Skipping grave at row " + resultSet.getRow() + " due to null Owner Name.");
                 return null;
             }
@@ -2723,6 +2859,8 @@ public class DataManager {
 
             graveLocation = (locationDeath != null) ? LocationUtil.stringToLocation(locationDeath) : null;
             if (graveLocation == null) {
+                plugin.databaseDebug("Skipping grave " + uuidString + " at row " + resultSet.getRow()
+                        + " because location is null.", 2);
                 plugin.getLogger().warning("Skipping grave " + uuidString + " at row " + resultSet.getRow()
                         + " because location is null.");
                 return null;
@@ -2730,6 +2868,8 @@ public class DataManager {
 
             World world = graveLocation.getWorld();
             if (world == null || Bukkit.getWorld(world.getName()) == null) {
+                plugin.databaseDebug("Skipping grave " + uuidString + " at row " + resultSet.getRow()
+                        + " because the world '" + (world != null ? world.getName() : "null") + "' does not exist or is not loaded.", 2);
                 plugin.getLogger().warning("Skipping grave " + uuidString + " at row " + resultSet.getRow()
                         + " because the world '" + (world != null ? world.getName() : "null") + "' does not exist or is not loaded.");
                 return null;
@@ -2770,6 +2910,7 @@ public class DataManager {
             }
             return grave;
         } catch (SQLException exception) {
+            plugin.databaseDebug("Error occurred while converting a ResultSet to a Grave object: " + exception.getMessage(), 2);
             plugin.getLogger().severe("Error occurred while converting a ResultSet to a Grave object");
             plugin.logStackTrace(exception);
         }
@@ -2792,12 +2933,14 @@ public class DataManager {
      */
     public Connection getConnection() {
         if (dataSource == null || dataSource.isClosed()) {
+            plugin.databaseDebug("Connection requested but the DataSource is not initialized or has been closed.", 2);
             plugin.getLogger().severe("DataSource is not initialized or has been closed");
             return null;
         }
         try {
             return dataSource.getConnection();
         } catch (SQLException exception) {
+            plugin.databaseDebug("Failed to obtain a database connection: " + exception.getMessage(), 2);
             plugin.getLogger().severe("Error obtaining database connection");
             plugin.logStackTrace(exception);
             return null;
@@ -2842,10 +2985,13 @@ public class DataManager {
 
             if (resultSet.next()) {
                 String version = resultSet.getString(1);
+                plugin.databaseDebug("Retrieved database version: " + version, 1);
                 return (version != null && !version.isEmpty()) ? version.split(",")[0] : "Unknown";
             }
+            plugin.databaseDebug("Database version query returned no rows.", 2);
             return "Unknown";
         } catch (Exception e) {
+            plugin.databaseDebug("Failed to retrieve database version: " + e.getMessage(), 2);
             return "Unknown";
         }
     }
@@ -2855,7 +3001,11 @@ public class DataManager {
      */
     public void closeConnection() {
         if (dataSource != null && !dataSource.isClosed()) {
+            plugin.databaseDebug("Closing database connection pool (" + type + ").", 1);
             dataSource.close();
+            plugin.databaseDebug("Database connection pool closed.", 1);
+        } else {
+            plugin.databaseDebug("closeConnection called but the pool was already closed or never created.", 2);
         }
     }
 
@@ -2870,9 +3020,73 @@ public class DataManager {
         return executeUpdate(sql, parameters, false);
     }
 
+    /**
+     * Describes SQL parameters for database debug output (long values and blobs are truncated).
+     */
+    /**
+     * Describes the current row of a result set as column=value pairs (long values and blobs are truncated).
+     */
+    public static String describeRow(ResultSet resultSet) {
+        try {
+            java.sql.ResultSetMetaData meta = resultSet.getMetaData();
+            StringBuilder sb = new StringBuilder("{");
+            for (int i = 1; i <= meta.getColumnCount(); i++) {
+                if (i > 1) sb.append(", ");
+                sb.append(meta.getColumnLabel(i)).append('=');
+                Object o = resultSet.getObject(i);
+                if (o == null) {
+                    sb.append("null");
+                } else if (o instanceof byte[] bytes) {
+                    sb.append('<').append(bytes.length).append(" bytes>");
+                } else {
+                    String v = String.valueOf(o);
+                    sb.append(v.length() > 100 ? v.substring(0, 100) + "...(" + v.length() + " chars)" : v);
+                }
+            }
+            return sb.append('}').toString();
+        } catch (SQLException | RuntimeException e) {
+            return "<row unreadable: " + e.getMessage() + ">";
+        }
+    }
+
+    private void logRow(String label, ResultSet resultSet) {
+        if (plugin.getDebugManager().isDatabaseEnabled(1)) {
+            plugin.databaseDebug("Read row from " + label + ": " + describeRow(resultSet), 1);
+        }
+    }
+
+    /**
+     * True for idempotent schema checks (ADD COLUMN IF NOT EXISTS) that run once per column on every start
+     * and would only flood the debug output. Real schema changes are still printed.
+     */
+    private static boolean isSchemaGuard(String sql, Object[] parameters) {
+        if (parameters != null && parameters.length > 0) return false;
+        String upper = sql.toUpperCase(java.util.Locale.ROOT);
+        return (upper.startsWith("ALTER TABLE") && upper.contains("IF NOT EXISTS")) || upper.startsWith("DO $$");
+    }
+
+    private static String describeParameters(Object[] parameters) {
+        if (parameters == null || parameters.length == 0) return "[]";
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < parameters.length; i++) {
+            if (i > 0) sb.append(", ");
+            Object o = parameters[i];
+            if (o == null) {
+                sb.append("null");
+            } else if (o instanceof byte[] bytes) {
+                sb.append('<').append(bytes.length).append(" bytes>");
+            } else {
+                String v = String.valueOf(o);
+                sb.append(v.length() > 100 ? v.substring(0, 100) + "...(" + v.length() + " chars)" : v);
+            }
+        }
+        return sb.append(']').toString();
+    }
+
     private int executeUpdate(String sql, Object[] parameters, boolean strict) throws SQLException {
         try (Connection connection = getConnection()) {
             if (connection == null) {
+                plugin.databaseDebug("Update not executed, connection is unavailable. SQL: " + sql, 2);
                 if (strict || isCacheDisabled()) throw new SQLException("Database connection unavailable");
                 plugin.getLogger().severe("Error executing SQL update: connection is null");
                 plugin.getLogger().severe("Failed SQL statement: " + sql);
@@ -2924,9 +3138,16 @@ public class DataManager {
                     }
                 }
 
-                return statement.executeUpdate();
+                int affected = statement.executeUpdate();
+                if (!isSchemaGuard(sql, parameters)) {
+                    plugin.databaseDebug("Executed (" + affected + " row(s)): " + sql
+                            + (parameters != null && parameters.length > 0 ? " | Values: " + describeParameters(parameters) : ""), 1);
+                }
+                return affected;
             }
         } catch (SQLException exception) {
+            plugin.databaseDebug("Update failed (SQLState=" + exception.getSQLState()
+                    + ", strict=" + strict + "): " + exception.getMessage() + " | SQL: " + sql, 2);
             if (strict || isCacheDisabled()) throw exception;
             String sqlState = exception.getSQLState();
             String message = exception.getMessage() != null
@@ -2962,6 +3183,7 @@ public class DataManager {
     private void executeUpdateMainThread(String sql, Object[] parameters) throws SQLException {
         try (Connection connection = getConnection()) {
             if (connection == null) {
+                plugin.databaseDebug("Main-thread update not executed, connection is unavailable. SQL: " + sql, 2);
                 plugin.getLogger().severe("Error executing SQL update on main thread: connection is null");
                 plugin.getLogger().severe("Failed SQL statement: " + sql);
                 return;
@@ -3012,9 +3234,13 @@ public class DataManager {
                     }
                 }
 
-                statement.executeUpdate();
+                int affected = statement.executeUpdate();
+                plugin.databaseDebug("Main-thread executed (" + affected + " row(s)): " + sql
+                        + (parameters != null && parameters.length > 0 ? " | Values: " + describeParameters(parameters) : ""), 1);
             }
         } catch (SQLException exception) {
+            plugin.databaseDebug("Main-thread update failed (SQLState=" + exception.getSQLState()
+                    + "): " + exception.getMessage() + " | SQL: " + sql, 2);
             String sqlState = exception.getSQLState();
             String message = exception.getMessage() != null
                     ? exception.getMessage().toLowerCase(java.util.Locale.ROOT)
@@ -3044,15 +3270,21 @@ public class DataManager {
     private boolean testDatabaseConnection() {
         try (Connection testConnection = getConnection()) {
             if (testConnection == null) {
+                plugin.databaseDebug("Connection test failed, no connection for type " + this.type + ".", 2);
                 plugin.getLogger().severe("Failed to obtain a database connection for type: " + this.type);
                 return false;
             }
             try {
-                return testConnection.isValid(5);
+                boolean valid = testConnection.isValid(5);
+                plugin.databaseDebug("Connection test for " + this.type + (valid ? " succeeded." : " failed (connection not valid)."), valid ? 1 : 2);
+                return valid;
             } catch (SQLException ignored) {
-                return !testConnection.isClosed();
+                boolean open = !testConnection.isClosed();
+                plugin.databaseDebug("Connection isValid() unsupported, fell back to isClosed(): open=" + open, open ? 1 : 2);
+                return open;
             }
         } catch (SQLException e) {
+            plugin.databaseDebug("Connection test threw an exception for " + this.type + ": " + e.getMessage(), 2);
             plugin.getLogger().severe("Failed to connect to " + this.type + " database: " + e.getMessage());
             return false;
         }
@@ -3062,6 +3294,7 @@ public class DataManager {
      * Keeps the database connection alive by periodically executing a query.
      */
     private void keepConnectionAlive() {
+        plugin.databaseDebug("Starting database keep-alive task (every 25 seconds, failures are reported at level 2).", 1);
         plugin.getSchedulerManager().runTaskTimerAsynchronously(() -> {
             if (!isConnected()) {
                 return;
@@ -3074,9 +3307,11 @@ public class DataManager {
                 if (statement != null) {
                     statement.execute();
                 } else {
+                    plugin.databaseDebug("Keep-alive skipped, connection is null.", 2);
                     plugin.getLogger().severe("Keep-alive skipped: connection is null");
                 }
             } catch (SQLException exception) {
+                plugin.databaseDebug("Keep-alive query failed: " + exception.getMessage(), 2);
                 plugin.getLogger().severe("Failed to keep connection alive.");
                 plugin.logStackTrace(exception);
             }
@@ -3093,14 +3328,17 @@ public class DataManager {
              Statement statement = (connection != null) ? connection.createStatement() : null) {
 
             if (statement == null) {
+                plugin.databaseDebug("Lock check failed, connection is null.", 2);
                 plugin.getLogger().severe("Database check failed: connection is null.");
                 return;
             }
             statement.execute(checkQuery);
+            plugin.databaseDebug("Database lock check passed.", 1);
 
         } catch (SQLException e) {
             String msg = e.getMessage();
             if (msg != null && msg.toLowerCase(java.util.Locale.ROOT).contains("database is locked")) {
+                plugin.databaseDebug("Database is locked (" + type + "), attempting to unlock.", 2);
                 plugin.getLogger().severe("Database is locked. Attempting to unlock...");
 
                 switch (type) {
@@ -3113,6 +3351,8 @@ public class DataManager {
                     default -> plugin.getLogger().warning(
                             "Unhandled database type. No attempts to fix database locking will be attempted.");
                 }
+            } else {
+                plugin.databaseDebug("Lock check query failed (not a lock): " + msg, 2);
             }
         }
     }
@@ -3125,21 +3365,25 @@ public class DataManager {
             if (connection != null) {
                 connection.setAutoCommit(false);
                 connection.commit();
+                plugin.databaseDebug("SQLite database unlocked successfully using COMMIT.", 1);
                 plugin.getLogger().info("SQLite database unlocked successfully using COMMIT.");
             } else {
                 throw new NullPointerException();
             }
         } catch (NullPointerException | SQLException e) {
+            plugin.databaseDebug("Failed to unlock SQLite database using COMMIT.", 2);
             plugin.getLogger().severe("Failed to unlock SQLite database using COMMIT");
             plugin.logStackTrace(e);
             try (Connection connection = dataSource.getConnection()) {
                 if (connection != null) {
                     connection.rollback();
+                    plugin.databaseDebug("SQLite database unlocked successfully using ROLLBACK.", 1);
                     plugin.getLogger().info("SQLite database unlocked successfully using ROLLBACK.");
                 } else {
                     throw new NullPointerException();
                 }
             } catch (NullPointerException | SQLException rollbackException) {
+                plugin.databaseDebug("Failed to unlock SQLite database using ROLLBACK.", 2);
                 plugin.getLogger().severe("Failed to unlock SQLite database using ROLLBACK");
                 plugin.logStackTrace(rollbackException);
             }
@@ -3152,6 +3396,7 @@ public class DataManager {
     private void handleUnlockMySQL() {
         try (Connection connection = getConnection()) {
             if (connection == null) {
+                plugin.databaseDebug("Failed to unlock MySQL/MariaDB database, connection is null.", 2);
                 plugin.getLogger().severe("Failed to unlock MySQL/MariaDB database: connection is null");
                 return;
             }
@@ -3159,8 +3404,10 @@ public class DataManager {
             plugin.getLogger().info("Attempting to unlock MySQL/MariaDB database.");
             connection.setAutoCommit(false);
             connection.commit();
+            plugin.databaseDebug("MySQL/MariaDB database unlocked successfully using COMMIT.", 1);
             plugin.getLogger().info("MySQL/MariaDB database unlocked successfully using COMMIT.");
         } catch (SQLException e) {
+            plugin.databaseDebug("Failed to unlock MySQL/MariaDB database using COMMIT.", 2);
             plugin.getLogger().severe("Failed to unlock MySQL/MariaDB database using COMMIT");
             plugin.logStackTrace(e);
         }
@@ -3172,26 +3419,32 @@ public class DataManager {
     private void handleUnlockPostgreSQLandH2() {
         try (Connection connection = getConnection()) {
             if (connection == null) {
+                plugin.databaseDebug("Failed to unlock PostgreSQL/H2 database, connection is null.", 2);
                 plugin.getLogger().severe("Failed to unlock PostgreSQL/H2 database: connection is null");
                 return;
             }
             connection.setAutoCommit(false);
             connection.commit();
+            plugin.databaseDebug("PostgreSQL/H2 database unlocked successfully using COMMIT.", 1);
             plugin.getLogger().info("PostgreSQL/H2 database unlocked successfully using COMMIT.");
             return;
         } catch (SQLException e) {
+            plugin.databaseDebug("Failed to unlock PostgreSQL/H2 database using COMMIT.", 2);
             plugin.getLogger().severe("Failed to unlock PostgreSQL/H2 database using COMMIT");
             plugin.logStackTrace(e);
         }
 
         try (Connection connection = getConnection()) {
             if (connection == null) {
+                plugin.databaseDebug("Failed to unlock PostgreSQL/H2 database via ROLLBACK, connection is null.", 2);
                 plugin.getLogger().severe("Failed to unlock PostgreSQL/H2 database via ROLLBACK: connection is null");
                 return;
             }
             connection.rollback();
+            plugin.databaseDebug("PostgreSQL/H2 database unlocked successfully using ROLLBACK.", 1);
             plugin.getLogger().info("PostgreSQL/H2 database unlocked successfully using ROLLBACK.");
         } catch (SQLException rollbackException) {
+            plugin.databaseDebug("Failed to unlock PostgreSQL/H2 database using ROLLBACK.", 2);
             plugin.getLogger().severe("Failed to unlock PostgreSQL/H2 database using ROLLBACK");
             plugin.logStackTrace(rollbackException);
         }
@@ -3203,14 +3456,17 @@ public class DataManager {
     private void handleUnlockMSSQL() {
         try (Connection connection = getConnection()) {
             if (connection == null) {
+                plugin.databaseDebug("Failed to unlock MSSQL database, connection is null.", 2);
                 plugin.getLogger().severe("Failed to unlock MSSQL database: connection is null");
                 return;
             }
             plugin.getLogger().info("Attempting to unlock MSSQL database.");
             connection.setAutoCommit(false);
             connection.commit();
+            plugin.databaseDebug("MSSQL database unlocked successfully using COMMIT.", 1);
             plugin.getLogger().info("MSSQL database unlocked successfully using COMMIT.");
         } catch (SQLException e) {
+            plugin.databaseDebug("Failed to unlock MSSQL database using COMMIT.", 2);
             plugin.getLogger().severe("Failed to unlock MSSQL database using COMMIT");
             plugin.logStackTrace(e);
         }

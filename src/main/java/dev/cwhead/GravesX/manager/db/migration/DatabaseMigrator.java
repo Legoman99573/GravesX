@@ -5,7 +5,6 @@ import com.ranull.graves.manager.DataManager;
 import com.ranull.graves.manager.DataManager.Type;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import org.jspecify.annotations.NonNull;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -48,7 +47,7 @@ public final class DatabaseMigrator {
         this.logger = plugin.getLogger();
         this.dataManager = dataManager;
         this.targetType = targetType;
-        this.typeMapper = new ColumnTypeMapper(targetType, logger);
+        this.typeMapper = new ColumnTypeMapper(targetType, logger, plugin);
         this.prefix = dataManager.getStoragePrefix();
     }
 
@@ -122,6 +121,7 @@ public final class DatabaseMigrator {
 
     private void migrateFromSQLite(Path sqliteFile) {
         if (!Files.isRegularFile(sqliteFile)) {
+            plugin.databaseDebug("Skipping SQLite migration because the source database file does not exist.", 2);
             logger.warning("Skipping SQLite migration because the source database file does not exist.");
             return;
         }
@@ -130,6 +130,7 @@ public final class DatabaseMigrator {
 
         // The pool and connections are closed by now, so the file can be moved on Windows.
         if (!migrated) {
+            plugin.databaseDebug("Legacy SQLite migration did not complete; data.db was left untouched.", 2);
             logger.severe("Legacy SQLite migration did not complete; data.db was left untouched.");
             return;
         }
@@ -137,6 +138,7 @@ public final class DatabaseMigrator {
         try {
             LegacyDatabaseFiles.renameMigratedSQLite(sqliteFile);
         } catch (IOException exception) {
+            plugin.databaseDebug("SQLite data was migrated, but data.db could not be renamed to data.migrated.db.", 2);
             logger.severe("SQLite data was migrated, but data.db could not be renamed to data.migrated.db.");
             plugin.logStackTrace(exception);
         }
@@ -152,7 +154,7 @@ public final class DatabaseMigrator {
         return getHikariConfig(sqliteFile, journalMode, synchronous);
     }
 
-    private @NonNull HikariConfig getHikariConfig(Path sqliteFile, String journalMode, String synchronous) {
+    private HikariConfig getHikariConfig(Path sqliteFile, String journalMode, String synchronous) {
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl("jdbc:sqlite:" + sqliteFile.toAbsolutePath() + "?busy_timeout=30000");
         config.setDriverClassName("org.sqlite.JDBC");
@@ -171,11 +173,13 @@ public final class DatabaseMigrator {
         Path mvFile = LegacyDatabaseFiles.h2File(h2Base, ".mv.db");
 
         if (!Files.isRegularFile(mvFile)) {
+            plugin.databaseDebug("Skipping H2 migration because the source database file does not exist: " + mvFile, 2);
             logger.warning("Skipping H2 migration because the source database file does not exist: " + mvFile);
             return;
         }
 
         if (!copyFrom(h2SourceConfig(h2Base), Type.H2, "H2 migration failed")) {
+            plugin.databaseDebug("H2 migration did not complete; source files were left untouched.", 2);
             logger.severe("H2 migration did not complete; source files were left untouched.");
             return;
         }
@@ -183,6 +187,7 @@ public final class DatabaseMigrator {
         try {
             LegacyDatabaseFiles.renameMigratedH2(h2Base);
         } catch (IOException exception) {
+            plugin.databaseDebug("H2 data was migrated, but the old H2 files could not be renamed.", 2);
             logger.severe("H2 data was migrated, but the old H2 files could not be renamed.");
             plugin.logStackTrace(exception);
         }
@@ -229,6 +234,7 @@ public final class DatabaseMigrator {
             }
             return copied;
         } catch (Exception exception) {
+            plugin.databaseDebug(failureMessage, 2);
             logger.severe(failureMessage);
             plugin.logStackTrace(exception);
             return false;
@@ -249,12 +255,14 @@ public final class DatabaseMigrator {
 
     private boolean copyAllTables(Connection source, Connection target, Type sourceType) throws SQLException {
         if (target == null) {
+            plugin.databaseDebug("Migration aborted: target database connection is null.", 2);
             logger.severe("Migration aborted: target database connection is null.");
             return false;
         }
 
         List<String> tables = listSourceTables(source);
         if (tables.isEmpty()) {
+            plugin.databaseDebug("Migration aborted: no tables were found in the " + sourceType + " source database.", 2);
             logger.severe("Migration aborted: no tables were found in the " + sourceType + " source database.");
             return false;
         }
@@ -312,20 +320,59 @@ public final class DatabaseMigrator {
             throws SQLException {
         Map<String, String> columnTypes = readSourceColumns(source, sourceType, table);
         if (columnTypes.isEmpty()) {
+            plugin.databaseDebug("No columns mapped for " + table + "; skipping.", 2);
             logger.warning("No columns mapped for " + table + "; skipping.");
             return null;
         }
+
+        boolean isGraveTable = table.equalsIgnoreCase(prefix + "grave");
+        String uuidColumn = isGraveTable ? findColumn(columnTypes, "uuid") : null;
+        if (uuidColumn != null) {
+            columnTypes.put(uuidColumn, targetType == Type.MSSQL ? "NVARCHAR(255)" : "VARCHAR(255)");
+        }
+
+        boolean alreadyExisted = tableExists(target, table);
 
         String definitions = columnTypes.entrySet().stream()
                 .map(entry -> entry.getKey() + " " + entry.getValue())
                 .collect(Collectors.joining(", "));
         execute(target, "CREATE TABLE IF NOT EXISTS " + table + " (" + definitions + ")");
 
-        if (table.equalsIgnoreCase(prefix + "grave")) {
+        if (isGraveTable) {
             adjustGraveTable(target);
+
+            if (!alreadyExisted && uuidColumn != null) {
+                addUniqueConstraint(target, table, uuidColumn);
+            }
         }
 
         return reconcileColumns(target, table, columnTypes);
+    }
+
+    private static String findColumn(Map<String, String> columns, String name) {
+        for (String column : columns.keySet()) {
+            if (column.equalsIgnoreCase(name)) return column;
+        }
+        return null;
+    }
+
+    private boolean tableExists(Connection connection, String table) {
+        try (Statement statement = connection.createStatement()) {
+            statement.executeQuery("SELECT 1 FROM " + table + " WHERE 1 = 0").close();
+            return true;
+        } catch (SQLException exception) {
+            return false;
+        }
+    }
+
+    private void addUniqueConstraint(Connection target, String table, String column) {
+        try {
+            execute(target, "ALTER TABLE " + table + " ADD UNIQUE (" + column + ")");
+        } catch (SQLException exception) {
+            // Not worth blocking the data copy over; the schema upgrade keeps working without it.
+            plugin.databaseDebug("Could not add the UNIQUE constraint on " + table + "." + column + ": " + exception.getMessage(), 2);
+            logger.warning("Could not add the UNIQUE constraint on " + table + "." + column + ": " + exception.getMessage());
+        }
     }
 
     /**
@@ -338,11 +385,14 @@ public final class DatabaseMigrator {
              ResultSet resultSet = statement.executeQuery("SELECT * FROM " + table + " LIMIT 1")) {
 
             ResultSetMetaData metaData = resultSet.getMetaData();
+            StringBuilder described = new StringBuilder();
             for (int i = 1; i <= metaData.getColumnCount(); i++) {
                 String column = metaData.getColumnName(i);
+                described.append(described.length() > 0 ? ", " : "").append(column).append(' ').append(metaData.getColumnTypeName(i));
 
                 // Legacy 'chunk' columns no longer exist in any table; the value is derived from 'location'.
                 if (sourceType == Type.SQLITE && column.equalsIgnoreCase("chunk")) {
+                    plugin.databaseDebug("Skipping obsolete legacy column '" + table + ".chunk' (derived from location).", 1);
                     logger.info("Skipping obsolete legacy column '" + table + ".chunk' (derived from location).");
                     continue;
                 }
@@ -361,6 +411,7 @@ public final class DatabaseMigrator {
 
                 columns.put(column, targetColumnType);
             }
+            plugin.databaseDebug("Source table '" + table + "' columns: " + described, 1);
         }
 
         return columns;
@@ -382,6 +433,7 @@ public final class DatabaseMigrator {
             if (!targetColumns.contains(column.toLowerCase(Locale.ROOT))) {
                 String keyword = targetType == Type.MSSQL ? " ADD " : " ADD COLUMN ";
                 execute(target, "ALTER TABLE " + table + keyword + column + " " + entry.getValue());
+                plugin.databaseDebug("Added legacy column '" + column + "' to '" + table + "' to preserve its data.", 1);
                 logger.info("Added legacy column '" + column + "' to '" + table + "' to preserve its data.");
             }
 
@@ -419,6 +471,7 @@ public final class DatabaseMigrator {
             try {
                 target.rollback();
             } catch (SQLException rollbackException) {
+                plugin.databaseDebug("Failed to roll back partial migration: " + rollbackException.getMessage(), 2);
                 logger.severe("Failed to roll back partial migration: " + rollbackException.getMessage());
             }
             throw exception;
@@ -436,12 +489,14 @@ public final class DatabaseMigrator {
         long existing = countRows(target, table);
 
         if (sourceCount == 0) {
+            plugin.databaseDebug("Table '" + table + "' is empty in the " + sourceType + " source; nothing to copy.", 1);
             logger.info("Table '" + table + "' is empty in the " + sourceType + " source; nothing to copy.");
             return;
         }
 
         if (existing >= sourceCount) {
             // Left over from an earlier run whose final rename failed. Do not insert duplicates.
+            plugin.databaseDebug("Table '" + table + "' already holds " + existing + " row(s) (source has " + sourceCount + "); skipping copy.", 1);
             logger.info("Table '" + table + "' already holds " + existing + " row(s) (source has " + sourceCount + "); skipping copy.");
             return;
         }
@@ -459,6 +514,7 @@ public final class DatabaseMigrator {
                     + ", copied=" + copied + ", target=" + inTarget);
         }
 
+        plugin.databaseDebug("Migrated " + copied + " row(s) from " + sourceType + " table '" + table + "'.", 1);
         logger.info("Migrated " + copied + " row(s) from " + sourceType + " table '" + table + "'.");
     }
 
@@ -471,7 +527,11 @@ public final class DatabaseMigrator {
              Statement read = source.createStatement();
              ResultSet rows = read.executeQuery("SELECT * FROM " + table)) {
 
+            boolean logRows = plugin.getDebugManager().isDatabaseEnabled(1);
             while (rows.next()) {
+                if (logRows) {
+                    plugin.databaseDebug("Migrating row from '" + table + "': " + DataManager.describeRow(rows), 1);
+                }
                 for (int i = 0; i < columns.size(); i++) {
                     insert.setObject(i + 1, rows.getObject(columns.get(i)));
                 }
@@ -500,16 +560,19 @@ public final class DatabaseMigrator {
 
         switch (targetType) {
             case MSSQL -> {
+                plugin.databaseDebug("Altering table " + table + " to ensure column sizes are correct for MSSQL.", 1);
                 logger.info("Altering table " + table + " to ensure column sizes are correct for MSSQL.");
                 alterColumns(target, table, "ALTER COLUMN ", " ", textColumns, "NVARCHAR(MAX)");
                 alterColumns(target, table, "ALTER COLUMN ", " ", timeColumns, "BIGINT");
             }
             case MYSQL, MARIADB -> {
+                plugin.databaseDebug("Altering table " + table + " to ensure column sizes are correct for MySQL/MariaDB.", 1);
                 logger.info("Altering table " + table + " to ensure column sizes are correct for MySQL/MariaDB.");
                 alterColumns(target, table, "MODIFY COLUMN ", " ", textColumns, "LONGTEXT");
                 alterColumns(target, table, "MODIFY COLUMN ", " ", timeColumns, "BIGINT");
             }
             case POSTGRESQL, H2 -> {
+                plugin.databaseDebug("Altering table " + table + " to ensure column sizes are correct for PostgreSQL/H2.", 1);
                 logger.info("Altering table " + table + " to ensure column sizes are correct for PostgreSQL/H2.");
                 alterColumns(target, table, "ALTER COLUMN ", " TYPE ", textColumns, "TEXT");
                 alterColumns(target, table, "ALTER COLUMN ", " TYPE ", timeColumns, "BIGINT");
@@ -528,6 +591,7 @@ public final class DatabaseMigrator {
     }
 
     private void execute(Connection connection, String sql) throws SQLException {
+        plugin.databaseDebug("Migration executing: " + sql, 1);
         try (Statement statement = connection.createStatement()) {
             statement.execute(sql);
         }

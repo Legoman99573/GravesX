@@ -54,15 +54,19 @@ public final class LegacyDatabaseFiles {
                 Path destination = dataDir.resolve(source.getFileName());
 
                 if (Files.exists(destination)) {
+                    plugin.databaseDebug("Not moving " + source.getFileName() + " into /data because "
+                            + destination.getFileName() + " already exists there. Remove or rename one of them.", 2);
                     plugin.getLogger().warning("Not moving " + source.getFileName() + " into /data because "
                             + destination.getFileName() + " already exists there. Remove or rename one of them.");
                     continue;
                 }
 
                 move(source, destination);
+                plugin.databaseDebug("Moved legacy file " + source.getFileName() + " into /data.", 1);
                 plugin.getLogger().info("Moved legacy file " + source.getFileName() + " into /data.");
             }
         } catch (IOException exception) {
+            plugin.databaseDebug("Failed to move legacy SQLite files into /data: " + exception.getMessage(), 2);
             plugin.getLogger().warning("Failed to move legacy SQLite files into /data: " + exception.getMessage());
             plugin.logStackTrace(exception);
         }
@@ -98,9 +102,12 @@ public final class LegacyDatabaseFiles {
                 Files.move(traceFile, dataDir.resolve(H2_BASE_NAME + suffix + ".trace.db"));
             }
 
+            plugin.databaseDebug("Existing H2 database moved to " + moved.getFileName()
+                    + " so the SQLite migration starts from a clean database.", 2);
             plugin.getLogger().warning("Existing H2 database moved to " + moved.getFileName()
                     + " so the SQLite migration starts from a clean database.");
         } catch (IOException exception) {
+            plugin.databaseDebug("Could not move the existing H2 database aside; migrating into it instead.", 2);
             plugin.getLogger().warning("Could not move the existing H2 database aside; migrating into it instead.");
             plugin.logStackTrace(exception);
         }

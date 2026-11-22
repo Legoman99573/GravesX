@@ -80,6 +80,30 @@ public final class DebugManager {
      * @return true if allowed by config
      */
     public boolean isEnabled(int severity) {
+        return isEnabled(severity, "settings.debug.level");
+    }
+
+    /**
+     * Checks if a database debug severity should be printed (config: settings.debug.database-level).
+     *
+     * @param severity 0=disabled, 1=info, 2=failures/warnings
+     * @return true if allowed by config
+     */
+    public boolean isDatabaseEnabled(int severity) {
+        return isEnabled(severity, "settings.debug.database-level");
+    }
+
+    /**
+     * Logs a database debug message (config: settings.debug.database-level, default 0 = off).
+     *
+     * @param message message
+     * @param severity 1=info, 2=failures/warnings
+     */
+    public void database(String message, int severity) {
+        emit(message, severity, null, "settings.debug.database-level");
+    }
+
+    private boolean isEnabled(int severity, String levelKey) {
         if (unloaded.get()) {
             return false;
         }
@@ -89,7 +113,7 @@ public final class DebugManager {
             return false;
         }
 
-        int level = plugin.getConfig().getInt("settings.debug.level", 0);
+        int level = plugin.getConfig().getInt(levelKey, 0);
 
         // clamp to supported range 0..2
         if (level < 0) level = 0;
@@ -135,7 +159,11 @@ public final class DebugManager {
      * @param throwable optional throwable
      */
     public void debug(String message, int severity, Throwable throwable) {
-        if (!isEnabled(severity)) {
+        emit(message, severity, throwable, "settings.debug.level");
+    }
+
+    private void emit(String message, int severity, Throwable throwable, String levelKey) {
+        if (!isEnabled(severity, levelKey)) {
             return;
         }
 

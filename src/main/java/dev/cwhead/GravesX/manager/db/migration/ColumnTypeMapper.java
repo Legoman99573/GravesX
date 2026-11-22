@@ -1,5 +1,6 @@
 package dev.cwhead.GravesX.manager.db.migration;
 
+import com.ranull.graves.Graves;
 import com.ranull.graves.manager.DataManager.Type;
 
 import java.util.Locale;
@@ -10,16 +11,42 @@ import java.util.logging.Logger;
  * (H2, MySQL/MariaDB, PostgreSQL or MSSQL) used when migrating tables.
  */
 public final class ColumnTypeMapper {
+    private static final Logger SILENT = createSilentLogger();
+
     private final Type type;
     private final Logger logger;
+    private final Graves plugin;
+
+    private static Logger createSilentLogger() {
+        Logger silent = Logger.getAnonymousLogger();
+        silent.setUseParentHandlers(false);
+        silent.setLevel(java.util.logging.Level.OFF);
+        return silent;
+    }
 
     /**
      * @param targetType the database the migrated tables are created in
      * @param logger     logger for unmapped types
      */
     public ColumnTypeMapper(Type targetType, Logger logger) {
+        this(targetType, logger, null);
+    }
+
+    /**
+     * @param targetType the database the migrated tables are created in
+     * @param logger     logger for unmapped types
+     * @param plugin     plugin used for database debug output (may be null)
+     */
+    public ColumnTypeMapper(Type targetType, Logger logger, com.ranull.graves.Graves plugin) {
         this.type = targetType;
         this.logger = logger;
+        this.plugin = plugin;
+    }
+
+    private void debug(String message, int level) {
+        if (plugin != null) {
+            plugin.databaseDebug(message, level);
+        }
     }
 
     /**
@@ -32,10 +59,66 @@ public final class ColumnTypeMapper {
      */
     public String map(Type sourceType, String sourceColumnType, String columnName) {
         return switch (sourceType) {
-            case SQLITE -> mapSQLiteTypeToTargetDB(sourceColumnType, columnName);
+            case SQLITE -> mapFromSQLite(sourceColumnType, columnName);
             case H2 -> mapH2TypeToTargetDB(sourceColumnType, columnName);
             default -> null;
         };
+    }
+
+    private String mapFromSQLite(String sqliteType, String columnName) {
+        String mapped = probe().mapSQLiteTypeToTargetDB(sqliteType, columnName);
+
+        if (mapped == null) {
+            mapped = mapBySQLiteAffinity(sqliteType, columnName);
+        }
+
+        if (mapped == null) {
+            debug("No safe mapping for SQLite type '" + sqliteType + "' (column " + columnName + ").", 2);
+            logger.warning("No safe mapping for SQLite type '" + sqliteType + "' (column " + columnName + ").");
+            return null;
+        }
+
+        // MySQL/MariaDB TEXT holds at most 64 KB; the plugin's own schema uses LONGTEXT for these columns.
+        if ((type == Type.MYSQL || type == Type.MARIADB) && mapped.equals("TEXT")) {
+            return "LONGTEXT";
+        }
+
+        return mapped;
+    }
+
+    /**
+     * SQLite accepts any declared type name and decides how to store a column from its "affinity", which it
+     * derives from the name (https://sqlite.org/datatype3.html). Types the exact mapper does not know are mapped
+     * the same way, but only for the affinities whose values have a single predictable type.
+     *
+     * @return the target type, or null if there is no safe mapping
+     */
+    private String mapBySQLiteAffinity(String sqliteType, String columnName) {
+        if (sqliteType == null) return null;
+
+        String declared = sqliteType.toUpperCase(Locale.ROOT).trim();
+        if (declared.isEmpty()) return null;
+
+        ColumnTypeMapper exact = probe();
+
+        if (declared.equals("BOOLEAN") || declared.equals("BOOL")) return exact.mapSQLiteTypeToTargetDB("BIGINT", columnName); // stored as 0/1
+        if (declared.contains("INT")) return exact.mapSQLiteTypeToTargetDB("BIGINT", columnName);
+        if (declared.contains("CLOB") || declared.contains("TEXT")) return exact.mapSQLiteTypeToTargetDB("TEXT", columnName);
+        if (declared.contains("CHAR")) return exact.mapSQLiteTypeToTargetDB("VARCHAR(255)", columnName);
+        if (declared.contains("BLOB")) return exact.mapSQLiteTypeToTargetDB("BLOB", columnName);
+        if (declared.contains("REAL") || declared.contains("FLOA") || declared.contains("DOUB")) {
+            return exact.mapSQLiteTypeToTargetDB("REAL", columnName);
+        }
+
+        return null;
+    }
+
+    /**
+     * A mapper for the same target that does not log, used to ask "is there an exact mapping?" without
+     * producing a warning for every type that the affinity rules then handle.
+     */
+    private ColumnTypeMapper probe() {
+        return new ColumnTypeMapper(type, SILENT);
     }
 
     private String mapH2TypeToTargetDB(String h2Type, String columnName) {
@@ -44,6 +127,7 @@ public final class ColumnTypeMapper {
             case POSTGRESQL -> mapH2TypeToPostgreSQL(h2Type, columnName);
             case MSSQL -> mapH2TypeToMSSQL(h2Type, columnName);
             default -> {
+                debug("Unhandled target database type: " + type, 2);
                 logger.warning("Unhandled target database type: " + type);
                 yield null;
             }
@@ -65,6 +149,7 @@ public final class ColumnTypeMapper {
             case H2             -> mapSQLiteTypeToH2(sqliteType, columnName);
             case MSSQL          -> mapSQLiteTypeToMSSQL(sqliteType, columnName);
             default -> {
+                debug("Unhandled database type: " + type, 2);
                 logger.warning("Unhandled database type: " + type);
                 yield null;
             }
@@ -124,6 +209,7 @@ public final class ColumnTypeMapper {
             return "DOUBLE";
         }
 
+        debug("Unhandled SQLite type: " + sqliteType + " for column: " + columnName, 2);
         logger.warning("Unhandled SQLite type: " + sqliteType + " for column: " + columnName);
         return null;
     }
@@ -180,6 +266,7 @@ public final class ColumnTypeMapper {
             return "DOUBLE PRECISION";
         }
 
+        debug("Unhandled SQLite type: " + sqliteType + " for column: " + columnName, 2);
         logger.warning("Unhandled SQLite type: " + sqliteType + " for column: " + columnName);
         return null;
     }
@@ -233,6 +320,7 @@ public final class ColumnTypeMapper {
             return "DOUBLE";
         }
 
+        debug("Unhandled SQLite type: " + sqliteType + " for column: " + columnName, 2);
         logger.warning("Unhandled SQLite type: " + sqliteType + " for column: " + columnName);
         return null;
     }
@@ -286,6 +374,7 @@ public final class ColumnTypeMapper {
             return "FLOAT";
         }
 
+        debug("Unhandled SQLite type: " + sqliteType + " for column: " + columnName, 2);
         logger.warning("Unhandled SQLite type: " + sqliteType + " for column: " + columnName);
         return null;
     }
@@ -327,6 +416,8 @@ public final class ColumnTypeMapper {
             case "BINARY", "VARBINARY", "BINARY VARYING", "BLOB", "BYTEA", "BINARY LARGE OBJECT" -> "LONGBLOB";
             case "JAVA_OBJECT", "JSON", "UUID", "ENUM", "GEOMETRY", "OTHER" -> "LONGTEXT";
             default -> {
+                debug("Unknown H2 type for MySQL/MariaDB migration: " + h2Type
+                        + " (column: " + columnName + ")", 2);
                 logger.warning("Unknown H2 type for MySQL/MariaDB migration: " + h2Type
                         + " (column: " + columnName + ")");
                 yield "LONGTEXT";
@@ -373,6 +464,8 @@ public final class ColumnTypeMapper {
             case "JSON" -> "JSONB";
             case "JAVA_OBJECT", "ENUM", "GEOMETRY", "OTHER" -> "TEXT";
             default -> {
+                debug("Unknown H2 type for PostgreSQL migration: " + h2Type
+                        + " (column: " + columnName + ")", 2);
                 logger.warning("Unknown H2 type for PostgreSQL migration: " + h2Type
                         + " (column: " + columnName + ")");
                 yield "TEXT";
@@ -418,6 +511,8 @@ public final class ColumnTypeMapper {
             case "UUID" -> "UNIQUEIDENTIFIER";
             case "JSON", "JAVA_OBJECT", "ENUM", "GEOMETRY", "OTHER" -> "NVARCHAR(MAX)";
             default -> {
+                debug("Unknown H2 type for MSSQL migration: " + h2Type
+                        + " (column: " + columnName + ")", 2);
                 logger.warning("Unknown H2 type for MSSQL migration: " + h2Type
                         + " (column: " + columnName + ")");
                 yield "NVARCHAR(MAX)";
