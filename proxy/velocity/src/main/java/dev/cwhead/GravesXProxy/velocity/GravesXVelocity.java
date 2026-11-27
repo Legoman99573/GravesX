@@ -17,8 +17,7 @@ import org.slf4j.Logger;
 import java.nio.file.Path;
 
 /**
- * Velocity entry point. Only wires things together; the metadata lives in velocity-plugin.json
- * (filtered from pom.xml) and the logic lives in {@link ProxyCore} and the classes in this package.
+ * Velocity entry point.
  */
 public final class GravesXVelocity {
     private final ProxyServer proxy;
@@ -36,8 +35,7 @@ public final class GravesXVelocity {
     @Subscribe
     public void onInit(ProxyInitializeEvent event) {
         VelocityPlatform platform = new VelocityPlatform(this, proxy, logger, () -> core != null && core.isMiniMessage());
-        ProxyLibraries libraries = new ProxyLibraries(
-                new VelocityLibraryManager<>(this, logger, dataDirectory, proxy.getPluginManager()), platform);
+        ProxyLibraries libraries = new ProxyLibraries(new VelocityLibraryManager<>(this, logger, dataDirectory, proxy.getPluginManager()), platform);
         core = new ProxyCore(platform, dataDirectory, libraries);
 
         proxy.getChannelRegistrar().register(VelocityPlatform.CHANNEL);

@@ -17,7 +17,6 @@
     <description>Network-wide grave counts and teleportation for GravesX</description>
     <url>${plugin.url}</url>
 
-    <!-- Keep in sync with plugin.authors.* below -->
     <developers>
         <developer><name>Ranull</name></developer>
         <developer><name>JaySmethers</name></developer>
@@ -32,10 +31,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <!-- keep in sync with ProxyLibraries.SNAKEYAML_VERSION (downloaded at runtime) -->
         <snakeyaml.version>2.2</snakeyaml.version>
 
-        <!-- Plugin metadata, used to filter velocity-plugin.json and bungee.yml -->
         <plugin.id>gravesx</plugin.id>
         <plugin.name>GravesX</plugin.name>
         <plugin.url>https://www.spigotmc.org/resources/gravesx.118271/</plugin.url>

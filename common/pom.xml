@@ -4,8 +4,6 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <!-- Code shared by the server plugin and the proxy plugins. Pure Java apart from Libby: no server, proxy or
-         Adventure dependency, so anything can use it. It is shaded into the server jar and the proxy jars. -->
     <parent>
         <groupId>com.ranull</groupId>
         <artifactId>graves-parent</artifactId>
@@ -22,8 +20,6 @@
     </properties>
 
     <dependencies>
-        <!-- Libby is declared here so every module gets it through common: the shared loader in
-             dev.cwhead.GravesXCommon.libby is built on it. Version and relocation come from the root pom. -->
         <dependency>
             <groupId>com.alessiodp</groupId>
             <artifactId>libby</artifactId>

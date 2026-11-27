@@ -19,25 +19,15 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- Libby comes in through gravesx-common; it is shaded + relocated into the platform jars and the api jar. -->
-
-        <!-- Compile-only: provided by BungeeCord, or downloaded by Libby on Velocity. -->
         <dependency>
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
             <version>${snakeyaml.version}</version>
             <scope>provided</scope>
         </dependency>
-
-        <!-- No JDBC drivers here: SqlGraveStore only uses java.sql and loads the driver class by name. -->
     </dependencies>
 
     <build>
-        <!-- Developer artifacts for the proxy side, kept separate from the server ones:
-               GravesX-Proxy-<version>-api.jar
-               GravesX-Proxy-<version>-api-sources.jar
-               GravesX-Proxy-<version>-api-javadoc.jar
-             The default jar keeps its normal (unclassified) form so velocity/ and bungeecord/ can depend on it. -->
         <finalName>GravesX-Proxy-${project.version}</finalName>
         <plugins>
             <plugin>
@@ -50,7 +40,6 @@
                         <phase>package</phase>
                         <goals><goal>shade</goal></goals>
                         <configuration>
-                            <!-- outputFile: separate file, the default jar stays the module's main artifact -->
                             <outputFile>${project.build.directory}/GravesX-Proxy-${project.version}-api.jar</outputFile>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
                             <artifactSet>

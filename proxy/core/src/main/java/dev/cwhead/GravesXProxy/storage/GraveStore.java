@@ -12,23 +12,35 @@ import java.util.UUID;
  * Server names are compared case-insensitively.
  */
 public interface GraveStore {
-    /** Replaces everything known about one owner's graves on one server with this snapshot. */
+    /**
+     * Replaces everything known about one owner's graves on one server with this snapshot.
+     */
     void replaceOwner(String server, UUID owner, List<GraveSummary> graves) throws Exception;
 
-    /** Grave count per server (lower-case server name -> count) for an owner. */
+    /**
+     *  Grave count per server (lower-case server name -> count) for an owner.
+     */
     Map<String, Integer> counts(UUID owner) throws Exception;
 
-    /** Newest-first graves of an owner on one server. */
+    /**
+     * Newest-first graves of an owner on one server.
+     */
     List<GraveSummary> graves(UUID owner, String server, int limit) throws Exception;
 
-    /** Removes all graves recorded for a server. */
+    /**
+     * Removes all graves recorded for a server.
+     */
     void forgetServer(String server) throws Exception;
 
-    /** Persists to disk where the store is file based. */
+    /**
+     *  Persists to disk where the store is file based.
+     */
     default void save() {}
 
     default void close() {}
 
-    /** Short human readable description for /gravesproxy status. */
+    /**
+     * Short human-readable description for /gravesproxy status.
+     */
     String describe();
 }

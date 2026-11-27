@@ -61,6 +61,7 @@
               <artifactSet>
                 <includes>
                   <include>com.alessiodp:libby</include>
+                  <include>com.ranull:gravesx-common</include>
                   <include>me.croabeast:GlobalScheduler</include>
                   <include>com.tchristofferson:ConfigUpdater</include>
                 </includes>
@@ -68,7 +69,7 @@
               <relocations>
                 <relocation>
                   <pattern>com.alessiodp.libby</pattern>
-                  <shadedPattern>com.ranull.graves.bundledlibraries.libby</shadedPattern>
+                  <shadedPattern>${libby.relocation}</shadedPattern>
                 </relocation>
                 <relocation>
                   <pattern>me.croabeast.scheduler</pattern>
@@ -150,7 +151,7 @@
               <relocations>
                 <relocation>
                   <pattern>com.alessiodp.libby</pattern>
-                  <shadedPattern>com.ranull.graves.bundledlibraries.libby</shadedPattern>
+                  <shadedPattern>${libby.relocation}</shadedPattern>
                 </relocation>
                 <relocation>
                   <pattern>me.croabeast.scheduler</pattern>
@@ -811,6 +812,5 @@
   </distributionManagement>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <java.version>17</java.version>
   </properties>
 </project>

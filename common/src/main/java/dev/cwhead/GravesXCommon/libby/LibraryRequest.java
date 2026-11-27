@@ -29,7 +29,9 @@ public final class LibraryRequest {
         return new Builder();
     }
 
-    /** {@code group:artifact:version} with {@code {}} turned into dots, for messages. */
+    /**
+     * {@code group:artifact:version} with {@code {}} turned into dots, for messages.
+     */
     public String label() {
         return groupId.replace("{}", ".") + ":" + artifactId + ":" + version;
     }
@@ -53,13 +55,17 @@ public final class LibraryRequest {
             return this;
         }
 
-        /** Optional loader id for namespacing (recommended when isolated). */
+        /**
+         * Optional loader id for namespacing (recommended when isolated).
+         */
         public Builder loaderId(String loaderId) {
             this.loaderId = loaderId;
             return this;
         }
 
-        /** Relocates {@code from} to {@code to} at runtime. Both must be given together. */
+        /**
+         * Relocates {@code from} to {@code to} at runtime. Both must be given together.
+         */
         public Builder relocate(String from, String to) {
             this.relocateFrom = from;
             this.relocateTo = to;
@@ -71,7 +77,9 @@ public final class LibraryRequest {
             return this;
         }
 
-        /** Whether to also resolve the library's own dependencies. Default true. */
+        /**
+         * Whether to also resolve the library's own dependencies. Default true.
+         */
         public Builder transitive(boolean transitive) {
             this.transitive = transitive;
             return this;
@@ -81,17 +89,21 @@ public final class LibraryRequest {
             if (groupId == null || groupId.isBlank()) {
                 throw new IllegalArgumentException("groupID is required and cannot be blank.");
             }
+
             if (artifactId == null || artifactId.isBlank()) {
                 throw new IllegalArgumentException("artifactID is required and cannot be blank.");
             }
+
             if (version == null || version.isBlank()) {
                 throw new IllegalArgumentException("version is required and cannot be blank.");
             }
+
             boolean hasFrom = relocateFrom != null && !relocateFrom.isBlank();
             boolean hasTo = relocateTo != null && !relocateTo.isBlank();
             if (hasFrom ^ hasTo) {
                 throw new IllegalArgumentException("If relocation is used, both relocatePattern and relocateRelocatedPattern must be provided.");
             }
+
             return new LibraryRequest(this);
         }
     }

@@ -26,7 +26,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/** Platform-independent proxy logic: server registry, grave tracking, cross-server teleports. */
+/**
+ * Platform-independent proxy logic: server registry, grave tracking, cross-server teleports.
+ */
 public final class ProxyCore {
     private record Pending(String server, UUID grave, long expiresAt) {}
 
@@ -44,12 +46,16 @@ public final class ProxyCore {
     private final Map<UUID, Pending> pending = new ConcurrentHashMap<>();
     private final AtomicBoolean saveQueued = new AtomicBoolean();
     private final ProxyAdminCommand adminCommand;
-    /** All store access (possibly slow database calls) happens on this single thread. */
+
+    /**
+     * All store access (possibly slow database calls) happens on this single thread.
+     */
     private final ExecutorService executor = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "GravesX-Store");
         t.setDaemon(true);
         return t;
     });
+
     private volatile ProxyConfig config;
     private volatile GraveStore store;
     private volatile DatabaseConfig storeConfig;
@@ -76,12 +82,15 @@ public final class ProxyCore {
         openStore();
     }
 
-    /** (Re)opens the grave store when the database settings changed. */
+    /**
+     *  (Re)opens the grave store when the database settings changed.
+     */
     private synchronized void openStore() {
         DatabaseConfig wanted = config.database();
         if (store != null && wanted.equals(storeConfig)) {
             return;
         }
+
         if (store != null) {
             store.save();
             store.close();
@@ -91,15 +100,16 @@ public final class ProxyCore {
         if (wanted.enabled()) {
             try {
                 SqlDialect dialect = SqlDialect.parse(wanted.type());
+
                 if (dialect != null) {
                     libraries.loadDriver(dialect);
                 }
+
                 store = new SqlGraveStore(wanted);
                 platform.info("Using global grave database: " + store.describe());
                 return;
             } catch (Exception e) {
-                platform.warn("Could not use the global database (" + e.getMessage()
-                        + "). Falling back to the per-proxy file store until /gravesproxy reload.");
+                platform.warn("Could not use the global database (" + e.getMessage() + "). Falling back to the per-proxy file store until /gravesproxy reload.");
             }
         }
         store = new MemoryGraveStore(dataDir.resolve("graves.txt"));
@@ -119,19 +129,21 @@ public final class ProxyCore {
         }
     }
 
-    /** Whether proxy messages should be parsed as MiniMessage (config: minimessage). */
+    /**
+     * Whether proxy messages should be parsed as MiniMessage.
+     * */
     public boolean isMiniMessage() {
         return config.miniMessage();
     }
-
-    // ------------------------------------------------------------------ visibility
 
     public boolean isExcluded(String server) {
         return config.isExcluded(server);
     }
 
     private boolean isVisible(String server) {
-        if (isExcluded(server)) return false;
+        if (isExcluded(server))
+            return false;
+
         return !config.ignoreWithoutGravesX() || registry.isInstalled(server);
     }
 
@@ -139,6 +151,7 @@ public final class ProxyCore {
         for (String s : platform.serverNames()) {
             if (s.equalsIgnoreCase(name)) return s;
         }
+
         return null;
     }
 
@@ -152,22 +165,20 @@ public final class ProxyCore {
         });
     }
 
-    // ------------------------------------------------------------------ platform events
-
-    /** Called after a player has finished connecting to a backend server. */
+    /**
+     * Called after a player has finished connecting to a backend server.
+     */
     public void onPlayerConnected(UUID player, String server) {
         if (!isExcluded(server)) {
-            // Ask the backend to introduce itself; servers without GravesX simply never answer.
-            platform.runLater(() -> platform.sendToBackend(player, simple(Protocol.QUERY, out -> out.writeInt(Protocol.VERSION))),
-                    config.postConnectDelayMillis());
+            platform.runLater(() -> platform.sendToBackend(player, simple(Protocol.QUERY, out -> out.writeInt(Protocol.VERSION))), config.postConnectDelayMillis());
         }
 
         Pending p = pending.get(player);
         if (p != null && p.server().equalsIgnoreCase(server)) {
             pending.remove(player);
+
             if (System.currentTimeMillis() <= p.expiresAt()) {
-                platform.runLater(() -> platform.sendToBackend(player, executePacket(player, p.grave())),
-                        config.postConnectDelayMillis());
+                platform.runLater(() -> platform.sendToBackend(player, executePacket(player, p.grave())), config.postConnectDelayMillis());
             }
         }
     }
@@ -189,19 +200,26 @@ public final class ProxyCore {
                 case Protocol.HELLO -> {
                     int version = in.readInt();
                     String gravesVersion = in.readUTF();
-                    if (isExcluded(server)) return;
+
+                    if (isExcluded(server))
+                        return;
+
                     if (registry.markInstalled(server)) {
                         platform.info("Detected GravesX " + gravesVersion + " on server '" + server + "'.");
                         queueSave();
                     }
+
                     if (version != Protocol.VERSION) {
-                        platform.warn("Server '" + server + "' speaks GravesX proxy protocol v" + version
-                                + " but this proxy speaks v" + Protocol.VERSION + ". Use the same GravesX jar everywhere.");
+                        platform.warn("Server '" + server + "' speaks GravesX proxy protocol v" + version + " but this proxy speaks v" + Protocol.VERSION + ". Use the same GravesX jar everywhere.");
                     }
                 }
+
                 case Protocol.GRAVES_UPDATE -> handleGravesUpdate(server, in);
+
                 case Protocol.TELEPORT_REQUEST -> handleTeleportRequest(carrier, in.readUTF(), in.readInt());
+
                 case Protocol.NETWORK_REQUEST -> handleNetworkRequest(carrier, in.readUTF());
+
                 default -> { }
             }
         } catch (IOException | RuntimeException e) {
@@ -211,22 +229,26 @@ public final class ProxyCore {
 
     private void handleGravesUpdate(String server, DataInputStream in) throws IOException {
         UUID owner = Protocol.readUuid(in);
-        in.readInt(); // total count on the backend; the store holds the (capped) list itself
+        in.readInt();
+
         int n = in.readInt();
         List<GraveSummary> list = new ArrayList<>(Math.min(n, TELEPORT_LIMIT));
+
         for (int i = 0; i < n; i++) {
             GraveSummary g = GraveSummary.read(in);
             if (i < TELEPORT_LIMIT) list.add(g);
         }
-        if (isExcluded(server)) return;
+
+        if (isExcluded(server))
+            return;
+
         if (registry.markInstalled(server)) {
             queueSave();
         }
+
         async("saving graves of " + owner + " on " + server, () -> store.replaceOwner(server, owner, list));
         queueSave();
     }
-
-    // ------------------------------------------------------------------ requests
 
     private void handleNetworkRequest(UUID player, String detailServer) {
         String current = platform.currentServer(player);
@@ -240,25 +262,28 @@ public final class ProxyCore {
 
         async("reading graves of " + player, () -> {
             Map<String, Integer> counts = store.counts(player);
-            List<GraveSummary> detailList = (detail != null && isVisible(detail))
-                    ? store.graves(player, detail, DETAIL_LIMIT) : List.of();
+            List<GraveSummary> detailList = (detail != null && isVisible(detail)) ? store.graves(player, detail, DETAIL_LIMIT) : List.of();
 
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
             DataOutputStream out = new DataOutputStream(bytes);
             out.writeByte(Protocol.NETWORK_RESPONSE);
+
             Protocol.writeUuid(out, player);
             out.writeUTF(detail == null ? "" : detail);
             out.writeInt(shown.size());
+
             for (String s : shown) {
                 out.writeUTF(s);
                 out.writeBoolean(s.equalsIgnoreCase(current));
                 out.writeBoolean(registry.isInstalled(s));
                 out.writeInt(counts.getOrDefault(s.toLowerCase(Locale.ROOT), 0));
             }
+
             out.writeInt(detailList.size());
             for (GraveSummary g : detailList) {
                 g.write(out);
             }
+
             platform.sendToBackend(player, bytes.toByteArray());
         });
     }
@@ -271,10 +296,12 @@ public final class ProxyCore {
             platform.message(player, config.message("unknown-server", "server", requested));
             return;
         }
+
         if (isExcluded(target)) {
             platform.message(player, config.message("excluded-server", "server", target));
             return;
         }
+
         if (!registry.isInstalled(target)) {
             platform.message(player, config.message("not-installed", "server", target));
             return;
@@ -290,8 +317,7 @@ public final class ProxyCore {
             UUID grave = Protocol.LATEST;
             if (index > 0) {
                 if (index > graves.size()) {
-                    platform.message(player, config.message("bad-index", "server", target,
-                            "count", String.valueOf(graves.size())));
+                    platform.message(player, config.message("bad-index", "server", target, "count", String.valueOf(graves.size())));
                     return;
                 }
                 grave = graves.get(index - 1).id();
@@ -314,9 +340,9 @@ public final class ProxyCore {
         });
     }
 
-    // ------------------------------------------------------------------ admin command
-
-    /** Runs /gravesproxy. Returns the lines to show the sender. */
+    /**
+     *  Runs gravesproxy command. Returns the lines to show the sender.
+     */
     public List<String> command(boolean admin, String[] args) {
         return adminCommand.run(admin, args);
     }
@@ -325,20 +351,23 @@ public final class ProxyCore {
         return adminCommand.tabComplete(args);
     }
 
-    // package-private access for ProxyAdminCommand
-    public ProxyConfig config() { return config; }
+    public ProxyConfig config() {
+        return config;
+    }
 
-    public ServerRegistry registry() { return registry; }
+    public ServerRegistry registry() {
+        return registry;
+    }
 
-    public String storeDescription() { return store == null ? "none" : store.describe(); }
+    public String storeDescription() {
+        return store == null ? "none" : store.describe();
+    }
 
     public void forgetServer(String server) {
         registry.forget(server);
         queueSave();
         async("forgetting server " + server, () -> store.forgetServer(server));
     }
-
-    // ------------------------------------------------------------------ helpers
 
     private interface Writer {
         void write(DataOutputStream out) throws IOException;
@@ -350,6 +379,7 @@ public final class ProxyCore {
             DataOutputStream out = new DataOutputStream(bytes);
             out.writeByte(op);
             writer.write(out);
+
             return bytes.toByteArray();
         } catch (IOException e) {
             throw new IllegalStateException(e);

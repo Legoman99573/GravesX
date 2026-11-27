@@ -18,7 +18,9 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-/** Velocity implementation of {@link ProxyPlatform}. */
+/**
+ *  Velocity implementation of {@link ProxyPlatform}.
+ */
 public final class VelocityPlatform implements ProxyPlatform {
     public static final MinecraftChannelIdentifier CHANNEL = MinecraftChannelIdentifier.from(Protocol.CHANNEL);
 
@@ -34,7 +36,9 @@ public final class VelocityPlatform implements ProxyPlatform {
         this.miniMessage = miniMessage;
     }
 
-    /** Formats text with '&' codes (and MiniMessage, if enabled in the config) for this player/sender. */
+    /**
+     * Formats text with '&' codes (and MiniMessage, if enabled in the config) for this player/sender.
+     */
     public Component format(String text) {
         return VelocityMessageFormatter.format(text, miniMessage.getAsBoolean());
     }
@@ -46,10 +50,7 @@ public final class VelocityPlatform implements ProxyPlatform {
 
     @Override
     public String currentServer(UUID player) {
-        return proxy.getPlayer(player)
-                .flatMap(Player::getCurrentServer)
-                .map(sc -> sc.getServerInfo().getName())
-                .orElse(null);
+        return proxy.getPlayer(player).flatMap(Player::getCurrentServer).map(sc -> sc.getServerInfo().getName()).orElse(null);
     }
 
     @Override
@@ -61,13 +62,13 @@ public final class VelocityPlatform implements ProxyPlatform {
     public void connect(UUID player, String server, Consumer<Boolean> result) {
         Optional<Player> p = proxy.getPlayer(player);
         Optional<RegisteredServer> s = proxy.getServer(server);
+
         if (p.isEmpty() || s.isEmpty()) {
             result.accept(false);
             return;
         }
-        p.get().createConnectionRequest(s.get()).connect()
-                .thenAccept(r -> result.accept(r.isSuccessful()))
-                .exceptionally(t -> {
+
+        p.get().createConnectionRequest(s.get()).connect().thenAccept(r -> result.accept(r.isSuccessful())).exceptionally(t -> {
                     result.accept(false);
                     return null;
                 });

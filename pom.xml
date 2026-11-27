@@ -3,9 +3,6 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
-    <!-- Root parent: the groupId and version defined here are inherited by server/, proxy/ and dist/,
-         so the server plugin and the proxy plugins can never be built with different versions. -->
     <groupId>com.ranull</groupId>
     <artifactId>graves-parent</artifactId>
     <version>${revision}${changelist}</version>
@@ -21,21 +18,13 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
-        <!-- Java level for every module (server, proxy, dist): change it here only.
-             The Jenkinsfile's jdk tool must be at least this version. -->
         <java.version>17</java.version>
-
-        <!-- THE version of everything: change it here only. -->
         <build.revision>2026.4.9.4</build.revision>
         <build.suffix>-self</build.suffix>
 
-        <!-- Libby is global: server and proxy use this one version and this one relocation target,
-             so the universal jar contains a single copy. build-libs.sh installs the jar for this version. -->
         <libby.version>2.0.1-graves2</libby.version>
         <libby.relocation>com.ranull.graves.bundledlibraries.libby</libby.relocation>
 
-        <!-- Maven CI-friendly version properties (required for the ${revision}${changelist} parent references) -->
         <revision>${build.revision}</revision>
         <changelist>${build.suffix}</changelist>
     </properties>
@@ -52,7 +41,6 @@
 
     <build>
         <plugins>
-            <!-- Writes resolved poms so installed/deployed poms never contain ${revision}. -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>flatten-maven-plugin</artifactId>
@@ -78,7 +66,6 @@
     </build>
 
     <profiles>
-        <!-- Auto-enabled on Jenkins when BUILD_NUMBER exists. -->
         <profile>
             <id>jenkins-dev</id>
             <activation>
@@ -90,8 +77,6 @@
                 <build.suffix>-build${env.BUILD_NUMBER}</build.suffix>
             </properties>
         </profile>
-
-        <!-- Clean production release. No -self and no -build###. -->
         <profile>
             <id>release</id>
             <properties>

@@ -10,7 +10,9 @@ import net.md_5.bungee.api.event.ServerSwitchEvent;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.event.EventHandler;
 
-/** Forwards BungeeCord events to {@link ProxyCore}. */
+/**
+ *  Forwards BungeeCord events to {@link ProxyCore}.
+ */
 public final class BungeeListener implements Listener {
     private final ProxyCore core;
 
@@ -20,20 +22,24 @@ public final class BungeeListener implements Listener {
 
     @EventHandler
     public void onPluginMessage(PluginMessageEvent event) {
-        if (!event.getTag().equals(Protocol.CHANNEL)) return;
+        if (!event.getTag().equals(Protocol.CHANNEL))
+            return;
 
-        // Never let this channel travel on to clients or backends.
         event.setCancelled(true);
 
-        // Only trust messages that come from a backend server, never from a (possibly modded) client.
-        if (!(event.getSender() instanceof Server server)) return;
-        if (!(event.getReceiver() instanceof ProxiedPlayer player)) return;
+        if (!(event.getSender() instanceof Server server))
+            return;
+
+        if (!(event.getReceiver() instanceof ProxiedPlayer player))
+            return;
+
         core.handleBackend(server.getInfo().getName(), player.getUniqueId(), event.getData());
     }
 
     @EventHandler
     public void onSwitch(ServerSwitchEvent event) {
         ProxiedPlayer player = event.getPlayer();
+
         if (player.getServer() != null) {
             core.onPlayerConnected(player.getUniqueId(), player.getServer().getInfo().getName());
         }

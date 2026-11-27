@@ -1,6 +1,6 @@
 pipeline {
     agent any
-    tools { maven 'maven'; jdk 'jdk17' }   // jdk must be >= java.version in the root pom.xml
+    tools { maven 'maven'; jdk 'jdk17' }
 
     stages {
         stage('Install bundled libs') {

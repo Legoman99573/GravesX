@@ -36,6 +36,7 @@ public final class ProxyConfig {
     public static ProxyConfig load(Path dataDir) throws IOException {
         Files.createDirectories(dataDir);
         Path file = dataDir.resolve("config.yml");
+
         if (Files.notExists(file)) {
             try (InputStream in = ProxyConfig.class.getResourceAsStream("/proxy-config.yml")) {
                 if (in != null) {
@@ -50,14 +51,17 @@ public final class ProxyConfig {
         }
 
         Object root;
+
         try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
             root = new Yaml().load(reader);
         }
+
         if (!(root instanceof Map<?, ?> map)) {
             return cfg;
         }
 
-        if (map.get("minimessage") instanceof Boolean b) cfg.miniMessage = b;
+        if (map.get("minimessage") instanceof Boolean b)
+            cfg.miniMessage = b;
 
         if (map.get("database") instanceof Map<?, ?> d) {
             DatabaseConfig def = DatabaseConfig.disabled();
@@ -67,6 +71,7 @@ public final class ProxyConfig {
                     if (k != null && v != null) options.put(k.toString(), v.toString());
                 });
             }
+
             cfg.database = new DatabaseConfig(
                     d.get("enabled") instanceof Boolean b && b,
                     str(d.get("type"), def.type()),
@@ -82,19 +87,24 @@ public final class ProxyConfig {
         Object servers = map.get("servers");
         if (servers instanceof Map<?, ?> s) {
             Object ex = s.get("exclude");
+
             if (ex instanceof Collection<?> c) {
                 for (Object o : c) {
                     if (o != null) cfg.excluded.add(o.toString().toLowerCase(Locale.ROOT));
                 }
             }
+
             Object ignore = s.get("ignore-servers-without-gravesx");
             if (ignore instanceof Boolean b) cfg.ignoreWithoutGravesX = b;
         }
 
         Object teleport = map.get("teleport");
         if (teleport instanceof Map<?, ?> t) {
-            if (t.get("timeout-seconds") instanceof Number n) cfg.teleportTimeoutMillis = n.longValue() * 1000L;
-            if (t.get("post-connect-delay-ms") instanceof Number n) cfg.postConnectDelayMillis = n.longValue();
+            if (t.get("timeout-seconds") instanceof Number n)
+                cfg.teleportTimeoutMillis = n.longValue() * 1000L;
+
+            if (t.get("post-connect-delay-ms") instanceof Number n)
+                cfg.postConnectDelayMillis = n.longValue();
         }
 
         Object msgs = map.get("messages");
@@ -118,21 +128,33 @@ public final class ProxyConfig {
         return server != null && excluded.contains(server.toLowerCase(Locale.ROOT));
     }
 
-    /** Whether messages are parsed as MiniMessage (legacy &amp; codes are translated automatically). */
-    public boolean miniMessage() { return miniMessage; }
+    /**
+     * Whether messages are parsed as MiniMessage
+     */
+    public boolean miniMessage() {
+        return miniMessage;
+    }
 
-    public boolean ignoreWithoutGravesX() { return ignoreWithoutGravesX; }
+    public boolean ignoreWithoutGravesX() {
+        return ignoreWithoutGravesX;
+    }
 
-    public long teleportTimeoutMillis() { return teleportTimeoutMillis; }
+    public long teleportTimeoutMillis() {
+        return teleportTimeoutMillis;
+    }
 
-    public long postConnectDelayMillis() { return postConnectDelayMillis; }
+    public long postConnectDelayMillis() {
+        return postConnectDelayMillis;
+    }
 
     public String message(String key, String... replacements) {
         String text = messages.getOrDefault(key, DEFAULT_MESSAGES.getOrDefault(key, key));
+
         for (int i = 0; i + 1 < replacements.length; i += 2) {
             String value = miniMessage ? replacements[i + 1].replace("<", "\\<") : replacements[i + 1];
             text = text.replace("%" + replacements[i] + "%", value);
         }
+
         return messages.getOrDefault("prefix", "") + text;
     }
 }

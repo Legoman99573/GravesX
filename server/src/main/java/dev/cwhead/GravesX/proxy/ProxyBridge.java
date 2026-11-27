@@ -30,22 +30,15 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Bridge between GravesX and the GravesX Velocity/BungeeCord proxy plugin.
- *
- * <p>The backend reports each player's grave count and grave summaries to the proxy over the
- * {@code gravesx:proxy} plugin channel, and carries out teleports the proxy asks for after it has moved
- * the player to this server. The wire format must stay in sync with the proxy plugin's Protocol class.</p>
  */
 public class ProxyBridge implements PluginMessageListener {
     public static final String CHANNEL = "gravesx:proxy";
     public static final int PROTOCOL_VERSION = 1;
     private static final UUID LATEST = new UUID(0L, 0L);
-
-    // backend -> proxy
     private static final byte HELLO = 0x01;
     private static final byte GRAVES_UPDATE = 0x02;
     private static final byte TELEPORT_REQUEST = 0x03;
     private static final byte NETWORK_REQUEST = 0x04;
-    // proxy -> backend
     private static final byte QUERY = 0x11;
     private static final byte TELEPORT_EXECUTE = 0x12;
     private static final byte NETWORK_RESPONSE = 0x13;
@@ -65,10 +58,9 @@ public class ProxyBridge implements PluginMessageListener {
         this.plugin = plugin;
     }
 
-    // ------------------------------------------------------------------ lifecycle
-
     public void enable() {
-        if (enabled) return;
+        if (enabled)
+            return;
         enabled = true;
         plugin.getServer().getMessenger().registerOutgoingPluginChannel(plugin, CHANNEL);
         plugin.getServer().getMessenger().registerIncomingPluginChannel(plugin, CHANNEL, this);
@@ -79,7 +71,8 @@ public class ProxyBridge implements PluginMessageListener {
     }
 
     public void disable() {
-        if (!enabled) return;
+        if (!enabled)
+            return;
         enabled = false;
         plugin.getServer().getMessenger().unregisterOutgoingPluginChannel(plugin, CHANNEL);
         plugin.getServer().getMessenger().unregisterIncomingPluginChannel(plugin, CHANNEL, this);
@@ -93,9 +86,9 @@ public class ProxyBridge implements PluginMessageListener {
         return enabled;
     }
 
-    // ------------------------------------------------------------------ hooks called by GravesX
-
-    /** A player joined this server: introduce ourselves and push their graves. */
+    /**
+     * A player joined this server: introduce ourselves and push their graves.
+     */
     public void onPlayerJoin(Player player) {
         if (!enabled) return;
         plugin.getSchedulerManager().runTaskLater(player, () -> {
@@ -112,8 +105,12 @@ public class ProxyBridge implements PluginMessageListener {
      * Bursts, for example a purge of many graves, are coalesced into one update per owner.
      */
     public void onGraveChanged(UUID owner) {
-        if (!enabled || owner == null) return;
-        if (!pending.add(owner)) return; // an update for this owner is already scheduled
+        if (!enabled || owner == null)
+            return;
+
+        if (!pending.add(owner))
+            return;
+
         plugin.getSchedulerManager().runTaskLater(() -> {
             pending.remove(owner);
             if (!sync(owner)) {
@@ -123,12 +120,17 @@ public class ProxyBridge implements PluginMessageListener {
     }
 
     private void periodicSync() {
-        if (!enabled) return;
+        if (!enabled)
+            return;
+
         for (Player player : Bukkit.getOnlinePlayers()) {
             sendGraves(player.getUniqueId(), player);
         }
+
         Player carrier = anyPlayer();
-        if (carrier != null) flushDirty(carrier);
+
+        if (carrier != null)
+            flushDirty(carrier);
     }
 
     private void flushDirty(Player carrier) {
@@ -144,17 +146,19 @@ public class ProxyBridge implements PluginMessageListener {
         return null;
     }
 
-    /** @return false if no player was online to carry the message. */
     private boolean sync(UUID owner) {
         Player carrier = Bukkit.getPlayer(owner);
-        if (carrier == null) carrier = anyPlayer();
-        if (carrier == null) return false;
+
+        if (carrier == null)
+            carrier = anyPlayer();
+
+        if (carrier == null)
+            return false;
+
         lastFingerprint.remove(owner);
         sendGraves(owner, carrier);
         return true;
     }
-
-    // ------------------------------------------------------------------ outgoing
 
     private void sendHello(Player carrier) {
         send(carrier, build(HELLO, out -> {
@@ -170,14 +174,22 @@ public class ProxyBridge implements PluginMessageListener {
         List<Grave> graves = new ArrayList<>();
         for (Grave grave : plugin.getGraveManager().getGraveList(owner)) {
             LocationData ld = grave.getLocationDeathData();
-            if (ld == null || ld.getWorldName() == null) continue;
-            if (onlyLoaded && Bukkit.getWorld(ld.getWorldName()) == null) continue;
+            if (ld == null || ld.getWorldName() == null)
+                continue;
+
+            if (onlyLoaded && Bukkit.getWorld(ld.getWorldName()) == null)
+                continue;
+
             graves.add(grave);
         }
+
         graves.sort(Comparator.comparingLong(Grave::getTimeCreation).reversed());
 
         int fingerprint = graves.size();
-        for (Grave g : graves) fingerprint = 31 * fingerprint + g.getUUID().hashCode();
+        for (Grave g : graves)  {
+            fingerprint = 31 * fingerprint + g.getUUID().hashCode();
+        }
+
         Integer previous = lastFingerprint.put(owner, fingerprint);
         if (previous != null && previous == fingerprint) return;
 
@@ -186,6 +198,7 @@ public class ProxyBridge implements PluginMessageListener {
             writeUuid(out, owner);
             out.writeInt(graves.size());
             out.writeInt(shown.size());
+
             for (Grave g : shown) {
                 LocationData ld = g.getLocationDeathData();
                 writeUuid(out, g.getUUID());
@@ -199,15 +212,15 @@ public class ProxyBridge implements PluginMessageListener {
     }
 
     private void send(Player carrier, byte[] data) {
-        if (carrier == null || !enabled) return;
+        if (carrier == null || !enabled)
+            return;
+
         plugin.getSchedulerManager().execute(carrier, () -> {
             if (carrier.isOnline()) {
                 carrier.sendPluginMessage(plugin, CHANNEL, data);
             }
         });
     }
-
-    // ------------------------------------------------------------------ incoming
 
     @Override
     public void onPluginMessageReceived(String channel, Player player, byte[] message) {
@@ -221,7 +234,9 @@ public class ProxyBridge implements PluginMessageListener {
                     lastFingerprint.remove(player.getUniqueId());
                     sendGraves(player.getUniqueId(), player);
                 }
+
                 case ACK -> awaiting.remove(player.getUniqueId());
+
                 case TELEPORT_EXECUTE -> {
                     UUID target = readUuid(in);
                     UUID grave = readUuid(in);
@@ -229,10 +244,12 @@ public class ProxyBridge implements PluginMessageListener {
                         executeTeleport(player, grave);
                     }
                 }
+
                 case NETWORK_RESPONSE -> {
                     awaiting.remove(player.getUniqueId());
                     showNetwork(player, in);
                 }
+
                 default -> plugin.debugMessage("ProxyBridge: unknown opcode " + op, 2);
             }
         } catch (IOException | RuntimeException e) {
@@ -241,7 +258,6 @@ public class ProxyBridge implements PluginMessageListener {
     }
 
     private void executeTeleport(Player player, UUID graveId) {
-        // Give the player a moment to finish joining this server.
         plugin.getSchedulerManager().runTaskLater(player, () -> {
             if (!player.isOnline()) return;
 
@@ -291,18 +307,20 @@ public class ProxyBridge implements PluginMessageListener {
         }, 20L);
     }
 
-    // ------------------------------------------------------------------ commands
-
-    /** Handles {@code /graves network ...}. */
+    /**
+     *  Handles {@code /graves network ...}.
+     */
     public void handleCommand(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage("Only players can use the network command.");
             return;
         }
+
         if (!plugin.getPermissionManager().hasGrantedPermission("graves.network", player)) {
             plugin.getEntityManager().sendMessage("message.permission-denied", player);
             return;
         }
+
         if (!enabled) {
             player.sendMessage(PREFIX + ChatColor.RED + "Proxy support is disabled in the GravesX config.");
             return;
@@ -314,6 +332,7 @@ public class ProxyBridge implements PluginMessageListener {
                 writeUuid(out, player.getUniqueId());
                 out.writeUTF("");
             }));
+
             case "list" -> {
                 if (args.length < 3) {
                     player.sendMessage(PREFIX + ChatColor.RED + "/graves network list {server}");
@@ -324,6 +343,7 @@ public class ProxyBridge implements PluginMessageListener {
                     out.writeUTF(args[2]);
                 }));
             }
+
             case "tp", "teleport" -> {
                 if (!plugin.getPermissionManager().hasGrantedPermission("graves.network.teleport", player)) {
                     plugin.getEntityManager().sendMessage("message.permission-denied", player);
@@ -352,6 +372,7 @@ public class ProxyBridge implements PluginMessageListener {
                     out.writeInt(finalIndex);
                 }));
             }
+
             default -> {
                 player.sendMessage(PREFIX + ChatColor.RED + "/graves network" + ChatColor.DARK_GRAY + " - " + ChatColor.RESET + "Grave counts per server");
                 player.sendMessage(PREFIX + ChatColor.RED + "/graves network list {server}" + ChatColor.DARK_GRAY + " - " + ChatColor.RESET + "Graves on a server");
@@ -366,8 +387,10 @@ public class ProxyBridge implements PluginMessageListener {
             result.add("list");
             result.add("tp");
         }
+
         String prefix = args[args.length - 1].toLowerCase(Locale.ROOT);
         result.removeIf(s -> !s.startsWith(prefix));
+
         return result;
     }
 
@@ -391,9 +414,11 @@ public class ProxyBridge implements PluginMessageListener {
         boolean canTeleport = plugin.getPermissionManager().hasGrantedPermission("graves.network.teleport", player);
 
         player.sendMessage(PREFIX + ChatColor.RED + "Graves across the network");
+
         if (servers == 0) {
             player.sendMessage(ChatColor.GRAY + "No GravesX servers are available.");
         }
+
         for (int i = 0; i < servers; i++) {
             String name = in.readUTF();
             boolean here = in.readBoolean();
@@ -420,6 +445,7 @@ public class ProxyBridge implements PluginMessageListener {
         }
 
         int graves = in.readInt();
+
         if (!detail.isEmpty()) {
             player.sendMessage(ChatColor.RED + "Graves on " + ChatColor.WHITE + detail + ChatColor.RED + ":");
             if (graves == 0) {
@@ -427,6 +453,7 @@ public class ProxyBridge implements PluginMessageListener {
             }
         }
         long now = System.currentTimeMillis();
+
         for (int i = 0; i < graves; i++) {
             readUuid(in);
             String world = in.readUTF();
@@ -435,12 +462,11 @@ public class ProxyBridge implements PluginMessageListener {
             double z = in.readDouble();
             long created = in.readLong();
 
-            TextComponent line = new TextComponent(ChatColor.DARK_GRAY + "#" + (i + 1) + " " + ChatColor.WHITE + world
-                    + ChatColor.GRAY + " " + Math.round(x) + ", " + Math.round(y) + ", " + Math.round(z)
-                    + ChatColor.DARK_GRAY + " (" + age(now - created) + ")");
+            TextComponent line = new TextComponent(ChatColor.DARK_GRAY + "#" + (i + 1) + " " + ChatColor.WHITE + world + ChatColor.GRAY + " " + Math.round(x) + ", " + Math.round(y) + ", " + Math.round(z) + ChatColor.DARK_GRAY + " (" + age(now - created) + ")");
             if (canTeleport && !detail.isEmpty()) {
                 line.addExtra(button(" [Teleport]", ChatColor.GREEN, "/graves network tp " + detail + " " + (i + 1)));
             }
+
             player.spigot().sendMessage(line);
         }
     }
@@ -453,13 +479,15 @@ public class ProxyBridge implements PluginMessageListener {
 
     private static String age(long millis) {
         long minutes = Math.max(0L, millis) / 60_000L;
-        if (minutes < 60) return minutes + "m ago";
+        if (minutes < 60)
+            return minutes + "m ago";
+
         long hours = minutes / 60;
-        if (hours < 48) return hours + "h ago";
+        if (hours < 48)
+            return hours + "h ago";
+
         return (hours / 24) + "d ago";
     }
-
-    // ------------------------------------------------------------------ codec
 
     private interface Writer {
         void write(DataOutputStream out) throws IOException;
@@ -471,6 +499,7 @@ public class ProxyBridge implements PluginMessageListener {
             DataOutputStream out = new DataOutputStream(bytes);
             out.writeByte(op);
             writer.write(out);
+
             return bytes.toByteArray();
         } catch (IOException e) {
             throw new IllegalStateException(e);

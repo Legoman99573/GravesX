@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-/** The /gravesproxy admin command (status, reload, forget). Output lines use '&' colour codes. */
+
 public final class ProxyAdminCommand {
     private final ProxyCore core;
     private final ProxyPlatform platform;
@@ -46,24 +46,33 @@ public final class ProxyAdminCommand {
         out.add("&c☠ &8» &cGravesX Proxy &8- &7servers");
         List<String> names = new ArrayList<>(platform.serverNames());
         names.sort(String.CASE_INSENSITIVE_ORDER);
+
         for (String s : names) {
             String status;
-            if (core.isExcluded(s)) status = "&8excluded";
-            else if (core.registry().isInstalled(s)) status = "&aGravesX detected";
-            else status = core.config().ignoreWithoutGravesX() ? "&7ignored (no GravesX)" : "&7GravesX not detected";
+            if (core.isExcluded(s)) {
+                status = "&8excluded";
+            } else if (core.registry().isInstalled(s)) {
+                status = "&aGravesX detected";
+            } else {
+                status = core.config().ignoreWithoutGravesX() ? "&7ignored (no GravesX)" : "&7GravesX not detected";
+            }
+
             out.add("&f" + s + " &8- " + status);
         }
+
         out.add("&7Graves stored in: &f" + core.storeDescription());
         out.add("&7/gravesproxy reload | forget <server>");
     }
 
     public List<String> tabComplete(String[] args) {
         List<String> result = new ArrayList<>();
+
         if (args.length <= 1) {
             result.addAll(List.of("status", "reload", "forget"));
         } else if (args.length == 2 && args[0].equalsIgnoreCase("forget")) {
             result.addAll(platform.serverNames());
         }
+
         String prefix = args.length == 0 ? "" : args[args.length - 1].toLowerCase(Locale.ROOT);
         result.removeIf(s -> !s.toLowerCase(Locale.ROOT).startsWith(prefix));
         return result;

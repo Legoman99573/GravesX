@@ -14,7 +14,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
-/** BungeeCord implementation of {@link ProxyPlatform}. */
+/**
+ * BungeeCord implementation of {@link ProxyPlatform}.
+ */
 public final class BungeePlatform implements ProxyPlatform {
     private final Plugin plugin;
     private final BooleanSupplier miniMessage;
@@ -24,7 +26,9 @@ public final class BungeePlatform implements ProxyPlatform {
         this.miniMessage = miniMessage;
     }
 
-    /** Formats text with '&' codes (and the MiniMessage subset, if enabled in the config). */
+    /**
+     * Formats text with '&' codes (and the MiniMessage subset, if enabled in the config).
+     */
     public BaseComponent[] format(String text) {
         return BungeeMessageFormatter.format(text, miniMessage.getAsBoolean());
     }
@@ -43,6 +47,7 @@ public final class BungeePlatform implements ProxyPlatform {
     @Override
     public void sendToBackend(UUID player, byte[] data) {
         ProxiedPlayer p = plugin.getProxy().getPlayer(player);
+
         if (p != null && p.getServer() != null) {
             p.getServer().sendData(Protocol.CHANNEL, data);
         }
@@ -52,16 +57,19 @@ public final class BungeePlatform implements ProxyPlatform {
     public void connect(UUID player, String server, Consumer<Boolean> result) {
         ProxiedPlayer p = plugin.getProxy().getPlayer(player);
         ServerInfo info = plugin.getProxy().getServerInfo(server);
+
         if (p == null || info == null) {
             result.accept(false);
             return;
         }
+
         p.connect(info, (success, error) -> result.accept(success != null && success));
     }
 
     @Override
     public void message(UUID player, String text) {
         ProxiedPlayer p = plugin.getProxy().getPlayer(player);
+
         if (p != null) {
             p.sendMessage(format(text));
         }

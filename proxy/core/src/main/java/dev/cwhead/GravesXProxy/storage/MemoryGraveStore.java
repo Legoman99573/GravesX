@@ -11,7 +11,9 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** Per-proxy store kept in memory and saved to graves.txt. Used when no global database is configured. */
+/**
+ * Per-proxy store kept in memory and saved to graves.txt. Used when no global database is configured.
+ */
 public final class MemoryGraveStore implements GraveStore {
     private final Path file;
     private final Map<UUID, Map<String, List<GraveSummary>>> graves = new ConcurrentHashMap<>();
@@ -25,6 +27,7 @@ public final class MemoryGraveStore implements GraveStore {
     public void replaceOwner(String server, UUID owner, List<GraveSummary> list) {
         String key = server.toLowerCase(Locale.ROOT);
         Map<String, List<GraveSummary>> perServer = graves.computeIfAbsent(owner, k -> new ConcurrentHashMap<>());
+
         if (list.isEmpty()) {
             perServer.remove(key);
         } else {
@@ -35,7 +38,9 @@ public final class MemoryGraveStore implements GraveStore {
     @Override
     public Map<String, Integer> counts(UUID owner) {
         Map<String, Integer> result = new HashMap<>();
+
         graves.getOrDefault(owner, Map.of()).forEach((server, list) -> result.put(server, list.size()));
+
         return result;
     }
 
@@ -43,7 +48,9 @@ public final class MemoryGraveStore implements GraveStore {
     public List<GraveSummary> graves(UUID owner, String server, int limit) {
         List<GraveSummary> list = graves.getOrDefault(owner, Map.of()).getOrDefault(server.toLowerCase(Locale.ROOT), List.of());
         List<GraveSummary> sorted = new ArrayList<>(list);
+
         sorted.sort(Comparator.comparingLong(GraveSummary::created).reversed());
+
         return sorted.size() > limit ? sorted.subList(0, limit) : sorted;
     }
 
@@ -56,12 +63,13 @@ public final class MemoryGraveStore implements GraveStore {
     @Override
     public synchronized void save() {
         List<String> lines = new ArrayList<>();
+
         graves.forEach((owner, perServer) -> perServer.forEach((server, list) -> {
             for (GraveSummary g : list) {
-                lines.add("G|" + owner + "|" + enc(server) + "|" + g.id() + "|" + enc(g.world()) + "|"
-                        + g.x() + "|" + g.y() + "|" + g.z() + "|" + g.created());
+                lines.add("G|" + owner + "|" + enc(server) + "|" + g.id() + "|" + enc(g.world()) + "|" + g.x() + "|" + g.y() + "|" + g.z() + "|" + g.created());
             }
         }));
+
         try {
             Files.createDirectories(file.getParent());
             Files.write(file, lines, StandardCharsets.UTF_8);

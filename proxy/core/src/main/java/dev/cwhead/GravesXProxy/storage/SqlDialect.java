@@ -3,7 +3,9 @@ package dev.cwhead.GravesXProxy.storage;
 import java.util.List;
 import java.util.Locale;
 
-/** The databases supported for the global network store. */
+/**
+ *  The databases supported for the global network store.
+ */
 public enum SqlDialect {
     MYSQL("com.mysql.cj.jdbc.Driver", 3306),
     MARIADB("org.mariadb.jdbc.Driver", 3306),
@@ -35,12 +37,13 @@ public enum SqlDialect {
             case MYSQL -> "jdbc:mysql://" + host + ":" + p + "/" + database;
             case MARIADB -> "jdbc:mariadb://" + host + ":" + p + "/" + database;
             case POSTGRESQL -> "jdbc:postgresql://" + host + ":" + p + "/" + database;
-            case MSSQL -> "jdbc:sqlserver://" + host + ":" + p + ";databaseName=" + database
-                    + ";encrypt=true;trustServerCertificate=true";
+            case MSSQL -> "jdbc:sqlserver://" + host + ":" + p + ";databaseName=" + database + ";encrypt=true;trustServerCertificate=true";
         };
     }
 
-    /** Statements that create the table and index if they do not exist yet. */
+    /**
+     * Statements that create the table and index if they do not exist yet.
+     */
     List<String> schema(String table) {
         String idx = "idx_" + table + "_owner";
         return switch (this) {
@@ -68,13 +71,13 @@ public enum SqlDialect {
         };
     }
 
-    /** SELECT of one owner's graves on one server, newest first, with the row limit already applied. */
+    /**
+     *  SELECT of one owner's graves on one server, newest first, with the row limit already applied.
+     */
     String selectGraves(String table, int limit) {
         int n = Math.max(1, limit);
         String cols = "grave_uuid, world_name, pos_x, pos_y, pos_z, created_at";
         String where = " FROM " + table + " WHERE owner_uuid = ? AND server_name = ? ORDER BY created_at DESC";
-        return this == MSSQL
-                ? "SELECT TOP (" + n + ") " + cols + where
-                : "SELECT " + cols + where + " LIMIT " + n;
+        return this == MSSQL ? "SELECT TOP (" + n + ") " + cols + where : "SELECT " + cols + where + " LIMIT " + n;
     }
 }

@@ -4,11 +4,6 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <!-- Builds the one GravesX jar that goes on BOTH the backend servers and the proxy:
-         the server plugin (plugin.yml) + the Velocity plugin (velocity-plugin.json)
-         + the BungeeCord plugin (bungee.yml), merged into a single file.
-         Also copies the separate server and proxy API/sources/javadoc jars into dist/target.
-         Run after server/ and proxy/ have been packaged (the root pom builds them in that order). -->
     <parent>
         <groupId>com.ranull</groupId>
         <artifactId>graves-parent</artifactId>
@@ -79,10 +74,6 @@
                         </configuration>
                     </execution>
 
-                    <!-- Developer artifacts are built separately by server/ and proxy/core/ (same api/sources/javadoc
-                         setup as the old single-module build) and collected here, never merged:
-                           server: GravesX-<version>-api.jar, -api-sources.jar, -api-javadoc.jar (+ -sources.jar with -Prelease)
-                           proxy:  GravesX-Proxy-<version>-api.jar, -api-sources.jar, -api-javadoc.jar -->
                     <execution>
                         <id>collect-api-sources-javadoc</id>
                         <phase>package</phase>

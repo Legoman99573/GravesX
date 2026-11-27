@@ -8,7 +8,9 @@ import dev.cwhead.GravesXProxy.velocity.platform.VelocityPlatform;
 
 import java.util.List;
 
-/** /gravesproxy (alias /gxproxy). */
+/**
+ *  Creates gravesproxy command
+ */
 public final class VelocityAdminCommand implements SimpleCommand {
     private static final String PERMISSION = "gravesx.proxy.admin";
 
@@ -21,10 +23,8 @@ public final class VelocityAdminCommand implements SimpleCommand {
     }
 
     public static void register(Object plugin, ProxyServer proxy, ProxyCore core, VelocityPlatform platform) {
-        CommandMeta meta = proxy.getCommandManager().metaBuilder("gravesproxy")
-                .aliases("gxproxy")
-                .plugin(plugin)
-                .build();
+        CommandMeta meta = proxy.getCommandManager().metaBuilder("gravesproxy").aliases("gxproxy").plugin(plugin).build();
+
         proxy.getCommandManager().register(meta, new VelocityAdminCommand(core, platform));
     }
 

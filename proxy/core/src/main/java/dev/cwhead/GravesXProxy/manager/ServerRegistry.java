@@ -8,11 +8,12 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** Which backend servers are known to run GravesX (they answered the handshake). Saved to servers.txt. */
+/**
+ * Which backend servers are known to run GravesX (they answered the handshake). Saved to servers.txt.
+ */
 public final class ServerRegistry {
     private final Set<String> installed = ConcurrentHashMap.newKeySet();
 
-    /** @return true if the server was not known as GravesX-enabled before. */
     public boolean markInstalled(String server) {
         return installed.add(server.toLowerCase(Locale.ROOT));
     }

@@ -9,7 +9,9 @@ import com.velocitypowered.api.proxy.ServerConnection;
 import dev.cwhead.GravesXProxy.ProxyCore;
 import dev.cwhead.GravesXProxy.velocity.platform.VelocityPlatform;
 
-/** Forwards Velocity events to {@link ProxyCore}. */
+/**
+ * Forwards Velocity events to {@link ProxyCore}.
+ */
 public final class VelocityListener {
     private final ProxyCore core;
 
@@ -19,21 +21,22 @@ public final class VelocityListener {
 
     @Subscribe
     public void onPluginMessage(PluginMessageEvent event) {
-        if (!event.getIdentifier().equals(VelocityPlatform.CHANNEL)) return;
+        if (!event.getIdentifier().equals(VelocityPlatform.CHANNEL))
+            return;
 
-        // Never let this channel travel on to clients or backends.
         event.setResult(PluginMessageEvent.ForwardResult.handled());
 
-        // Only trust messages that come from a backend server, never from a (possibly modded) client.
-        if (!(event.getSource() instanceof ServerConnection connection)) return;
+        if (!(event.getSource() instanceof ServerConnection connection))
+            return;
+
         core.handleBackend(connection.getServerInfo().getName(), connection.getPlayer().getUniqueId(), event.getData());
     }
 
     @Subscribe
     public void onPostConnect(ServerPostConnectEvent event) {
         Player player = event.getPlayer();
-        player.getCurrentServer().ifPresent(sc ->
-                core.onPlayerConnected(player.getUniqueId(), sc.getServerInfo().getName()));
+
+        player.getCurrentServer().ifPresent(sc -> core.onPlayerConnected(player.getUniqueId(), sc.getServerInfo().getName()));
     }
 
     @Subscribe

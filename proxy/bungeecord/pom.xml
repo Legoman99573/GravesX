@@ -80,7 +80,6 @@
                                     </manifestEntries>
                                 </transformer>
                             </transformers>
-                            <!-- Only our own code + Libby go into the jar; drivers/snakeyaml are loaded at runtime. -->
                             <artifactSet>
                                 <includes>
                                     <include>com.ranull:gravesx-proxy-core</include>
@@ -88,7 +87,6 @@
                                     <include>com.ranull:gravesx-common</include>
                                 </includes>
                             </artifactSet>
-                            <!-- Same target as the server jar, so the universal jar contains one copy of Libby. -->
                             <relocations>
                                 <relocation>
                                     <pattern>com.alessiodp.libby</pattern>

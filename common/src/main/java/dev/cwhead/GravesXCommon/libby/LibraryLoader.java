@@ -7,8 +7,7 @@ import java.util.Objects;
 
 /**
  * The one place GravesX loads runtime libraries with Libby, for the server and for every proxy. It is
- * platform independent: the caller supplies the {@link LibraryManager} for its platform
- * (BukkitLibraryManager, VelocityLibraryManager, StandaloneLibraryManager) and a {@link LibraryLog}.
+ * platform independent: the caller supplies the {@link LibraryManager} for its platform.
  */
 public final class LibraryLoader {
     private final LibraryManager manager;
@@ -20,7 +19,9 @@ public final class LibraryLoader {
         this.log = Objects.requireNonNull(log, "log");
     }
 
-    /** Registers Maven Central once. Enough for everything the proxies load. */
+    /**
+     * Registers Maven Central once. Enough for everything the proxies load.
+     */
     public LibraryLoader useMavenCentral() {
         if (!mavenCentralAdded) {
             addSafely("addMavenCentral", manager::addMavenCentral);
@@ -44,7 +45,9 @@ public final class LibraryLoader {
         return this;
     }
 
-    /** Loads the library. Never throws; see {@link LoadResult}. */
+    /**
+     * Loads the library. Never throws; see {@link LoadResult}.
+     */
     public LoadResult load(LibraryRequest request) {
         final String label = request.label();
         final boolean relocate = request.relocateFrom != null && !request.relocateFrom.isBlank();
@@ -107,7 +110,9 @@ public final class LibraryLoader {
         }
     }
 
-    /** Post-load check for isolated + relocated libraries (behaviour carried over from the server's loader). */
+    /**
+     * Post-load check for isolated + relocated libraries
+     */
     private LoadResult verifyRelocated(String label, String relocateTo) {
         try {
             final String probe = relocateTo.replace("{}", ".");
@@ -131,7 +136,9 @@ public final class LibraryLoader {
         return LoadResult.VERIFICATION_FAILED;
     }
 
-    /** True if the class can already be loaded by the given class loader (so there is nothing to download). */
+    /**
+     * True if the class can already be loaded by the given class loader
+     */
     public static boolean isPresent(String className, ClassLoader loader) {
         try {
             Class.forName(className, false, loader);

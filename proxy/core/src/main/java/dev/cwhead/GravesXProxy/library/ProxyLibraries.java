@@ -41,15 +41,19 @@ public final class ProxyLibraries {
         });
     }
 
-    /** snakeyaml reads config.yml, so it has to be on the class path before the config is read. */
+    /**
+     * snakeyaml reads config.yml, so it has to be on the class path before the config is read.
+     */
     public void loadYaml() {
         if (LibraryLoader.isPresent("org.yaml.snakeyaml.Yaml", ProxyLibraries.class.getClassLoader())) {
-            return; // BungeeCord already ships it
+            return;
         }
         load("org{}yaml", "snakeyaml", SNAKEYAML_VERSION);
     }
 
-    /** Loads the JDBC driver for the given database type. Throws if it cannot be downloaded. */
+    /**
+     * Loads the JDBC driver for the given database type. Throws if it cannot be downloaded.
+     * */
     public void loadDriver(SqlDialect dialect) {
         if (LibraryLoader.isPresent(dialect.driverClass, ProxyLibraries.class.getClassLoader())) {
             return;
@@ -63,14 +67,10 @@ public final class ProxyLibraries {
     }
 
     private void load(String group, String artifact, String version) {
-        // Not relocated and not transitive: these jars are self-contained for what we use them for,
-        // and skipping relocation means no extra relocator download on the proxy.
-        LibraryRequest request = LibraryRequest.builder()
-                .coordinates(group, artifact, version)
-                .transitive(false)
-                .build();
+        LibraryRequest request = LibraryRequest.builder().coordinates(group, artifact, version).transitive(false).build();
 
         platform.info("Downloading library " + request.label());
+
         if (loader.useMavenCentral().load(request) != LoadResult.LOADED) {
             throw new IllegalStateException("Could not load library " + request.label());
         }

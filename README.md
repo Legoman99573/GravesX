@@ -16,20 +16,32 @@
 	<li><b>GitLab:</b> https://gitlab.com/ranull/minecraft/graves/</li>
 </ul>
 
-## Project layout
+## How to build
 
-```
-pom.xml    root parent: defines groupId + version for everything below (server and proxy always match)
-lib/       global libs shared by server and proxy (Libby), installed by build-libs
-common/    code shared by server and proxy (MiniMessage translator), shaded into both
-server/    GravesX plugin (own pom.xml; server-only libs in server/libs)
-proxy/     Velocity + BungeeCord plugins (own pom.xml; modules: core, velocity, bungeecord)
-dist/      merges server + proxy into ONE jar for servers and proxies (own pom.xml)
-Jenkinsfile
-```
+1. Clone the repository and ensure you have Java and Maven installed.
+2. Run `build-libs.sh` (or `build-libs.bat` on Windows) once to install the required JARs from `lib/` into the local Maven repository and `server/libs`.
+3. From the repository root, run `mvn clean package` to build the server, proxy, and distribution modules.
+4. To build individual components, use:
+    - **Server:** `mvn -pl server -am clean package`
+    - **Proxy:** `mvn -pl proxy -am clean package`
 
-* Run `build-libs.sh` (or `build-libs.bat` on Windows) once to install the jars in `lib/` and `server/libs`, then `mvn clean package` from the root builds server, proxy and dist.
-* Build one part from the root: `mvn -pl server -am clean package`, `mvn -pl proxy -am clean package` (`-am` also builds `common`). Building a module with `-f` on its own only works after `common` has been installed.
-* Developer jars are separate per side and are copied into `dist/target` unmerged: server `GravesX-<version>-api.jar` / `-api-sources.jar` / `-api-javadoc.jar` (built in `server/`), proxy `GravesX-Proxy-<version>-api.jar` (includes relocated Libby) / `-api-sources.jar` / `-api-javadoc.jar` (built in `proxy/core/`).
-* Change the version in the root `pom.xml` (`build.revision`); install `dist/target/GravesX-<version>.jar` on every backend server and the proxy.
-* Proxy docs (global database, MiniMessage, server exclusion): `proxy/README.md`.
+   The `-am` flag also builds the required `common` module. Building a module independently with `-f` requires `common` to have already been installed.
+
+5. Once the build completes, the distribution JAR will be available at `dist/target/GravesX-<version>.jar`. Install this JAR on every backend server and the proxy.
+
+### Developer artifacts
+
+Developer JARs are built separately for each side and copied into `dist/target` without being merged:
+
+- **Server** (`server/`):
+    - `GravesX-<version>-api.jar`
+    - `GravesX-<version>-api-sources.jar`
+    - `GravesX-<version>-api-javadoc.jar`
+- **Proxy** (`proxy/core/`):
+    - `GravesX-Proxy-<version>-api.jar` (includes relocated Libby)
+    - `GravesX-Proxy-<version>-api-sources.jar`
+    - `GravesX-Proxy-<version>-api-javadoc.jar`
+
+### Important
+
+**Self-compiled builds are not officially supported.** Support is provided only for official project releases or development builds. Issues encountered with locally compiled or modified builds must be reproduced using an official release or development builds before they can be considered for support.

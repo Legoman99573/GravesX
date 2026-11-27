@@ -8,8 +8,10 @@ import net.md_5.bungee.api.plugin.TabExecutor;
 
 import java.util.List;
 
-/** /gravesproxy (alias /gxproxy). */
-public final class BungeeAdminCommand extends Command implements TabExecutor {
+/**
+ * Class for gravesproxy command
+ */
+public class BungeeAdminCommand extends Command implements TabExecutor {
     private static final String PERMISSION = "gravesx.proxy.admin";
 
     private final ProxyCore core;
@@ -24,6 +26,7 @@ public final class BungeeAdminCommand extends Command implements TabExecutor {
     @Override
     public void execute(CommandSender sender, String[] args) {
         boolean admin = sender.hasPermission(PERMISSION);
+
         for (String line : core.command(admin, args)) {
             sender.sendMessage(platform.format(line));
         }

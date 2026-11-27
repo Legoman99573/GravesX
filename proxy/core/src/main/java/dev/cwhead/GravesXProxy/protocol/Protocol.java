@@ -13,16 +13,14 @@ public final class Protocol {
     public static final String CHANNEL = "gravesx:proxy";
     public static final int VERSION = 1;
 
-    /** Zero UUID meaning "the newest grave". */
+    /**
+     * Zero UUID meaning "the newest grave".
+     */
     public static final UUID LATEST = new UUID(0L, 0L);
-
-    // backend -> proxy
     public static final byte HELLO = 0x01;
     public static final byte GRAVES_UPDATE = 0x02;
     public static final byte TELEPORT_REQUEST = 0x03;
     public static final byte NETWORK_REQUEST = 0x04;
-
-    // proxy -> backend
     public static final byte QUERY = 0x11;
     public static final byte TELEPORT_EXECUTE = 0x12;
     public static final byte NETWORK_RESPONSE = 0x13;
@@ -41,8 +39,7 @@ public final class Protocol {
         }
 
         public static GraveSummary read(DataInputStream in) throws IOException {
-            return new GraveSummary(readUuid(in), in.readUTF(), in.readDouble(), in.readDouble(),
-                    in.readDouble(), in.readLong());
+            return new GraveSummary(readUuid(in), in.readUTF(), in.readDouble(), in.readDouble(), in.readDouble(), in.readLong());
         }
     }
 
