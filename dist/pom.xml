@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- Builds the one GravesX jar that goes on BOTH the backend servers and the proxy:
+         the server plugin (plugin.yml) + the Velocity plugin (velocity-plugin.json)
+         + the BungeeCord plugin (bungee.yml), merged into a single file.
+         Also copies the separate server and proxy API/sources/javadoc jars into dist/target.
+         Run after server/ and proxy/ have been packaged (the root pom builds them in that order). -->
+    <parent>
+        <groupId>com.ranull</groupId>
+        <artifactId>graves-parent</artifactId>
+        <version>${revision}${changelist}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>gravesx-universal</artifactId>
+    <packaging>pom</packaging>
+    <name>GravesX-Universal</name>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>merge-universal-jar</id>
+                        <phase>package</phase>
+                        <goals><goal>run</goal></goals>
+                        <configuration>
+                            <target>
+                                <property name="server.dir" value="${project.basedir}/../server/target"/>
+                                <property name="proxy.dir" value="${project.basedir}/../proxy"/>
+                                <property name="merged.dir" value="${project.build.directory}/merged"/>
+
+                                <delete dir="${merged.dir}"/>
+                                <mkdir dir="${merged.dir}"/>
+
+                                <!-- the main server jar (not the -api / -sources / -javadoc variants) -->
+                                <path id="server.jar.path">
+                                    <fileset dir="${server.dir}">
+                                        <include name="GravesX-*.jar"/>
+                                        <exclude name="*-api.jar"/>
+                                        <exclude name="*-sources.jar"/>
+                                        <exclude name="*-javadoc.jar"/>
+                                    </fileset>
+                                </path>
+                                <fail message="Server jar not found in ${server.dir}. Build server/ first.">
+                                    <condition>
+                                        <length string="${toString:server.jar.path}" trim="true" when="equal" length="0"/>
+                                    </condition>
+                                </fail>
+                                <basename property="server.jar.name" file="${toString:server.jar.path}"/>
+
+                                <unzip dest="${merged.dir}">
+                                    <path refid="server.jar.path"/>
+                                </unzip>
+
+                                <!-- proxy plugins; the server jar's files win on any conflict -->
+                                <unzip dest="${merged.dir}" overwrite="false">
+                                    <fileset dir="${proxy.dir}/velocity/target" includes="GravesX-Velocity-*.jar"/>
+                                </unzip>
+                                <unzip dest="${merged.dir}" overwrite="false">
+                                    <fileset dir="${proxy.dir}/bungeecord/target" includes="GravesX-BungeeCord-*.jar"/>
+                                </unzip>
+
+                                <delete file="${merged.dir}/META-INF/MANIFEST.MF"/>
+                                <jar destfile="${project.build.directory}/${server.jar.name}"
+                                     basedir="${merged.dir}" filesetmanifest="skip" duplicate="preserve">
+                                    <manifest>
+                                        <attribute name="Multi-Release" value="true"/>
+                                    </manifest>
+                                </jar>
+                            </target>
+                        </configuration>
+                    </execution>
+
+                    <!-- Developer artifacts are built separately by server/ and proxy/core/ (same api/sources/javadoc
+                         setup as the old single-module build) and collected here, never merged:
+                           server: GravesX-<version>-api.jar, -api-sources.jar, -api-javadoc.jar (+ -sources.jar with -Prelease)
+                           proxy:  GravesX-Proxy-<version>-api.jar, -api-sources.jar, -api-javadoc.jar -->
+                    <execution>
+                        <id>collect-api-sources-javadoc</id>
+                        <phase>package</phase>
+                        <goals><goal>run</goal></goals>
+                        <configuration>
+                            <target>
+                                <property name="server.dir" value="${project.basedir}/../server/target"/>
+                                <property name="proxy.core.dir" value="${project.basedir}/../proxy/core/target"/>
+
+                                <fileset id="server.dev.jars" dir="${server.dir}">
+                                    <include name="GravesX-*-api.jar"/>
+                                    <include name="GravesX-*-sources.jar"/>
+                                    <include name="GravesX-*-javadoc.jar"/>
+                                </fileset>
+                                <resourcecount property="server.dev.count" refid="server.dev.jars"/>
+                                <fail message="No server api/sources/javadoc jars in ${server.dir}. Build server/ first (javadoc needs a full JDK).">
+                                    <condition><equals arg1="${server.dev.count}" arg2="0"/></condition>
+                                </fail>
+
+                                <fileset id="proxy.dev.jars" dir="${proxy.core.dir}">
+                                    <include name="GravesX-Proxy-*-api.jar"/>
+                                    <include name="GravesX-Proxy-*-api-sources.jar"/>
+                                    <include name="GravesX-Proxy-*-api-javadoc.jar"/>
+                                </fileset>
+                                <resourcecount property="proxy.dev.count" refid="proxy.dev.jars"/>
+                                <fail message="No proxy api/sources/javadoc jars in ${proxy.core.dir}. Build proxy/ first.">
+                                    <condition><equals arg1="${proxy.dev.count}" arg2="0"/></condition>
+                                </fail>
+
+                                <copy todir="${project.build.directory}" overwrite="true">
+                                    <fileset refid="server.dev.jars"/>
+                                    <fileset refid="proxy.dev.jars"/>
+                                </copy>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

@@ -65,3 +65,6 @@ fabric.properties
 # Maven
 log/
 target/
+
+# Maven flatten plugin
+.flattened-pom.xml

@@ -1,0 +1,9 @@
+{
+  "id": "${plugin.id}",
+  "main": "dev.cwhead.GravesXProxy.velocity.GravesXVelocity",
+  "name": "${project.name}",
+  "version": "${project.version}",
+  "description": "${project.description}",
+  "url": "${plugin.url}",
+  "authors": [${plugin.authors.json}]
+}

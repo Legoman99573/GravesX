@@ -1,0 +1,232 @@
+name: ${project.name}
+description: ${project.description}
+version: ${project.version}
+main: com.ranull.graves.Graves
+api-version: 1.13
+authors:
+  - Ranull
+  - JaySmethers
+  - Legoman99573
+load: POSTWORLD
+website: https://www.spigotmc.org/resources/gravesx.118271/
+
+folia-supported: true
+
+loadbefore:
+  - XItemsRemover
+  - ExplodeAny
+  - CombatLogX
+
+softdepend:
+  - AdvancedEnchantments
+  - Vault
+  - ProtocolLib
+  - PlaceholderAPI
+  - FurnitureLib
+  - FurnitureEngine
+  - ProtectionLib
+  - MineDownPlugin
+  - ChestSort
+  - ItemsAdder
+  - Oraxen
+  - Nexo
+  - CraftEngine
+  - ProtocolLib
+  - SkullTextureAPI
+  - ItemBridge
+  - PlayerNPC
+  - Skript
+  - FancyNpcs
+  - Geyser-Spigot
+  - floodgate
+  - LuckPerms
+  - CoreProtect
+  - NBTAPI
+  - NoteBlockAPI
+  - RPGInventory
+
+commands:
+  graves:
+    description: Graves command
+    default: true
+    usage: /graves
+    aliases:
+      - grave
+      - gravesx
+      - tombstones
+      - tombstone
+      - deathchests
+      - deathchest
+      - deaths
+      - death
+      - tombs
+      - tomb
+      - dc
+      - d
+
+  gravesmodule:
+    description: Graves Module command
+    default: true
+    usage: /gravesmodule
+    aliases:
+      - gravemodule
+      - gmodule
+      - gravemod
+      - gmod
+      - gravesxmodule
+      - gravesxmod
+      - gxmod
+      - gxm
+
+permissions:
+  graves.bypass:
+    default: op
+    description: Can bypass grave teleportation timer and grave protections
+
+  graves.spectator.bypass:
+    default: op
+    description: Can bypass spectator mode restrictions
+
+  graves.place:
+    default: true
+    description: Can place a graves
+
+  graves.open:
+    default: true
+    description: Can open a grave
+
+  graves.virtual.command:
+    default: op
+    description: Virtually open your grave by command
+
+  graves.virtual.command.others:
+    default: op
+    description: Virtually open another players grave by command
+
+  graves.autoloot:
+    default: true
+    description: Can Autoloot a grave
+
+  graves.break:
+    default: true
+    description: Can break a grave
+
+  graves.gui:
+    default: true
+    description: Can view graves
+
+  graves.potion-effect:
+    default: true
+    description: Can receive potion effect on respawn
+
+  graves.gui.other:
+    default: op
+    description: Can view other peoples graves
+
+  graves.network:
+    default: true
+    description: Can view grave counts across proxy servers
+
+  graves.network.teleport:
+    default: op
+    description: Can teleport to graves on other proxy servers
+
+  graves.count:
+    default: op
+    description: Counts the number of graves for a player or world.
+
+  graves.experience:
+    default: true
+    description: Can store experience in graves
+
+  graves.protection:
+    default: true
+    description: Can have protection on graves
+
+  graves.teleport:
+    default: true
+    description: Can teleport to grave
+
+  graves.teleport.command:
+    default: op
+    description: teleport to your grave by command
+
+  graves.teleport.command.others:
+    default: op
+    description: teleport to other users graves with a command
+
+  graves.teleport.delay-bypass:
+    default: op
+    description: Allows the player to bypass grave teleport delay restrictions
+
+  graves.teleport.world.*:
+    default: true
+    description: Allows teleportation to graves in specific worlds.
+
+  graves.dump:
+    default: op
+    description: Dump server information
+
+  graves.max.replace:
+    default: true
+    description: Replaces the oldest grave
+
+  graves.max.limit.*:
+    default: false
+    description: Sets the max amount of graves a player has. Falls back to the max grave limit in grave.yml
+
+  graves.max.bypass:
+    default: op
+    description: Allows players to bypass to the max grave limit in grave.yml
+
+  graves.purge:
+    default: op
+    description: Purge graves
+
+  graves.cleanup:
+    default: op
+    description: Cleanup graves
+
+  graves.debug:
+    default: op
+    description: Change debug level
+
+  graves.update.notify:
+    default: op
+    description: Notify player about plugin update
+
+  graves.import:
+    default: op
+    description: Import graves from another plugin
+
+  graves.migration:
+    default: op
+    description: Run GravesX migration commands
+
+  graves.givetoken:
+    default: op
+    description: Give a grave token
+
+  graves.reload:
+    default: op
+    description: Reload Graves
+
+  graves.keepinventory.bypass:
+    default: false
+    description: Allows graves to be created even if they have keep inventory. Not recommended to give this permission to prevent dupe bugs.
+
+  graves.download.addon:
+    default: op
+    description: Allows downloading addons from command.
+
+  graves.deduct.*:
+    default: false
+    description: Deducts based on group
+
+  graves.deduct-bypass:
+    default: op
+    description: Bypasses on death money deduction.
+
+  graves.command.modules:
+    description: Access to GravesX module management commands
+    default: op

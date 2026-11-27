@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.ranull</groupId>
+        <artifactId>gravesx-proxy-parent</artifactId>
+        <version>${revision}${changelist}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <artifactId>gravesx-proxy-core</artifactId>
+    <name>GravesX-Proxy-Core</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>gravesx-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Libby comes in through gravesx-common; it is shaded + relocated into the platform jars and the api jar. -->
+
+        <!-- Compile-only: provided by BungeeCord, or downloaded by Libby on Velocity. -->
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>${snakeyaml.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- No JDBC drivers here: SqlGraveStore only uses java.sql and loads the driver class by name. -->
+    </dependencies>
+
+    <build>
+        <!-- Developer artifacts for the proxy side, kept separate from the server ones:
+               GravesX-Proxy-<version>-api.jar
+               GravesX-Proxy-<version>-api-sources.jar
+               GravesX-Proxy-<version>-api-javadoc.jar
+             The default jar keeps its normal (unclassified) form so velocity/ and bungeecord/ can depend on it. -->
+        <finalName>GravesX-Proxy-${project.version}</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <id>proxy-api-jar</id>
+                        <phase>package</phase>
+                        <goals><goal>shade</goal></goals>
+                        <configuration>
+                            <!-- outputFile: separate file, the default jar stays the module's main artifact -->
+                            <outputFile>${project.build.directory}/GravesX-Proxy-${project.version}-api.jar</outputFile>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <artifactSet>
+                                <includes>
+                                    <include>${project.groupId}:${project.artifactId}</include>
+                                    <include>com.alessiodp:libby</include>
+                                    <include>${project.groupId}:gravesx-common</include>
+                                </includes>
+                            </artifactSet>
+                            <relocations>
+                                <relocation>
+                                    <pattern>com.alessiodp.libby</pattern>
+                                    <shadedPattern>${libby.relocation}</shadedPattern>
+                                </relocation>
+                            </relocations>
+                            <filters>
+                                <filter>
+                                    <artifact>${project.groupId}:${project.artifactId}</artifact>
+                                    <excludes>
+                                        <exclude>proxy-config.yml</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                        <exclude>module-info.class</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.3.1</version>
+                <executions>
+                    <execution>
+                        <id>proxy-api-sources</id>
+                        <phase>package</phase>
+                        <goals><goal>jar-no-fork</goal></goals>
+                        <configuration>
+                            <classifier>api-sources</classifier>
+                            <includes>
+                                <include>**/*.java</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.12.0</version>
+                <executions>
+                    <execution>
+                        <id>proxy-api-javadoc</id>
+                        <phase>package</phase>
+                        <goals><goal>jar</goal></goals>
+                        <configuration>
+                            <classifier>api-javadoc</classifier>
+                            <sourcepath>${project.build.sourceDirectory}</sourcepath>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

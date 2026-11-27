@@ -1,0 +1,5 @@
+name: ${project.name}
+main: dev.cwhead.GravesXProxy.bungee.GravesXBungee
+version: ${project.version}
+author: ${plugin.authors.csv}
+description: ${project.description}

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.ranull</groupId>
+        <artifactId>graves-parent</artifactId>
+        <version>${revision}${changelist}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>gravesx-proxy-parent</artifactId>
+    <packaging>pom</packaging>
+    <name>GravesX-Proxy-Parent</name>
+    <description>Network-wide grave counts and teleportation for GravesX</description>
+    <url>${plugin.url}</url>
+
+    <!-- Keep in sync with plugin.authors.* below -->
+    <developers>
+        <developer><name>Ranull</name></developer>
+        <developer><name>JaySmethers</name></developer>
+        <developer><name>Legoman99573</name></developer>
+    </developers>
+
+    <modules>
+        <module>core</module>
+        <module>velocity</module>
+        <module>bungeecord</module>
+    </modules>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- keep in sync with ProxyLibraries.SNAKEYAML_VERSION (downloaded at runtime) -->
+        <snakeyaml.version>2.2</snakeyaml.version>
+
+        <!-- Plugin metadata, used to filter velocity-plugin.json and bungee.yml -->
+        <plugin.id>gravesx</plugin.id>
+        <plugin.name>GravesX</plugin.name>
+        <plugin.url>https://www.spigotmc.org/resources/gravesx.118271/</plugin.url>
+        <plugin.authors.csv>Ranull, JaySmethers, Legoman99573</plugin.authors.csv>
+        <plugin.authors.json>"Ranull", "JaySmethers", "Legoman99573"</plugin.authors.json>
+    </properties>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.14.0</version>
+                    <configuration>
+                        <release>${java.version}</release>
+                        <encoding>${project.build.sourceEncoding}</encoding>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-shade-plugin</artifactId>
+                    <version>3.6.0</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+</project>

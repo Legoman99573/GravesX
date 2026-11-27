@@ -1,0 +1,53 @@
+# GravesX proxy configuration (Velocity / BungeeCord)
+# The same GravesX jar is installed on the proxy and on the backend servers.
+
+# Global network database. Graves are stored per server (+ world), so worlds with the same name on different
+# servers never clash, and counts are updated whenever a server reports that a grave was created or removed.
+# Only MYSQL, MARIADB, POSTGRESQL and MSSQL are supported.
+# When disabled (or the connection fails) graves are kept in plugins/GravesX/graves.txt on this proxy only.
+database:
+  enabled: false
+  type: MYSQL
+  host: localhost
+  port: 0            # 0 = default port of the type (3306 / 3306 / 5432 / 1433)
+  name: gravesx
+  username: gravesx
+  password: ""
+  table-prefix: gravesx_
+  # Extra JDBC properties, e.g. "sslMode: DISABLED" (MySQL) or "ssl: false" (PostgreSQL)
+  options: {}
+
+# Parse messages as MiniMessage (https://docs.advntr.dev/minimessage/format.html), e.g. "<red>Hello <bold>there".
+# Legacy & colour codes keep working and are translated automatically.
+# Velocity uses the full MiniMessage engine. BungeeCord uses a built-in translator that supports
+# colours (named and <#rrggbb>) and bold/italic/underlined/strikethrough/obfuscated/reset only.
+# Set to false to use plain legacy & codes only.
+minimessage: true
+
+servers:
+  # Servers GravesX should completely ignore: no counts, no teleports, hidden from /graves network.
+  # Use the server names from velocity.toml / BungeeCord config.yml.
+  exclude: []
+  #  - lobby
+  #  - auth
+
+  # Hide servers that do not have GravesX installed (they never answer the GravesX handshake).
+  # If false they are still listed, marked as "GravesX not detected", and cannot be teleported to.
+  ignore-servers-without-gravesx: true
+
+teleport:
+  # How long a pending cross-server teleport stays valid.
+  timeout-seconds: 30
+  # Delay after the player connects before the destination server is told to teleport them.
+  post-connect-delay-ms: 1000
+
+# Messages sent by the proxy itself (colour codes with &).
+messages:
+  prefix: "&c☠ &8» &r"
+  unknown-server: "&cUnknown server: &f%server%"
+  excluded-server: "&cGraves are not available on &f%server%&c."
+  not-installed: "&cGravesX was not detected on &f%server%&c."
+  no-graves: "&cYou have no graves on &f%server%&c."
+  bad-index: "&cYou only have &f%count% &cgrave(s) on &f%server%&c."
+  teleporting: "&7Sending you to your grave on &f%server%&7..."
+  connect-failed: "&cCould not connect you to &f%server%&c."
